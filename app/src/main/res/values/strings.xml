@@ -1,0 +1,7 @@
+<resources>
+
+    <string name="app_name">FastLibrary</string>
+    
+    <string name="loading">加载中&#8230;</string>
+
+</resources>
