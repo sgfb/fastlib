@@ -21,7 +21,6 @@ public class DensityUtils
 	 * dp转px
 	 * 
 	 * @param context
-	 * @param val
 	 * @return
 	 */
 	public static int dp2px(Context context, float dpVal)
@@ -34,7 +33,6 @@ public class DensityUtils
 	 * sp转px
 	 * 
 	 * @param context
-	 * @param val
 	 * @return
 	 */
 	public static int sp2px(Context context, float spVal)
@@ -58,8 +56,7 @@ public class DensityUtils
 
 	/**
 	 * px转sp
-	 * 
-	 * @param fontScale
+	 *
 	 * @param pxVal
 	 * @return
 	 */

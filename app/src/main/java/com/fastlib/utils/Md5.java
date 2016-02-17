@@ -57,7 +57,5 @@ public class Md5 {
 	      }else{
 		      return "f1f348ebf7e6"+md5StrBuff.toString()+"6401";
 	      }
-	    
 	 }
-
 }

@@ -7,6 +7,7 @@ import com.fastlib.bean.RemoteDataCache;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
+import com.fastlib.net.Result;
 
 import java.util.List;
 
@@ -31,7 +32,7 @@ public class DataDelegater{
 
 		DatabaseInject inject=mCla.getAnnotation(DatabaseInject.class);
 		if(inject!=null&&!TextUtils.isEmpty(inject.remoteUri()))
-			request.setmUrl(inject.remoteUri());
+			request.setUrl(inject.remoteUri());
 		else
 			throw new UnsupportedOperationException("不支持没有DatabaseInject和remoteUri注解的对象使用DataDelegater");
 	}
@@ -47,13 +48,19 @@ public class DataDelegater{
         final Listener l=mRequest.getListener();
         if(list!=null&&list.size()>0) {
             cache = (RemoteDataCache) list.get(0);
-            l.onResponseListener(cache.getCache());
+            Result result=new Result();
+            result.setSuccess(true);
+            result.setMessage("from database");
+            result.setCode(0);
+            result.setBody(cache.getCache());
+            l.onResponseListener(result);
         }
         mRequest.setListener(new Listener() {
+
             @Override
-            public void onResponseListener(String result) {
-                RemoteDataCache responseCache = new RemoteDataCache();
-                responseCache.setCache(result);
+            public void onResponseListener(Result result) {
+                RemoteDataCache responseCache=new RemoteDataCache();
+                responseCache.setCache(result.getBody());
                 responseCache.setCacheName(mCla.getName());
                 FastDatabase.getInstance().saveOrUpdate(responseCache);
                 l.onResponseListener(result);

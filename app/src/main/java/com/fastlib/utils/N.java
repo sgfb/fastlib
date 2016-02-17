@@ -16,9 +16,6 @@ import com.fastlib.R;
  */
 public class N
 {
-	public static final int TYPE_TOAST=1;
-	public static final int TYPE_SNACKBAR=2;
-	public static final int TYPE_NOTIFICATION=3;
 
 	private N()
 	{

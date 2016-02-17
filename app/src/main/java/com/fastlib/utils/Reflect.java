@@ -1,4 +1,4 @@
-package com.fastlib.test;
+package com.fastlib.utils;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -92,4 +92,33 @@ public class Reflect{
 		else
 		    return null;
 	}
+
+	public static boolean isInteger(String type){
+		if(type.equals("short")||type.equals("int")||type.equals("long"))
+			return true;
+		return false;
+	}
+
+	public static boolean isReal(String type){
+		if(type.equals("float")||type.equals("double"))
+			return true;
+		return false;
+	}
+
+	public static boolean isVarchar(String type){
+		if(type.equals("char")||type.equals("String"))
+			return true;
+		return false;
+	}
+
+	public static String toSQLType(String type){
+		if(isInteger(type))
+			return "integer";
+		if(isReal(type))
+			return "real";
+		if(isVarchar(type))
+			return "varchar";
+		return type;
+	}
+
 }

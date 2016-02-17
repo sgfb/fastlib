@@ -13,7 +13,7 @@ import java.io.Serializable;
 @SuppressWarnings("serial")
 public class Entity implements Serializable {
 
-	@DatabaseInject(key_primary = true,autoincrement = true)
+	@DatabaseInject(keyPrimary = true,autoincrement = true)
 	protected int id;
 
 	public int getId() {

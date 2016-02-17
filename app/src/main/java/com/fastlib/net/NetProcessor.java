@@ -2,6 +2,8 @@ package com.fastlib.net;
 
 import android.os.Handler;
 
+import com.google.gson.Gson;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,8 +18,6 @@ import java.util.concurrent.Executor;
  * 网络请求的具体处理。在结束时会保存一些状态
  */
 public class NetProcessor extends Thread{
-    private static final int WHAT_RESPONSE=0X001;
-    private static final int WHAT_ERROR=0X002;
 
     private Request mRequest;
     private int Tx,Rx;
@@ -86,7 +86,14 @@ public class NetProcessor extends Thread{
                     @Override
                     public void run() {
                         if(mStatus==NetStatus.SUCCESS){
-                            l.onResponseListener(mResponse);
+                            //TODO need testing
+                            Gson gson=new Gson();
+                            StringBuilder sb=new StringBuilder(mResponse);
+                            String bodyJson=sb.substring(sb.indexOf("{",2))+sb.substring(sb.indexOf("}"));
+                            String statusJson=sb.delete(sb.indexOf("{",2),sb.indexOf("}")).toString();
+                            Result result=gson.fromJson(statusJson,Result.class);
+                            result.setBody(bodyJson);
+                            l.onResponseListener(result);
                         }
                         else if(mStatus==NetStatus.ERROR){
                             l.onErrorListener(mMessage);

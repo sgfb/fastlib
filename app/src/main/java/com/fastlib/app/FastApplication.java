@@ -8,7 +8,7 @@ import com.fastlib.net.NetQueue;
 /**
  * 全局环境配置
  */
-public class FastApplication extends Application {
+public class FastApplication extends Application{
 
     @Override
     public void onCreate() {

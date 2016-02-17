@@ -8,7 +8,11 @@ import com.fastlib.annotation.DatabaseInject;
 @DatabaseInject(remoteUri = "http://192.168.0.102:8080/FastProject/Login")
 public class TestBean {
 
+    @DatabaseInject(keyPrimary = true,autoincrement = true)
+    private int id;
+
     private String data;
+    private int extra;
 
     public String getData() {
         return data;
