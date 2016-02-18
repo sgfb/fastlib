@@ -12,7 +12,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.fastlib.db.DataDelegater;
 import com.fastlib.db.FastDatabase;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
@@ -21,6 +20,7 @@ import com.fastlib.test.TestBean;
 import com.fastlib.utils.N;
 import com.fastlib.widget.SwipeRefreshWrapper;
 import com.google.gson.Gson;
+import com.google.gson.internal.Primitives;
 
 import junit.framework.Test;
 
@@ -42,7 +42,9 @@ public class MainActivity extends AppCompatActivity{
         bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                TestBean tb=new TestBean();
+                tb.setData("world");
+                FastDatabase.getInstance().saveOrUpdate(tb);
             }
         });
     }

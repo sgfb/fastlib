@@ -9,6 +9,8 @@ import java.util.Map;
  */
 public class DatabaseTable {
     public String tableName;
+    public String keyFieldName;
+    public DatabaseColumn keyColumn;
     public Map<String,DatabaseColumn> columnMap;
 
     public DatabaseTable(){

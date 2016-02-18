@@ -23,6 +23,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.text.TextUtils;
 import android.util.Log;
 
+import org.w3c.dom.Text;
+
 /**
  * orm数据库.提供一些与数据库交互的基本操作
  * 这个数据库应该在application中被生成
@@ -66,7 +68,7 @@ public class FastDatabase{
 	 * @param obj
 	 * @return
 	 */
-	public Object get(Object obj){
+	public <T> T get(Object obj){
 		Field[] fields;
 		Field fieldKey=null;
 
@@ -84,18 +86,19 @@ public class FastDatabase{
 					Log.w(TAG,"没有注解主键的对象无法使用get(Object obj)");
 				return null;
 			}
+			fieldKey.setAccessible(true);
 			Object key=fieldKey.get(obj);
-			List<Object> list=get(obj.getClass(),fieldKey.getName(), Reflect.objToStr(key));
+			List<T> list= (List<T>) get(obj.getClass(),fieldKey.getName(), Reflect.objToStr(key));
 			if(list==null||list.size()==0){
 				if(mConfig.isOutInformation)
 				    Log.w(TAG, "向数据库中请求了一个不存在的数据");
 			}
 			else
 				return list.get(0);
-		} catch (IllegalAccessException e) {
+		} catch (IllegalAccessException e){
 			return null;
 		}
-		return obj;
+		return null;
 	}
 
 	/**
@@ -105,7 +108,7 @@ public class FastDatabase{
 	 * @param keyValue 主键值
 	 * @return
 	 */
-	public List<Object> get(Class<?> cla,String keyValue){
+	public <T> List<T> get(Class<T> cla,String keyValue){
 		Field[] fields=cla.getDeclaredFields();
 		String key=null;
 		for(Field f:fields){
@@ -117,8 +120,7 @@ public class FastDatabase{
 		}
 		if(TextUtils.isEmpty(key))
 			return null;
-		List<Object> list=get(cla,key,keyValue);
-		return list;
+		return get(cla, key, keyValue);
 	}
 
 	/**
@@ -129,22 +131,21 @@ public class FastDatabase{
 	 * @param whereValue
 	 * @return
 	 */
-	public List<Object> get(Class<?> cla,String where,String whereValue){
-		DatabaseInject tableInject=cla.getAnnotation(DatabaseInject.class);
+	public <T> List<T> get(Class<T> cla,String where,String whereValue){
 		String tableName;
 		SQLiteDatabase database=prepare(null);
-		Cursor cursor=null;
-		List<Object> list=new ArrayList<Object>();
+		Cursor cursor;
+		List<Object> list=new ArrayList<>();
 
-		tableName=cla.getClass().getName();
+		tableName=cla.getName();
 		if(!tableExists(tableName)){
 			Log.w(TAG,mConfig.getDatabaseName()+" 不存在表 "+tableName);
 			return null;
 		}
 		if(TextUtils.isEmpty(where))
-			cursor=database.rawQuery("select *from "+tableName,null);
+			cursor=database.rawQuery("select *from '"+tableName+"'",null);
 		else
-			cursor=database.rawQuery("select *from "+tableName+" where "+where+"=?",new String[]{whereValue});
+			cursor=database.rawQuery("select *from '"+tableName+"' where "+where+"=?",new String[]{whereValue});
 		if(cursor==null)
 			return null;
 		cursor.moveToFirst();
@@ -206,7 +207,7 @@ public class FastDatabase{
 				return null;
 			}
 		}
-		return list;
+		return List.class.cast(list);
 	}
 
 	/**
@@ -271,7 +272,7 @@ public class FastDatabase{
 			Log.w(TAG, "错误的使用了delete(Object obj),obj没有注解主键");
 			return false;
 		}
-		return delete(obj,columnName,columnValue);
+		return delete(obj, columnName, columnValue);
 	}
 
 	/**
@@ -327,7 +328,7 @@ public class FastDatabase{
 	}
 
 	/**
-	 * 对无主键或者非主键查询的对象保存
+	 * 可以对无主键或者非主键查询的对象保存
 	 *
 	 * @param obj
 	 * @param where
@@ -336,17 +337,17 @@ public class FastDatabase{
 	 */
 	public boolean update(Object obj,String where,String whereValue){
 		SQLiteDatabase database=prepare(null);
-		DatabaseInject inject=obj.getClass().getAnnotation(DatabaseInject.class);
 		String tableName;
 		ContentValues cv=new ContentValues();
 		Field[] fields;
 		StringBuilder sb=new StringBuilder();
 
 		tableName=obj.getClass().getName();
+		//如果表不存在或者表中没有这条数据，则返回false
 		if(!tableExists(tableName))
 			return false;
-		Cursor cursor=database.rawQuery("select *from "+tableName+" where "+where+"="+whereValue,null);
-		if(cursor.getCount()<=0)
+		Cursor cursor=database.rawQuery("select "+where+" from '"+tableName+"' where "+where+"="+whereValue,null);
+		if(cursor==null||cursor.isAfterLast())
 			return false;
 		fields=obj.getClass().getDeclaredFields();
 
@@ -354,10 +355,10 @@ public class FastDatabase{
 			field.setAccessible(true);
 			String type=field.getType().getSimpleName();
 			DatabaseInject fieldInject=field.getAnnotation(DatabaseInject.class);
-			String columnName=null;
+			String columnName;
 
 			if(fieldInject!=null&&!TextUtils.isEmpty(fieldInject.columnName()))
-				columnName=inject.columnName();
+				columnName=fieldInject.columnName();
 			else
 				columnName=field.getName();
 			try{
@@ -421,12 +422,89 @@ public class FastDatabase{
 
 		try{
 			database.beginTransaction();
-			database.update(tableName, cv, null, null);
+			database.update("'"+tableName+"'", cv, null, null);
 			database.setTransactionSuccessful();
 		}catch(SQLiteException e){
 			return false;
 		}finally{
 			database.endTransaction();
+		}
+		return true;
+	}
+
+	private boolean save(Object obj){
+		Field[] fields=obj.getClass().getDeclaredFields();
+		ContentValues cv=new ContentValues();
+		SQLiteDatabase db=prepare(null);
+
+		for(Field field:fields){
+			field.setAccessible(true);
+			String type=field.getType().getSimpleName();
+			DatabaseInject fieldInject=field.getAnnotation(DatabaseInject.class);
+			String columnName;
+
+			if(fieldInject!=null&&!TextUtils.isEmpty(fieldInject.columnName()))
+				columnName=fieldInject.columnName();
+			else
+				columnName=field.getName();
+			try{
+				switch(type){
+					case "boolean":
+						cv.put(columnName, field.getBoolean(obj));
+						break;
+					case "short":
+						cv.put(columnName, field.getShort(obj));
+						break;
+					case "int":
+						cv.put(columnName,field.getInt(obj));
+						break;
+					case "long":
+						cv.put(columnName,field.getLong(obj));
+						break;
+					case "float":
+						cv.put(columnName, field.getFloat(obj));
+						break;
+					case "double":
+						cv.put(columnName, field.getDouble(obj));
+						break;
+					case "char":
+						char c=field.getChar(obj);
+						if(c==0)
+							cv.putNull(columnName);
+						else
+							cv.put(columnName, String.valueOf(c));
+						break;
+					case "String":
+						String s=(String)field.get(obj);
+						if(s==null)
+							cv.putNull(columnName);
+						else
+							cv.put(columnName,s);
+						break;
+					default:
+						Object pre=field.get(obj);
+						Gson gson=new Gson();
+						String json=gson.toJson(pre);
+
+						if(pre==null)
+							cv.putNull(columnName);
+						else
+							cv.put(columnName,json);
+						break;
+				}
+			}catch(IllegalAccessException | IllegalArgumentException e){
+				return false;
+			}
+		}
+		try{
+			db.beginTransaction();
+			db.insert("'"+obj.getClass().getCanonicalName()+"'",null,cv);
+			db.setTransactionSuccessful();
+		}catch(SQLiteException e){
+			return false;
+		}
+		finally {
+			db.endTransaction();
 		}
 		return true;
 	}
@@ -438,218 +516,55 @@ public class FastDatabase{
 	 * @return
 	 */
 	public boolean saveOrUpdate(Object obj){
-		Field[] fields=obj.getClass().getDeclaredFields();
-		SQLiteDatabase database = null;
-		StringBuilder sb=new StringBuilder();
-		ContentValues cv=new ContentValues();
 		String tableName;
 		boolean isUpdate=false;
-		boolean hadPrimaryKey=false;
+		boolean success=true;
 
-		tableName=obj.getClass().getName();
-		sb.append("create table if not exists "+tableName+"(");
-
-		for(Field field:fields){
-			field.setAccessible(true);
-			DatabaseInject fieldInject=field.getAnnotation(DatabaseInject.class);
-			if(fieldInject!=null&&fieldInject.keyPrimary()){
-				String primaryKey=null;
-				String primaryValue=null;
-				Cursor cursor=null;
-
-				if(!TextUtils.isEmpty(fieldInject.columnName()))
-					primaryKey=fieldInject.columnName();
-				else
-					primaryKey=field.getName();
-				try{
-					switch(field.getType().getSimpleName()){
-					case "short":
-						primaryValue=Short.toString(field.getShort(obj));
-						break;
-					case "int":
-						primaryValue=Integer.toString(field.getInt(obj));
-						break;
-					case "long":
-						primaryValue=Long.toString(field.getLong(obj));
-						break;
-					case "String":
-						primaryValue="'"+field.get(obj)+"'";
-						break;
-					case "float":
-						primaryValue=Float.toString(field.getFloat(obj));
-						break;
-					case "double":
-						primaryValue=Double.toString(field.getDouble(obj));
-						break;
-					default:
-						throw new IllegalArgumentException("不支持 short,int,long,String,float,double 之外的类型做为主键");
-					}
-				}catch(IllegalAccessException | IllegalArgumentException e){
-					e.printStackTrace();
-					return false;
-				}
-				if(primaryKey!=null){
-					database=prepare(null);
-					try{
-						String sql="select *from "+tableName+" where "+primaryKey+"="+primaryValue;
-
-						cursor=database.rawQuery(sql,null);
-						if(cursor.getCount()>0)
-							isUpdate=true;
-						cursor.close();
-					}catch(SQLiteException e){
-						//may be no such table
-						isUpdate=false;
+		DatabaseTable table=loadAttribute(obj.getClass());
+		tableName=table.tableName;
+		//如果表存在并且有主键，尝试获取这个对象，如果不是null则更新
+		if(tableExists(tableName)){
+			if(table.keyColumn!=null){
+				Object data=get(obj);
+				if(data!=null){
+					isUpdate=true;
+					try {
+						Field field=obj.getClass().getDeclaredField(table.keyFieldName);
+						field.setAccessible(true);
+						update(obj,table.keyColumn.columnName, Reflect.objToStr(field.get(obj)));
+					} catch (NoSuchFieldException e) {
+						return false;
+					} catch (IllegalAccessException e) {
+						return false;
 					}
 				}
-				hadPrimaryKey=true;
-				break;
 			}
 		}
 
-		if(!hadPrimaryKey)
-			Log.i(TAG,"你的对象中没有主键，不能使用saveOrUpdate来自动更新");
-		for(Field field:fields){
-			field.setAccessible(true);
-			String type=field.getType().getSimpleName();
-			String columnName;
-			String keyToken="";
-			DatabaseInject fieldInject=field.getAnnotation(DatabaseInject.class);
-
-			if(fieldInject!=null&&fieldInject.ignore())
-				continue;
-			if(fieldInject==null||TextUtils.isEmpty(fieldInject.columnName()))
-				columnName=field.getName()+" ";
-			else
-				columnName=fieldInject.columnName();
-			if(columnName.contains("this"))
-				continue;
-			if(fieldInject!=null&&fieldInject.keyPrimary()){
-			    keyToken="primary key";
-				if(fieldInject.autoincrement()){
-					if(!isUpdate&&tableExists(tableName))
-						continue;
-				    keyToken+=" autoincrement";
-				}
-			}
-			try{
-				if(field.getType().isArray()){
-					Object arrayObj=field.get(obj);
-					int arrayLen=Array.getLength(arrayObj);
-					Object[] array=new Object[arrayLen];
-					Gson gson=new Gson();
-
-					if(!keyToken.equals(""))
-						throw new UnsupportedOperationException("不支持数组成为任何键");
-					for(int i=0;i<arrayLen;i++){
-						array[i]=Array.get(arrayObj,i);
-					}
-					sb.append(columnName+" varchar ,");
-					if(arrayLen==0)
-						cv.putNull(columnName);
-					else
-					    cv.put(columnName,gson.toJson(array));
-					continue;
-				}
-
-				switch(type){
-				case "boolean":
-					sb.append(columnName+" boolean "+keyToken+",");
-					cv.put(columnName, field.getBoolean(obj));
-					break;
-				case "short":
-					sb.append(columnName+" integer "+keyToken+",");
-					cv.put(columnName, field.getShort(obj));
-					break;
-				case "int":
-					sb.append(columnName+" integer "+keyToken+",");
-					cv.put(columnName,field.getInt(obj));
-					break;
-				case "long":
-					sb.append(columnName+" integer "+keyToken+",");
-					cv.put(columnName,field.getLong(obj));
-					break;
-				case "float":
-					sb.append(columnName+" real "+keyToken+",");
-					cv.put(columnName, field.getFloat(obj));
-					break;
-				case "double":
-					sb.append(columnName+" real "+keyToken+",");
-					cv.put(columnName, field.getDouble(obj));
-					break;
-				case "char":
-					sb.append(columnName+" varchar "+keyToken+",");
-					char c=field.getChar(obj);
-					if(c==0)
-						cv.putNull(columnName);
-					else
-					    cv.put(columnName, String.valueOf(c));
-					break;
-				case "String":
-					sb.append(columnName+" varchar "+keyToken+",");
-					String s=(String)field.get(obj);
-					if(s==null)
-						cv.putNull(columnName);
-					else
-					    cv.put(columnName,s);
-					break;
-				default:
-					Object pre=field.get(obj);
-					Gson gson=new Gson();
-					String json=gson.toJson(pre);
-
-					if(!keyToken.equals(""))
-						throw new UnsupportedOperationException("不支持引用作为任何键");
-					sb.append(columnName+" varchar,");
-					if(pre==null)
-						cv.putNull(columnName);
-					else
-						cv.put(columnName,json);
-					break;
-				}
-			}catch(IllegalAccessException | IllegalArgumentException e){
-				return false;
-			}
-		}
-		final String sql=sb.substring(0,sb.toString().length()-1)+")";
-
-		try{
-		if(isUpdate){
-		    database=prepare(null);
-		    database.beginTransaction();
-		    database.update(tableName,cv, null, null);
-		    database.setTransactionSuccessful();
-		}
-		else{
-			database=prepare(sql);
-			database.beginTransaction();
-			database.insert(tableName,null, cv);
-			database.setTransactionSuccessful();
-		}
-		}catch(SQLiteException e){
-			return false;
-		}finally{
-			database.endTransaction();
+		if(!isUpdate){
+			final String sql=generateCreateTableSql(obj.getClass());
+			prepare(sql);
+			success=save(obj);
 		}
 
-		if(mConfig.getIsOutInformation()) {
+		if(mConfig.getIsOutInformation()&&success) {
 			if(isUpdate)
 				Log.d(TAG,mConfig.getDatabaseName()+"<--update--"+tableName);
 			else
 			    Log.d(TAG, mConfig.getDatabaseName() + "<------" + tableName);
 		}
-		return true;
+		return success;
 	}
 
 	/**
 	 * 对一个存在的表和对象进行检查修改
 	 * @param cla
 	 */
-	public void alterTable(Class<?> cla, List<String> valueToValue, List<String> newColumn){
+	private void alterTable(Class<?> cla, List<String> valueToValue, List<String> newColumn){
 		if(valueToValue==null&&newColumn==null)
 			throw new RuntimeException("没有提供要如何修改数据表");
 
-		SQLiteDatabase db=mContext.openOrCreateDatabase("test.db",Context.MODE_PRIVATE,null);
+		SQLiteDatabase db=mContext.openOrCreateDatabase("test.db", Context.MODE_PRIVATE, null);
 		String tableName=cla.getCanonicalName();
 		String tempName="temp_table_"+Long.toString(System.currentTimeMillis());
 		Iterator<String> iter;
@@ -679,7 +594,12 @@ public class FastDatabase{
 		}
 	}
 
-	public String generateCreateTableSql(Class<?> cla){
+	/**
+	 * 生成创建表sql语句
+	 * @param cla
+	 * @return
+	 */
+	private String generateCreateTableSql(Class<?> cla){
 		StringBuilder sb=new StringBuilder();
 		DatabaseTable table=loadAttribute(cla);
 
@@ -690,9 +610,8 @@ public class FastDatabase{
 			String key=iter.next();
 			DatabaseTable.DatabaseColumn column=table.columnMap.get(key);
 
-			if(column.isIgnore){
+			if(column.isIgnore)
 				continue;
-			}
 			sb.append(column.columnName)
 					.append(" " + column.type);
 			if(column.isPrimaryKey)
@@ -723,8 +642,14 @@ public class FastDatabase{
 			if(fieldInject!=null){
 				if(!TextUtils.isEmpty(fieldInject.columnName()))
 					column.columnName=fieldInject.columnName();
-				column.autoincrement=fieldInject.autoincrement();
+				if(fieldInject.keyPrimary()) {
+					dt.keyColumn = column;
+					dt.keyFieldName=f.getName();
+				}
+				if(!Reflect.isInteger(type)&&!Reflect.isReal(type)&&!Reflect.isVarchar(type))
+					throw new UnsupportedOperationException("不支持数组或者引用类成为任何键");
 				column.isPrimaryKey=fieldInject.keyPrimary();
+				column.autoincrement=fieldInject.autoincrement();
 				column.isIgnore=fieldInject.ignore();
 			}
 			dt.columnMap.put(f.getName(),column);
@@ -732,7 +657,7 @@ public class FastDatabase{
 		return dt;
 	}
 
-	private SQLiteDatabase prepare(final String sql){
+	private SQLiteDatabase prepare(final String sql) throws SQLiteException{
 		SQLiteDatabase database;
 		SQLiteOpenHelper helper=new SQLiteOpenHelper(mContext,mConfig.getDatabaseName(),null,mConfig.getVersion()){
 
