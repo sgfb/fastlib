@@ -121,4 +121,25 @@ public class Reflect{
 		return type;
 	}
 
+	/**
+	 * 获取包括超类中的字段
+	 * @param cla
+	 * @return
+	 */
+	public static Field[] getAllField(Class<?> cla){
+		List<Field> fields=new ArrayList<>();
+		Object obj=new Object();
+		Class<?> temp=cla;
+		Field[] selfFiedls=cla.getDeclaredFields();
+
+		for(int j=0;j<selfFiedls.length;j++)
+			fields.add(selfFiedls[j]);
+		while(!temp.getSuperclass().isInstance(obj)){
+			Field[] fs=temp.getSuperclass().getDeclaredFields();
+			temp=temp.getSuperclass();
+			for(int i=0;i<fs.length;i++)
+				fields.add(fs[i]);
+		}
+		return fields.toArray(new Field[0]);
+	}
 }

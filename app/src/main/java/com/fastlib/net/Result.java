@@ -41,4 +41,10 @@ public class Result {
     public void setBody(String body) {
         this.body = body;
     }
+
+    @Override
+    public String toString(){
+        return "success:"+Boolean.toString(success)+" message:"+message+
+                " code:"+Integer.toString(code)+" body:"+body;
+    }
 }

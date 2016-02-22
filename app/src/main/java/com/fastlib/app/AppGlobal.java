@@ -1,7 +1,7 @@
 package com.fastlib.app;
 
 /**
- * 全局属性.应当以单例存在并且被继承以具体化
+ * 全局属性.应当以单例存在并且被继承以具体化.全局sxing
  */
 public abstract class AppGlobal{
     //网络请求根地址

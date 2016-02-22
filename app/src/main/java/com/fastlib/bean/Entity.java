@@ -1,6 +1,10 @@
 package com.fastlib.bean;
 
+import android.util.Log;
+
 import com.fastlib.annotation.DatabaseInject;
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 
 import java.io.Serializable;
 
@@ -11,7 +15,8 @@ import java.io.Serializable;
  * 
  */
 @SuppressWarnings("serial")
-public class Entity implements Serializable {
+public abstract class Entity implements Serializable {
+	public static final String TAG=Entity.class.getSimpleName();
 
 	@DatabaseInject(keyPrimary = true,autoincrement = true)
 	protected int id;
@@ -24,4 +29,22 @@ public class Entity implements Serializable {
 		this.id = id;
 	}
 
+	public  Entity getInstance(){
+		return this;
+	}
+
+	public String toJson(){
+		Gson gson=new Gson();
+		return gson.toJson(this);
+	}
+
+	public static <T> T fromJson(String json,Class<?> cla){
+		Gson gson=new Gson();
+		try{
+			return (T) gson.fromJson(json,cla);
+		}catch(JsonParseException e){
+			Log.w(TAG,"JsonParseException:"+e.toString());
+		}
+		return null;
+	}
 }

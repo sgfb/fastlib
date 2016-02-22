@@ -2,6 +2,7 @@ package com.fastlib.net;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 
 import com.fastlib.test.TestGlobal;
 
@@ -103,6 +104,8 @@ public class NetQueue {
         mConfig=new Config();
         mWaitingQueue=new PriorityBlockingQueue<>();
         mConfig.maxTask=5;
+        mConfig.useStatus=true;
+        mConfig.isTrackTraffic=true;
         mRunningQueue=new ArrayList<>();
         mBlockMap=new HashMap<>();
         mReadyQueue=new ArrayList<>();
@@ -120,7 +123,9 @@ public class NetQueue {
     }
 
     public void netRequest(int type,Request r){
-        r.setUrl(TestGlobal.getInstance().getRootAddress() + r.getUrl());
+        String rootAddress=TestGlobal.getInstance().getRootAddress();
+        if(!TextUtils.isEmpty(rootAddress))
+            r.setUrl(TestGlobal.getInstance().getRootAddress() + r.getUrl());
         mWaitingQueue.add(r);
     }
 
@@ -130,8 +135,13 @@ public class NetQueue {
         mConfig=config;
     }
 
-    public static class Config{
+    public Config getConfig(){
+        return (Config)mConfig.clone();
+    }
+
+    public static class Config implements Cloneable{
         private boolean isTrackTraffic;
+        private boolean useStatus;
         private int maxTask;
 
         public void setTrackTraffic(boolean track){
@@ -140,6 +150,31 @@ public class NetQueue {
 
         public void setMaxTask(int max){
             maxTask=max;
+        }
+
+        public void setUseStatus(boolean use){
+            useStatus=use;
+        }
+
+        public boolean isUseStatus(){
+            return useStatus;
+        }
+
+        public boolean isTrackTraffic(){
+            return isTrackTraffic;
+        }
+
+        public int getMaxTask(){
+            return maxTask;
+        }
+
+        @Override
+        public Object clone() {
+            try {
+                return super.clone();
+            } catch (CloneNotSupportedException e) {
+                return null;
+            }
         }
     }
 }
