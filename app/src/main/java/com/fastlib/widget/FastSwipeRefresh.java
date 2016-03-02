@@ -17,11 +17,11 @@ import java.lang.reflect.Field;
 /**
  * 偷懒版SwipeRefreshLayout.可以包裹非AbsListView正常使用
  */
-public class SwipeRefreshWrapper extends FrameLayout {
+public class FastSwipeRefresh extends FrameLayout {
     private SwipeRefreshLayout mRefresh;
     private ListView mDefaultListView;
 
-    public SwipeRefreshWrapper(Context context, AttributeSet attrs) {
+    public FastSwipeRefresh(Context context, AttributeSet attrs) {
         super(context, attrs);
         mRefresh=new SwipeRefreshLayout(context);
         mDefaultListView=new ListView(context);

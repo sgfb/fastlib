@@ -4,17 +4,18 @@ import java.io.File;
 import java.util.Map;
 
 /**
- * 网络请求体
+ * 请求体
  * 每个任务都是不同的，（NetQueue）会根据属性来配置请求，调整请求开始完成或失败后不同的事件
  */
 public class Request implements Comparable{
     private int type;
+    private boolean sFile;
     private String method;
     private String mUrl;
+    private Downloadable mDownloadable;
     private Listener mListener;
     private Map<String,String> mParams;
     private Map<String,File> mFiles;
-
 
     public Request(){
         this("POST","");
@@ -75,5 +76,21 @@ public class Request implements Comparable{
 
     public void setMethod(String method){
         this.method=method.toUpperCase();
+    }
+
+    public boolean isFile() {
+        return sFile;
+    }
+
+    public void setFile(boolean sFile) {
+        this.sFile = sFile;
+    }
+
+    public void setDownloadable(Downloadable d){
+        mDownloadable=d;
+    }
+
+    public Downloadable getDownloadable(){
+        return mDownloadable;
     }
 }

@@ -1,8 +1,9 @@
 package com.fastlib.net;
 
 /**
- * 网络数据返回时的一些包装，默认返回的数据是json
  * Created by sgfb on 16/2/15.
+ *
+ * 网络数据返回时的一些包装，默认返回的数据是json
  */
 public class Result {
     private String message;

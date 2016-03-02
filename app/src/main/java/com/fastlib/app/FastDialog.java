@@ -8,6 +8,10 @@ import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Window;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+import com.fastlib.R;
 
 /**
  * Dialog集合
@@ -69,8 +73,11 @@ public class FastDialog {
             @Override
             public Dialog onCreateDialog(Bundle savedInstanceState){
                 AlertDialog dialog;
+                ListView lv=new ListView(activity);
+                ArrayAdapter<String> adapter=new ArrayAdapter<>(activity,android.R.layout.simple_list_item_1,items);
+                lv.setAdapter(adapter);
                 AlertDialog.Builder builder=new AlertDialog.Builder(activity)
-                        .setItems(items,l);
+                        .setView(lv);
                 dialog=builder.create();
                 return dialog;
             }

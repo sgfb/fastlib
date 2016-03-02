@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 
+import com.fastlib.app.FastApplication;
 import com.fastlib.test.TestGlobal;
 
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ public class NetQueue {
     private static Config mConfig;
     private static int Tx,Rx;
     private volatile int mProcessing;
+    private FastApplication mApp;
     private Runnable mMainProcessor =new Runnable() {
         @Override
         public void run() {
@@ -100,7 +102,8 @@ public class NetQueue {
         }
     };
 
-    private NetQueue(){
+    private NetQueue(FastApplication app){
+        mApp=app;
         mConfig=new Config();
         mWaitingQueue=new PriorityBlockingQueue<>();
         mConfig.maxTask=5;
@@ -112,9 +115,13 @@ public class NetQueue {
         new Thread(mMainProcessor).start();
     }
 
-    public static synchronized NetQueue getInstance(){
+    public static  NetQueue getInstance(){
+        return mOwer;
+    }
+
+    public static synchronized NetQueue build(FastApplication app){
         if(mOwer==null)
-            mOwer=new NetQueue();
+            mOwer=new NetQueue(app);
         return mOwer;
     }
 
@@ -123,9 +130,9 @@ public class NetQueue {
     }
 
     public void netRequest(int type,Request r){
-        String rootAddress=TestGlobal.getInstance().getRootAddress();
+        String rootAddress=mApp.getGlobal().getRootAddress();
         if(!TextUtils.isEmpty(rootAddress))
-            r.setUrl(TestGlobal.getInstance().getRootAddress() + r.getUrl());
+            r.setUrl(rootAddress + r.getUrl());
         mWaitingQueue.add(r);
     }
 

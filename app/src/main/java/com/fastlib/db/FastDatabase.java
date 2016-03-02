@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 
 import com.fastlib.annotation.DatabaseInject;
 import com.fastlib.bean.DatabaseTable;
@@ -20,6 +21,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -144,8 +146,12 @@ public class FastDatabase{
 		}
 		if(TextUtils.isEmpty(where))
 			cursor=database.rawQuery("select *from '"+tableName+"'",null);
-		else
-			cursor=database.rawQuery("select *from '"+tableName+"' where "+where+"=?",new String[]{whereValue});
+		else {
+			if(whereValue==null)
+				cursor=database.rawQuery("select *from '"+tableName+"' where "+where+" is null",null);
+			else
+			    cursor = database.rawQuery("select *from '" + tableName + "' where " + where + "=?", new String[]{whereValue});
+		}
 		if(cursor==null)
 			return null;
 		cursor.moveToFirst();
@@ -207,7 +213,12 @@ public class FastDatabase{
 				return null;
 			}
 		}
+		cursor.close();
 		return List.class.cast(list);
+	}
+
+	public <T> List<T> getAll(Class<T> cla){
+		return get(cla, null, null);
 	}
 
 	/**
@@ -272,7 +283,7 @@ public class FastDatabase{
 			Log.w(TAG, "错误的使用了delete(Object obj),obj没有注解主键");
 			return false;
 		}
-		return delete(obj, columnName, columnValue);
+		return delete(obj.getClass(), columnName, columnValue);
 	}
 
 	/**
@@ -288,23 +299,28 @@ public class FastDatabase{
 
 	/**
 	 * 输出某条数据，以where为过滤条件
-	 * @param obj
+	 * @param cla
 	 * @param where
 	 * @param whereValue
 	 * @return
 	 */
-	public boolean delete(Object obj,String where,String whereValue){
+	public boolean delete(Class<?> cla,String where,String whereValue){
 		String tableName;
 		Cursor cursor;
 		SQLiteDatabase database;
+		//查到对应行的总数
+		int count=0;
 
-		tableName=obj.getClass().getName();
+		tableName=cla.getName();
 		if(!tableExists(tableName)){
 			Log.w(TAG,"数据库 "+mConfig.getDatabaseName()+"中不存在表 "+tableName);
 			return false;
 		}
 		database=prepare(null);
-		cursor=database.rawQuery("select *from '" + tableName + "' where " + where + "=" + whereValue, null);
+		if(whereValue==null)
+			cursor=database.rawQuery("select *from '"+tableName+"' where+"+where+" is null",null);
+		else
+		    cursor=database.rawQuery("select *from '" + tableName + "' where " + where+"=?",new String[]{whereValue});
 		cursor.moveToFirst();
 		if(cursor.isAfterLast()){
 			Log.w(TAG,"表中不存在 "+where+"值为"+whereValue+"的数据");
@@ -312,12 +328,13 @@ public class FastDatabase{
 			return false;
 		}
 		else{
+			count=cursor.getCount();
 			cursor.close();
 			try{
 				database.beginTransaction();
 				database.execSQL("delete from '"+tableName+"' where "+where+"="+whereValue);
 				database.setTransactionSuccessful();
-				Log.i(TAG,mConfig.getDatabaseName()+"----d--->"+where);
+				Log.i(TAG,mConfig.getDatabaseName()+"--d--"+Integer.toString(count)+"->"+where);
 			}catch(SQLiteException e){
 				return false;
 			}finally{
@@ -335,7 +352,7 @@ public class FastDatabase{
 	 * @param whereValue
 	 * @return
 	 */
-	public boolean update(Object obj,String where,String whereValue){
+	public boolean update(@NonNull Object obj,String where,String whereValue){
 		SQLiteDatabase database=prepare(null);
 		String tableName;
 		ContentValues cv=new ContentValues();
@@ -346,9 +363,17 @@ public class FastDatabase{
 		//如果表不存在或者表中没有这条数据，则返回false
 		if(!tableExists(tableName))
 			return false;
-		Cursor cursor=database.rawQuery("select "+where+" from '"+tableName+"' where "+where+"='"+whereValue+"'",null);
-		if(cursor==null||cursor.isAfterLast())
+		if(!tableHadData(tableName))
 			return false;
+		if(!TextUtils.isEmpty(where)){
+			Cursor cursor;
+			if(whereValue==null)
+				cursor=database.rawQuery("select *from '"+tableName+"' where "+where+" is null",null);
+			else
+			    cursor=database.rawQuery("select *from '"+tableName+"' where "+where+"='"+whereValue+"'",null);
+			if(cursor==null||cursor.isAfterLast())
+				return false;
+		}
 		fields=obj.getClass().getDeclaredFields();
 
 		for(Field field:fields){
@@ -363,57 +388,57 @@ public class FastDatabase{
 				columnName=field.getName();
 			try{
 				switch(type){
-				case "boolean":
-					sb.append(columnName+" boolean ,");
-					cv.put(columnName, field.getBoolean(obj));
-					break;
-				case "short":
-					sb.append(columnName+" integer ,");
-					cv.put(columnName, field.getShort(obj));
-					break;
-				case "int":
-					sb.append(columnName+" integer ,");
-					cv.put(columnName,field.getInt(obj));
-					break;
-				case "long":
-					sb.append(columnName+" integer ,");
-					cv.put(columnName,field.getLong(obj));
-					break;
-				case "float":
-					sb.append(columnName+" real ,");
-					cv.put(columnName, field.getFloat(obj));
-					break;
-				case "double":
-					sb.append(columnName+" real ,");
-					cv.put(columnName, field.getDouble(obj));
-					break;
-				case "char":
-					sb.append(columnName+" varchar ,");
-					char c=field.getChar(obj);
-					if(c==0)
-						cv.putNull(columnName);
-					else
-					    cv.put(columnName, String.valueOf(c));
-					break;
-				case "String":
-					sb.append(columnName+" varchar ,");
-					String s=(String)field.get(obj);
-					if(s==null)
-						cv.putNull(columnName);
-					else
-					    cv.put(columnName,s);
-					break;
-				default:
-					Object pre=field.get(obj);
-					Gson gson=new Gson();
-					String json=gson.toJson(pre);
+					case "boolean":
+						sb.append(columnName+" boolean ,");
+						cv.put(columnName, field.getBoolean(obj));
+						break;
+					case "short":
+						sb.append(columnName+" integer ,");
+						cv.put(columnName, field.getShort(obj));
+						break;
+					case "int":
+						sb.append(columnName+" integer ,");
+						cv.put(columnName,field.getInt(obj));
+						break;
+					case "long":
+						sb.append(columnName+" integer ,");
+						cv.put(columnName,field.getLong(obj));
+						break;
+					case "float":
+						sb.append(columnName+" real ,");
+						cv.put(columnName, field.getFloat(obj));
+						break;
+					case "double":
+						sb.append(columnName+" real ,");
+						cv.put(columnName, field.getDouble(obj));
+						break;
+					case "char":
+						sb.append(columnName+" varchar ,");
+						char c=field.getChar(obj);
+						if(c==0)
+							cv.putNull(columnName);
+						else
+							cv.put(columnName, String.valueOf(c));
+						break;
+					case "String":
+						sb.append(columnName+" varchar ,");
+						String s=(String)field.get(obj);
+						if(s==null)
+							cv.putNull(columnName);
+						else
+							cv.put(columnName,s);
+						break;
+					default:
+						Object pre=field.get(obj);
+						Gson gson=new Gson();
+						String json=gson.toJson(pre);
 
-					sb.append(columnName+" varchar,");
-					if(pre==null)
-						cv.putNull(columnName);
-					else
-						cv.put(columnName,json);
-					break;
+						sb.append(columnName+" varchar,");
+						if(pre==null)
+							cv.putNull(columnName);
+						else
+							cv.put(columnName,json);
+						break;
 				}
 			}catch(IllegalAccessException | IllegalArgumentException e){
 				return false;
@@ -422,8 +447,13 @@ public class FastDatabase{
 
 		try{
 			database.beginTransaction();
-			database.update("'" + tableName + "'", cv, null, null);
+			if(whereValue==null)
+				database.update("'"+tableName+"'",cv,null,null);
+			else
+			    database.update("'" + tableName + "'",cv,where,new String[]{whereValue});
 			database.setTransactionSuccessful();
+			if(mConfig.isOutInformation)
+				Log.d(TAG,mConfig.getDatabaseName()+"<--u-- "+tableName);
 		}catch(SQLiteException e){
 			return false;
 		}finally{
@@ -443,6 +473,8 @@ public class FastDatabase{
 			DatabaseInject fieldInject=field.getAnnotation(DatabaseInject.class);
 			String columnName;
 
+			if(fieldInject!=null&&fieldInject.ignore())
+				continue;
 			if(fieldInject!=null&&!TextUtils.isEmpty(fieldInject.columnName()))
 				columnName=fieldInject.columnName();
 			else
@@ -557,47 +589,6 @@ public class FastDatabase{
 	}
 
 	/**
-	 * 对一个存在的表和对象进行修改
-	 *
-	 * @param cla
-	 * @param valueToValue 保留的列
-	 * @param newColumn 新列名与类型映射组
-	 */
-	private void alterTable(SQLiteDatabase db,Class<?> cla, List<String> valueToValue,Map<String,String> newColumn){
-		if((valueToValue==null||valueToValue.size()<=0)&&(newColumn==null||newColumn.size()<=0)){
-			if(mConfig.isOutInformation)
-				Log.d(TAG,"类对象:"+cla.getSimpleName()+" 不需要修改");
-			return;
-		}
-		String tableName=cla.getCanonicalName();
-		String tempName="temp_table_"+Long.toString(System.currentTimeMillis());
-		Iterator<String> iter;
-
-		if(valueToValue==null||valueToValue.size()<=0){
-			if(newColumn!=null){
-				iter=newColumn.keySet().iterator();
-				while(iter.hasNext()){
-					String column=iter.next();
-					String type=newColumn.get(column);
-					db.execSQL("alter table '"+tableName+"' add "+column+" "+type);
-				}
-			}
-		}
-		else{
-			StringBuilder sb=new StringBuilder();
-			iter=valueToValue.iterator();
-			while(iter.hasNext())
-				sb.append("'"+iter.next()+"'"+",");
-			sb.deleteCharAt(sb.length()-1);
-			db.execSQL("alter table '"+tableName+"' rename to '"+tempName+"'");
-			db.execSQL(generateCreateTableSql(cla));
-			//注意不能复制主键值
-			db.execSQL("insert into '" + tableName + "' (" + sb.toString() + ") select " + sb.toString() + " from " + tempName);
-			db.execSQL("drop table '" + tempName+"'");
-		}
-	}
-
-	/**
 	 * 生成创建表sql语句
 	 * @param cla
 	 * @return
@@ -630,7 +621,7 @@ public class FastDatabase{
 
 	private DatabaseTable loadAttribute(Class<?> cla){
 		DatabaseTable dt=new DatabaseTable();
-		Field[] fields=cla.getDeclaredFields();
+		Field[] fields=Reflect.getAllField(cla);
 		dt.tableName=cla.getName();
 
 		for(Field f:fields){
@@ -699,6 +690,8 @@ public class FastDatabase{
 				cursor.moveToNext();
 				if(tableName.equals("android_metadata"))
 					continue;
+				if(tableName.equals("sqlite_sequence"))
+					continue;
 				checkColumnChanged(db,tableName);
 //				Cursor tableCursor=db.rawQuery("pragma table_info("+"'"+tableName+"')", null);
 //				if(tableCursor!=null){
@@ -719,7 +712,10 @@ public class FastDatabase{
 		Class<?> cla;
 		Field[] fields;
 		Map<String,Field> fieldMap=new HashMap<>();
+		//保存需要修改并且保留数据的列
 		List<String> convertDatas=new ArrayList<>();
+		//临时列表，用于保存需要修改的列
+		List<String> temp=new ArrayList<>();
 		Map<String,String> newColumn=new HashMap<>();
 		boolean needAlter=false;
 
@@ -728,6 +724,8 @@ public class FastDatabase{
 			cla=Class.forName(tableName);
 		} catch (ClassNotFoundException e) {
 			db.execSQL("drop table "+tableName);
+			if(mConfig.isOutInformation)
+				Log.d(TAG,"删除表"+tableName);
 			return;
 		}
 		fields=Reflect.getAllField(cla);
@@ -754,25 +752,28 @@ public class FastDatabase{
 			Field field=fieldMap.remove(key);
 
 			//也许类中某字段被删除了
-			if(field==null)
+			if(field==null){
+				temp.add(key);
 				continue;
+			}
 			inject=field.getAnnotation(DatabaseInject.class);
-			convertDatas.add(column.columnName);
 			if(column.isPrimaryKey){
-				if(inject==null||!inject.keyPrimary())
-					needAlter=true;
+				if(inject==null||!inject.keyPrimary()) {
+					temp.add(column.columnName);
+				}
 			}
 			else{
 				if(inject!=null&&inject.keyPrimary())
-					needAlter=true;
+					temp.add(column.columnName);
 			}
 			if(column.autoincrement){
-				if (inject==null||!inject.autoincrement())
-					needAlter=true;
+				if (inject==null||!inject.autoincrement()) {
+					temp.add(column.columnName);
+				}
 			}
 			else{
 				if(inject!=null&&inject.autoincrement())
-					needAlter=true;
+					temp.add(column.columnName);
 			}
 			String fieldType;
 			//如果是数组，判断组类型
@@ -784,41 +785,91 @@ public class FastDatabase{
 			switch (column.type){
 				case "integer":
 					if(!Reflect.isInteger(fieldType)){
-						needAlter=true;
-						convertDatas.remove(column.columnName);
+						temp.add(column.columnName);
 					}
 					break;
 				case "real":
 					if(!Reflect.isReal(fieldType)){
-						needAlter=true;
-						if(!Reflect.isInteger(fieldType))
-							convertDatas.remove(column.columnName);
+						if(!Reflect.isInteger(fieldType)) {
+							temp.add(column.columnName);
+						}
 					}
 					break;
 				case "varchar":
 					if(!Reflect.isVarchar(fieldType)){
-						needAlter=true;
+						temp.add(column.columnName);
 					}
 					break;
 				default:
 					if(!field.getType().getName().equals(column.type)){
-						needAlter=true;
-						convertDatas.remove(column.columnName);
+						temp.add(column.columnName);
 					}
 					break;
 			}
+			if(!temp.contains(column.columnName))
+				convertDatas.add(column.columnName);
 		}
 		iter=fieldMap.keySet().iterator();
-		if(iter.hasNext())
-			needAlter=true;
 		while(iter.hasNext()){
 			String key=iter.next();
 			Field value=fieldMap.get(key);
 			String fieldType=value.getType().getSimpleName();
 			newColumn.put(key,Reflect.toSQLType(fieldType));
 		}
-		if(needAlter)
-			alterTable(db,cla,convertDatas,newColumn);
+		if(temp.size()>0||newColumn.size()>0) {
+			if(temp.size()<=0){
+				convertDatas.clear();
+				convertDatas = null;
+			}
+			alterTable(db, cla, convertDatas, newColumn);
+		}
+		else
+			if(mConfig.isOutInformation)
+				Log.d(TAG,"类对象:"+cla.getSimpleName()+" 不需要修改");
+	}
+
+	/**
+	 * 对一个存在的表和对象进行修改
+	 *
+	 * @param cla
+	 * @param valueToValue 保留的列数据，如果是null代表保留所有列数据
+	 * @param newColumn 新列名与类型映射组
+	 */
+	private void alterTable(SQLiteDatabase db,Class<?> cla, List<String> valueToValue,Map<String,String> newColumn){
+		String tableName=cla.getCanonicalName();
+		String tempName="temp_table_"+Long.toString(System.currentTimeMillis());
+		Iterator<String> iter;
+
+		if(valueToValue==null){
+			if(newColumn!=null&&newColumn.size()>0){
+				iter=newColumn.keySet().iterator();
+				while(iter.hasNext()){
+					String column=iter.next();
+					String type=newColumn.get(column);
+					db.execSQL("alter table '"+tableName+"' add "+column+" "+type);
+				}
+				if(mConfig.isOutInformation)
+					Log.d(TAG,"表"+tableName+"增加"+Integer.toString(newColumn.size())+"列");
+			}
+		}
+		else{
+			StringBuilder sb=new StringBuilder();
+			iter=valueToValue.iterator();
+			while(iter.hasNext()) {
+				String key=iter.next();
+				if(key.equals("id"))
+					continue;
+				sb.append(key + ",");
+			}
+			sb.deleteCharAt(sb.length() - 1);
+			db.execSQL("alter table '"+tableName+"' rename to '"+tempName+"'");
+			db.execSQL(generateCreateTableSql(cla));
+			//注意主键值
+			db.execSQL("insert into '" + tableName + "' (" + sb.toString() + ") select " + sb.toString() + " from " + tempName);
+			db.execSQL("drop table " + tempName);
+			if(mConfig.isOutInformation)
+				Log.d(TAG,"表"+tableName+"被调整");
+		}
 	}
 
 	private DatabaseTable parse(SQLiteDatabase db,String tableName){
@@ -828,17 +879,19 @@ public class FastDatabase{
 			final String name=cursor.getString(cursor.getColumnIndex("name"));
 			String sql=cursor.getString(cursor.getColumnIndex("sql"));
 			DatabaseTable dt=new DatabaseTable(name);
-			sql=sql.substring(sql.indexOf('(')+1);
+			sql=sql.substring(sql.indexOf('(')+1,sql.length()-1);
 			String[] ss=sql.split(",");
 
 			for(String s:ss){
 				DatabaseTable.DatabaseColumn column=new DatabaseTable.DatabaseColumn();
+				s=s.trim();
 				column.columnName=s.substring(0, s.indexOf(' '));
-				column.type=s.substring(s.indexOf(' '), s.indexOf(' ',2));
+				column.type=s.substring(s.indexOf(' ')+1,s.length());
 				column.isPrimaryKey=s.contains("primary");
 				column.autoincrement=s.contains("autoincrement");
 				dt.columnMap.put(column.columnName,column);
 			}
+			cursor.close();
 			return dt;
 		}
 		return null;

@@ -23,10 +23,10 @@ import android.view.View.OnTouchListener;
 import android.widget.FrameLayout;
 
 /**
-* 与listview类似的recycleView
- * 具有下拉刷新，侧滑删除item，有状态变化
- * 这个视图实现了分隔符,只需少量的设置就可以使用
  * @author sgfb
+ *
+ * 与listview类似的recycleView
+ * 具有下拉刷新，侧滑删除item，有状态变化
  */
 public class RecycleListView extends FrameLayout implements AdapterViewState,OnTouchListener{
 	private SwipeRefreshLayout mSwipe;
@@ -55,13 +55,14 @@ public class RecycleListView extends FrameLayout implements AdapterViewState,OnT
 	
 	@Override
 	public boolean onTouch(View v, MotionEvent event){
+		//这里的代码是做什么的？
 		return false;
 	}
 	
 	private void init(){
 		mSwipe=new SwipeRefreshLayout(getContext());
 		mRecyclerView=new RecyclerView(getContext());
-		mStateView=new HashMap<Integer,View>();
+		mStateView=new HashMap<>();
 		
 		mRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 		mRecyclerView.setItemAnimator(new DefaultItemAnimator());

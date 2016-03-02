@@ -16,6 +16,7 @@ import java.io.Serializable;
  */
 @SuppressWarnings("serial")
 public abstract class Entity implements Serializable {
+	@DatabaseInject(ignore=true)
 	public static final String TAG=Entity.class.getSimpleName();
 
 	@DatabaseInject(keyPrimary = true,autoincrement = true)

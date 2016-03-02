@@ -1,6 +1,7 @@
 package com.fastlib.net;
 
 import android.os.Handler;
+import android.os.SystemClock;
 
 import com.fastlib.app.AppGlobal;
 import com.fastlib.app.FastApplication;
@@ -13,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -32,9 +34,12 @@ public class NetProcessor extends Thread{
     private final String BOUNDARY=Long.toHexString(System.currentTimeMillis());
     private final String CRLF="\r\n";
     private final String END="--"+BOUNDARY+"--"+CRLF;
+    private final int BUFF_LENGTH=1024;
+    private final int CHUNK_LENGTH=4096;
 
-    private Request mRequest;
+    private volatile boolean sRunning=true;
     private long Tx,Rx;
+    private Request mRequest;
     private NetStatus mStatus;
     private String mMessage;
     private String mResponse;
@@ -51,6 +56,7 @@ public class NetProcessor extends Thread{
                 handler.post(command);
             }
         };
+        this.interrupt();
     }
 
     @Override
@@ -58,17 +64,21 @@ public class NetProcessor extends Thread{
         try {
             mStatus=NetStatus.RUNNING;
             ByteArrayOutputStream baos=new ByteArrayOutputStream();
+            File downloadFile=null;
             InputStream in;
             OutputStream out;
             URL url=new URL(mRequest.getUrl());
             HttpURLConnection con=(HttpURLConnection)url.openConnection();
             boolean isMulti=false,isPost=false;
 
-            if(mRequest.getMethod().equals("POST")) {
+            //网络文件请求不负责本地事务，如果不存在则无视这个文件
+            if(mRequest.getDownloadable()!=null&&mRequest.getDownloadable().getTargetFile()!=null&&mRequest.getDownloadable().getTargetFile().exists())
+                downloadFile=mRequest.getDownloadable().getTargetFile();
+            if(mRequest.getMethod().equals("POST")||downloadFile!=null) {
                 isPost = true;
                 if(mRequest.getFiles()!=null&&mRequest.getFiles().size()>0) {
                     isMulti = true;
-                    con.setChunkedStreamingMode(4096);
+                    con.setChunkedStreamingMode(CHUNK_LENGTH);
                 }
             }
             con.setRequestMethod(mRequest.getMethod());
@@ -81,9 +91,14 @@ public class NetProcessor extends Thread{
                 }
             }
             con.connect();
-            if(isPost) {
+            if(isPost&&sRunning) {
                 out = con.getOutputStream();
-                if(isMulti)
+                if(downloadFile!=null){
+                    String availableSize="skip="+Long.toString(downloadFile.length());
+                    Tx+=availableSize.getBytes().length;
+                    out.write(availableSize.getBytes());
+                }
+                else if(isMulti)
                     multipart(mRequest.getParame(), mRequest.getFiles(), out);
                 else{
                     StringBuilder sb=new StringBuilder();
@@ -97,20 +112,36 @@ public class NetProcessor extends Thread{
 
             in=con.getInputStream();
             int len;
-            byte[] data=new byte[1024];
-            while((len=in.read(data))!=-1)
-                baos.write(data,0,len);
-            Rx+=baos.size();
+            byte[] data=new byte[BUFF_LENGTH];
+            if(downloadFile!=null){
+                OutputStream fileOut=new FileOutputStream(downloadFile);
+                while((len=in.read(data))!=-1&&sRunning) {
+                    fileOut.write(data, 0, len);
+                    Rx+=len;
+                }
+                fileOut.close();
+            }
+            else{
+                while((len=in.read(data))!=-1&&sRunning)
+                    baos.write(data,0,len);
+                Rx+=baos.size();
+            }
             mResponse = baos.toString();
             baos.close();
             in.close();
             con.disconnect();
-            mMessage="成功";
-            mStatus=NetStatus.SUCCESS;
+            if(sRunning){
+                mMessage="成功";
+                mStatus=NetStatus.SUCCESS;
+            }
+            else{
+                mMessage="中断";
+                mStatus=NetStatus.OTHER;
+            }
         }catch (IOException e) {
             mMessage=e.toString();
             mStatus=NetStatus.ERROR;
-        }finally {
+        } finally {
             if(mListener!=null)
                 mListener.onComplete(this);
             final Listener l=mRequest.getListener();
@@ -164,7 +195,7 @@ public class NetProcessor extends Thread{
         if(strParams!=null&&strParams.size()>0){
             Iterator<String> iter=strParams.keySet().iterator();
             StringBuilder sb=new StringBuilder();
-            while(iter.hasNext()){
+            while(iter.hasNext()&&sRunning){
                 String key=iter.next();
                 String value=strParams.get(key);
                 sb.append("--"+BOUNDARY).append(CRLF);
@@ -179,7 +210,7 @@ public class NetProcessor extends Thread{
         if(fileParams!=null&&fileParams.size()>0){
             Iterator<String> iter=fileParams.keySet().iterator();
             StringBuilder sb=new StringBuilder();
-            while(iter.hasNext()){
+            while(iter.hasNext()&&sRunning){
                 String key=iter.next();
                 File value=fileParams.get(key);
                 if(value!=null&&value.exists()&&value.isFile()){
@@ -210,6 +241,11 @@ public class NetProcessor extends Thread{
 
         while((len=in.read(data))!=-1)
             out.write(data, 0, len);
+    }
+
+    public void stopRequest(){
+        sRunning=false;
+        interrupt();
     }
 
     @Override
@@ -244,6 +280,7 @@ public class NetProcessor extends Thread{
         UNSTART,
         RUNNING,
         ERROR,
-        SUCCESS;
+        SUCCESS,
+        OTHER;
     }
 }
