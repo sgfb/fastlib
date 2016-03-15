@@ -152,8 +152,11 @@ public class FastDatabase{
 			else
 			    cursor = database.rawQuery("select *from '" + tableName + "' where " + where + "=?", new String[]{whereValue});
 		}
-		if(cursor==null)
+		if(cursor==null) {
+			if(mConfig.isOutInformation)
+				Log.w(TAG,"请求的数据不存在数据库");
 			return null;
+		}
 		cursor.moveToFirst();
 		while(!cursor.isAfterLast()){
 			try {
@@ -170,10 +173,7 @@ public class FastDatabase{
 					if(field.getType().isArray()){
 						Gson gson=new Gson();
 						String json=cursor.getString(columnIndex);
-						Object[] array;
-
-						array=(Object[]) gson.fromJson(json,field.getType());
-						field.set(obj, array);
+						field.set(obj,gson.fromJson(json,field.getType()));
 						continue;
 					}
 
@@ -189,6 +189,7 @@ public class FastDatabase{
 						break;
 					case "boolean":
 						int value=cursor.getInt(columnIndex);
+						field.setBoolean(obj,value>0);
 						break;
 					case "float":
 						field.setFloat(obj, cursor.getFloat(columnIndex));
@@ -209,7 +210,9 @@ public class FastDatabase{
 				}
 				list.add(obj);
 				cursor.moveToNext();
-			} catch (Exception e) {
+			} catch (Exception e){
+				if(mConfig.isOutInformation)
+					Log.w(TAG,"数据库在取数据时发送异常:"+e.toString());
 				return null;
 			}
 		}
@@ -313,7 +316,7 @@ public class FastDatabase{
 
 		tableName=cla.getName();
 		if(!tableExists(tableName)){
-			Log.w(TAG,"数据库 "+mConfig.getDatabaseName()+"中不存在表 "+tableName);
+			Log.w(TAG, "数据库 " + mConfig.getDatabaseName() + "中不存在表 " + tableName);
 			return false;
 		}
 		database=prepare(null);
@@ -357,22 +360,31 @@ public class FastDatabase{
 		String tableName;
 		ContentValues cv=new ContentValues();
 		Field[] fields;
-		StringBuilder sb=new StringBuilder();
 
 		tableName=obj.getClass().getName();
 		//如果表不存在或者表中没有这条数据，则返回false
-		if(!tableExists(tableName))
+		if(!tableExists(tableName)) {
+			if(mConfig.isOutInformation)
+				Log.d(TAG,"更新数据失败，表不存在");
 			return false;
-		if(!tableHadData(tableName))
+		}
+		if(!tableHadData(tableName)) {
+			if(mConfig.isOutInformation)
+				Log.d(TAG,"更新数据失败，表中不含如何数据");
 			return false;
+		}
 		if(!TextUtils.isEmpty(where)){
 			Cursor cursor;
 			if(whereValue==null)
 				cursor=database.rawQuery("select *from '"+tableName+"' where "+where+" is null",null);
 			else
-			    cursor=database.rawQuery("select *from '"+tableName+"' where "+where+"='"+whereValue+"'",null);
-			if(cursor==null||cursor.isAfterLast())
+			    cursor=database.rawQuery("select *from '"+tableName+"' where "+where+"=?",new String[]{whereValue});
+			if(cursor==null||cursor.isAfterLast()) {
+				if(mConfig.isOutInformation)
+					Log.d(TAG,"更新数据失败，没有找到要更新的数据");
 				return false;
+			}
+			cursor.close();
 		}
 		fields=obj.getClass().getDeclaredFields();
 
@@ -389,31 +401,24 @@ public class FastDatabase{
 			try{
 				switch(type){
 					case "boolean":
-						sb.append(columnName+" boolean ,");
 						cv.put(columnName, field.getBoolean(obj));
 						break;
 					case "short":
-						sb.append(columnName+" integer ,");
 						cv.put(columnName, field.getShort(obj));
 						break;
 					case "int":
-						sb.append(columnName+" integer ,");
 						cv.put(columnName,field.getInt(obj));
 						break;
 					case "long":
-						sb.append(columnName+" integer ,");
 						cv.put(columnName,field.getLong(obj));
 						break;
 					case "float":
-						sb.append(columnName+" real ,");
 						cv.put(columnName, field.getFloat(obj));
 						break;
 					case "double":
-						sb.append(columnName+" real ,");
 						cv.put(columnName, field.getDouble(obj));
 						break;
 					case "char":
-						sb.append(columnName+" varchar ,");
 						char c=field.getChar(obj);
 						if(c==0)
 							cv.putNull(columnName);
@@ -421,7 +426,6 @@ public class FastDatabase{
 							cv.put(columnName, String.valueOf(c));
 						break;
 					case "String":
-						sb.append(columnName+" varchar ,");
 						String s=(String)field.get(obj);
 						if(s==null)
 							cv.putNull(columnName);
@@ -433,7 +437,6 @@ public class FastDatabase{
 						Gson gson=new Gson();
 						String json=gson.toJson(pre);
 
-						sb.append(columnName+" varchar,");
 						if(pre==null)
 							cv.putNull(columnName);
 						else
@@ -450,11 +453,13 @@ public class FastDatabase{
 			if(whereValue==null)
 				database.update("'"+tableName+"'",cv,null,null);
 			else
-			    database.update("'" + tableName + "'",cv,where,new String[]{whereValue});
+			    database.update("'" + tableName + "'",cv,where+"=?",new String[]{whereValue});
 			database.setTransactionSuccessful();
 			if(mConfig.isOutInformation)
 				Log.d(TAG,mConfig.getDatabaseName()+"<--u-- "+tableName);
 		}catch(SQLiteException e){
+			if(mConfig.isOutInformation)
+				Log.d(TAG,"更新数据失败，异常："+e.toString());
 			return false;
 		}finally{
 			database.endTransaction();
@@ -475,12 +480,17 @@ public class FastDatabase{
 
 			if(fieldInject!=null&&fieldInject.ignore())
 				continue;
-			if(fieldInject!=null&&!TextUtils.isEmpty(fieldInject.columnName()))
-				columnName=fieldInject.columnName();
-			else
-				columnName=field.getName();
-			try{
-				switch(type){
+			try {
+				if (fieldInject != null && fieldInject.keyPrimary() && fieldInject.autoincrement()) {
+					int keyValue = field.getInt(obj);
+					if (keyValue <= 0)
+						continue;
+				}
+				if (fieldInject != null && !TextUtils.isEmpty(fieldInject.columnName()))
+					columnName = fieldInject.columnName();
+				else
+					columnName = field.getName();
+				switch (type) {
 					case "boolean":
 						cv.put(columnName, field.getBoolean(obj));
 						break;
@@ -488,10 +498,10 @@ public class FastDatabase{
 						cv.put(columnName, field.getShort(obj));
 						break;
 					case "int":
-						cv.put(columnName,field.getInt(obj));
+						cv.put(columnName, field.getInt(obj));
 						break;
 					case "long":
-						cv.put(columnName,field.getLong(obj));
+						cv.put(columnName, field.getLong(obj));
 						break;
 					case "float":
 						cv.put(columnName, field.getFloat(obj));
@@ -500,28 +510,28 @@ public class FastDatabase{
 						cv.put(columnName, field.getDouble(obj));
 						break;
 					case "char":
-						char c=field.getChar(obj);
-						if(c==0)
+						char c = field.getChar(obj);
+						if (c == 0)
 							cv.putNull(columnName);
 						else
 							cv.put(columnName, String.valueOf(c));
 						break;
 					case "String":
-						String s=(String)field.get(obj);
-						if(s==null)
+						String s = (String) field.get(obj);
+						if (s == null)
 							cv.putNull(columnName);
 						else
-							cv.put(columnName,s);
+							cv.put(columnName, s);
 						break;
 					default:
-						Object pre=field.get(obj);
-						Gson gson=new Gson();
-						String json=gson.toJson(pre);
+						Object pre = field.get(obj);
+						Gson gson = new Gson();
+						String json = gson.toJson(pre);
 
-						if(pre==null)
+						if (pre == null)
 							cv.putNull(columnName);
 						else
-							cv.put(columnName,json);
+							cv.put(columnName, json);
 						break;
 				}
 			}catch(IllegalAccessException | IllegalArgumentException e){
@@ -554,19 +564,29 @@ public class FastDatabase{
 
 		DatabaseTable table=loadAttribute(obj.getClass());
 		tableName=table.tableName;
-		//如果表存在并且有主键，尝试获取这个对象，如果不是null则更新
+		//如果表存在并且有主键，尝试获取这个对象，如果不是null并且主键值不为0则更新
 		if(tableExists(tableName)){
-			if(table.keyColumn!=null){
-				Object data=get(obj);
-				if(data!=null){
-					isUpdate=true;
+			DatabaseTable.DatabaseColumn keyColumn=table.keyColumn;
+			if(keyColumn!=null){
+				if(keyColumn.autoincrement){
+					Field field;
 					try {
-						Field field=obj.getClass().getDeclaredField(table.keyFieldName);
+						field = obj.getClass().getDeclaredField(table.keyFieldName);
 						field.setAccessible(true);
-						update(obj,table.keyColumn.columnName, Reflect.objToStr(field.get(obj)));
+						int value=field.getInt(obj);
+						if(value>0){
+							Object data=get(obj);
+							if(data!=null){
+								isUpdate = true;
+								update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
+							}
+						}
 					} catch (NoSuchFieldException e) {
+						if(mConfig.isOutInformation)
+							Log.w(TAG,"数据库saveOrUpdate时出现异常:"+e.toString());
 						return false;
 					} catch (IllegalAccessException e) {
+						Log.w(TAG,"数据库saveOrUpdate时出现异常:"+e.toString());
 						return false;
 					}
 				}
@@ -610,8 +630,11 @@ public class FastDatabase{
 					.append(" " + column.type);
 			if(column.isPrimaryKey)
 				sb.append(" primary key");
-			if(column.autoincrement)
+			if(column.autoincrement) {
+				if(!column.type.equals("integer"))
+					throw new RuntimeException("自动增长只能用于int型数据");
 				sb.append(" autoincrement");
+			}
 			sb.append(",");
 		}
 		sb.deleteCharAt(sb.length()-1);

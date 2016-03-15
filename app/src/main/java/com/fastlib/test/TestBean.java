@@ -8,6 +8,8 @@ import com.fastlib.bean.Entity;
  */
 @DatabaseInject(remoteUri = "http://192.168.26.107:8080/FastProject/Login")
 public class TestBean{
+    @DatabaseInject(keyPrimary = true,autoincrement = true)
+    private int id;
     private String data;
 
     public String getData() {

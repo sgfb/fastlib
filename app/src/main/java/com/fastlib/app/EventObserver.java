@@ -18,8 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 将常用的系统广播集中起来，动态启动广播监听（只要有一个监听者就会开启对应广播，否则关闭广播）
- * 本地的事件传输.
+ * 将常用的系统广播集中起来，动态启动广播监听。本地自定义广播（注意这两个广播开启和移除使用的是不同的方法）
  */
 public class EventObserver {
     public static String TYPE_NETWORK=ConnectivityManager.CONNECTIVITY_ACTION;
@@ -73,6 +72,11 @@ public class EventObserver {
             mOwer=new EventObserver(context);
     }
 
+    /**
+     * 增加广播监听
+     * @param type 广播类型
+     * @param l 监听器
+     */
     public void addObserver(String type,OnEventListener l){
         ReceiverWrapper wrapper= mObserver.get(type);
         if(wrapper.getListeners().size()==0){
@@ -82,6 +86,13 @@ public class EventObserver {
         wrapper.getListeners().add(l);
     }
 
+    /**
+     * 移除广播监听。如果某类型广播监听为0时回关闭这个广播
+     *
+     * @param type
+     * @param context
+     * @param l
+     */
     public void removeObserver(String type,Context context,OnEventListener l){
         ReceiverWrapper wrapper= mObserver.get(type);
         List<OnEventListener> list=wrapper.getListeners();
@@ -89,6 +100,9 @@ public class EventObserver {
             context.unregisterReceiver(wrapper.getReceiver());
     }
 
+    /**
+     * 移除所有广播（非本地自定义广播）
+     */
     public void removeAllObserver(){
         Iterator<String> iter= mObserver.keySet().iterator();
 
@@ -136,13 +150,13 @@ public class EventObserver {
 
     public void clear(){
         removeAllObserver();
-        removeAllLocalObserer();
+        removeAllLocalObserver();
     }
 
     /**
      * 清理所有本地事件订阅(这个方法必须在程序结束之前被调用)
      */
-    public void removeAllLocalObserer(){
+    public void removeAllLocalObserver(){
         Iterator<String> iter=mLocalObserver.keySet().iterator();
         LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
 

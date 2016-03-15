@@ -57,7 +57,12 @@ public class StateListView extends ListView implements AdapterViewState{
 			break;
 		}
 	}
-	
+
+	@Override
+	public void addStateView(int state, View view, int location) {
+
+	}
+
 	public void setNoNetworkView(View v){
 		mNoNetworkView=v;
 	}

@@ -7,7 +7,9 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
 import android.view.Window;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -32,7 +34,7 @@ public class FastDialog {
     }
 
     /**
-     * 普通文本dialog，有确定监听,显示取消按键
+     * 普通文本dialog，显示取消按键，有监听
      * @param activity
      * @param message
      * @param l
@@ -72,13 +74,18 @@ public class FastDialog {
             @NonNull
             @Override
             public Dialog onCreateDialog(Bundle savedInstanceState){
-                AlertDialog dialog;
                 ListView lv=new ListView(activity);
                 ArrayAdapter<String> adapter=new ArrayAdapter<>(activity,android.R.layout.simple_list_item_1,items);
                 lv.setAdapter(adapter);
-                AlertDialog.Builder builder=new AlertDialog.Builder(activity)
-                        .setView(lv);
-                dialog=builder.create();
+                final AlertDialog dialog=new AlertDialog
+                        .Builder(activity)
+                        .setView(lv).create();
+                lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        l.onClick(dialog,position);
+                    }
+                });
                 return dialog;
             }
         };

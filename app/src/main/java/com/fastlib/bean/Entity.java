@@ -30,10 +30,6 @@ public abstract class Entity implements Serializable {
 		this.id = id;
 	}
 
-	public  Entity getInstance(){
-		return this;
-	}
-
 	public String toJson(){
 		Gson gson=new Gson();
 		return gson.toJson(this);
@@ -48,4 +44,6 @@ public abstract class Entity implements Serializable {
 		}
 		return null;
 	}
+
+	public abstract Class<? extends Entity> getSubClass();
 }

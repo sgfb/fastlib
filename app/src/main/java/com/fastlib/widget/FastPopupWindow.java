@@ -1,32 +1,50 @@
 package com.fastlib.widget;
 
+import android.content.Context;
+import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
+import android.renderscript.Float2;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+import android.widget.AdapterView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.PopupWindow;
+import android.widget.TextView;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * Created by sgfb on 16/2/24.
  *
  * 一个简化的PopupWindow,支持多个Anchor
  */
-public class FastPopupWindow {
+public class FastPopupWindow{
     private PopupWindow mPopupWindow;
     private View mAnchor;
     private Orientation mOrientation=Orientation.BOTTOM;
+    private Point mCustomPoint;
+    private Context mContext;
+
+    public FastPopupWindow(Context context){
+        this(null,null);
+        mContext=context;
+    }
 
     public FastPopupWindow(View contentView){
-        this(contentView, null);
+        this(contentView,null);
     }
 
     public FastPopupWindow(View contentView, View anchor){
         mAnchor=anchor;
         mPopupWindow=new PopupWindow(contentView,LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT,true);
-
         mPopupWindow.setBackgroundDrawable(new ColorDrawable(0x00000000));
+        mCustomPoint=new Point();
+        if(contentView!=null)
+            mContext=contentView.getContext();
     }
 
     public void toggle(){
@@ -34,6 +52,9 @@ public class FastPopupWindow {
             mPopupWindow.dismiss();
         else {
             switch(mOrientation){
+                case TOUCH:
+                    mPopupWindow.showAsDropDown(mAnchor,mCustomPoint.x,mCustomPoint.y);
+                    break;
                 case LEFT:
                     mPopupWindow.showAsDropDown(mAnchor,mPopupWindow.getContentView().getWidth()*-1,mAnchor.getHeight()*-1);
                     break;
@@ -53,10 +74,45 @@ public class FastPopupWindow {
     }
 
     public void toggle(View newAnchor){
-        if(mPopupWindow.isShowing())
-            mPopupWindow.dismiss();
         mAnchor=newAnchor;
         toggle();
+    }
+
+    public void toggle(Point point){
+        mCustomPoint.x=point.x;
+        mCustomPoint.y=point.y;
+        mOrientation=Orientation.TOUCH;
+        toggle();
+    }
+
+    public void toggle(View newAnchor,Point point){
+        mAnchor=newAnchor;
+        toggle(point);
+    }
+
+    public void setListView(List<String> list, final AdapterView.OnItemClickListener l){
+        LinearLayout mainView=new LinearLayout(mContext);
+
+        mainView.setOrientation(LinearLayout.VERTICAL);
+        mainView.setBackgroundColor(Color.WHITE);
+        for(int i=0;i<list.size();i++){
+            final int finalI = i;
+            String s=list.get(i);
+            LinearLayout ll=new LinearLayout(mContext);
+            TextView tv=new TextView(mContext);
+            tv.setTextColor(Color.BLACK);
+            tv.setText(s);
+            ll.setPadding(10, 10, 10, 10);
+            ll.addView(tv);
+            mainView.addView(ll);
+            ll.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    l.onItemClick(null,v, finalI,-1);
+                }
+            });
+        }
+        mPopupWindow.setContentView(mainView);
     }
 
     /**
@@ -99,6 +155,7 @@ public class FastPopupWindow {
     }
 
     public enum Orientation{
+        TOUCH,
         LEFT,
         RIGHT,
         ABOVE,

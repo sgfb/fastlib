@@ -1,6 +1,7 @@
 package com.fastlib.widget;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.fastlib.interf.AdapterViewState;
@@ -20,75 +21,99 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 
 /**
  * @author sgfb
  *
- * 与listview类似的recycleView
- * 具有下拉刷新，侧滑删除item，有状态变化
+ * 与listview类似的recycleView.具有下拉刷新，有状态变化
  */
-public class RecycleListView extends FrameLayout implements AdapterViewState,OnTouchListener{
+public class RecycleListView extends RelativeLayout implements AdapterViewState{
 	private SwipeRefreshLayout mSwipe;
 	private RecyclerView mRecyclerView;
+	//保存的状态视图，每个状态最多只保存一个视图
 	private Map<Integer,View> mStateView;
+	private Map<Integer,Integer> mStateLocation;
+	//当前状态视图，不同状态不能一起显示
 	private View mCurrentStateView;
-	
+
 	public RecycleListView(Context context){
 		super(context);
 		init();
 	}
 
 	public RecycleListView(Context context, AttributeSet attrs) {
-		super(context, attrs);
+		super(context,attrs);
 		init();
 	}
-	
+
+	/**
+	 * 当RecyclerView没有适配器或者适配器返回count小于等于0时，更改状态为empty
+	 *
+	 * @param state 状态
+	 */
 	@Override
 	public void onStateChanged(int state){
 		View v=mStateView.get(state);
 		if(mCurrentStateView!=null)
 			removeView(mCurrentStateView);
-		if(v!=null)
-			addView(v,0);
+		if(v!=null){
+			LayoutParams stateViewLayoutParams=new LayoutParams(LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+			switch (mStateLocation.get(state)){
+				//头和尾状态视图暂不可用
+				case AdapterViewState.location_head:
+					break;
+				case AdapterViewState.location_foot:
+					break;
+				case AdapterViewState.location_middle_clear:
+					//这个视图中最多只存在一个状态视图和list视图，所以隐藏了list就等于清除所有视图
+					mSwipe.setVisibility(View.INVISIBLE);
+					stateViewLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+					stateViewLayoutParams.addRule(RelativeLayout.CENTER_VERTICAL);
+					break;
+				case AdapterViewState.location_middle_cover:
+					stateViewLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+					stateViewLayoutParams.addRule(RelativeLayout.CENTER_VERTICAL);
+					break;
+				default:
+					break;
+			}
+			v.setLayoutParams(stateViewLayoutParams);
+			addView(v);
+		}
 	}
-	
+
 	@Override
-	public boolean onTouch(View v, MotionEvent event){
-		//这里的代码是做什么的？
-		return false;
+	public void addStateView(int state, View view, int location){
+		mStateLocation.put(state, location);
+		mStateView.put(state, view);
 	}
-	
+
 	private void init(){
 		mSwipe=new SwipeRefreshLayout(getContext());
 		mRecyclerView=new RecyclerView(getContext());
 		mStateView=new HashMap<>();
-		
+		mStateLocation=new HashMap<>();
+
 		mRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 		mRecyclerView.setItemAnimator(new DefaultItemAnimator());
 		mRecyclerView.addItemDecoration(new DividerItemDecoration(getContext(),DividerItemDecoration.VERTICAL_LIST));
 		mSwipe.addView(mRecyclerView);
 		addView(mSwipe);
 	}
-	
+
 	public void setAdapter(RecyclerView.Adapter<? extends ViewHolder> adapter){
 		mRecyclerView.setAdapter(adapter);
+	}
+
+	public void setOnRefreshListener(SwipeRefreshLayout.OnRefreshListener l){
+		mSwipe.setOnRefreshListener(l);
 	}
 	
 	public SwipeRefreshLayout getSwipe(){
 		return mSwipe;
-	}
-	
-	/**
-	 *设置状态视图,强制全屏
-	 * 
-	 * @param state
-	 * @param v
-	 */
-	public void addStateView(int state,View v){
-		LayoutParams params=new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.MATCH_PARENT);
-		v.setLayoutParams(params);
-		mStateView.put(state,v);
 	}
 	
 	public class DividerItemDecoration extends ItemDecoration {

@@ -10,6 +10,7 @@ import com.fastlib.net.Request;
 import com.fastlib.net.Result;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 缓存来自服务器中的数据。使用这个类时可以不用关心数据是来自哪里(数据库或者网络数据源),需要注解uri支持
@@ -24,16 +25,21 @@ public class DataDelegater{
     private boolean started;
 
 	public DataDelegater(Class<?> cla,Listener l){
-		mCla=cla;
+		this(cla,null,l);
+	}
+
+    public DataDelegater(Class<?> cla,Map<String,String> params,Listener l){
+        mCla=cla;
         mRequest=new Request();
 
         mRequest.setListener(l);
-		DatabaseInject inject=mCla.getAnnotation(DatabaseInject.class);
-		if(inject!=null&&!TextUtils.isEmpty(inject.remoteUri()))
+        DatabaseInject inject=mCla.getAnnotation(DatabaseInject.class);
+        if(inject!=null&&!TextUtils.isEmpty(inject.remoteUri()))
             mRequest.setUrl(inject.remoteUri());
-		else
-			throw new UnsupportedOperationException("不支持没有DatabaseInject和remoteUri注解的对象使用DataDelegater");
-	}
+        else
+            throw new UnsupportedOperationException("不支持没有DatabaseInject和remoteUri注解的对象使用DataDelegater");
+        mRequest.setParams(params);
+    }
 
 	/**
 	 * 先查看数据库中是否有想要的数据，无论有没有都会向服务器寻求数据
