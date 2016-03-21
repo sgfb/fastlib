@@ -5,7 +5,6 @@ import android.os.Looper;
 import android.text.TextUtils;
 
 import com.fastlib.app.FastApplication;
-import com.fastlib.test.TestGlobal;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -12,6 +12,7 @@ public interface AdapterViewState{
 	int STATE_NO_MORE=4;
 	int STATE_ERROR=5;
 	int STATE_NO_NETWORK=6;
+	int STATE_REFRESH=7;
 
 	int location_head=1;
 	int location_middle_cover=2;

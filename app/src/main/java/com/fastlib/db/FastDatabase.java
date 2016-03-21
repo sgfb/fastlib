@@ -1040,7 +1040,7 @@ public class FastDatabase{
 		}
 
 		public void setVersion(int version){
-			if(version<=mVersion)
+			if(version<mVersion)
 				throw new IllegalArgumentException("设置的版本小于等于当前版本");
 			mVersion=version;
 		}
