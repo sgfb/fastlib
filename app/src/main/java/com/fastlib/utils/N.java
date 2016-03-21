@@ -2,6 +2,8 @@ package com.fastlib.utils;
 
 import android.app.Notification;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.graphics.drawable.Drawable;
 import android.support.annotation.DrawableRes;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.NotificationCompat;
@@ -104,13 +106,24 @@ public class N
 	}
 
 	/**
+	 * 短时间显示Snackbar，有监听
+	 * @param view
+	 * @param message
+	 * @param actionMessage
+	 * @param listener
+	 */
+	public static void showSnackbarShort(View view,CharSequence message,CharSequence actionMessage,View.OnClickListener listener){
+		Snackbar.make(view,message,Snackbar.LENGTH_SHORT).setAction(actionMessage, listener).show();
+	}
+
+	/**
 	 * 短时间显示Snackbar
 	 *
 	 * @param view
 	 * @param message
 	 */
 	public static void showSnackbarShort(View view,int message){
-		Snackbar.make(view,message,Snackbar.LENGTH_SHORT).show();
+		Snackbar.make(view, message, Snackbar.LENGTH_SHORT).show();
 	}
 
 	/**
@@ -134,13 +147,14 @@ public class N
 	}
 
 	/**
-	 * 使用launcherIcon，默认的铃声和震动显示message
-	 *
-	 * @param context
+	 * 长时间显示Snackbar，有监听
+	 * @param view
 	 * @param message
+	 * @param actionMessage
+	 * @param listener
 	 */
-	public static void showNotify(Context context,int id,CharSequence message){
-		showNotify(context,id,R.drawable.ic_launcher,message,message);
+	public static void showSnackbarLong(View view,CharSequence message,CharSequence actionMessage,View.OnClickListener listener){
+		Snackbar.make(view,message,Snackbar.LENGTH_LONG).setAction(actionMessage, listener);
 	}
 
 	/**
@@ -160,6 +174,6 @@ public class N
 				.setSmallIcon(icon)
 				.setContentText(message)
 				.build();
-		manager.notify(id,notification);
+		manager.notify(id, notification);
 	}
 }

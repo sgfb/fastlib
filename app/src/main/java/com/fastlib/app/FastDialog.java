@@ -15,6 +15,8 @@ import android.widget.ListView;
 
 import com.fastlib.R;
 
+import java.util.List;
+
 /**
  * Dialog集合
  */
@@ -83,12 +85,24 @@ public class FastDialog {
                 lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        l.onClick(dialog,position);
+                        if(l!=null)
+                            l.onClick(dialog,position);
+                        dialog.dismiss();
                     }
                 });
                 return dialog;
             }
         };
         dialog.show(activity.getSupportFragmentManager(),null);
+    }
+
+    /**
+     * 列表dialog
+     * @param activity
+     * @param items
+     * @param l
+     */
+    public static void showListDialog(AppCompatActivity activity,final List<String> items,OnClickListener l){
+        showListDialog(activity,items.toArray(new String[]{}),l);
     }
 }

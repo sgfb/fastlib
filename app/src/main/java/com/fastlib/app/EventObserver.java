@@ -117,11 +117,11 @@ public class EventObserver {
 
     /**
      * 订阅本地事件
-     * @param cls
+     * @param obj
      * @param event
      */
-    public void subscribe(Class cls,OnLocalEvent event){
-        String name=cls.getCanonicalName();
+    public void subscribe(Object obj,OnLocalEvent event){
+        String name=obj.getClass().getCanonicalName();
         LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
         LocalReceiver receiver=new LocalReceiver(event);
         IntentFilter filter=new IntentFilter(name);
@@ -133,6 +133,24 @@ public class EventObserver {
         }
         list.add(receiver);
         lbm.registerReceiver(receiver,filter);
+    }
+
+    /**
+     * 移除本地事件监听
+     * @param obj
+     */
+    public void unsubscribe(Object obj){
+        String name=obj.getClass().getCanonicalName();
+        LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
+        List<LocalReceiver> list=mLocalObserver.get(name);
+
+        if(list!=null){
+            for(LocalReceiver receiver:list){
+                lbm.unregisterReceiver(receiver);
+            }
+            list.clear();
+            mLocalObserver.remove(name);
+        }
     }
 
     /**
@@ -286,7 +304,7 @@ public class EventObserver {
         }
 
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void onReceive(Context context, Intent intent){
             EntityWrapper wrapper= (EntityWrapper) intent.getSerializableExtra("entity");
             event.onEvent(wrapper.obj);
         }

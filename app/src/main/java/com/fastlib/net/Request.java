@@ -1,6 +1,7 @@
 package com.fastlib.net;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -34,6 +35,17 @@ public class Request implements Comparable{
     @Override
     public int compareTo(Object another) {
         return 0;
+    }
+
+    /**
+     * 简易地添加请求参数
+     * @param key
+     * @param value
+     */
+    public void put(String key,String value){
+        if(mParams==null)
+            mParams=new HashMap<>();
+        mParams.put(key,value);
     }
 
     public  Map<String,String> getParame(){

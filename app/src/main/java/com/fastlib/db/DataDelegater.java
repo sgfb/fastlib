@@ -1,6 +1,7 @@
 package com.fastlib.db;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.fastlib.annotation.DatabaseInject;
 import com.fastlib.bean.RemoteDataCache;
@@ -19,13 +20,19 @@ import java.util.Map;
  *
  **/
 public class DataDelegater{
+    public static final String TAG=DataDelegater.class.getSimpleName();
+
     private Request mRequest;
 	//需要的对象实体
 	private Class<?> mCla;
+    private String mStartKey;
+    private int mLoadLimit;
     private boolean started;
+    private boolean loadMore=false;
+    private Map<String,String> mParams;
 
 	public DataDelegater(Class<?> cla,Listener l){
-		this(cla,null,l);
+		this(cla, null, l);
 	}
 
     public DataDelegater(Class<?> cla,Map<String,String> params,Listener l){
@@ -39,6 +46,7 @@ public class DataDelegater{
         else
             throw new UnsupportedOperationException("不支持没有DatabaseInject和remoteUri注解的对象使用DataDelegater");
         mRequest.setParams(params);
+        mParams=params;
     }
 
 	/**
@@ -68,10 +76,11 @@ public class DataDelegater{
 
             @Override
             public void onResponseListener(Result result) {
-                RemoteDataCache responseCache=new RemoteDataCache();
+                RemoteDataCache responseCache = new RemoteDataCache();
                 responseCache.setCache(result.getBody());
                 responseCache.setCacheName(mCla.getName());
-                FastDatabase.getInstance().saveOrUpdate(responseCache);
+                if(!loadMore)
+                    FastDatabase.getInstance().saveOrUpdate(responseCache);
                 l.onResponseListener(result);
             }
 
@@ -83,7 +92,40 @@ public class DataDelegater{
         NetQueue.getInstance().netRequest(mRequest);
 	}
 
+    /**
+     * 读取更多数据，调用这个方法的时候数据不保存到数据库
+     */
+    public void loadMore(){
+        if(TextUtils.isEmpty(mStartKey)) {
+            Log.w(TAG,"没有设置StartKey无法读取更多");
+            return;
+        }
+        loadMore=true;
+        Map<String,String> params=mRequest.getParame();
+        int start=Integer.parseInt(params.get(mStartKey));
+        start+=mLoadLimit;
+        params.put(mStartKey,Integer.toString(start));
+        NetQueue.getInstance().netRequest(mRequest);
+    }
+
+    /**
+     * 跳跃读取更多数据，调用这个方法的时候不保存到数据库
+     * @param params
+     */
+    public void loadMore(Map<String,String> params){
+        loadMore=true;
+        mRequest.getParame().putAll(params);
+        NetQueue.getInstance().netRequest(mRequest);
+    }
+
+    public void setLoadMoreParams(String start,int limit){
+        mStartKey=start;
+        mLoadLimit=limit;
+    }
+
     private void refresh(){
+        loadMore=false;
+        mRequest.setParams(mParams);
         NetQueue.getInstance().netRequest(mRequest);
     }
 

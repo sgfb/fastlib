@@ -99,16 +99,28 @@ public class Reflect{
 		return false;
 	}
 
+	public static boolean isInteger(Field field){
+		return isInteger(field.getType().getSimpleName());
+	}
+
 	public static boolean isReal(String type){
 		if(type.equals("float")||type.equals("double"))
 			return true;
 		return false;
 	}
 
+	public static boolean isReal(Field field){
+		return isReal(field.getType().getSimpleName());
+	}
+
 	public static boolean isVarchar(String type){
 		if(type.equals("char")||type.equals("String"))
 			return true;
 		return false;
+	}
+
+	public static boolean isVarchar(Field field){
+		return isVarchar(field.getType().getSimpleName());
 	}
 
 	public static String toSQLType(String type){

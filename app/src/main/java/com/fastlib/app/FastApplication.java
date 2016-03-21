@@ -10,7 +10,7 @@ import com.fastlib.net.NetQueue;
  */
 public class FastApplication extends Application{
     private static FastApplication mApp;
-    private AppGlobal mGlobal;
+    private String mRootAddress;
 
     @Override
     public void onCreate() {
@@ -18,7 +18,7 @@ public class FastApplication extends Application{
         mApp=this;
         FastDatabase.build(this);
         EventObserver.build(this);
-        NetQueue.build(this);
+        NetQueue.build();
     }
 
     @Override
@@ -31,11 +31,11 @@ public class FastApplication extends Application{
         return mApp;
     }
 
-    public void setGlobal(AppGlobal global){
-        mGlobal=global;
+    public String getRootAddress() {
+        return mRootAddress;
     }
 
-    public AppGlobal getGlobal(){
-        return mGlobal;
+    public void setRootAddress(String rootAddress) {
+        mRootAddress = rootAddress;
     }
 }

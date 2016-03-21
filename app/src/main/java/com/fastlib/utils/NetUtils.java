@@ -52,7 +52,6 @@ public class NetUtils
 	public static boolean isWifi(Context context){
 		ConnectivityManager cm = (ConnectivityManager) context
 				.getSystemService(Context.CONNECTIVITY_SERVICE);
-
 		if (cm == null)
 			return false;
 		return cm.getActiveNetworkInfo().getType() == ConnectivityManager.TYPE_WIFI;

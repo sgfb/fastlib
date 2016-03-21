@@ -32,7 +32,6 @@ public class NetQueue {
     private static Config mConfig;
     private static int Tx,Rx;
     private volatile int mProcessing;
-    private FastApplication mApp;
     private Runnable mMainProcessor =new Runnable() {
         @Override
         public void run() {
@@ -102,8 +101,7 @@ public class NetQueue {
         }
     };
 
-    private NetQueue(FastApplication app){
-        mApp=app;
+    private NetQueue(){
         mConfig=new Config();
         mWaitingQueue=new PriorityBlockingQueue<>();
         mConfig.maxTask=5;
@@ -119,9 +117,9 @@ public class NetQueue {
         return mOwer;
     }
 
-    public static synchronized NetQueue build(FastApplication app){
+    public static synchronized NetQueue build(){
         if(mOwer==null)
-            mOwer=new NetQueue(app);
+            mOwer=new NetQueue();
         return mOwer;
     }
 
@@ -130,7 +128,7 @@ public class NetQueue {
     }
 
     public void netRequest(int type,Request r){
-        String rootAddress=mApp.getGlobal().getRootAddress();
+        String rootAddress=FastApplication.getInstance().getRootAddress();
         if(!TextUtils.isEmpty(rootAddress))
             r.setUrl(rootAddress + r.getUrl());
         mWaitingQueue.add(r);
