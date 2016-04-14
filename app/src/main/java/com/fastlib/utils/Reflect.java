@@ -1,6 +1,8 @@
 package com.fastlib.utils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -153,5 +155,17 @@ public class Reflect{
 				fields.add(fs[i]);
 		}
 		return fields.toArray(new Field[0]);
+	}
+
+	/**
+	 * 获取泛型(没有进行安全检查)
+	 * @param cla
+	 * @param index
+	 * @return
+	 */
+	public static Type getGenericity(Class<?> cla,int index){
+		Type genType=cla.getGenericSuperclass();
+		Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
+		return params[index];
 	}
 }

@@ -3,6 +3,7 @@ package com.fastlib.adapter;
 import java.util.List;
 
 import com.fastlib.base.OldViewHolder;
+import com.fastlib.db.DataCache;
 import com.fastlib.interf.AdapterViewState;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
@@ -16,31 +17,32 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
 /**
- * 绑定适配器，将视图与服务器中的数据捆绑，达到集合开发的目的。
+ * 绑定适配器，将视图与服务器中的数据捆绑，达到集合开发的目的
  */
 public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
-    protected Context mContext;
+	protected Context mContext;
 	protected List<N> mData;
 	private AdapterViewState mViewState;
-    private Request mRequest;
-    private int mItemLayoutId;
-    //每次读取条数，默认为1
-    private int mPerCount;
-    private boolean isRefresh,isMore,isLoading;
+	private Request mRequest;
+	private DataCache mDataCache;
+	private int mItemLayoutId;
+	//每次读取条数，默认为1
+	private int mPerCount;
+	protected boolean isRefresh,isMore,isLoading,isSaveCache;
 
-    /**
-     * 数据绑定视图
-     * @param position
-     * @param data
-     * @param holder
-     */
+	/**
+	 * 数据绑定视图
+	 * @param position
+	 * @param data
+	 * @param holder
+	 */
 	public abstract void binding(int position,N data,OldViewHolder holder);
 
-    /**
-     * 返回的数据转换
-     * @param result
-     * @return
-     */
+	/**
+	 * 返回的数据转换
+	 * @param result
+	 * @return
+	 */
 	public abstract List<N> translate(Result result);
 
 	/**
@@ -56,14 +58,20 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 	public abstract void getRefreshDataRequest(Request request);
 
 	public BindingAdapter(Context context,Request request,@NonNull int resId){
-        mContext=context;
+		this(context,request,resId,false);
+	}
+
+	public BindingAdapter(Context context,Request request,@NonNull int resId,boolean saveCache){
+		mContext=context;
 		mRequest=request;
+		isSaveCache=saveCache;
 		mPerCount=1;
 		mItemLayoutId=resId;
-        isRefresh=false;
+		isRefresh=false;
 		isMore=true;
 		isLoading=false;
-        request.setListener(this);
+		request.setListener(this);
+		mDataCache =new DataCache(request);
 		refresh();
 	}
 
@@ -100,20 +108,26 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 	 */
 	private void loadMoreData(){
 		isLoading=true;
-        isRefresh=false;
+		isRefresh=false;
 		if(mViewState!=null)
 			mViewState.onStateChanged(AdapterViewState.STATE_LOADING);
 		getMoreDataRequest(mRequest);
-        NetQueue.getInstance().netRequest(mRequest);
+		if(isSaveCache)
+			mDataCache.loadMore(mRequest.getParams());
+		else
+		    NetQueue.getInstance().netRequest(mRequest);
 	}
 
 	public void refresh(){
-        isLoading=true;
-        isRefresh=true;
+		isLoading=true;
+		isRefresh=true;
 		//刷新之后也许有更多数据？
 		isMore=true;
 		getRefreshDataRequest(mRequest);
-		NetQueue.getInstance().netRequest(mRequest);
+		if(isSaveCache)
+			mDataCache.start();
+		else
+			NetQueue.getInstance().netRequest(mRequest);
 	}
 
 	public void setViewStateListener(AdapterViewState state){
@@ -124,6 +138,14 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 		mPerCount=count;
 	}
 
+	public boolean isSaveCache(){
+		return isSaveCache;
+	}
+
+	public void setIsSaveCache(boolean isSaveCache) {
+		this.isSaveCache = isSaveCache;
+	}
+
 	@Override
 	public void onResponseListener(Result result){
 		List<N> list=translate(result);
@@ -132,16 +154,16 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 		if(list==null||list.size()<=0){
 			isMore=false;
 			if(mViewState!=null)
-			    mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
+				mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
 			return;
 		}
 		if(list.size()<mPerCount) {
 			isMore = false;
 			if(mViewState!=null)
-			    mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
+				mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
 		}
 		if(isRefresh)
-			mData=list;
+			mData = list;
 		else
 			mData.addAll(list);
 		notifyDataSetChanged();

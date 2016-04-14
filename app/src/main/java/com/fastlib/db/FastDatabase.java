@@ -345,7 +345,7 @@ public class FastDatabase{
 				database.beginTransaction();
 				database.execSQL("delete from '"+tableName+"' where "+where+"="+whereValue);
 				database.setTransactionSuccessful();
-				Log.i(TAG, sConfig.getDatabaseName()+"--d--"+Integer.toString(count)+"->"+where);
+				Log.i(TAG, sConfig.getDatabaseName()+"--d--"+Integer.toString(count)+"->"+tableName);
 			}catch(SQLiteException e){
 				return false;
 			}finally{
@@ -491,6 +491,12 @@ public class FastDatabase{
 		SQLiteDatabase db=prepare(null);
 		String tableName=obj.getClass().getCanonicalName();
 
+		if(sAttri.getCeil()< Integer.MAX_VALUE){
+			List<?> list=getAll(obj.getClass());
+			if(list!=null&&list.size()>=sAttri.getCeil()){
+				delete(list.get(0));
+			}
+		}
 		for(Field field:fields){
 			field.setAccessible(true);
 			String type=field.getType().getSimpleName();
@@ -509,6 +515,8 @@ public class FastDatabase{
 					columnName = fieldInject.columnName();
 				else
 					columnName = field.getName();
+				if(columnName.contains("this"))
+					continue;
 				switch (type) {
 					case "boolean":
 						cv.put(columnName, field.getBoolean(obj));
@@ -638,6 +646,11 @@ public class FastDatabase{
 		return sOwer;
 	}
 
+	public FastDatabase ceil(int max){
+		sAttri.setCeil(max);
+		return sOwer;
+	}
+
 	/**
 	 * 生成创建表sql语句
 	 * @param cla
@@ -655,6 +668,8 @@ public class FastDatabase{
 			DatabaseTable.DatabaseColumn column=table.columnMap.get(key);
 
 			if(column.isIgnore)
+				continue;
+			if(column.columnName.contains("this"))
 				continue;
 			sb.append(column.columnName)
 					.append(" " + column.type);

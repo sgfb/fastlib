@@ -1,5 +1,7 @@
 package com.fastlib.db;
 
+import java.util.TreeMap;
+
 /**
  * Created by sgfb on 16/3/21.
  * 数据库运行时一些参数
@@ -7,10 +9,12 @@ package com.fastlib.db;
 public final class DatabaseAttribute{
     private boolean asc;
     private String orderBy;
+    private int ceil;
 
     public void defaultAttribute(){
         asc=true;
         orderBy=null;
+        ceil=Integer.MAX_VALUE;
     }
 
     public boolean isAsc() {
@@ -27,5 +31,13 @@ public final class DatabaseAttribute{
 
     public void setOrderBy(String orderBy) {
         this.orderBy = orderBy;
+    }
+
+    public int getCeil() {
+        return ceil;
+    }
+
+    public void setCeil(int ceil) {
+        this.ceil = ceil;
     }
 }

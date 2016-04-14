@@ -50,7 +50,8 @@ public class EventObserver {
     public static String VALUE_BATTERY_TECHNOLOGY=BatteryManager.EXTRA_TECHNOLOGY;
 
     private static Map<String,ReceiverWrapper> mObserver;
-    private static Map<String,List<LocalReceiver>> mLocalObserver;
+    private static Map<String,LocalReceiver> mLocalObserver;
+    private static Map<String,List<String>> mLocalObserverMap;
     private static EventObserver mOwer;
     private static Context mContext;
 
@@ -58,6 +59,7 @@ public class EventObserver {
         mContext=context;
         mObserver =new HashMap<>();
         mLocalObserver=new HashMap<>();
+        mLocalObserverMap=new HashMap<>();
         for(String type:TYPE_ALL){
             mObserver.put(type, new ReceiverWrapper(new Receiver(), new ArrayList<OnEventListener>()));
         }
@@ -115,24 +117,32 @@ public class EventObserver {
         }
     }
 
+
     /**
      * 订阅本地事件
-     * @param obj
-     * @param event
+     * @param subscriber 订阅者
+     * @param cla 订阅事件
+     * @param event 事件监听
      */
-    public void subscribe(Object obj,OnLocalEvent event){
-        String name=obj.getClass().getCanonicalName();
+    public void subscribe(Object subscriber,Class<?> cla,OnLocalEvent event){
+        String name=cla.getCanonicalName();
+        String subscriberName=subscriber.getClass().getCanonicalName();
         LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
-        LocalReceiver receiver=new LocalReceiver(event);
+        LocalReceiver receiver=mLocalObserver.get(name);
         IntentFilter filter=new IntentFilter(name);
-        List<LocalReceiver> list=mLocalObserver.get(name);
+        List<String> eventNames=mLocalObserverMap.get(subscriberName);
 
-        if(list==null){
-            list=new ArrayList<>();
-            mLocalObserver.put(name,list);
+        if(receiver==null) {
+            receiver = new LocalReceiver();
+            mLocalObserver.put(name,receiver);
+            lbm.registerReceiver(receiver,filter);
         }
-        list.add(receiver);
-        lbm.registerReceiver(receiver,filter);
+        if(eventNames==null){
+            eventNames=new ArrayList<>();
+            eventNames.add(name);
+        }
+        receiver.events.put(subscriberName, event);
+        mLocalObserverMap.put(subscriber.getClass().getCanonicalName(), eventNames);
     }
 
     /**
@@ -140,16 +150,17 @@ public class EventObserver {
      * @param obj
      */
     public void unsubscribe(Object obj){
-        String name=obj.getClass().getCanonicalName();
+        String subscriber=obj.getClass().getCanonicalName();
+        List<String> eventName=mLocalObserverMap.get(subscriber);
         LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
-        List<LocalReceiver> list=mLocalObserver.get(name);
 
-        if(list!=null){
-            for(LocalReceiver receiver:list){
-                lbm.unregisterReceiver(receiver);
+        for(int i=0;i<eventName.size();i++){
+            LocalReceiver receiver=mLocalObserver.get(eventName.get(i));
+            if(receiver!=null){
+                receiver.events.remove(subscriber);
+                if(receiver.events.isEmpty())
+                    lbm.unregisterReceiver(receiver);
             }
-            list.clear();
-            mLocalObserver.remove(name);
         }
     }
 
@@ -180,12 +191,11 @@ public class EventObserver {
 
         while(iter.hasNext()){
             String key=iter.next();
-            List<LocalReceiver> list=mLocalObserver.get(key);
-            for(LocalReceiver r:list)
-                lbm.unregisterReceiver(r);
-            list.clear();
+            LocalReceiver receiver=mLocalObserver.get(key);
+            lbm.unregisterReceiver(receiver);
         }
         mLocalObserver.clear();
+        mLocalObserverMap.clear();
     }
 
     public interface OnEventListener{
@@ -290,23 +300,28 @@ public class EventObserver {
 
     public class EntityWrapper implements Serializable {
         public Object obj;
-
         public EntityWrapper(Object obj){
             this.obj=obj;
         }
     }
 
     public class LocalReceiver extends BroadcastReceiver{
-        OnLocalEvent event;
+        Map<String,OnLocalEvent> events;
 
-        public LocalReceiver(OnLocalEvent event){
-            this.event=event;
+        public LocalReceiver(){
+            events =new HashMap<>();
         }
 
         @Override
         public void onReceive(Context context, Intent intent){
             EntityWrapper wrapper= (EntityWrapper) intent.getSerializableExtra("entity");
-            event.onEvent(wrapper.obj);
+
+            Iterator<String> iter=events.keySet().iterator();
+            while(iter.hasNext()) {
+                String key=iter.next();
+                OnLocalEvent event=events.get(key);
+                event.onEvent(wrapper.obj);
+            }
         }
     }
 }

@@ -11,9 +11,6 @@ import java.lang.annotation.Target;
 @Target({ElementType.FIELD,ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface DatabaseInject{
-
-	//远程数据源定位符 类属性
-	String remoteUri() default "";
 	
 	//数据库中列名
 	String columnName() default "";

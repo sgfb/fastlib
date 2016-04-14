@@ -1,158 +1,99 @@
 package com.fastlib.widget;
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.util.AttributeSet;
-import android.view.Gravity;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.ProgressBar;
-import android.widget.TextView;
+import com.fastlib.interf.AdapterViewState;
 
-import com.fastlib.R;
+import android.content.Context;
+import android.util.AttributeSet;
+import android.view.View;
+import android.widget.ListView;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
- * 有状态页的ListView,异常界面能够单击重新刷新
+ * 具有状态的列表,状态显示在底部
  * 
- * @author shenhaofeng
- * 
+ * @author sgfb,shenhaofeng
+ *
  */
-public class StateListView extends ListView implements View.OnClickListener {
-
-	public final static int STATE_STANDARD = 0;
-	public final static int STATE_LOADING = 1;
-	public final static int STATE_NO_NETWORK = 2;
-	public final static int STATE_ERROR = 3;
-
-	private LinearLayout mStateLayout;
-	private TextView mStateStr;
-	private ImageView mStateImage;
-	private ProgressBar mStateLoading;
-
-	private Bitmap mNoNetworkImg;
-	private Bitmap mErrorImg;
-
-	private int state = STATE_STANDARD;
-
-	private onRefreshListener mListener;
-
-	public StateListView(Context context) {
-		super(context);
+public class StateListView extends ListView implements AdapterViewState{
+	private int mCurrState;
+	private Map<Integer,LocationView> mViews;
+	
+	public StateListView(Context context){
+		this(context,null);
 	}
 
 	public StateListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-	}
-
-	public StateListView(Context context, AttributeSet attrs, int defStyle) {
-		super(context, attrs, defStyle);
-	}
-
-	public void setState(int state) {
-		this.state = state;
-		switch (this.state) {
-		case STATE_STANDARD:
-			this.setVisibility(View.VISIBLE);
-			mStateStr.setVisibility(View.GONE);
-			mStateImage.setVisibility(View.GONE);
-			mStateLoading.setVisibility(View.GONE);
-			break;
-		case STATE_LOADING:
-			this.setVisibility(View.GONE);
-			mStateStr.setVisibility(View.VISIBLE);
-			mStateImage.setVisibility(View.GONE);
-			mStateLoading.setVisibility(View.VISIBLE);
-			mStateStr.setText("加载中");
-			break;
-		case STATE_NO_NETWORK:
-			this.setVisibility(View.GONE);
-			mStateStr.setVisibility(View.VISIBLE);
-			mStateImage.setVisibility(View.VISIBLE);
-			mStateLoading.setVisibility(View.GONE);
-			mStateImage.setImageResource(R.drawable.error_default);
-			mStateStr.setText("没有网络");
-			if (mNoNetworkImg != null) {
-				mStateImage.setImageBitmap(mNoNetworkImg);
-			}
-			break;
-		case STATE_ERROR:
-			this.setVisibility(View.GONE);
-			mStateStr.setVisibility(View.VISIBLE);
-			mStateImage.setVisibility(View.VISIBLE);
-			mStateLoading.setVisibility(View.GONE);
-			mStateImage.setImageResource(R.drawable.error_default);
-			mStateStr.setText("异常");
-			if (mErrorImg != null) {
-				mStateImage.setImageBitmap(mErrorImg);
-			}
-			break;
-		default:
-			break;
-		}
-
+		mCurrState=-1;
+		mViews=new HashMap<>();
 	}
 
 	@Override
-	protected void onAttachedToWindow() {
-		super.onAttachedToWindow();
-		initStateLayout();
-
-	}
-
-	/**
-	 * 初始化
-	 */
-	private void initStateLayout() {
-		mStateLayout = new LinearLayout(getContext());
-		mStateLayout.setGravity(Gravity.CENTER);
-		mStateLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-		mStateLayout.setOrientation(LinearLayout.VERTICAL);
-		mStateStr = new TextView(getContext());
-		mStateStr.setGravity(Gravity.CENTER);
-		mStateImage = new ImageView(getContext());
-		mStateLoading = new ProgressBar(getContext());
-		mStateLayout.addView(mStateImage);
-		mStateLayout.addView(mStateLoading);
-		mStateLayout.addView(mStateStr);
-		mStateLayout.setOnClickListener(this);
-		ViewGroup vg = (ViewGroup) getParent();
-		if (vg != null) {
-			vg.addView(mStateLayout);
-		}
+	public void onStateChanged(int flag) {
+		if(mCurrState==AdapterViewState.STATE_NO_MORE)
+			return;
+		mCurrState=flag;
+		LocationView lv=mViews.get(flag);
+		if(lv==null||lv.view==null)
+			return;
+		showStateView(mViews.get(flag));
 	}
 
 	@Override
-	public void onClick(View arg0) {
-		if (mListener != null&&state!=STATE_LOADING) {
-			setState(STATE_LOADING);
-			mListener.onRefresh();
+	public void addStateView(int state, View view, int location) {
+		LocationView lv=new LocationView();
+		lv.location=location;
+		lv.view=view;
+		mViews.put(state,lv);
+	}
+
+	private void showStateView(LocationView locationView){
+		View view=locationView.view;
+		switch(locationView.location){
+			case AdapterViewState.location_foot:
+				removeFootView();
+				addFooterView(view,null,false);
+				break;
+			case AdapterViewState.location_head:
+				removeHeadView();
+				addHeaderView(view,null,false);
+				break;
+			case AdapterViewState.location_middle_clear:
+				break;
+			case AdapterViewState.location_middle_cover:
+				break;
+			default:
+				break;
 		}
 	}
 
-	public void setOnRefreshListener(onRefreshListener listener) {
-		this.mListener = listener;
+	private void removeHeadView(){
+		Iterator<Integer> iter=mViews.keySet().iterator();
+
+		while(iter.hasNext()){
+			int state=iter.next();
+			LocationView lv=mViews.get(state);
+			if(lv.location==AdapterViewState.location_head)
+				removeFooterView(lv.view);
+		}
+	}
+	
+	private void removeFootView(){
+		Iterator<Integer> iter=mViews.keySet().iterator();
+
+		while(iter.hasNext()){
+			int state=iter.next();
+			LocationView lv=mViews.get(state);
+			if(lv.location==AdapterViewState.location_foot)
+			    removeFooterView(lv.view);
+		}
 	}
 
-	public void setNoNetworkBitmap(Bitmap bitmap) {
-		mNoNetworkImg = bitmap;
+	private class LocationView{
+		int location;
+		View view;
 	}
-
-	public void setErrorBitmap(Bitmap bitmap) {
-		mErrorImg = bitmap;
-	}
-
-	/**
-	 * StateListView 在重新刷新后被触发
-	 * 
-	 * @author shenhaofeng
-	 * 
-	 */
-	public interface onRefreshListener {
-
-		public void onRefresh();
-	}
-
 }

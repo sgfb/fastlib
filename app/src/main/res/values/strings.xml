@@ -1,7 +1,4 @@
 <resources>
-
-    <string name="app_name">FastLibrary</string>
-
     <string name="loading">加载中&#8230;</string>
     <string name="title_activity_main2">Main2Activity</string>
 

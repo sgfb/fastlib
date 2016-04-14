@@ -17,16 +17,14 @@ public class KeyBoardUtils
 	/**
 	 * 打开软键盘
 	 * 
-	 * @param mEditText
+	 * @param et
 	 *            输入框
-	 * @param mContext
-	 *            上下文
 	 */
-	public static void openKeybord(EditText mEditText, Context mContext)
+	public static void openKeybord(EditText et)
 	{
-		InputMethodManager imm = (InputMethodManager) mContext
+		InputMethodManager imm = (InputMethodManager)et.getContext()
 				.getSystemService(Context.INPUT_METHOD_SERVICE);
-		imm.showSoftInput(mEditText, InputMethodManager.RESULT_SHOWN);
+		imm.showSoftInput(et, InputMethodManager.RESULT_SHOWN);
 		imm.toggleSoftInput(InputMethodManager.SHOW_FORCED,
 				InputMethodManager.HIDE_IMPLICIT_ONLY);
 	}
@@ -34,17 +32,15 @@ public class KeyBoardUtils
 	/**
 	 * 关闭软键盘
 	 * 
-	 * @param mEditText
+	 * @param et
 	 *            输入框
-	 * @param mContext
-	 *            上下文
 	 */
-	public static void closeKeybord(EditText mEditText, Context mContext)
+	public static void closeKeybord(EditText et)
 	{
-		InputMethodManager imm = (InputMethodManager) mContext
+		InputMethodManager imm = (InputMethodManager) et.getContext()
 				.getSystemService(Context.INPUT_METHOD_SERVICE);
 
-		imm.hideSoftInputFromWindow(mEditText.getWindowToken(), 0);
+		imm.hideSoftInputFromWindow(et.getWindowToken(), 0);
 	}
 	
 	public static void closeKeybord(Activity act){
@@ -65,7 +61,5 @@ public class KeyBoardUtils
 		InputMethodManager imm = (InputMethodManager) act
 				.getSystemService(Context.INPUT_METHOD_SERVICE);
 		imm.showSoftInput(act.getCurrentFocus(), InputMethodManager.HIDE_NOT_ALWAYS);
-	
 	}
-	
 }

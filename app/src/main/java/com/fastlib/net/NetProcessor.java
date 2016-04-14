@@ -1,25 +1,17 @@
 package com.fastlib.net;
 
 import android.os.Handler;
-import android.os.SystemClock;
 
-import com.fastlib.app.AppGlobal;
-import com.fastlib.app.FastApplication;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-
-import org.json.JSONException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -99,10 +91,10 @@ public class NetProcessor extends Thread{
                     out.write(availableSize.getBytes());
                 }
                 else if(isMulti)
-                    multipart(mRequest.getParame(), mRequest.getFiles(), out);
+                    multipart(mRequest.getParams(), mRequest.getFiles(), out);
                 else{
                     StringBuilder sb=new StringBuilder();
-                    loadParames(mRequest.getParame(),sb);
+                    loadParames(mRequest.getParams(),sb);
                     byte[] data=sb.toString().getBytes();
                     Tx+=data.length;
                     out.write(data);

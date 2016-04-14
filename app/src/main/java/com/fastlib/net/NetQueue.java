@@ -2,6 +2,7 @@ package com.fastlib.net;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.fastlib.app.FastApplication;
@@ -30,6 +31,7 @@ public class NetQueue {
     private static NetQueue mOwer;
     private static Config mConfig;
     private static int Tx,Rx;
+    private DataFactory mFactory;
     private volatile int mProcessing;
     private Runnable mMainProcessor =new Runnable() {
         @Override
@@ -123,19 +125,33 @@ public class NetQueue {
     }
 
     public void netRequest(final Request r){
-        netRequest(0,r);
+        netRequest(0, r);
     }
 
     public void netRequest(int type,Request r){
         String rootAddress=FastApplication.getInstance().getRootAddress();
+        if(mFactory!=null&&r.isUseFactory()){
+            Map<String,String> map=r.getParams();
+            if(map==null){
+                map=new HashMap<>();
+                r.setParams(map);
+            }
+            map.putAll(mFactory.extraData());
+        }
         if(!TextUtils.isEmpty(rootAddress))
             r.setUrl(rootAddress + r.getUrl());
         mWaitingQueue.add(r);
     }
 
-    public void setConfig(Config config){
-        if(config==null)
-            throw new RuntimeException("不可以将网络请求设置为null");
+    public DataFactory getFactory(){
+        return mFactory;
+    }
+
+    public void setFactory(DataFactory factory){
+        mFactory=factory;
+    }
+
+    public void setConfig(@NonNull Config config){
         mConfig=config;
     }
 
@@ -180,5 +196,9 @@ public class NetQueue {
                 return null;
             }
         }
+    }
+
+    public interface DataFactory{
+        Map<String,String> extraData();
     }
 }

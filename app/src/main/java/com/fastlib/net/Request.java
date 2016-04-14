@@ -5,12 +5,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 请求体
+ * 请求体<br/>
  * 每个任务都是不同的，（NetQueue）会根据属性来配置请求，调整请求开始完成或失败后不同的事件
  */
 public class Request implements Comparable{
     private int type;
     private boolean sFile;
+    private boolean useFactory;
     private String method;
     private String mUrl;
     private Downloadable mDownloadable;
@@ -30,6 +31,7 @@ public class Request implements Comparable{
         this.method=method.toUpperCase();
         this.mUrl = mUrl;
         this.type=type;
+        useFactory=true;
     }
 
     @Override
@@ -45,10 +47,54 @@ public class Request implements Comparable{
     public void put(String key,String value){
         if(mParams==null)
             mParams=new HashMap<>();
-        mParams.put(key,value);
+        mParams.put(key, value);
     }
 
-    public  Map<String,String> getParame(){
+    /**
+     * 参数递增
+     * @param key
+     * @param count
+     */
+    public void increment(String key,int count){
+        if(!checkNumberParams(key))
+            return;
+        String value=mParams.get(key);
+        mParams.put(key, Integer.toString(Integer.parseInt(value) + count));
+
+    }
+
+    /**
+     * 参数递减
+     * @param key
+     * @param count
+     */
+    public void decrease(String key,int count){
+        if(!checkNumberParams(key))
+            return;
+        String value=mParams.get(key);
+        mParams.put(key, Integer.toString(Integer.parseInt(value)-count));
+    }
+
+    private boolean checkNumberParams(String key){
+        if(mParams==null){
+            mParams=new HashMap<>();
+            mParams.put(key,"0");
+            return false;
+        }
+        if(!mParams.containsKey(key)) {
+            mParams.put(key,"0");
+            return false;
+        }
+        try{
+            Integer.parseInt(mParams.get(key));
+            return true;
+        }catch (NumberFormatException e){
+            mParams.put(key,"0");
+            return false;
+        }
+    }
+
+    public  Map<String,String> getParams(){
         return mParams;
     }
 
@@ -104,5 +150,17 @@ public class Request implements Comparable{
 
     public Downloadable getDownloadable(){
         return mDownloadable;
+    }
+
+    public boolean isUseFactory() {
+        return useFactory;
+    }
+
+    public void setUseFactory(boolean useFactory) {
+        this.useFactory = useFactory;
+    }
+
+    public void setType(int type) {
+        this.type = type;
     }
 }

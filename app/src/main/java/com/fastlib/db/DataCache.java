@@ -3,7 +3,6 @@ package com.fastlib.db;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.fastlib.annotation.DatabaseInject;
 import com.fastlib.bean.RemoteDataCache;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
@@ -14,52 +13,66 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 缓存来自服务器中的数据。使用这个类时可以不用关心数据是来自哪里(数据库或者网络数据源),需要注解uri支持
+ * 缓存来自服务器中的数据。使用这个类时可以不用关心数据是来自哪里(数据库或者网络数据源)
  *
  * @author sgfb
  *
  **/
-public class DataDelegater{
-    public static final String TAG=DataDelegater.class.getSimpleName();
+public class DataCache {
+    public static final String TAG=DataCache.class.getSimpleName();
 
     private Request mRequest;
-	//需要的对象实体
-	private Class<?> mCla;
+    //需要的对象实体
+    private Class<?> mCla;
+    private String mCacheName;
     private String mStartKey;
     private int mLoadLimit;
     private boolean started;
     private boolean loadMore=false;
     private Map<String,String> mParams;
 
-	public DataDelegater(Class<?> cla,Listener l){
-		this(cla, null, l);
-	}
-
-    public DataDelegater(Class<?> cla,Map<String,String> params,Listener l){
-        mCla=cla;
-        mRequest=new Request();
-
-        mRequest.setListener(l);
-        DatabaseInject inject=mCla.getAnnotation(DatabaseInject.class);
-        if(inject!=null&&!TextUtils.isEmpty(inject.remoteUri()))
-            mRequest.setUrl(inject.remoteUri());
-        else
-            throw new UnsupportedOperationException("不支持没有DatabaseInject和remoteUri注解的对象使用DataDelegater");
-        mRequest.setParams(params);
-        mParams=params;
+    public DataCache(Class<?> cla,String url,Listener l){
+        this(cla,url,null, l);
     }
 
-	/**
-	 * 先查看数据库中是否有想要的数据，无论有没有都会向服务器寻求数据
+    public DataCache(Class<?> cla,String url,Map<String, String> params, Listener l){
+        this(cla,url,url,params,l);
+    }
+
+    public DataCache(Class<?> cla,String url,String cacheName,Map<String,String> params,Listener l){
+        mRequest=new Request();
+
+        mCla=cla;
+        mRequest.setUrl(url);
+        mRequest.setParams(params);
+        mRequest.setListener(l);
+        mParams=params;
+        mCacheName=cacheName;
+    }
+
+    public DataCache(Request request){
+        this(request.getUrl(),request);
+    }
+
+    public DataCache(String cacheName, Request request){
+        if(TextUtils.isEmpty(request.getUrl()))
+            throw new UnsupportedOperationException("不支持没有url的缓存请求");
+        mRequest=request;
+        mCacheName=cacheName;
+        mParams=mRequest.getParams();
+    }
+
+    /**
+     * 先查看数据库中是否有想要的数据，无论有没有都会向服务器寻求数据
      * 如果有数据将会回调两遍
-	 */
-	public void start(){
-        if(started) {
+     */
+    public void start(){
+        if(started){
             refresh();
             return;
         }
         started=true;
-        List<RemoteDataCache> list=FastDatabase.getInstance().get(RemoteDataCache.class, mCla.getName());
+        List<RemoteDataCache> list=FastDatabase.getInstance().get(RemoteDataCache.class,mCacheName);
         RemoteDataCache cache;
 
         final Listener l=mRequest.getListener();
@@ -76,21 +89,23 @@ public class DataDelegater{
 
             @Override
             public void onResponseListener(Result result) {
-                RemoteDataCache responseCache = new RemoteDataCache();
+                RemoteDataCache responseCache=new RemoteDataCache();
                 responseCache.setCache(result.getBody());
-                responseCache.setCacheName(mCla.getName());
+                responseCache.setCacheName(mCacheName);
                 if(!loadMore)
                     FastDatabase.getInstance().saveOrUpdate(responseCache);
-                l.onResponseListener(result);
+                if(l!=null)
+                    l.onResponseListener(result);
             }
 
             @Override
-            public void onErrorListener(String error) {
-                l.onErrorListener(error);
+            public void onErrorListener(String error){
+                if(l!=null)
+                    l.onErrorListener(error);
             }
         });
         NetQueue.getInstance().netRequest(mRequest);
-	}
+    }
 
     /**
      * 读取更多数据，调用这个方法的时候数据不保存到数据库
@@ -101,7 +116,7 @@ public class DataDelegater{
             return;
         }
         loadMore=true;
-        Map<String,String> params=mRequest.getParame();
+        Map<String,String> params=mRequest.getParams();
         int start=Integer.parseInt(params.get(mStartKey));
         start+=mLoadLimit;
         params.put(mStartKey,Integer.toString(start));
@@ -114,7 +129,7 @@ public class DataDelegater{
      */
     public void loadMore(Map<String,String> params){
         loadMore=true;
-        mRequest.getParame().putAll(params);
+        mRequest.getParams().putAll(params);
         NetQueue.getInstance().netRequest(mRequest);
     }
 
