@@ -14,10 +14,10 @@ public interface AdapterViewState{
 	int STATE_NO_NETWORK=6;
 	int STATE_REFRESH=7;
 
-	int location_head=1;
-	int location_middle_cover=2;
-	int location_middle_clear=3;
-	int location_foot=4;
+	int LOCATION_HEAD =1;
+	int LOCATION_MIDDLE_COVER =2;
+	int LOCATION_MIDDLE_CLEAR =3;
+	int LOCATION_FOOT =4;
 
 	/**
 	 * 更改状态

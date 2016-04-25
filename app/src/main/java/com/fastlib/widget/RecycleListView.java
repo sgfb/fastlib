@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fastlib.R;
+import com.fastlib.bean.StateLocationView;
 import com.fastlib.interf.AdapterViewState;
 
 import android.content.Context;
@@ -23,6 +25,8 @@ import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.RelativeLayout;
 
 /**
@@ -33,11 +37,12 @@ import android.widget.RelativeLayout;
 public class RecycleListView extends RelativeLayout implements AdapterViewState{
 	private SwipeRefreshLayout mSwipe;
 	private RecyclerView mRecyclerView;
-	//保存的状态视图，每个状态最多只保存一个视图
-	private Map<Integer,View> mStateView;
-	private Map<Integer,Integer> mStateLocation;
-	//当前状态视图，不同状态不能一起显示
-	private View mCurrentStateView;
+	private LinearLayoutManager mLayoutManager;
+	private DividerItemDecoration mDividerItemDecoration;
+	private Map<Integer,StateLocationView> mStateView;
+	private LinearLayout mHeadView;
+	private LinearLayout mFootView;
+	private boolean mAutofit;
 
 	public RecycleListView(Context context){
 		super(context);
@@ -45,8 +50,55 @@ public class RecycleListView extends RelativeLayout implements AdapterViewState{
 	}
 
 	public RecycleListView(Context context, AttributeSet attrs) {
-		super(context,attrs);
+		super(context, attrs);
 		init();
+	}
+
+	private void init(){
+		mSwipe=new SwipeRefreshLayout(getContext());
+		mRecyclerView=new RecyclerView(getContext());
+		mHeadView=new LinearLayout(getContext());
+		mFootView=new LinearLayout(getContext());
+		mStateView=new HashMap<>();
+
+		mRecyclerView.setLayoutManager(mLayoutManager = new LinearLayoutManager(getContext()));
+		mRecyclerView.setItemAnimator(new DefaultItemAnimator());
+		mRecyclerView.addItemDecoration(mDividerItemDecoration = new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL_LIST));
+		mSwipe.addView(mRecyclerView);
+		mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+			@Override
+			public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+				super.onScrollStateChanged(recyclerView, newState);
+				if (mAutofit && newState == RecyclerView.SCROLL_STATE_IDLE) {
+					if (mDividerItemDecoration.getOrientation() == LinearLayoutManager.HORIZONTAL) {
+						int left = recyclerView.getChildAt(0).getLeft();
+						int right = recyclerView.getChildAt(0).getRight();
+						if (left < 0 && right > 1)
+							mRecyclerView.smoothScrollBy(right - 1, 0);
+					} else {
+						int top = recyclerView.getChildAt(0).getTop();
+						int bottom = recyclerView.getChildAt(0).getBottom();
+						if (top < 0 && bottom > 1)
+							mRecyclerView.smoothScrollBy(0, bottom - 1);
+					}
+				}
+			}
+		});
+
+		mSwipe.setId(R.id.swipe);
+		mHeadView.setId(R.id.headView);
+		mFootView.setId(R.id.bottomView);
+		LayoutParams swipeLp=new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT);
+		LayoutParams footLp=new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT);
+		swipeLp.addRule(RelativeLayout.ABOVE,mFootView.getId());
+		swipeLp.addRule(RelativeLayout.BELOW, mHeadView.getId());
+		footLp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+		mFootView.setLayoutParams(footLp);
+		mSwipe.setLayoutParams(swipeLp);
+		addView(mHeadView);
+		addView(mFootView);
+		addView(mSwipe);
 	}
 
 	/**
@@ -56,52 +108,60 @@ public class RecycleListView extends RelativeLayout implements AdapterViewState{
 	 */
 	@Override
 	public void onStateChanged(int state){
-		View v=mStateView.get(state);
-		if(mCurrentStateView!=null)
-			removeView(mCurrentStateView);
-		if(v!=null){
-			LayoutParams stateViewLayoutParams=new LayoutParams(LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-			switch (mStateLocation.get(state)){
-				//头和尾状态视图暂不可用
-				case AdapterViewState.location_head:
-					break;
-				case AdapterViewState.location_foot:
-					break;
-				case AdapterViewState.location_middle_clear:
-					//这个视图中最多只存在一个状态视图和list视图，所以隐藏了list就等于清除所有视图
-					mSwipe.setVisibility(View.INVISIBLE);
-					stateViewLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-					stateViewLayoutParams.addRule(RelativeLayout.CENTER_VERTICAL);
-					break;
-				case AdapterViewState.location_middle_cover:
-					stateViewLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-					stateViewLayoutParams.addRule(RelativeLayout.CENTER_VERTICAL);
-					break;
-				default:
-					break;
-			}
-			v.setLayoutParams(stateViewLayoutParams);
-			addView(v);
-		}
+		StateLocationView slv=mStateView.get(state);
+		if(slv==null)
+			return;
+		changedState(slv.location, slv.view);
 	}
 
 	@Override
 	public void addStateView(int state, View view, int location){
-		mStateLocation.put(state, location);
-		mStateView.put(state, view);
+		StateLocationView slv=new StateLocationView();
+		slv.location=location;
+		slv.view=view;
+		mStateView.put(state,slv);
 	}
 
-	private void init(){
-		mSwipe=new SwipeRefreshLayout(getContext());
-		mRecyclerView=new RecyclerView(getContext());
-		mStateView=new HashMap<>();
-		mStateLocation=new HashMap<>();
+	private void changedState(int location,View view){
+		mSwipe.setVisibility(View.VISIBLE);
+		switch (location){
+			case AdapterViewState.LOCATION_HEAD:
+				if(mHeadView.getChildCount()>0)
+					mHeadView.removeViewAt(0);
+				mHeadView.addView(view);
+				break;
+			case AdapterViewState.LOCATION_FOOT:
+				if(mFootView.getChildCount()>0)
+					mFootView.removeViewAt(0);
+				mFootView.addView(view);
+				break;
+			case AdapterViewState.LOCATION_MIDDLE_CLEAR:
+				if(mHeadView.getChildCount()>0)
+					mHeadView.removeViewAt(0);
+				if(mFootView.getChildCount()>0)
+					mFootView.removeViewAt(0);
+				mSwipe.setVisibility(View.GONE);
+				mHeadView.addView(view);
+				break;
+			case AdapterViewState.LOCATION_MIDDLE_COVER:
+				//不知道怎么做
+				break;
+			default:
+				break;
+		}
+	}
 
-		mRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-		mRecyclerView.setItemAnimator(new DefaultItemAnimator());
-		mRecyclerView.addItemDecoration(new DividerItemDecoration(getContext(),DividerItemDecoration.VERTICAL_LIST));
-		mSwipe.addView(mRecyclerView);
-		addView(mSwipe);
+	public void setOrientation(int orientation){
+		mLayoutManager.setOrientation(orientation);
+		mDividerItemDecoration.setOrientation(orientation);
+	}
+
+	/**
+	 * 首个item贴住start位置
+	 * @param autofit
+	 */
+	public void enableAutofit(boolean autofit){
+		mAutofit=autofit;
 	}
 
 	public void setAdapter(RecyclerView.Adapter<? extends ViewHolder> adapter){
@@ -115,7 +175,7 @@ public class RecycleListView extends RelativeLayout implements AdapterViewState{
 	public SwipeRefreshLayout getSwipe(){
 		return mSwipe;
 	}
-	
+
 	public class DividerItemDecoration extends ItemDecoration {
 		private final int[] ATTRS=new int[]{
 			android.R.attr.listDivider
@@ -184,6 +244,18 @@ public class RecycleListView extends RelativeLayout implements AdapterViewState{
 				outRect.set(0,0,0,mDivider.getIntrinsicHeight());
 			else
 				outRect.set(0,0,mDivider.getIntrinsicWidth(),0);
+		}
+
+		public int getOrientation(){
+			return mOrientation;
+		}
+
+		public int getDividerHeight(){
+			return mDivider.getIntrinsicHeight();
+		}
+
+		public int getDividerWidth(){
+			return mDivider.getIntrinsicWidth();
 		}
 	}
 }

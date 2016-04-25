@@ -11,7 +11,8 @@ import java.util.Map;
 public class Request implements Comparable{
     private int type;
     private boolean sFile;
-    private boolean useFactory;
+    private boolean hadRootAddress; //是否已加入根地址
+    private boolean useFactory; //是否使用预设值
     private String method;
     private String mUrl;
     private Downloadable mDownloadable;
@@ -19,8 +20,12 @@ public class Request implements Comparable{
     private Map<String,String> mParams;
     private Map<String,File> mFiles;
 
+    public Request(String url){
+        this("POST",url);
+    }
+
     public Request(){
-        this("POST","");
+        this("");
     }
 
     public Request(String method,String mUrl){
@@ -162,5 +167,13 @@ public class Request implements Comparable{
 
     public void setType(int type) {
         this.type = type;
+    }
+
+    public boolean isHadRootAddress() {
+        return hadRootAddress;
+    }
+
+    public void setHadRootAddress(boolean hadRootAddress) {
+        this.hadRootAddress = hadRootAddress;
     }
 }

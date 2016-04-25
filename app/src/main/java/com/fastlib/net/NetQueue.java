@@ -15,10 +15,10 @@ import java.util.Map;
 import java.util.concurrent.PriorityBlockingQueue;
 
 /**
- * httpConnection封装
- * 这个类不具体处理网络事务，只分发任务和数据统计，调整网络配置，注重任务调配和任务处理结果统计
- * 网络在类被实现的时候开始工作（调配任务），在断网或者需要保存请求缓存的时候可以正确的保存请求等待下次使用
- * 网络任务请求具有关联性，默认是independ（无关联）
+ * httpConnection封装<br/>
+ * 这个类不具体处理网络事务，只分发任务和数据统计，调整网络配置，注重任务调配和任务处理结果统计<br/>
+ * 网络在类被实现的时候开始工作（调配任务），在断网或者需要保存请求缓存的时候可以正确的保存请求等待下次使用<br/>
+ * 网络任务请求具有关联性，默认是independ（无关联）<br/>
  * 同类型的网络请求必须等之前的同类型网络请求被移除队列后才能开始任务
  */
 public class NetQueue {
@@ -26,17 +26,18 @@ public class NetQueue {
 
     private static PriorityBlockingQueue<Request> mWaitingQueue;
     private static ArrayList<Request> mReadyQueue;
-    private static List<Request> mRunningQueue;
     private Map<Integer,Boolean> mBlockMap;
+    private Map<Request,NetProcessor> mRunningQueue;
     private static NetQueue mOwer;
     private static Config mConfig;
     private static int Tx,Rx;
     private DataFactory mFactory;
     private volatile int mProcessing;
+    private volatile boolean isClose=false;
     private Runnable mMainProcessor =new Runnable() {
         @Override
         public void run() {
-            while(true){
+            while(!isClose){
                 Request r= null;
                 try {
                     r = mWaitingQueue.take();
@@ -85,12 +86,14 @@ public class NetQueue {
                             public void onComplete(NetProcessor processor1) {
                                 System.out.println(processor1);
                                 mProcessing--;
+                                mRunningQueue.remove(processor1.getReqeust());
                                 mBlockMap.put(processor1.getReqeust().getType(),false);
                                 if(mProcessing<=mConfig.maxTask) {
                                     new Thread(callbackRunner).start();
                                 }
                             }
                         },new Handler(Looper.getMainLooper()));
+                        mRunningQueue.put(r,processor);
                         new Thread(processor).start();
                         break;
                     }
@@ -108,7 +111,7 @@ public class NetQueue {
         mConfig.maxTask=5;
         mConfig.useStatus=true;
         mConfig.isTrackTraffic=true;
-        mRunningQueue=new ArrayList<>();
+        mRunningQueue=new HashMap<>();
         mBlockMap=new HashMap<>();
         mReadyQueue=new ArrayList<>();
         new Thread(mMainProcessor).start();
@@ -138,9 +141,28 @@ public class NetQueue {
             }
             map.putAll(mFactory.extraData());
         }
-        if(!TextUtils.isEmpty(rootAddress))
+        if(!TextUtils.isEmpty(rootAddress)&&!r.isHadRootAddress()) {
             r.setUrl(rootAddress + r.getUrl());
+            r.setHadRootAddress(true);
+        }
         mWaitingQueue.add(r);
+    }
+
+    /**
+     * 关闭网络传输
+     */
+    public void close(){
+        isClose=true;
+    }
+
+    /**
+     * 中断一个网络传输
+     * @param r
+     */
+    public void cancelRequest(Request r){
+        NetProcessor processor=mRunningQueue.get(r);
+        if(processor!=null)
+            processor.stopRequest();
     }
 
     public DataFactory getFactory(){

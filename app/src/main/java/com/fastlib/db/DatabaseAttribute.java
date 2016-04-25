@@ -1,7 +1,5 @@
 package com.fastlib.db;
 
-import java.util.TreeMap;
-
 /**
  * Created by sgfb on 16/3/21.
  * 数据库运行时一些参数

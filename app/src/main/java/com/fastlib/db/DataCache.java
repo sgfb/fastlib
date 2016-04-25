@@ -22,8 +22,6 @@ public class DataCache {
     public static final String TAG=DataCache.class.getSimpleName();
 
     private Request mRequest;
-    //需要的对象实体
-    private Class<?> mCla;
     private String mCacheName;
     private String mStartKey;
     private int mLoadLimit;
@@ -31,18 +29,17 @@ public class DataCache {
     private boolean loadMore=false;
     private Map<String,String> mParams;
 
-    public DataCache(Class<?> cla,String url,Listener l){
-        this(cla,url,null, l);
+    public DataCache(String url,Listener l){
+        this(url,null, l);
     }
 
-    public DataCache(Class<?> cla,String url,Map<String, String> params, Listener l){
-        this(cla,url,url,params,l);
+    public DataCache(String url,Map<String, String> params, Listener l){
+        this(url,url,params,l);
     }
 
-    public DataCache(Class<?> cla,String url,String cacheName,Map<String,String> params,Listener l){
+    public DataCache(String url,String cacheName,Map<String,String> params,Listener l){
         mRequest=new Request();
 
-        mCla=cla;
         mRequest.setUrl(url);
         mRequest.setParams(params);
         mRequest.setListener(l);

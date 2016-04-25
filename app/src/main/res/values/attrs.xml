@@ -4,5 +4,11 @@
         <attr name="radius"/>
     </declare-styleable>
 
+    <declare-styleable name="InputLayout">
+        <attr name="input_title" format="string"/>
+        <attr name="input_hit" format="string"/>
+        <attr name="input_content" format="string"/>
+    </declare-styleable>
+
     <attr name="radius" format="integer"/>
 </resources>

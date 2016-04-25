@@ -92,14 +92,13 @@ public class EventObserver {
      * 移除广播监听。如果某类型广播监听为0时回关闭这个广播
      *
      * @param type
-     * @param context
      * @param l
      */
-    public void removeObserver(String type,Context context,OnEventListener l){
+    public void removeObserver(String type,OnEventListener l){
         ReceiverWrapper wrapper= mObserver.get(type);
         List<OnEventListener> list=wrapper.getListeners();
         if(list.remove(l)&&list.size()==0)
-            context.unregisterReceiver(wrapper.getReceiver());
+            mContext.unregisterReceiver(wrapper.getReceiver());
     }
 
     /**

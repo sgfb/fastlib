@@ -1,5 +1,6 @@
 package com.fastlib.widget;
 
+import com.fastlib.bean.StateLocationView;
 import com.fastlib.interf.AdapterViewState;
 
 import android.content.Context;
@@ -19,7 +20,7 @@ import java.util.Map;
  */
 public class StateListView extends ListView implements AdapterViewState{
 	private int mCurrState;
-	private Map<Integer,LocationView> mViews;
+	private Map<Integer,StateLocationView> mViews;
 	
 	public StateListView(Context context){
 		this(context,null);
@@ -36,7 +37,7 @@ public class StateListView extends ListView implements AdapterViewState{
 		if(mCurrState==AdapterViewState.STATE_NO_MORE)
 			return;
 		mCurrState=flag;
-		LocationView lv=mViews.get(flag);
+		StateLocationView lv=mViews.get(flag);
 		if(lv==null||lv.view==null)
 			return;
 		showStateView(mViews.get(flag));
@@ -44,26 +45,26 @@ public class StateListView extends ListView implements AdapterViewState{
 
 	@Override
 	public void addStateView(int state, View view, int location) {
-		LocationView lv=new LocationView();
+		StateLocationView lv=new StateLocationView();
 		lv.location=location;
 		lv.view=view;
 		mViews.put(state,lv);
 	}
 
-	private void showStateView(LocationView locationView){
+	private void showStateView(StateLocationView locationView){
 		View view=locationView.view;
 		switch(locationView.location){
-			case AdapterViewState.location_foot:
+			case AdapterViewState.LOCATION_FOOT:
 				removeFootView();
 				addFooterView(view,null,false);
 				break;
-			case AdapterViewState.location_head:
+			case AdapterViewState.LOCATION_HEAD:
 				removeHeadView();
 				addHeaderView(view,null,false);
 				break;
-			case AdapterViewState.location_middle_clear:
+			case AdapterViewState.LOCATION_MIDDLE_CLEAR:
 				break;
-			case AdapterViewState.location_middle_cover:
+			case AdapterViewState.LOCATION_MIDDLE_COVER:
 				break;
 			default:
 				break;
@@ -75,8 +76,8 @@ public class StateListView extends ListView implements AdapterViewState{
 
 		while(iter.hasNext()){
 			int state=iter.next();
-			LocationView lv=mViews.get(state);
-			if(lv.location==AdapterViewState.location_head)
+			StateLocationView lv=mViews.get(state);
+			if(lv.location==AdapterViewState.LOCATION_HEAD)
 				removeFooterView(lv.view);
 		}
 	}
@@ -86,14 +87,9 @@ public class StateListView extends ListView implements AdapterViewState{
 
 		while(iter.hasNext()){
 			int state=iter.next();
-			LocationView lv=mViews.get(state);
-			if(lv.location==AdapterViewState.location_foot)
+			StateLocationView lv=mViews.get(state);
+			if(lv.location==AdapterViewState.LOCATION_FOOT)
 			    removeFooterView(lv.view);
 		}
-	}
-
-	private class LocationView{
-		int location;
-		View view;
 	}
 }

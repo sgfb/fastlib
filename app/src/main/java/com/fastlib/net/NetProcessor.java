@@ -231,8 +231,15 @@ public class NetProcessor extends Thread{
         byte[] data=new byte[1024];
         int len;
 
-        while((len=in.read(data))!=-1)
+        while((len=in.read(data))!=-1) {
             out.write(data, 0, len);
+            try {
+                System.out.println("send 1kb data");
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void stopRequest(){
@@ -273,6 +280,6 @@ public class NetProcessor extends Thread{
         RUNNING,
         ERROR,
         SUCCESS,
-        OTHER;
+        OTHER
     }
 }

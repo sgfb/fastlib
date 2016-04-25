@@ -17,7 +17,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
 /**
- * 绑定适配器，将视图与服务器中的数据捆绑，达到集合开发的目的
+ * 绑定适配器，将视图与服务器中的数据捆绑
  */
 public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 	protected Context mContext;
@@ -144,6 +144,14 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 
 	public void setIsSaveCache(boolean isSaveCache) {
 		this.isSaveCache = isSaveCache;
+	}
+
+	/**
+	 * 设置是否仅请求一次,需要在请求之前设置
+	 * @param requestOnce
+	 */
+	public void setRequestOnce(boolean requestOnce){
+		isMore=!requestOnce;
 	}
 
 	@Override
