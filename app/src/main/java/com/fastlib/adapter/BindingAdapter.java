@@ -1,5 +1,6 @@
 package com.fastlib.adapter;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
 import com.fastlib.base.OldViewHolder;
@@ -9,9 +10,13 @@ import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
 import com.fastlib.net.Result;
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
+import com.google.gson.reflect.TypeToken;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -20,6 +25,8 @@ import android.widget.BaseAdapter;
  * 绑定适配器，将视图与服务器中的数据捆绑
  */
 public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
+	public static final String TAG=BindingAdapter.class.getSimpleName();
+
 	protected Context mContext;
 	protected List<N> mData;
 	private AdapterViewState mViewState;
@@ -39,11 +46,22 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 	public abstract void binding(int position,N data,OldViewHolder holder);
 
 	/**
-	 * 返回的数据转换
+	 * 返回的数据转换.通常情况下都需要覆写这个方法
 	 * @param result
 	 * @return
 	 */
-	public abstract List<N> translate(Result result);
+	public List<N> translate(Result result){
+		if(result.isSuccess()){
+			try{
+				Gson gson=new Gson();
+				Type type=new TypeToken<List<N>>(){}.getType();
+				return gson.fromJson(result.getBody(),type);
+			}catch(JsonParseException e){
+				Log.d(TAG,e.toString());
+			}
+		}
+		return null;
+	}
 
 	/**
 	 * 请求更多数据时的请求
@@ -58,7 +76,7 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 	public abstract void getRefreshDataRequest(Request request);
 
 	public BindingAdapter(Context context,Request request,@NonNull int resId){
-		this(context,request,resId,false);
+		this(context, request, resId, false);
 	}
 
 	public BindingAdapter(Context context,Request request,@NonNull int resId,boolean saveCache){

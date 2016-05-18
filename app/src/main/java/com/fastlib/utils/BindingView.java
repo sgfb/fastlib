@@ -10,15 +10,11 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
-import com.fastlib.MainActivity;
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import static android.util.JsonToken.STRING;
 
 /**
  * Created by sgfb on 16/4/23.

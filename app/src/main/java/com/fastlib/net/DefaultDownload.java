@@ -7,15 +7,9 @@ import java.io.File;
  */
 public class DefaultDownload implements Downloadable {
     private File mTargetFile;
-    private DownloadCompleteListener mListener;
 
     public DefaultDownload(File target){
-        this(target,null);
-    }
-
-    public DefaultDownload(File target,DownloadCompleteListener listener){
         mTargetFile=target;
-        mListener=listener;
     }
 
     @Override
@@ -26,15 +20,5 @@ public class DefaultDownload implements Downloadable {
     @Override
     public void setTargetFile(File f) {
         mTargetFile=f;
-    }
-
-    @Override
-    public DownloadCompleteListener getCompleteListener() {
-        return mListener;
-    }
-
-    @Override
-    public void setDownloadCompleteListener(DownloadCompleteListener l) {
-        mListener=l;
     }
 }

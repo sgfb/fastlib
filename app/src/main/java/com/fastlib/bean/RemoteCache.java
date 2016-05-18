@@ -5,7 +5,7 @@ import com.fastlib.annotation.DatabaseInject;
 /**
  * 包裹从网络中获取的缓存.这个缓存将会经过数据库
  */
-public class RemoteDataCache{
+public class RemoteCache {
     @DatabaseInject(keyPrimary = true)
     private String cacheName;
     //缓存数据会被转换成json，以便存储和传输

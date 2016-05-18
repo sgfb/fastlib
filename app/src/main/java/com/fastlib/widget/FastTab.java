@@ -14,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
 
 import com.fastlib.R;
 import com.fastlib.interf.Delayable;
@@ -25,6 +26,7 @@ import com.fastlib.interf.Delayable;
 public class FastTab extends FrameLayout implements ViewPager.OnPageChangeListener{
     private ViewPager mViewPager;
     private FragmentPagerAdapter mAdapter;
+    private OnPageChangeListener mListener;
     private TabLayout mTabLayout;
     private TabPage[] mTabPages;
     private boolean isAlignTop=true;
@@ -112,9 +114,12 @@ public class FastTab extends FrameLayout implements ViewPager.OnPageChangeListen
         return mTabLayout;
     }
 
+    public TabPage[] getTabPages(){return mTabPages;}
+
     @Override
     public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
+        if(mListener!=null)
+            mListener.onPageScrolled(position,positionOffset,positionOffsetPixels);
     }
 
     @Override
@@ -122,11 +127,18 @@ public class FastTab extends FrameLayout implements ViewPager.OnPageChangeListen
         Fragment fragment=mTabPages[position].getFragment();
         if(fragment instanceof Delayable)
             ((Delayable)fragment).startLoad();
+        if(mListener!=null)
+            mListener.onPageSelected(position);
     }
 
     @Override
     public void onPageScrollStateChanged(int state) {
+        if(mListener!=null)
+            mListener.onPageScrollStateChanged(state);
+    }
 
+    public void setOnPageChangedListener(OnPageChangeListener l){
+        mListener=l;
     }
 
     class DefaultAdapter extends FragmentPagerAdapter{

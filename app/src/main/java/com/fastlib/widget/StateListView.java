@@ -37,6 +37,10 @@ public class StateListView extends ListView implements AdapterViewState{
 		if(mCurrState==AdapterViewState.STATE_NO_MORE)
 			return;
 		mCurrState=flag;
+               if(flag==AdapterViewState.STATE_NO_MORE) {
+			removeFootView();
+			removeHeadView();
+		}
 		StateLocationView lv=mViews.get(flag);
 		if(lv==null||lv.view==null)
 			return;

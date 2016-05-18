@@ -40,7 +40,9 @@ public class Request implements Comparable{
     }
 
     @Override
-    public int compareTo(Object another) {
+    public int compareTo(Object another){
+        if(another instanceof Request)
+            return ((Request) another).getUrl().equals(mUrl)?1:0;
         return 0;
     }
 
@@ -49,10 +51,44 @@ public class Request implements Comparable{
      * @param key
      * @param value
      */
-    public void put(String key,String value){
+    public Request put(String key,String value){
         if(mParams==null)
             mParams=new HashMap<>();
         mParams.put(key, value);
+        return this;
+    }
+
+    public Request put(String key,int value){
+        return put(key,Integer.toString(value));
+    }
+
+    /**
+     * 简易地添加请求参数
+     * @param params
+     * @return
+     */
+    public Request put(Map<String,String> params){
+        if(mParams==null)
+            mParams=params;
+        else
+            mParams.putAll(params);
+        return this;
+    }
+
+
+    public Request put(String key,File file){
+        if(mFiles==null)
+            mFiles=new HashMap<>();
+        mFiles.put(key,file);
+        return this;
+    }
+
+    public Request putFile(Map<String,File> fileParams){
+        if(mFiles==null)
+            mFiles=fileParams;
+        else
+            mFiles.putAll(fileParams);
+        return this;
     }
 
     /**
@@ -123,8 +159,9 @@ public class Request implements Comparable{
         this.mUrl = mUrl;
     }
 
-    public void setListener(Listener l){
+    public Request setListener(Listener l){
         mListener=l;
+        return this;
     }
 
     public Listener getListener(){
@@ -137,8 +174,9 @@ public class Request implements Comparable{
         return method;
     }
 
-    public void setMethod(String method){
+    public Request setMethod(String method){
         this.method=method.toUpperCase();
+        return this;
     }
 
     public boolean isFile() {
@@ -149,8 +187,9 @@ public class Request implements Comparable{
         this.sFile = sFile;
     }
 
-    public void setDownloadable(Downloadable d){
+    public Request setDownloadable(Downloadable d){
         mDownloadable=d;
+        return this;
     }
 
     public Downloadable getDownloadable(){
@@ -161,8 +200,9 @@ public class Request implements Comparable{
         return useFactory;
     }
 
-    public void setUseFactory(boolean useFactory) {
+    public Request setUseFactory(boolean useFactory) {
         this.useFactory = useFactory;
+        return this;
     }
 
     public void setType(int type) {
@@ -175,5 +215,9 @@ public class Request implements Comparable{
 
     public void setHadRootAddress(boolean hadRootAddress) {
         this.hadRootAddress = hadRootAddress;
+    }
+
+    public boolean downloadable(){
+        return mDownloadable!=null&&mDownloadable.getTargetFile()!=null&&mDownloadable.getTargetFile().exists();
     }
 }

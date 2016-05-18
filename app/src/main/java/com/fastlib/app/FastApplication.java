@@ -18,7 +18,6 @@ public class FastApplication extends Application{
         mApp=this;
         FastDatabase.build(this);
         EventObserver.build(this);
-        NetQueue.build();
     }
 
     @Override

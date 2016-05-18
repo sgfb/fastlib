@@ -4,37 +4,9 @@
               android:layout_width="match_parent"
               android:orientation="vertical">
 
-
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <Button
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="bt"
-            android:id="@+id/button"/>
-
-        <Button
-            style="?android:attr/buttonStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="bt2"
-            android:id="@+id/button2"
-            android:layout_gravity="center_horizontal"/>
-    </LinearLayout>
-
-    <EditText
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/et"/>
-
-    <TextView
+    <Button
+        android:id="@+id/bt"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="New Text"
-        android:id="@+id/tv"/>
-
+        android:text="请求生成预支付交易单"/>
 </LinearLayout>

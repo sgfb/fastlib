@@ -85,7 +85,6 @@ public class RecycleListView extends RelativeLayout implements AdapterViewState{
 				}
 			}
 		});
-
 		mSwipe.setId(R.id.swipe);
 		mHeadView.setId(R.id.headView);
 		mFootView.setId(R.id.bottomView);
@@ -119,7 +118,7 @@ public class RecycleListView extends RelativeLayout implements AdapterViewState{
 		StateLocationView slv=new StateLocationView();
 		slv.location=location;
 		slv.view=view;
-		mStateView.put(state,slv);
+		mStateView.put(state, slv);
 	}
 
 	private void changedState(int location,View view){
@@ -174,6 +173,14 @@ public class RecycleListView extends RelativeLayout implements AdapterViewState{
 	
 	public SwipeRefreshLayout getSwipe(){
 		return mSwipe;
+	}
+
+	public RecyclerView getRecyclerView(){
+		return mRecyclerView;
+	}
+
+	public ItemDecoration getDecoration(){
+		return mDividerItemDecoration;
 	}
 
 	public class DividerItemDecoration extends ItemDecoration {

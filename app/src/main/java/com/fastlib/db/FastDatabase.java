@@ -24,7 +24,6 @@ import android.util.Log;
 
 /**
  * orm数据库.提供一些与数据库交互的基本操作
- * 这个数据库应该在application中被生成
  * @author sgfb
  */
 public class FastDatabase{
@@ -35,6 +34,7 @@ public class FastDatabase{
 	private static FastDatabase sOwer;
 	private static DatabaseConfig sConfig;
 	private static DatabaseAttribute sAttri;
+	private CustomUpdate mCustomUpdate;
 
 	private Context mContext;
 
@@ -321,7 +321,7 @@ public class FastDatabase{
 		//查到对应行的总数
 		int count;
 
-		tableName=cla.getCanonicalName();
+		tableName=cla.getName();
 		if(!tableExists(tableName)){
 			Log.w(TAG, "数据库 " + sConfig.getDatabaseName() + "中不存在表 " + tableName);
 			return false;
@@ -370,7 +370,7 @@ public class FastDatabase{
 		ContentValues cv=new ContentValues();
 		Field[] fields;
 
-		tableName=obj.getClass().getCanonicalName();
+		tableName=obj.getClass().getName();
 		//如果表不存在或者表中没有这条数据，则返回false
 		if(!tableExists(tableName)) {
 			if(sConfig.isOutInformation)
@@ -485,15 +485,20 @@ public class FastDatabase{
 		return true;
 	}
 
+	/**
+	 * 保存对象到数据库
+	 * @param obj
+	 * @return
+	 */
 	private boolean save(Object obj){
 		Field[] fields=Reflect.getAllField(obj.getClass());
 		ContentValues cv=new ContentValues();
 		SQLiteDatabase db=prepare(null);
-		String tableName=obj.getClass().getCanonicalName();
+		String tableName=obj.getClass().getName();
 
-		if(sAttri.getCeil()< Integer.MAX_VALUE){
+		if(sAttri.getSaveMax()< Integer.MAX_VALUE){
 			List<?> list=getAll(obj.getClass());
-			if(list!=null&&list.size()>=sAttri.getCeil()){
+			if(list!=null&&list.size()>=sAttri.getSaveMax()){
 				delete(list.get(0));
 			}
 		}
@@ -567,7 +572,7 @@ public class FastDatabase{
 		}
 		try{
 			db.beginTransaction();
-			db.insert("'" + tableName + "'", null,cv);
+			db.insert("'" + tableName + "'", null, cv);
 			db.setTransactionSuccessful();
 			if(sConfig.isOutInformation)
 				Log.d(TAG, sConfig.getDatabaseName()+"<----"+tableName);
@@ -594,7 +599,7 @@ public class FastDatabase{
 
 		DatabaseTable table=loadAttribute(obj.getClass());
 		tableName=table.tableName;
-		//如果表存在并且有主键，尝试获取这个对象，如果不是null并且主键值不为0则更新
+		//如果表存在并且有主键，尝试获取这个对象，如果不是null并且主键值不为0则尝试更新
 		if(tableExists(tableName)){
 			DatabaseTable.DatabaseColumn keyColumn=table.keyColumn;
 			if(keyColumn!=null){
@@ -604,7 +609,7 @@ public class FastDatabase{
 					field.setAccessible(true);
 					if(Reflect.isInteger(field.getType().getSimpleName())){
 						int value=field.getInt(obj);
-						if(value>0&&keyColumn.autoincrement){
+						if(value>0){
 							Object data=get(obj);
 							if(data!=null){
 								isUpdate = true;
@@ -646,9 +651,23 @@ public class FastDatabase{
 		return sOwer;
 	}
 
-	public FastDatabase ceil(int max){
-		sAttri.setCeil(max);
+	public FastDatabase limit(int limit){
+		sAttri.setLimit(limit);
 		return sOwer;
+	}
+
+	public FastDatabase maxSave(int max){
+		sAttri.setSaveMax(max);
+		return sOwer;
+	}
+
+	public FastDatabase toWhichDatabase(String databaseName){
+		sAttri.setToDatabase(databaseName);
+		return sOwer;
+	}
+
+	public void setCustomUpdate(CustomUpdate custom){
+		mCustomUpdate=custom;
 	}
 
 	/**
@@ -698,7 +717,7 @@ public class FastDatabase{
 			String type=f.getType().getSimpleName();
 
 			if(f.getClass().isArray())
-				type=f.getType().getCanonicalName();
+				type=f.getType().getName();
 			column.columnName=f.getName();
 			column.type=Reflect.toSQLType(type);
 			if(fieldInject!=null){
@@ -733,15 +752,26 @@ public class FastDatabase{
 								  int newVersion) {
 				if(sConfig.isOutInformation)
 					Log.d(TAG,"发现数据库版本需要升级，开始自动升级");
-				updateDatabase(db);
+				if(mCustomUpdate!=null){
+					if(sConfig.isOutInformation)
+						Log.d(TAG,"使用自定义升级方案");
+					mCustomUpdate.update(db,oldVersion,newVersion);
+				}
+				else
+					updateDatabase(db);
 				if(sConfig.isOutInformation)
 					Log.d(TAG,"数据库升级完毕");
 			}
 		};
 
 		database=helper.getWritableDatabase();
-		if(!TextUtils.isEmpty(sql))
-		    database.execSQL(sql);
+		if(!TextUtils.isEmpty(sql)) {
+			try{
+				database.execSQL(sql);
+			}catch(SQLiteException e){
+				Log.w(TAG,"prepare时异常:"+e.getMessage());
+			}
+		}
 		return database;
 	}
 
@@ -756,42 +786,34 @@ public class FastDatabase{
 			while(!cursor.isAfterLast()){
 				String tableName=cursor.getString(0);
 				cursor.moveToNext();
+				//无视特殊表
 				if(tableName.equals("android_metadata"))
 					continue;
 				if(tableName.equals("sqlite_sequence"))
 					continue;
-				checkColumnChanged(db,tableName);
-//				Cursor tableCursor=db.rawQuery("pragma table_info("+"'"+tableName+"')", null);
-//				if(tableCursor!=null){
-//					tableCursor.moveToFirst();
-//					checkColumnChanged(db,tableName);
-//				}
-//				cursor.moveToNext();
+				checkTableChanged(db, tableName);
 			}
+			cursor.close();
 		}
 	}
 
 	/**
-	 * 检查类是否被修改，如果被修改列也跟随修改
+	 * 检查表对类映射.如果增加新列可以直接操作，但是如果是更改主键或者修改列类型删除列就需要表重建
 	 * @param tableName
-	 * @throws ClassNotFoundException
 	 */
-	private void checkColumnChanged(SQLiteDatabase db,String tableName){
+	private void checkTableChanged(SQLiteDatabase db, String tableName){
 		Class<?> cla;
 		Field[] fields;
 		Map<String,Field> fieldMap=new HashMap<>();
-		//保存需要修改并且保留数据的列
-		List<String> convertDatas=new ArrayList<>();
-		//临时列表，用于保存需要修改的列
-		List<String> temp=new ArrayList<>();
+		List<String> convertDatas=new ArrayList<>(); //保存需要修改并且保留数据的列
+		List<String> needChangeColumn=new ArrayList<>();
 		Map<String,String> newColumn=new HashMap<>();
-		boolean needAlter=false;
 
 		try {
 			//如果对象类不存在则删除这张表
 			cla=Class.forName(tableName);
 		} catch (ClassNotFoundException e) {
-			db.execSQL("drop table " + tableName);
+			db.execSQL("drop table '" + tableName+"'");
 			if(sConfig.isOutInformation)
 				Log.d(TAG,"删除表"+tableName);
 			return;
@@ -799,8 +821,7 @@ public class FastDatabase{
 		fields=Reflect.getAllField(cla);
 		for(Field field:fields) {
 			field.setAccessible(true);
-			//列名以注解为优先，默认字段名
-			String columnName=field.getName();
+			String columnName=field.getName(); //列名以注解为优先，默认字段名
 			DatabaseInject inject=field.getAnnotation(DatabaseInject.class);
 			if(inject!=null){
 				if(inject.ignore())
@@ -821,27 +842,28 @@ public class FastDatabase{
 
 			//也许类中某字段被删除了
 			if(field==null){
-				temp.add(key);
+				needChangeColumn.add(key);
 				continue;
 			}
+			//判断注解是否被修改
 			inject=field.getAnnotation(DatabaseInject.class);
 			if(column.isPrimaryKey){
 				if(inject==null||!inject.keyPrimary()) {
-					temp.add(column.columnName);
+					needChangeColumn.add(column.columnName);
 				}
 			}
 			else{
 				if(inject!=null&&inject.keyPrimary())
-					temp.add(column.columnName);
+					needChangeColumn.add(column.columnName);
 			}
 			if(column.autoincrement){
 				if (inject==null||!inject.autoincrement()) {
-					temp.add(column.columnName);
+					needChangeColumn.add(column.columnName);
 				}
 			}
 			else{
 				if(inject!=null&&inject.autoincrement())
-					temp.add(column.columnName);
+					needChangeColumn.add(column.columnName);
 			}
 			String fieldType;
 			//如果是数组，判断组类型
@@ -849,66 +871,63 @@ public class FastDatabase{
 //				fieldType=field.getClass().getComponentType().getSimpleName();
 //			else
 //			    fieldType=field.getType().getSimpleName();
+			//判断类型是否被修改.integer改为任何类型都可以被兼容,real只被varchar兼容,varchar被修改不兼容其他类型
 			fieldType=field.getType().getSimpleName();
 			switch (column.type){
 				case "integer":
 					if(!Reflect.isInteger(fieldType)){
-						temp.add(column.columnName);
+						needChangeColumn.add(column.columnName);
+						convertDatas.add(column.columnName);
 					}
 					break;
 				case "real":
-					if(!Reflect.isReal(fieldType)){
-						if(!Reflect.isInteger(fieldType)) {
-							temp.add(column.columnName);
-						}
+					if(!Reflect.isReal(fieldType)&&Reflect.isVarchar(fieldType)){
+						needChangeColumn.add(column.columnName);
+						convertDatas.add(column.columnName);
 					}
 					break;
 				case "varchar":
-					if(!Reflect.isVarchar(fieldType)){
-						temp.add(column.columnName);
-					}
+					if(!Reflect.isVarchar(fieldType))
+						needChangeColumn.add(column.columnName);
 					break;
 				default:
-					if(!field.getType().getName().equals(column.type)){
-						temp.add(column.columnName);
-					}
+					if(!field.getType().getName().equals(column.type))
+						needChangeColumn.add(column.columnName);
 					break;
 			}
-			if(!temp.contains(column.columnName))
-				convertDatas.add(column.columnName);
 		}
 		iter=fieldMap.keySet().iterator();
 		while(iter.hasNext()){
 			String key=iter.next();
+			if(key.contains("this"))
+				continue;
 			Field value=fieldMap.get(key);
 			String fieldType=value.getType().getSimpleName();
 			newColumn.put(key,Reflect.toSQLType(fieldType));
 		}
-		if(temp.size()>0||newColumn.size()>0) {
-			if(temp.size()<=0){
-				convertDatas.clear();
-				convertDatas = null;
-			}
-			alterTable(db, cla, convertDatas, newColumn);
+		if(needChangeColumn.size()>0||newColumn.size()>0){
+			boolean needChangeTable=(needChangeColumn.size()>0); //列被删除或字段类型被修改时重置表
+			alterTable(db, cla, convertDatas, newColumn,needChangeTable);
 		}
 		else
 			if(sConfig.isOutInformation)
-				Log.d(TAG,"类对象:"+cla.getSimpleName()+" 不需要修改");
+				Log.d(TAG,"表 "+tableName+" 不需要修改");
 	}
 
 	/**
-	 * 对一个存在的表和对象进行修改
+	 * 对一个存在的表进行修改
 	 *
 	 * @param cla
-	 * @param valueToValue 保留的列数据，如果是null代表保留所有列数据
+	 * @param valueToValue 保留列和数据
 	 * @param newColumn 新列名与类型映射组
+	 * @param needDelete 是否需要重建表
 	 */
-	private void alterTable(SQLiteDatabase db,Class<?> cla, List<String> valueToValue,Map<String,String> newColumn){
-		String tableName=cla.getCanonicalName();
-		String tempName="temp_table_"+Long.toString(System.currentTimeMillis());
+	public void alterTable(SQLiteDatabase db,Class<?> cla,List<String> valueToValue,Map<String,String> newColumn,boolean needDelete){
+		String tableName=cla.getName();
+		String tempName="temp_table_"+Long.toString(System.currentTimeMillis()); //数据转移用临时表
 		Iterator<String> iter;
 
-		if(valueToValue==null){
+		if(!needDelete){
 			if(newColumn!=null&&newColumn.size()>0){
 				iter=newColumn.keySet().iterator();
 				while(iter.hasNext()){
@@ -921,21 +940,27 @@ public class FastDatabase{
 			}
 		}
 		else{
-			StringBuilder sb=new StringBuilder();
-			iter=valueToValue.iterator();
-			while(iter.hasNext()) {
-				String key=iter.next();
-				if(key.equals("id"))
-					continue;
-				sb.append(key + ",");
+			if(valueToValue!=null&&valueToValue.size()>0){
+				StringBuilder sb=new StringBuilder();
+				iter=valueToValue.iterator();
+				while(iter.hasNext()) {
+					String key=iter.next();
+					if(key.equals("id"))
+						continue;
+					sb.append(key + ",");
+				}
+				if(valueToValue.size()>0)
+					sb.deleteCharAt(sb.length() - 1);
+				db.execSQL("alter table '"+tableName+"' rename to '"+tempName+"'");
+				db.execSQL(generateCreateTableSql(cla));
+				//注意主键值
+				db.execSQL("insert into '" + tableName + "' (" + sb.toString() + ") select " + sb.toString() + " from " + tempName);
+				db.execSQL("drop table " + tempName);
 			}
-			if(valueToValue.size()>0)
-			    sb.deleteCharAt(sb.length() - 1);
-			db.execSQL("alter table '"+tableName+"' rename to '"+tempName+"'");
-			db.execSQL(generateCreateTableSql(cla));
-			//注意主键值
-			db.execSQL("insert into '" + tableName + "' (" + sb.toString() + ") select " + sb.toString() + " from " + tempName);
-			db.execSQL("drop table " + tempName);
+			else{
+				db.execSQL("drop table '"+tableName+"'");
+				db.execSQL(generateCreateTableSql(cla));
+			}
 			if(sConfig.isOutInformation)
 				Log.d(TAG,"表"+tableName+"被调整");
 		}
@@ -974,7 +999,7 @@ public class FastDatabase{
 	private boolean tableExists(String tableName){
 		SQLiteDatabase db=prepare(null);
 		Cursor cursor=db.rawQuery("select name from sqlite_master where type='table' and name=" + "'" + tableName + "'", null);
-		boolean exists=!(cursor==null||cursor.isAfterLast());
+		boolean exists=!(cursor==null||cursor.getCount()<=0);
 
 		if(cursor!=null)
 		    cursor.close();

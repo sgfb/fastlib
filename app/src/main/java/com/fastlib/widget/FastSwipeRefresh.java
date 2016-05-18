@@ -19,17 +19,25 @@ import java.lang.reflect.Field;
  */
 public class FastSwipeRefresh extends FrameLayout {
     private SwipeRefreshLayout mRefresh;
-    private ListView mDefaultListView;
+    private StateListView mDefaultListView;
 
     public FastSwipeRefresh(Context context, AttributeSet attrs) {
-        super(context, attrs);
+        super(context,attrs);
         mRefresh=new SwipeRefreshLayout(context);
-        mDefaultListView=new ListView(context);
+        mDefaultListView=new StateListView(context);
         mRefresh.addView(mDefaultListView);
         addView(mRefresh);
     }
 
     public SwipeRefreshLayout getRefresh(){
         return mRefresh;
+    }
+
+    public StateListView getListView(){
+        return mDefaultListView;
+    }
+
+    public void setSwipeListener(SwipeRefreshLayout.OnRefreshListener l){
+        mRefresh.setOnRefreshListener(l);
     }
 }

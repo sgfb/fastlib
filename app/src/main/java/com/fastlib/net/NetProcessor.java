@@ -20,7 +20,8 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 
 /**
- * 网络请求的具体处理。在结束时会保存一些状态
+ * 网络请求的具体处理.在结束时会保存一些状态<br/>
+ * 这个类可以上传和下载文件,默认不支持中断
  */
 public class NetProcessor extends Thread{
     private final String BOUNDARY=Long.toHexString(System.currentTimeMillis());
@@ -63,12 +64,12 @@ public class NetProcessor extends Thread{
             HttpURLConnection con=(HttpURLConnection)url.openConnection();
             boolean isMulti=false,isPost=false;
 
-            //网络文件请求不负责本地事务，如果不存在则无视这个文件
-            if(mRequest.getDownloadable()!=null&&mRequest.getDownloadable().getTargetFile()!=null&&mRequest.getDownloadable().getTargetFile().exists())
+            //检测是否可保存为文件
+            if(mRequest.downloadable())
                 downloadFile=mRequest.getDownloadable().getTargetFile();
-            if(mRequest.getMethod().equals("POST")||downloadFile!=null) {
+            if(mRequest.getMethod().equals("POST")){
                 isPost = true;
-                if(mRequest.getFiles()!=null&&mRequest.getFiles().size()>0) {
+                if(mRequest.getFiles()!=null&&mRequest.getFiles().size()>0){
                     isMulti = true;
                     con.setChunkedStreamingMode(CHUNK_LENGTH);
                 }
@@ -83,18 +84,13 @@ public class NetProcessor extends Thread{
                 }
             }
             con.connect();
-            if(isPost&&sRunning) {
+            if(isPost&&sRunning){
                 out = con.getOutputStream();
-                if(downloadFile!=null){
-                    String availableSize="skip="+Long.toString(downloadFile.length());
-                    Tx+=availableSize.getBytes().length;
-                    out.write(availableSize.getBytes());
-                }
-                else if(isMulti)
+                if(isMulti)
                     multipart(mRequest.getParams(), mRequest.getFiles(), out);
                 else{
                     StringBuilder sb=new StringBuilder();
-                    loadParames(mRequest.getParams(),sb);
+                    loadParams(mRequest.getParams(),sb);
                     byte[] data=sb.toString().getBytes();
                     Tx+=data.length;
                     out.write(data);
@@ -107,18 +103,19 @@ public class NetProcessor extends Thread{
             byte[] data=new byte[BUFF_LENGTH];
             if(downloadFile!=null){
                 OutputStream fileOut=new FileOutputStream(downloadFile);
-                while((len=in.read(data))!=-1&&sRunning) {
+                while((len=in.read(data))!=-1&&sRunning){
                     fileOut.write(data, 0, len);
                     Rx+=len;
                 }
                 fileOut.close();
+                mResponse=downloadFile.getAbsolutePath();
             }
             else{
                 while((len=in.read(data))!=-1&&sRunning)
                     baos.write(data,0,len);
                 Rx+=baos.size();
+                mResponse = baos.toString();
             }
-            mResponse = baos.toString();
             baos.close();
             in.close();
             con.disconnect();
@@ -133,7 +130,7 @@ public class NetProcessor extends Thread{
         }catch (IOException e) {
             mMessage=e.toString();
             mStatus=NetStatus.ERROR;
-        } finally {
+        } finally{
             if(mListener!=null)
                 mListener.onComplete(this);
             final Listener l=mRequest.getListener();
@@ -169,11 +166,11 @@ public class NetProcessor extends Thread{
         }
     }
 
-    private void loadParames(Map<String,String> params,StringBuilder sb){
+    private void loadParams(Map<String, String> params, StringBuilder sb){
         if(params==null||params.size()<=0)
             return;
         Iterator<String> iter=params.keySet().iterator();
-
+        
         while(iter.hasNext()){
             String key=iter.next();
             String value=params.get(key);
@@ -231,15 +228,8 @@ public class NetProcessor extends Thread{
         byte[] data=new byte[1024];
         int len;
 
-        while((len=in.read(data))!=-1) {
+        while((len=in.read(data))!=-1)
             out.write(data, 0, len);
-            try {
-                System.out.println("send 1kb data");
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     public void stopRequest(){

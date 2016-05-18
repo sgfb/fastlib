@@ -5,8 +5,6 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
-import com.fastlib.app.FastApplication;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -26,18 +24,18 @@ public class NetQueue {
 
     private static PriorityBlockingQueue<Request> mWaitingQueue;
     private static ArrayList<Request> mReadyQueue;
-    private Map<Integer,Boolean> mBlockMap;
-    private Map<Request,NetProcessor> mRunningQueue;
+    private static List<Request> mRunningQueue;
     private static NetQueue mOwer;
     private static Config mConfig;
     private static int Tx,Rx;
+    private Map<Integer,Boolean> mBlockMap;
     private DataFactory mFactory;
+    private String mRootAddress;
     private volatile int mProcessing;
-    private volatile boolean isClose=false;
     private Runnable mMainProcessor =new Runnable() {
         @Override
         public void run() {
-            while(!isClose){
+            while(true){
                 Request r= null;
                 try {
                     r = mWaitingQueue.take();
@@ -86,14 +84,12 @@ public class NetQueue {
                             public void onComplete(NetProcessor processor1) {
                                 System.out.println(processor1);
                                 mProcessing--;
-                                mRunningQueue.remove(processor1.getReqeust());
                                 mBlockMap.put(processor1.getReqeust().getType(),false);
                                 if(mProcessing<=mConfig.maxTask) {
                                     new Thread(callbackRunner).start();
                                 }
                             }
                         },new Handler(Looper.getMainLooper()));
-                        mRunningQueue.put(r,processor);
                         new Thread(processor).start();
                         break;
                     }
@@ -111,17 +107,13 @@ public class NetQueue {
         mConfig.maxTask=5;
         mConfig.useStatus=true;
         mConfig.isTrackTraffic=true;
-        mRunningQueue=new HashMap<>();
+        mRunningQueue=new ArrayList<>();
         mBlockMap=new HashMap<>();
         mReadyQueue=new ArrayList<>();
         new Thread(mMainProcessor).start();
     }
 
-    public static  NetQueue getInstance(){
-        return mOwer;
-    }
-
-    public static synchronized NetQueue build(){
+    public static synchronized NetQueue getInstance(){
         if(mOwer==null)
             mOwer=new NetQueue();
         return mOwer;
@@ -132,7 +124,6 @@ public class NetQueue {
     }
 
     public void netRequest(int type,Request r){
-        String rootAddress=FastApplication.getInstance().getRootAddress();
         if(mFactory!=null&&r.isUseFactory()){
             Map<String,String> map=r.getParams();
             if(map==null){
@@ -141,28 +132,11 @@ public class NetQueue {
             }
             map.putAll(mFactory.extraData());
         }
-        if(!TextUtils.isEmpty(rootAddress)&&!r.isHadRootAddress()) {
-            r.setUrl(rootAddress + r.getUrl());
+        if(!TextUtils.isEmpty(mRootAddress)&&!r.isHadRootAddress()) {
+            r.setUrl(mRootAddress + r.getUrl());
             r.setHadRootAddress(true);
         }
         mWaitingQueue.add(r);
-    }
-
-    /**
-     * 关闭网络传输
-     */
-    public void close(){
-        isClose=true;
-    }
-
-    /**
-     * 中断一个网络传输
-     * @param r
-     */
-    public void cancelRequest(Request r){
-        NetProcessor processor=mRunningQueue.get(r);
-        if(processor!=null)
-            processor.stopRequest();
     }
 
     public DataFactory getFactory(){
@@ -179,6 +153,14 @@ public class NetQueue {
 
     public Config getConfig(){
         return (Config)mConfig.clone();
+    }
+
+    public String getRootAddress() {
+        return mRootAddress;
+    }
+
+    public void setRootAddress(String rootAddress) {
+        mRootAddress = rootAddress;
     }
 
     public static class Config implements Cloneable{

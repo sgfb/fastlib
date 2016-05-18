@@ -26,9 +26,7 @@ import android.os.Environment;
  */
 public class ZipUtils {
 	
-	private ZipUtils(){
-		//工具类没必要实例化
-	}
+	private ZipUtils(){}
 	
 	private static void compressToFile(ZipOutputStream zos,String srcPath,String destPath)throws FileNotFoundException,IOException{
 		String prefix=srcPath.substring(srcPath.lastIndexOf(File.separator)==-1?0:srcPath.lastIndexOf(File.separator)+1);

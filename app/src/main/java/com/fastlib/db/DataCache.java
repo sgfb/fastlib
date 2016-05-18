@@ -3,7 +3,7 @@ package com.fastlib.db;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.fastlib.bean.RemoteDataCache;
+import com.fastlib.bean.RemoteCache;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
@@ -69,8 +69,8 @@ public class DataCache {
             return;
         }
         started=true;
-        List<RemoteDataCache> list=FastDatabase.getInstance().get(RemoteDataCache.class,mCacheName);
-        RemoteDataCache cache;
+        List<RemoteCache> list=FastDatabase.getInstance().get(RemoteCache.class,mCacheName);
+        RemoteCache cache;
 
         final Listener l=mRequest.getListener();
         if(list!=null&&list.size()>0) {
@@ -86,7 +86,7 @@ public class DataCache {
 
             @Override
             public void onResponseListener(Result result) {
-                RemoteDataCache responseCache=new RemoteDataCache();
+                RemoteCache responseCache=new RemoteCache();
                 responseCache.setCache(result.getBody());
                 responseCache.setCacheName(mCacheName);
                 if(!loadMore)

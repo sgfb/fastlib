@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.test;
 
 import android.content.Context;
 import android.graphics.Bitmap;
