@@ -28,7 +28,7 @@ import android.util.Log;
  */
 public class FastDatabase{
 	public final String TAG=FastDatabase.class.getSimpleName();
-	public final String DEFAULT_DATABASE_NAME="default";
+	public static final String DEFAULT_DATABASE_NAME="default";
 
 	private static final Object slock=new Object();
 	private static FastDatabase sOwer;
@@ -643,6 +643,33 @@ public class FastDatabase{
 			success=save(obj);
 		}
 		return success;
+	}
+
+	/**
+	 * 根据对象类删除表
+	 * @param database 某数据库
+	 * @param cla 对象类
+	 */
+	public void dropTable(String database,Class<?> cla){
+		String table=cla.getCanonicalName();
+		dropTable(database,table);
+	}
+
+	/**
+	 * 删除表
+	 * @param database 某数据库
+	 * @param table 表名
+	 */
+	public void dropTable(String database,String table){
+		SQLiteDatabase db=mContext.openOrCreateDatabase(database, Context.MODE_PRIVATE, null);
+		if(tableExists(table)) {
+			db.execSQL("drop table '" + table+"'");
+			if(sConfig.isOutInformation)
+			    Log.d(TAG,"删除表"+table);
+		}
+		else
+		if(sConfig.isOutInformation)
+			Log.d(TAG,"表"+table+"不存在");
 	}
 
 	public FastDatabase orderBy(boolean asc,String columnName){

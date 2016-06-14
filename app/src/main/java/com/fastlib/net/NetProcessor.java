@@ -87,7 +87,7 @@ public class NetProcessor extends Thread{
             if(isPost&&sRunning){
                 out = con.getOutputStream();
                 if(isMulti)
-                    multipart(mRequest.getParams(), mRequest.getFiles(), out);
+                    multipart(mRequest.getParams(), mRequest.getFiles(),out);
                 else{
                     StringBuilder sb=new StringBuilder();
                     loadParams(mRequest.getParams(),sb);

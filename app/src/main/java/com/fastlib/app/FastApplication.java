@@ -1,6 +1,7 @@
 package com.fastlib.app;
 
 import android.app.Application;
+import android.graphics.Bitmap;
 
 import com.fastlib.db.FastDatabase;
 import com.fastlib.net.NetQueue;

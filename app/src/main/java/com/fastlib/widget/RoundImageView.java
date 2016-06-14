@@ -147,6 +147,11 @@ public class RoundImageView extends ImageView {
         updateShader();
     }
 
+    public void changedShadow(float radius,float x,float y,int[] argb){
+        paintBorder.setShadowLayer(radius,x,y,Color.argb(argb[0],argb[1],argb[2],argb[3]));
+        invalidate();
+    }
+
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);

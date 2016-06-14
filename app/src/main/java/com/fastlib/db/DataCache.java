@@ -78,7 +78,7 @@ public class DataCache {
             Result result=new Result();
             result.setSuccess(true);
             result.setMessage("from database");
-            result.setCode(0);
+//            result.setCode(0);
             result.setBody(cache.getCache());
             l.onResponseListener(result);
         }

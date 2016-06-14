@@ -63,6 +63,13 @@ public class SaveUtil{
         return sp.getAll().get(key);
     }
 
+    public static Object getFromSp(Context context,String name,String key,String def){
+        Object obj=getFromSp(context,name,key,def);
+        if(obj==null)
+            obj=def;
+        return obj;
+    }
+
     /**
      * 存储数据到指定文件
      * @param file
@@ -82,7 +89,7 @@ public class SaveUtil{
      * @throws IOException
      * @throws ClassNotFoundException
      */
-    public static Object getFromFle(File file) throws IOException, ClassNotFoundException {
+    public static Object getFromFile(File file) throws IOException, ClassNotFoundException {
         ObjectInputStream in=new ObjectInputStream(new FileInputStream(file));
         Object obj=in.readObject();
         in.close();

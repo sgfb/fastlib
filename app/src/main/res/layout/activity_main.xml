@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_height="match_parent"
               android:layout_width="match_parent"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
               android:orientation="vertical">
 
     <Button
@@ -9,4 +10,23 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="请求生成预支付交易单"/>
+
+    <Button
+        android:id="@+id/pay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="支付1分钱"/>
+
+    <com.fastlib.widget.PercentView
+        android:id="@+id/percentView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:text="world"/>
+    </com.fastlib.widget.PercentView>
+
 </LinearLayout>

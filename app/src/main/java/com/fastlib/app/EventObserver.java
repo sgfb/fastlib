@@ -144,6 +144,10 @@ public class EventObserver {
         mLocalObserverMap.put(subscriber.getClass().getCanonicalName(), eventNames);
     }
 
+    public void subscribe(Object subscriber,Class<?> cla,OnLocalEvent event,boolean once){
+
+    }
+
     /**
      * 移除本地事件监听
      * @param obj
@@ -297,7 +301,7 @@ public class EventObserver {
         void onEvent(Object subEvent);
     }
 
-    public class EntityWrapper implements Serializable {
+    public class EntityWrapper implements Serializable{
         public Object obj;
         public EntityWrapper(Object obj){
             this.obj=obj;

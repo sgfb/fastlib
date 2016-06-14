@@ -315,7 +315,6 @@ public class ImageUtil{
         blur.forEach(allocOut);
         allocOut.copyTo(bitmap);
         rs.destroy();
-        raw.recycle();
         return bitmap;
     }
 }
