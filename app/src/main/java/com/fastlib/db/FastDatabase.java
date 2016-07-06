@@ -767,7 +767,8 @@ public class FastDatabase{
 
 	private SQLiteDatabase prepare(final String sql) throws SQLiteException{
 		SQLiteDatabase database;
-		SQLiteOpenHelper helper=new SQLiteOpenHelper(mContext, sConfig.getDatabaseName(),null, sConfig.getVersion()){
+               final String databaseName=TextUtils.isEmpty(sAttri.getToDatabase())?sConfig.getDatabaseName():sAttri.getToDatabase();
+		SQLiteOpenHelper helper=new SQLiteOpenHelper(mContext,databaseName,null, sConfig.getVersion()){
 
 			@Override
 			public void onCreate(SQLiteDatabase db) {

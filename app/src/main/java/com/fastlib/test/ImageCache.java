@@ -75,7 +75,7 @@ public class ImageCache {
         }
     }
 
-    public static void getImage(Context context,String path, final String uri, final OnImageCompletion l){
+    public static void getImage(Context context,File path, final String uri, final OnImageCompletion l){
         final File f=new File(Environment.getExternalStorageDirectory().getAbsolutePath()+File.separator+path);
         try {
             f.createNewFile();

@@ -12,6 +12,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
@@ -133,7 +134,7 @@ public class ImageUtil{
     }
 
     public static void openCamera(Activity activity){
-        openCamera(activity, Uri.fromFile(getTempFile(null)));
+        openCamera(activity, Uri.fromFile(getTempFile(null))); //默认写在存储卡内
     }
 
     /**
@@ -179,12 +180,10 @@ public class ImageUtil{
         File file=null;
         if(parent!=null&&parent.exists())
             file=new File(parent.getAbsolutePath()+File.separator+Long.toString(System.currentTimeMillis())+".tmp");
-        else
-            try {
-                file=File.createTempFile(Long.toString(System.currentTimeMillis()),null);
-            } catch (IOException e){
-                return file;
-            }
+        else{
+            if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
+                file=new File(Environment.getExternalStorageDirectory().getAbsolutePath()+ File.separator+Environment.getDataDirectory()+File.separator+System.currentTimeMillis()+".tmp");
+        }
         return file;
     }
 
@@ -196,7 +195,7 @@ public class ImageUtil{
      * @return
      */
     public static Uri getImageFromActive(int requestCode, int resultCode, Intent data){
-        if(resultCode!=Activity.RESULT_OK||data==null)
+        if(resultCode!=Activity.RESULT_OK)
             return null;
 
         switch (requestCode){

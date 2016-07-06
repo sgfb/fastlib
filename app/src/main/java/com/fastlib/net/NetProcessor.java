@@ -204,7 +204,7 @@ public class NetProcessor extends Thread{
                 File value=fileParams.get(key);
                 if(value!=null&&value.exists()&&value.isFile()){
                     sb.append("--"+BOUNDARY).append(CRLF);
-                    sb.append("Content-Disposition:form-data; name=\""+key+"\"").append(CRLF);
+                    sb.append("Content-Disposition:form-data; filename=\""+key+"\"").append(CRLF);
                     sb.append("Content-type: "+ URLConnection.guessContentTypeFromName(value.getName())).append(CRLF);
                     sb.append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
                     out.write(sb.toString().getBytes());

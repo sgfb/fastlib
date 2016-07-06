@@ -1,5 +1,6 @@
 package com.fastlib.utils;
 
+import android.app.Activity;
 import android.content.Context;
 import android.support.v7.widget.AppCompatCheckBox;
 import android.support.v7.widget.AppCompatTextView;
@@ -35,6 +36,10 @@ public class BindingView{
         mResolves.put(AppCompatCheckBox.class.getCanonicalName(),cbResolve);
     }
 
+    public void fromJson(String json,Activity activity){
+        fromJson(json,activity.findViewById(android.R.id.content));
+    }
+
     public void fromJson(String json,View root){
         Map<String,Integer> map=new HashMap<>();
         getAllChild(map,root);
@@ -60,8 +65,9 @@ public class BindingView{
         }
     }
 
-    public void putResolve(String name,ViewResolve resolve){
-        mResolves.put(name,resolve);
+    public void putResolve(ViewResolve resolve,Class<? extends View> ...cla){
+        for(Class<? extends View> c:cla)
+            mResolves.put(c.getCanonicalName(),resolve);
     }
 
     /**
@@ -103,6 +109,9 @@ public class BindingView{
         void resolve(View view,JsonReader reader);
     }
 
+    /**
+     * 一个默认的TextView解析器
+     */
     public final class TextViewResolve implements ViewResolve{
 
         @Override
@@ -131,6 +140,9 @@ public class BindingView{
         }
     }
 
+    /**
+     * 一个默认的CheckBox解析器
+     */
     public final class CheckBoxResolve implements ViewResolve{
 
         @Override

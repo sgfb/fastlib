@@ -2,8 +2,10 @@ package com.fastlib;
 
 import android.app.ActionBar;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -12,8 +14,16 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatImageView;
+import android.support.v7.widget.AppCompatTextView;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
+import android.util.JsonReader;
+import android.util.JsonToken;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebChromeClient;
@@ -21,24 +31,34 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
+import android.widget.TextSwitcher;
 import android.widget.TextView;
+import android.widget.ViewSwitcher;
 
+import com.fastlib.app.FastDialog;
 import com.fastlib.db.FastDatabase;
+import com.fastlib.net.Downloadable;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
 import com.fastlib.net.Result;
+import com.fastlib.test.ImageCache;
+import com.fastlib.utils.BindingView;
 import com.fastlib.utils.ImageUtil;
+import com.fastlib.utils.ScreenUtils;
 import com.fastlib.widget.PercentView;
 import com.fastlib.widget.RecycleListView;
 import com.fastlib.widget.RoundImageView;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -54,105 +74,102 @@ import java.util.List;
 
 /**
  * Created by sgfb on 16/5/10.
+ *
  */
 public class MainActivity extends AppCompatActivity{
-    private static final String WX_URL="https://api.mch.weixin.qq.com/pay/unifiedorder";
-    final String APPID="wxa316aa6fc6512be8";
-    final String MCH_ID="1338296101";
-    final String KEY="huayuzhishengchuanmei15058059534";
-
-    class Link{
-        public int id;
-        public int type;
-        public String image;
-
-    }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState){
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Button bt=(Button)findViewById(R.id.bt);
-        Button pay=(Button)findViewById(R.id.pay);
-        bt.setOnClickListener(new View.OnClickListener() {
+        bt.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                File f=new File(Environment.getExternalStorageDirectory().getAbsolutePath()+"/"+"picture.png");
-//                data.put("user_login", userName);
-//                data.put("token", token);
-//                data.put("content", content);
-//                data.put("who_can_see", whoCanSee);
-                NetQueue.getInstance()
-                        .netRequest(new Request("http://www.bbang168.com/index.php?g=mobile&m=SNS&a=postMsg")
-                                .put("user_login", "13353353534").put("token","f1f348ebf7e68970791edbf9578a2edcecf12de1735c6401").put("content", "other").put("who_can_see",3).put("photo0", f).setListener(new Listener() {
-                                    @Override
-                                    public void onResponseListener(Result result) {
-                                        System.out.println("success:" + result.toString());
-                                    }
-
-                                    @Override
-                                    public void onErrorListener(String error) {
-                                        System.out.println("error:" + error);
-                                    }
-                                }));
+                File f=new File(Environment.getExternalStorageDirectory()+File.separator+"whatthefuck");
+                try {
+                    f.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                ImageUtil.openCamera(MainActivity.this);
             }
         });
-//        bt.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v){
-//                new Thread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        try {
-//                            URL url=new URL(WX_URL);
-//                            HttpURLConnection con= (HttpURLConnection) url.openConnection();
-//                            con.setDoOutput(true);
-//                            con.setDoInput(true);
-//                            con.setRequestMethod("POST");
-//                            OutputStream out=con.getOutputStream();
-//                            String s=getXMLString();
-//                            out.write(s.getBytes());
-//                            InputStream in=con.getInputStream();
-//                            ByteArrayOutputStream baos=new ByteArrayOutputStream();
-//                            byte[] data=new byte[1024];
-//                            int len;
-//                            while((len=in.read(data))!=-1)
-//                                baos.write(data,0,len);
-//                            System.out.println(new String(baos.toByteArray()));
-//                            out.close();
-//                            in.close();
-//                            con.disconnect();
-//                        } catch (MalformedURLException e) {
-//                            e.printStackTrace();
-//                        } catch (IOException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-//                }).start();
-//            }
-//        });
-//        pay.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v){
-//
-//            }
-//        });
+//        RecyclerView list=(RecyclerView)findViewById(R.id.list);
+//        list.setLayoutManager(new LinearLayoutManager(this));
+//        list.setItemAnimator(new DefaultItemAnimator());
+//        list.setAdapter(new MyAdapter());
+//        ItemTouchHelper ith=new ItemTouchHelper(new MyCallBack(ItemTouchHelper.UP|ItemTouchHelper.DOWN,ItemTouchHelper.LEFT|ItemTouchHelper.RIGHT));
+//        ith.attachToRecyclerView(list);
     }
 
-    public String getXMLString(){
-        StringBuilder sb=new StringBuilder();
-        sb.append("<xml>")
-                .append("<appid>").append(APPID).append("</appid>")
-                .append("<mch_id>").append(MCH_ID).append("</mch_id>")
-                .append("<nonce_str>").append("5K8264ILTKCH16CQ2502SI8ZNMTM67VS").append("</nonce_str>")
-                .append("<body>").append("test").append("</body>")
-                .append("<out_trade_no>").append("201605172135").append("</out_trade_no>")
-                .append("<total_fee>").append(1).append("</total_fee>")
-                .append("<spbill_create_ip>").append("125.120.237.57").append("</spbill_create_ip>")
-                .append("<trade_type>").append("APP").append("</trade_type>")
-                .append("<notify_url>").append("http://www.baidu.com").append("</notify_url>")
-                .append("<sign>").append("8AE53095DAD3C8E9B97E86B43D62BE2E").append("</sign>")
-                .append("</xml>");
-        return sb.toString();
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Uri uri=ImageUtil.getImageFromActive(requestCode,resultCode,data);
+        String path=ImageUtil.getImagePath(this,uri);
+        File f=new File(path);
+        System.out.println(path+" length:"+f.length());
+    }
+
+    class MyAdapter extends RecyclerView.Adapter<Holder>{
+
+        @Override
+        public Holder onCreateViewHolder(ViewGroup parent, int viewType){
+            TextView tv=new TextView(MainActivity.this);
+            tv.setText("hello,world");
+            tv.setPadding(40,40,40,40);
+            return new Holder(tv);
+        }
+
+        @Override
+        public void onBindViewHolder(Holder holder, int position) {
+
+        }
+
+        @Override
+        public int getItemCount() {
+            return 20;
+        }
+    }
+
+    class Holder extends RecyclerView.ViewHolder{
+
+        public Holder(View itemView){
+            super(itemView);
+        }
+    }
+
+    class MyCallBack extends ItemTouchHelper.SimpleCallback{
+
+        public MyCallBack(int dragDirs, int swipeDirs) {
+            super(dragDirs, swipeDirs);
+        }
+
+        @Override
+        public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target){
+            System.out.println("onMove:"+viewHolder.getAdapterPosition()+","+target.getAdapterPosition());
+            return true;
+        }
+
+        @Override
+        public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction){
+            System.out.println("onSwiped:"+direction);
+//            mAdapter.notifyItemRemoved(viewHolder.getAdapterPosition());
+        }
+
+        @Override
+        public boolean isLongPressDragEnabled() {
+            return super.isLongPressDragEnabled();
+        }
+
+        @Override
+        public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive){
+            if(actionState!=ItemTouchHelper.ACTION_STATE_IDLE){
+                final float alpha=1-Math.abs(dX)/ ScreenUtils.getScreenWidth(MainActivity.this);
+                viewHolder.itemView.setAlpha(alpha);
+            }
+            super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+        }
     }
 }
