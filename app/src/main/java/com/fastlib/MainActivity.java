@@ -7,9 +7,11 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.renderscript.Float2;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -40,6 +42,11 @@ import android.widget.ViewSwitcher;
 
 import com.fastlib.app.FastDialog;
 import com.fastlib.db.FastDatabase;
+import com.fastlib.media.AacFormat;
+import com.fastlib.media.AudioInfo;
+import com.fastlib.media.Encoder;
+import com.fastlib.media.Mp3Format;
+import com.fastlib.media.WaveFormat;
 import com.fastlib.net.Downloadable;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
@@ -49,6 +56,7 @@ import com.fastlib.test.ImageCache;
 import com.fastlib.utils.BindingView;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.ScreenUtils;
+import com.fastlib.utils.Utils;
 import com.fastlib.widget.PercentView;
 import com.fastlib.widget.RecycleListView;
 import com.fastlib.widget.RoundImageView;
@@ -71,28 +79,26 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by sgfb on 16/5/10.
  *
  */
 public class MainActivity extends AppCompatActivity{
+    Float2 p1=new Float2(),p2=new Float2();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Button bt=(Button)findViewById(R.id.bt);
-        bt.setOnClickListener(new View.OnClickListener(){
+        final EditText et=(EditText)findViewById(R.id.et);
+
+        bt.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                File f=new File(Environment.getExternalStorageDirectory()+File.separator+"whatthefuck");
-                try {
-                    f.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                ImageUtil.openCamera(MainActivity.this);
+            public void onClick(View v){
+
             }
         });
 //        RecyclerView list=(RecyclerView)findViewById(R.id.list);
@@ -101,15 +107,6 @@ public class MainActivity extends AppCompatActivity{
 //        list.setAdapter(new MyAdapter());
 //        ItemTouchHelper ith=new ItemTouchHelper(new MyCallBack(ItemTouchHelper.UP|ItemTouchHelper.DOWN,ItemTouchHelper.LEFT|ItemTouchHelper.RIGHT));
 //        ith.attachToRecyclerView(list);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        Uri uri=ImageUtil.getImageFromActive(requestCode,resultCode,data);
-        String path=ImageUtil.getImagePath(this,uri);
-        File f=new File(path);
-        System.out.println(path+" length:"+f.length());
     }
 
     class MyAdapter extends RecyclerView.Adapter<Holder>{
