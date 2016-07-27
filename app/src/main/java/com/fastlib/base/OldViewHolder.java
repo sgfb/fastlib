@@ -18,10 +18,12 @@ public class OldViewHolder {
 
 	private SparseArray<View> mViews;
 	private View mConvertView;
+	private int mLayoutId;
 
-	private OldViewHolder(Context context, ViewGroup parent, int layoutId) {
-		this.mViews = new SparseArray<View>();
+	private OldViewHolder(Context context, ViewGroup parent, int layoutId){
+		this.mViews = new SparseArray<>();
 		this.mConvertView = LayoutInflater.from(context).inflate(layoutId, parent, false);
+		this.mLayoutId=layoutId;
 		mConvertView.setTag(this);
 	}
 
@@ -32,18 +34,15 @@ public class OldViewHolder {
 	 * @param convertView
 	 * @param parent
 	 * @param layoutId
-	 * @param position
 	 * @return
 	 */
-	public static OldViewHolder get(Context context, View convertView, ViewGroup parent, int layoutId, int position) {
-		if (convertView == null) {
+	public static OldViewHolder get(Context context, View convertView, ViewGroup parent, int layoutId) {
+		if (convertView == null)
 			return new OldViewHolder(context, parent, layoutId);
-		} else if (convertView.getTag() instanceof OldViewHolder) {
-			return (OldViewHolder) convertView.getTag();
-		} else {
-			return new OldViewHolder(context, parent, layoutId);
-		}
-
+		else if (convertView.getTag() instanceof OldViewHolder&&((OldViewHolder)convertView.getTag()).mLayoutId==layoutId)
+			return(OldViewHolder)convertView.getTag();
+		else
+			return new OldViewHolder(context,parent,layoutId);
 	}
 
 	/**
@@ -64,8 +63,8 @@ public class OldViewHolder {
 	@SuppressWarnings("unchecked")
 	public <V extends View> V getView(int viewId) {
 		View view = mViews.get(viewId);
-		if (view == null) {
-			view = mConvertView.findViewById(viewId);
+		if (view==null) {
+			view=mConvertView.findViewById(viewId);
 			mViews.put(viewId, view);
 		}
 		return (V) view;
@@ -80,10 +79,5 @@ public class OldViewHolder {
 	public void setText(int viewId, String str) {
 		TextView textView = getView(viewId);
 		textView.setText(str);
-	}
-	
-	public void setImage(int viewId,int res){
-		ImageView imageView=getView(viewId);
-		imageView.setImageResource(res);
 	}
 }

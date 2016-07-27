@@ -11,6 +11,7 @@ import com.fastlib.annotation.DatabaseInject;
 import com.fastlib.bean.DatabaseTable;
 import com.fastlib.utils.Reflect;
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -23,7 +24,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 /**
- * orm数据库.提供一些与数据库交互的基本操作
+ * 非orm数据库.封装一些与数据库交互的基本操作
  * @author sgfb
  */
 public class FastDatabase{
@@ -60,6 +61,12 @@ public class FastDatabase{
 
 	public static FastDatabase getInstance(){
 		sAttri.defaultAttribute();
+		return sOwer;
+	}
+
+	public static FastDatabase getDefaultInstance(){
+		sAttri.defaultAttribute();
+		sAttri.setFromDatabase(getDefaultDatabaseName());
 		return sOwer;
 	}
 
@@ -142,7 +149,7 @@ public class FastDatabase{
 		if(!TextUtils.isEmpty(sAttri.getOrderBy())){
 			order="order by "+sAttri.getOrderBy()+" "+(sAttri.isAsc()?"asc":"desc");
 		}
-		tableName=cla.getName();
+		tableName=cla.getCanonicalName();
 		if(!tableExists(tableName)){
 			Log.w(TAG, sConfig.getDatabaseName()+" 不存在表 "+tableName);
 			return null;
@@ -163,6 +170,7 @@ public class FastDatabase{
 			return null;
 		}
 		cursor.moveToFirst();
+		Gson gson=new Gson();
 		while(!cursor.isAfterLast()){
 			try {
 				Object obj=cla.newInstance();
@@ -174,9 +182,7 @@ public class FastDatabase{
 
 					if(type.contains("this"))
 						continue;
-
 					if(field.getType().isArray()){
-						Gson gson=new Gson();
 						String json=cursor.getString(columnIndex);
 						field.set(obj,gson.fromJson(json,field.getType()));
 						continue;
@@ -206,18 +212,21 @@ public class FastDatabase{
 						field.set(obj, cursor.getString(columnIndex));
 						break;
 					default:
-						Gson gson=new Gson();
 						String json=cursor.getString(columnIndex);
-						Object preObj=gson.fromJson(json,field.getType());
-						field.set(obj,preObj);
+						try{
+							Object preObj=gson.fromJson(json,field.getType());
+							field.set(obj,preObj);
+						}catch(RuntimeException e){
+							continue;
+						}
 						break;
 					}
 				}
 				list.add(obj);
 				cursor.moveToNext();
-			} catch (Exception e){
+			} catch(Exception e){
 				if(sConfig.isOutInformation)
-					Log.w(TAG,"数据库在取数据时发送异常:"+e.toString());
+					Log.w(TAG,"数据库在取数据时发生异常:"+e.toString());
 				database.close();
 				return null;
 			}
@@ -646,6 +655,14 @@ public class FastDatabase{
 	}
 
 	/**
+	 * 删除当前数据库的某表
+	 * @param cla
+	 */
+	public void dropTable(Class<?> cla){
+		dropTable(getConfig().getDatabaseName(),cla);
+	}
+
+	/**
 	 * 根据对象类删除表
 	 * @param database 某数据库
 	 * @param cla 对象类
@@ -665,7 +682,7 @@ public class FastDatabase{
 		if(tableExists(table)) {
 			db.execSQL("drop table '" + table+"'");
 			if(sConfig.isOutInformation)
-			    Log.d(TAG,"删除表"+table);
+				Log.d(TAG,"删除表"+table);
 		}
 		else
 		if(sConfig.isOutInformation)
@@ -689,7 +706,7 @@ public class FastDatabase{
 	}
 
 	public FastDatabase toWhichDatabase(String databaseName){
-		sAttri.setToDatabase(databaseName);
+		sAttri.setFromDatabase(databaseName);
 		return sOwer;
 	}
 
@@ -767,7 +784,7 @@ public class FastDatabase{
 
 	private SQLiteDatabase prepare(final String sql) throws SQLiteException{
 		SQLiteDatabase database;
-               final String databaseName=TextUtils.isEmpty(sAttri.getToDatabase())?sConfig.getDatabaseName():sAttri.getToDatabase();
+		final String databaseName=TextUtils.isEmpty(sAttri.getFromDatabase())?sConfig.getDatabaseName():sAttri.getFromDatabase();
 		SQLiteOpenHelper helper=new SQLiteOpenHelper(mContext,databaseName,null, sConfig.getVersion()){
 
 			@Override
@@ -1061,6 +1078,10 @@ public class FastDatabase{
 		sConfig.switchDatabase(databaseName);
 	}
 
+	public static String getDefaultDatabaseName(){
+		return sConfig.getPrefix()+DEFAULT_DATABASE_NAME+".db";
+	}
+
 	public DatabaseConfig getConfig(){
 		return sConfig;
 	}
@@ -1117,7 +1138,9 @@ public class FastDatabase{
 			return mVersion;
 		}
 
-		public String getPrefix() {
+		public String getPrefix(){
+			if(mPrefix==null)
+				return "";
 			return mPrefix;
 		}
 

@@ -16,9 +16,4 @@ public class DefaultDownload implements Downloadable {
     public File getTargetFile() {
         return mTargetFile;
     }
-
-    @Override
-    public void setTargetFile(File f) {
-        mTargetFile=f;
-    }
 }

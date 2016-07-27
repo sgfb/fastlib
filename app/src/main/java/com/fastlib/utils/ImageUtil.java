@@ -16,6 +16,7 @@ import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 import android.support.v8.renderscript.Allocation;
 import android.support.v8.renderscript.Element;
 import android.support.v8.renderscript.RenderScript;
@@ -48,11 +49,10 @@ public class ImageUtil{
     }
 
     /**
-     * 取得缩放后的图像
+     * 取得缩放后的图像 开启renderscriptTargetApi 15 renderscriptSupportModeEnabled true
      * @param path 路径
      * @param limit 限制大小
-     * @param highQuality 质量renderscriptTargetApi 15
-    renderscriptSupportModeEnabled true
+     * @param highQuality 质量
      * @return
      */
     public static Bitmap getThumbBitmap(String path,int limit,boolean highQuality){
@@ -112,16 +112,20 @@ public class ImageUtil{
         return bitmap;
     }
 
+    public static void openAlbum(Fragment fragment){
+        openAlbum(null,fragment,false);
+    }
+
     /**
      * 预览相册
      * @param activity
      */
     public static void openAlbum(Activity activity){
-        openAlbum(activity, false);
+        openAlbum(activity,null,false);
     }
 
     @TargetApi(18)
-    public static void openAlbum(Activity activity,boolean multiChoose){
+    public static void openAlbum(Activity activity,Fragment fragment,boolean multiChoose){
         Intent intent = new Intent();
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT)
             intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
@@ -130,11 +134,18 @@ public class ImageUtil{
         intent.setType("image/*");
         intent.putExtra(Intent.CATEGORY_OPENABLE, true);
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiChoose);
-        activity.startActivityForResult(intent, REQUEST_FROM_ALBUM);
+        if(activity!=null)
+            activity.startActivityForResult(intent, REQUEST_FROM_ALBUM);
+        else
+            fragment.startActivityForResult(intent,REQUEST_FROM_ALBUM);
+    }
+
+    public static void openCamera(Fragment fragment){
+        openCamera(null,fragment,Uri.fromFile(getTempFile(null)));
     }
 
     public static void openCamera(Activity activity){
-        openCamera(activity, Uri.fromFile(getTempFile(null))); //默认写在存储卡内
+        openCamera(activity, null, Uri.fromFile(getTempFile(null))); //默认写在存储卡内
     }
 
     /**
@@ -142,12 +153,24 @@ public class ImageUtil{
      * @param activity
      * @param output
      */
-    public static void openCamera(Activity activity,Uri output){
+    public static void openCamera(Activity activity,Fragment fragment,Uri output){
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         intent.putExtra(MediaStore.EXTRA_OUTPUT,output);
         latestImage=output;
+        if(activity!=null)
+            activity.startActivityForResult(intent, REQUEST_FROM_CAMERA);
+        else
+            fragment.startActivityForResult(intent,REQUEST_FROM_CAMERA);
+    }
 
-        activity.startActivityForResult(intent, REQUEST_FROM_CAMERA);
+    /**
+     * 裁剪图片
+     * @param activity
+     * @param data
+     * @param crop
+     */
+    public static void startActionCrop(Activity activity,Uri data,int crop){
+        startActionCrop(activity,data,crop,Uri.fromFile(getTempFile(null)));
     }
 
     /**
@@ -157,10 +180,10 @@ public class ImageUtil{
      * @param crop
      * @param outPut
      */
-    public static void startActionCrop(Activity activity, Uri data, int crop, Uri outPut) {
-        Intent intent = new Intent("com.android.camera.action.CROP", null);
+    public static void startActionCrop(Activity activity, Uri data, int crop, Uri outPut){
+        Intent intent = new Intent("com.android.camera.action.CROP",null);
         intent.setDataAndType(data, "image/*");
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, outPut);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT,latestImage=outPut);
         intent.putExtra("circleCrop", true);
         intent.putExtra("crop", "true");
         intent.putExtra("aspectX", 1);// 裁剪框比例
@@ -280,7 +303,6 @@ public class ImageUtil{
         }
         return null;
     }
-
 
     /**
      * 高斯模糊，默认值25

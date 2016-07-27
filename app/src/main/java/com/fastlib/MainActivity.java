@@ -1,172 +1,182 @@
 package com.fastlib;
 
-import android.app.ActionBar;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Point;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.renderscript.Float2;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.AppCompatImageView;
-import android.support.v7.widget.AppCompatTextView;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.helper.ItemTouchHelper;
-import android.text.TextUtils;
-import android.text.method.LinkMovementMethod;
-import android.util.JsonReader;
-import android.util.JsonToken;
 import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.WebChromeClient;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.SeekBar;
-import android.widget.TextSwitcher;
+import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.ViewSwitcher;
 
-import com.fastlib.app.FastDialog;
+import com.bumptech.glide.Glide;
+import com.fastlib.adapter.MultiTypeAdapter;
+import com.fastlib.base.OldViewHolder;
 import com.fastlib.db.FastDatabase;
-import com.fastlib.media.AacFormat;
-import com.fastlib.media.AudioInfo;
-import com.fastlib.media.Encoder;
-import com.fastlib.media.Mp3Format;
-import com.fastlib.media.WaveFormat;
-import com.fastlib.net.Downloadable;
-import com.fastlib.net.Listener;
-import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
 import com.fastlib.net.Result;
 import com.fastlib.test.ImageCache;
-import com.fastlib.utils.BindingView;
-import com.fastlib.utils.ImageUtil;
-import com.fastlib.utils.ScreenUtils;
-import com.fastlib.utils.Utils;
-import com.fastlib.widget.PercentView;
-import com.fastlib.widget.RecycleListView;
-import com.fastlib.widget.RoundImageView;
+import com.fastlib.utils.TimeUtil;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.reflect.Type;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.MalformedURLException;
-import java.net.Socket;
-import java.net.URL;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
+import java.util.Map;
 
 /**
  * Created by sgfb on 16/5/10.
  *
  */
 public class MainActivity extends AppCompatActivity{
-    Float2 p1=new Float2(),p2=new Float2();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Button bt=(Button)findViewById(R.id.bt);
-        final EditText et=(EditText)findViewById(R.id.et);
+        Button bt2=(Button)findViewById(R.id.bt2);
 
         bt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v){
+                FastDatabase.getDefaultInstance().saveOrUpdate("aa");
 
+            }
+        });
+        bt2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                System.out.println("db:"+FastDatabase.getDefaultDatabaseName()+" data:");
+                List<String> list=FastDatabase.getDefaultInstance().getAll(String.class);
+                if(list!=null)
+                for(String s:list)
+                    System.out.println(s+"\n");
             }
         });
 //        RecyclerView list=(RecyclerView)findViewById(R.id.list);
 //        list.setLayoutManager(new LinearLayoutManager(this));
 //        list.setItemAnimator(new DefaultItemAnimator());
-//        list.setAdapter(new MyAdapter());
+//        list.setAdapter(new MyTypeAdapter());
 //        ItemTouchHelper ith=new ItemTouchHelper(new MyCallBack(ItemTouchHelper.UP|ItemTouchHelper.DOWN,ItemTouchHelper.LEFT|ItemTouchHelper.RIGHT));
 //        ith.attachToRecyclerView(list);
     }
 
-    class MyAdapter extends RecyclerView.Adapter<Holder>{
+    class MyTypeAdapter extends MultiTypeAdapter {
 
-        @Override
-        public Holder onCreateViewHolder(ViewGroup parent, int viewType){
-            TextView tv=new TextView(MainActivity.this);
-            tv.setText("hello,world");
-            tv.setPadding(40,40,40,40);
-            return new Holder(tv);
+        public MyTypeAdapter(Context context,Request request){
+            super(context,request);
         }
 
         @Override
-        public void onBindViewHolder(Holder holder, int position) {
-
-        }
-
-        @Override
-        public int getItemCount() {
-            return 20;
-        }
-    }
-
-    class Holder extends RecyclerView.ViewHolder{
-
-        public Holder(View itemView){
-            super(itemView);
-        }
-    }
-
-    class MyCallBack extends ItemTouchHelper.SimpleCallback{
-
-        public MyCallBack(int dragDirs, int swipeDirs) {
-            super(dragDirs, swipeDirs);
-        }
-
-        @Override
-        public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target){
-            System.out.println("onMove:"+viewHolder.getAdapterPosition()+","+target.getAdapterPosition());
-            return true;
-        }
-
-        @Override
-        public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction){
-            System.out.println("onSwiped:"+direction);
-//            mAdapter.notifyItemRemoved(viewHolder.getAdapterPosition());
-        }
-
-        @Override
-        public boolean isLongPressDragEnabled() {
-            return super.isLongPressDragEnabled();
-        }
-
-        @Override
-        public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive){
-            if(actionState!=ItemTouchHelper.ACTION_STATE_IDLE){
-                final float alpha=1-Math.abs(dX)/ ScreenUtils.getScreenWidth(MainActivity.this);
-                viewHolder.itemView.setAlpha(alpha);
+        public void binding(int position, MultiTypeAdapter.ObjWithType owy, OldViewHolder holder) {
+            if(owy.type==0)
+                holder.setText(android.R.id.text1,(String)owy.obj);
+            else{
+                Bean.Data data= (Bean.Data) owy.obj;
+                ImageView iv=holder.getView(R.id.image);
+                holder.setText(R.id.text,data.data);
+                Glide.with(MainActivity.this).load(data.image).crossFade().into(iv);
             }
-            super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+        }
+
+        @Override
+        public List<ObjWithType> translate(Result result){
+            Gson gson=new Gson();
+            Type type=new TypeToken<List<Bean>>(){}.getType();
+            List<Bean> list=gson.fromJson(result.getBody(), type);
+            List<ObjWithType> datas=new ArrayList<>();
+            for(Bean b:list){
+                datas.add(new ObjWithType(0,b.title));
+                if(b.data!=null)
+                for(Bean.Data d:b.data)
+                    datas.add(new ObjWithType(1,d));
+            }
+            return datas;
+        }
+
+        @Override
+        public Map<Integer, Integer> getLayoutId(){
+            Map<Integer,Integer> map=new HashMap<>();
+            map.put(0,android.R.layout.simple_list_item_1);
+            map.put(1,R.layout.item_test);
+            return map;
+        }
+
+        @Override
+        public void getMoreDataRequest(Request request) {
+
+        }
+
+        @Override
+        public void getRefreshDataRequest(Request request) {
+
         }
     }
+
+//    class MyTypeAdapter extends RecyclerView.Adapter<Holder>{
+//
+//        @Override
+//        public Holder onCreateViewHolder(ViewGroup parent, int viewType){
+//            TextView tv=new TextView(MainActivity.this);
+//            tv.setText("hello,world");
+//            tv.setPadding(40,40,40,40);
+//            return new Holder(tv);
+//        }
+//
+//        @Override
+//        public void onBindViewHolder(Holder holder, int position) {
+//
+//        }
+//
+//        @Override
+//        public int getItemCount() {
+//            return 20;
+//        }
+//    }
+//
+//    class Holder extends RecyclerView.ViewHolder{
+//
+//        public Holder(View itemView){
+//            super(itemView);
+//        }
+//    }
+//
+//    class MyCallBack extends ItemTouchHelper.SimpleCallback{
+//
+//        public MyCallBack(int dragDirs, int swipeDirs) {
+//            super(dragDirs, swipeDirs);
+//        }
+//
+//        @Override
+//        public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target){
+//            System.out.println("onMove:"+viewHolder.getAdapterPosition()+","+target.getAdapterPosition());
+//            return true;
+//        }
+//
+//        @Override
+//        public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction){
+//            System.out.println("onSwiped:"+direction);
+////            mAdapter.notifyItemRemoved(viewHolder.getAdapterPosition());
+//        }
+//
+//        @Override
+//        public boolean isLongPressDragEnabled() {
+//            return super.isLongPressDragEnabled();
+//        }
+//
+//        @Override
+//        public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive){
+//            if(actionState!=ItemTouchHelper.ACTION_STATE_IDLE){
+//                final float alpha=1-Math.abs(dX)/ ScreenUtils.getScreenWidth(MainActivity.this);
+//                viewHolder.itemView.setAlpha(alpha);
+//            }
+//            super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+//        }
+//    }
 }

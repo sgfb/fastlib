@@ -12,6 +12,4 @@ public interface Downloadable{
      * @return 目标文件
      */
     File getTargetFile();
-
-    void setTargetFile(File f);
 }

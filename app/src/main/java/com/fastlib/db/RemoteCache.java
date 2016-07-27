@@ -3,7 +3,6 @@ package com.fastlib.db;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.fastlib.bean.RemoteCache;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
@@ -18,8 +17,8 @@ import java.util.Map;
  * @author sgfb
  *
  **/
-public class DataCache {
-    public static final String TAG=DataCache.class.getSimpleName();
+public class RemoteCache {
+    public static final String TAG=RemoteCache.class.getSimpleName();
 
     private Request mRequest;
     private String mCacheName;
@@ -29,15 +28,15 @@ public class DataCache {
     private boolean loadMore=false;
     private Map<String,String> mParams;
 
-    public DataCache(String url,Listener l){
+    public RemoteCache(String url, Listener l){
         this(url,null, l);
     }
 
-    public DataCache(String url,Map<String, String> params, Listener l){
+    public RemoteCache(String url, Map<String, String> params, Listener l){
         this(url,url,params,l);
     }
 
-    public DataCache(String url,String cacheName,Map<String,String> params,Listener l){
+    public RemoteCache(String url, String cacheName, Map<String, String> params, Listener l){
         mRequest=new Request();
 
         mRequest.setUrl(url);
@@ -47,11 +46,11 @@ public class DataCache {
         mCacheName=cacheName;
     }
 
-    public DataCache(Request request){
+    public RemoteCache(Request request){
         this(request.getUrl(),request);
     }
 
-    public DataCache(String cacheName, Request request){
+    public RemoteCache(String cacheName, Request request){
         if(TextUtils.isEmpty(request.getUrl()))
             throw new UnsupportedOperationException("不支持没有url的缓存请求");
         mRequest=request;
@@ -69,8 +68,8 @@ public class DataCache {
             return;
         }
         started=true;
-        List<RemoteCache> list=FastDatabase.getInstance().get(RemoteCache.class,mCacheName);
-        RemoteCache cache;
+        List<com.fastlib.bean.RemoteCache> list=FastDatabase.getInstance().get(com.fastlib.bean.RemoteCache.class,mCacheName);
+        com.fastlib.bean.RemoteCache cache;
 
         final Listener l=mRequest.getListener();
         if(list!=null&&list.size()>0) {
@@ -86,7 +85,7 @@ public class DataCache {
 
             @Override
             public void onResponseListener(Result result) {
-                RemoteCache responseCache=new RemoteCache();
+                com.fastlib.bean.RemoteCache responseCache=new com.fastlib.bean.RemoteCache();
                 responseCache.setCache(result.getBody());
                 responseCache.setCacheName(mCacheName);
                 if(!loadMore)

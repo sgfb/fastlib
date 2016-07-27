@@ -73,7 +73,7 @@ public class RoundImageView extends ImageView {
         TypedArray attributes = context.obtainStyledAttributes(attrs, R.styleable.RoundImageView, defStyleAttr, 0);
 
         // Init Border
-        if (attributes.getBoolean(R.styleable.RoundImageView_border, true)) {
+        if (attributes.getBoolean(R.styleable.RoundImageView_border,false)) {
             int defaultBorderSize = (int) (4 * getContext().getResources().getDisplayMetrics().density + 0.5f);
             setBorderWidth(attributes.getDimensionPixelOffset(R.styleable.RoundImageView_border_width, defaultBorderSize));
             setBorderColor(attributes.getColor(R.styleable.RoundImageView_border_color, Color.WHITE));

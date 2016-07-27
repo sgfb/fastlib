@@ -75,13 +75,7 @@ public class ImageCache {
         }
     }
 
-    public static void getImage(Context context,File path, final String uri, final OnImageCompletion l){
-        final File f=new File(Environment.getExternalStorageDirectory().getAbsolutePath()+File.separator+path);
-        try {
-            f.createNewFile();
-        } catch (IOException e) {
-            //do nothing
-        }
+    public static void getImage(final File file, final String uri, final OnImageCompletion l){
         new Thread(){
             @Override
             public void run(){
@@ -90,14 +84,14 @@ public class ImageCache {
                     HttpURLConnection con= (HttpURLConnection) url.openConnection();
                     con.connect();
                     InputStream input=con.getInputStream();
-                    OutputStream out=new FileOutputStream(f);
+                    OutputStream out=new FileOutputStream(file);
                     byte[] data=new byte[1024];
                     int len;
                     while((len=input.read(data))>-1)
                         out.write(data,0,len);
                     out.close();
                     input.close();
-                    l.completion(BitmapFactory.decodeFile(f.getAbsolutePath()));
+                    l.completion(BitmapFactory.decodeFile(file.getAbsolutePath()));
                 } catch (MalformedURLException e) {
                     System.out.println(e);
                 } catch (IOException e) {
