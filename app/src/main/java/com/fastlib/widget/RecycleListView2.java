@@ -34,7 +34,7 @@ import android.widget.RelativeLayout;
  *
  * 与listview类似的recycleView.具有下拉刷新，有状态变化
  */
-public class RecycleListView extends RelativeLayout implements AdapterViewState{
+public class RecycleListView2 extends RelativeLayout implements AdapterViewState{
 	private SwipeRefreshLayout mSwipe;
 	private RecyclerView mRecyclerView;
 	private LinearLayoutManager mLayoutManager;
@@ -43,13 +43,39 @@ public class RecycleListView extends RelativeLayout implements AdapterViewState{
 	private LinearLayout mHeadView;
 	private LinearLayout mFootView;
 	private boolean mAutofit;
+	protected RecyclerView.OnScrollListener mAutoFitListener=new RecyclerView.OnScrollListener() {
 
-	public RecycleListView(Context context){
+		@Override
+		public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+			super.onScrollStateChanged(recyclerView, newState);
+			if (mAutofit&&newState == RecyclerView.SCROLL_STATE_IDLE){
+				if (mDividerItemDecoration.getOrientation()==LinearLayoutManager.HORIZONTAL){
+					int left = recyclerView.getChildAt(0).getLeft();
+					int right = recyclerView.getChildAt(0).getRight();
+					if (left < 0 && right > 1)
+						mRecyclerView.smoothScrollBy(right-1,0);
+				}else{
+					View child=recyclerView.getChildAt(0);
+					int top = child.getTop();
+					int bottom = child.getBottom();
+					int height=child.getHeight();
+					if (top < 0 && bottom > 1){
+						if(Math.abs(top)>height/2) //如果超过item一半，往下滚.否则往上
+							mRecyclerView.smoothScrollBy(0, bottom);
+						else
+							mRecyclerView.smoothScrollBy(0,top);
+					}
+				}
+			}
+		}
+	};
+
+	public RecycleListView2(Context context){
 		super(context);
 		init();
 	}
 
-	public RecycleListView(Context context, AttributeSet attrs) {
+	public RecycleListView2(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		init();
 	}
@@ -65,26 +91,7 @@ public class RecycleListView extends RelativeLayout implements AdapterViewState{
 		mRecyclerView.setItemAnimator(new DefaultItemAnimator());
 		mRecyclerView.addItemDecoration(mDividerItemDecoration = new DividerItemDecoration(getContext(), DividerItemDecoration.VERTICAL_LIST));
 		mSwipe.addView(mRecyclerView);
-		mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-
-			@Override
-			public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-				super.onScrollStateChanged(recyclerView, newState);
-				if (mAutofit && newState == RecyclerView.SCROLL_STATE_IDLE) {
-					if (mDividerItemDecoration.getOrientation() == LinearLayoutManager.HORIZONTAL) {
-						int left = recyclerView.getChildAt(0).getLeft();
-						int right = recyclerView.getChildAt(0).getRight();
-						if (left < 0 && right > 1)
-							mRecyclerView.smoothScrollBy(right - 1, 0);
-					} else {
-						int top = recyclerView.getChildAt(0).getTop();
-						int bottom = recyclerView.getChildAt(0).getBottom();
-						if (top < 0 && bottom > 1)
-							mRecyclerView.smoothScrollBy(0, bottom - 1);
-					}
-				}
-			}
-		});
+		mRecyclerView.addOnScrollListener(mAutoFitListener);
 		mSwipe.setId(R.id.swipe);
 		mHeadView.setId(R.id.headView);
 		mFootView.setId(R.id.bottomView);
@@ -156,7 +163,7 @@ public class RecycleListView extends RelativeLayout implements AdapterViewState{
 	}
 
 	/**
-	 * 首个item贴住start位置
+	 * 如果滚动超过第一个item的宽或高的一半，自动贴合第二个item否则贴合第一个
 	 * @param autofit
 	 */
 	public void enableAutofit(boolean autofit){
@@ -181,88 +188,5 @@ public class RecycleListView extends RelativeLayout implements AdapterViewState{
 
 	public ItemDecoration getDecoration(){
 		return mDividerItemDecoration;
-	}
-
-	public class DividerItemDecoration extends ItemDecoration {
-		private final int[] ATTRS=new int[]{
-			android.R.attr.listDivider
-		};
-		
-		public static final int HORIZONTAL_LIST=LinearLayoutManager.HORIZONTAL;
-		public static final int VERTICAL_LIST=LinearLayoutManager.VERTICAL;
-		
-		private Drawable mDivider;
-		private int mOrientation;
-		
-		public DividerItemDecoration(Context context,int orientation){
-			final TypedArray a=context.obtainStyledAttributes(ATTRS);
-			mDivider=a.getDrawable(0);
-			a.recycle();
-			setOrientation(orientation);
-		}
-		
-		public void setOrientation(int orientation){
-			if(orientation!=HORIZONTAL_LIST&&orientation!=VERTICAL_LIST)
-				throw new IllegalArgumentException("invalid orientation");
-			mOrientation=orientation;
-		}
-		
-		@Override
-		public void onDraw(Canvas c,RecyclerView parent){
-			if(mOrientation==VERTICAL_LIST)
-				drawVertical(c,parent);
-			else
-				drawHorizontal(c,parent);
-		}
-		
-		public void drawVertical(Canvas c,RecyclerView parent){
-			final int left=parent.getPaddingLeft();
-			final int right=parent.getWidth()-parent.getPaddingRight();
-			
-			final int childCount=parent.getChildCount();
-			for(int i=0;i<childCount;i++){
-				final View child=parent.getChildAt(i);
-				RecyclerView.LayoutParams params=(RecyclerView.LayoutParams) child.getLayoutParams();
-				final int top=child.getBottom()+params.bottomMargin;
-				final int bottom=top+mDivider.getIntrinsicHeight();
-				mDivider.setBounds(left, top, right, bottom);
-				mDivider.draw(c);
-			}
-		}
-		
-		public void drawHorizontal(Canvas c,RecyclerView parent){
-			final int top=parent.getPaddingTop();
-			final int bottom=parent.getHeight()-parent.getPaddingBottom();
-			
-			final int childCount=parent.getChildCount();
-			for(int i=0;i<childCount;i++){
-				final View child=parent.getChildAt(i);
-				final RecyclerView.LayoutParams params=(RecyclerView.LayoutParams)child.getLayoutParams();
-				final int left=child.getRight()+params.rightMargin;
-				final int right=left+mDivider.getIntrinsicWidth();
-				mDivider.setBounds(left, top, right, bottom);
-				mDivider.draw(c);
-			}
-		}
-		
-		@Override
-		public void getItemOffsets(Rect outRect,int itemPosition,RecyclerView parent){
-			if(mOrientation==VERTICAL_LIST)
-				outRect.set(0,0,0,mDivider.getIntrinsicHeight());
-			else
-				outRect.set(0,0,mDivider.getIntrinsicWidth(),0);
-		}
-
-		public int getOrientation(){
-			return mOrientation;
-		}
-
-		public int getDividerHeight(){
-			return mDivider.getIntrinsicHeight();
-		}
-
-		public int getDividerWidth(){
-			return mDivider.getIntrinsicWidth();
-		}
 	}
 }

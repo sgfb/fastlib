@@ -62,12 +62,12 @@ public class ImageCache {
             r.setDownloadable(new DefaultDownload(f));
             r.setListener(new Listener() {
                 @Override
-                public void onResponseListener(Result result){
+                public void onResponseListener(Request r,String result){
                     completion.completion(ss);
                 }
 
                 @Override
-                public void onErrorListener(String error) {
+                public void onErrorListener(Request r,String error) {
                     System.out.println(error);
                 }
             });

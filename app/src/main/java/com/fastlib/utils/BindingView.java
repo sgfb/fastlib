@@ -19,34 +19,46 @@ import java.util.Map;
 
 /**
  * Created by sgfb on 16/4/23.
- * 绑定数据与视图
+ * 自动绑定数据与视图
  */
 public class BindingView{
     private Map<String,ViewResolve> mResolves;
+    private Map<String,Integer> mMap;
     private Context mContext;
 
     public BindingView(Context context){
+        this(context, null);
+    }
+
+    public BindingView(Context context,View convertView){
         mContext=context;
         mResolves=new HashMap<>();
+        mMap=new HashMap<>();
         TextViewResolve tvResolve=new TextViewResolve();
         CheckBoxResolve cbResolve=new CheckBoxResolve();
         mResolves.put(TextView.class.getCanonicalName(),tvResolve);
         mResolves.put(AppCompatTextView.class.getCanonicalName(),tvResolve);
         mResolves.put(CheckBox.class.getCanonicalName(),cbResolve);
-        mResolves.put(AppCompatCheckBox.class.getCanonicalName(),cbResolve);
+        mResolves.put(AppCompatCheckBox.class.getCanonicalName(), cbResolve);
+        if(convertView!=null)
+            getAllChild(mMap,convertView);
     }
 
     public void fromJson(String json,Activity activity){
-        fromJson(json,activity.findViewById(android.R.id.content));
+        fromJson(json, activity.findViewById(android.R.id.content));
     }
 
     public void fromJson(String json,View root){
-        Map<String,Integer> map=new HashMap<>();
-        getAllChild(map,root);
+        fromJson(json, root, mMap);
+    }
+
+    public void fromJson(String json,View root,Map<String,Integer> map){
         JsonReader jr=new JsonReader(new StringReader(json));
         try {
             jr.beginObject();
             while(jr.hasNext()){
+                if(jr.peek()!=JsonToken.NAME)
+                    jr.skipValue();
                 String name=jr.nextName();
                 if(checkContain(map, name)){
                     int id=map.get(name);
@@ -56,11 +68,10 @@ public class BindingView{
                         vr.resolve(view,jr);
                     else
                         jr.skipValue();
-                    map.remove(name);
                 }
             }
             jr.endObject();
-        } catch (IOException e) {
+        } catch (IOException e){
             e.printStackTrace();
         }
     }

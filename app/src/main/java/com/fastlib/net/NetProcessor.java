@@ -2,9 +2,6 @@ package com.fastlib.net;
 
 import android.os.Handler;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -138,27 +135,10 @@ public class NetProcessor extends Thread{
                 mResponsePoster.execute(new Runnable() {
                     @Override
                     public void run() {
-                        if(mStatus==NetStatus.SUCCESS){
-                            Gson gson=new Gson();
-                            Result result=null;
-
-                            if(NetQueue.getInstance().getConfig().isUseStatus()){
-                                try{
-                                    result=gson.fromJson(mResponse,Result.class);
-                                }catch(JsonSyntaxException e){
-
-                                }
-                            }
-                            if(result==null||result.getCode()==0){
-                                result=new Result();
-                                result.setBody(mResponse);
-                                result.setCode(-1);
-                                result.setSuccess(true);
-                            }
-                            l.onResponseListener(result);
-                        }
+                        if(mStatus==NetStatus.SUCCESS)
+                            l.onResponseListener(mRequest,mResponse);
                         else if(mStatus==NetStatus.ERROR){
-                            l.onErrorListener(mMessage);
+                            l.onErrorListener(mRequest,mMessage);
                         }
                     }
                 });
@@ -170,7 +150,7 @@ public class NetProcessor extends Thread{
         if(params==null||params.size()<=0)
             return;
         Iterator<String> iter=params.keySet().iterator();
-        
+
         while(iter.hasNext()){
             String key=iter.next();
             String value=params.get(key);
@@ -198,25 +178,23 @@ public class NetProcessor extends Thread{
 
         if(fileParams!=null&&fileParams.size()>0){
             Iterator<String> iter=fileParams.keySet().iterator();
-            StringBuilder sb=new StringBuilder();
             while(iter.hasNext()&&sRunning){
+                StringBuilder sb=new StringBuilder();
                 String key=iter.next();
                 File value=fileParams.get(key);
                 if(value!=null&&value.exists()&&value.isFile()){
                     sb.append("--"+BOUNDARY).append(CRLF);
-                    sb.append("Content-Disposition:form-data; filename=\""+key+"\"").append(CRLF);
+                    sb.append("Content-Disposition:form-data; name=\""+key+"\";filename=\""+value.getName()+"\"").append(CRLF);
                     sb.append("Content-type: "+ URLConnection.guessContentTypeFromName(value.getName())).append(CRLF);
                     sb.append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
                     out.write(sb.toString().getBytes());
-                    copyFileToStream(value,out);
+                    copyFileToStream(value, out);
                     out.write(CRLF.getBytes());
-                    out.flush();
                     Tx+=sb.toString().getBytes().length;
                     Tx+=value.length();
                 }
             }
         }
-
         out.write(END.getBytes());
         out.flush();
     }
@@ -258,8 +236,8 @@ public class NetProcessor extends Thread{
     public String getMessage() {
         return mMessage;
     }
-    
-    public Request getReqeust(){return mRequest;}
+
+    public Request getRequest(){return mRequest;}
 
     public interface OnCompleteListener {
         void onComplete(NetProcessor processer);

@@ -28,7 +28,7 @@ public class ZipUtils {
 	
 	private ZipUtils(){}
 	
-	private static void compressToFile(ZipOutputStream zos,String srcPath,String destPath)throws FileNotFoundException,IOException{
+	private static void compressToFile(ZipOutputStream zos,String srcPath)throws IOException{
 		String prefix=srcPath.substring(srcPath.lastIndexOf(File.separator)==-1?0:srcPath.lastIndexOf(File.separator)+1);
 		ZipEntry ze=new ZipEntry(prefix);
 		
@@ -70,19 +70,18 @@ public class ZipUtils {
 	}
 	
 	public static boolean compressFile(File srcFile,File destFile){
-		CheckedOutputStream cos=null;
-		ZipOutputStream zos=null;
-		
+		CheckedOutputStream cos;
+		ZipOutputStream zos;
+
 		if(!destFile.getParentFile().exists())
 			destFile.mkdirs();
 		try {
 			if(!destFile.exists())
 			    destFile.createNewFile();
-			
 			cos = new CheckedOutputStream(new FileOutputStream(destFile.getAbsolutePath()),new CRC32());
 			zos=new ZipOutputStream(cos);
-			compressToFile(zos,srcFile.getAbsolutePath(),destFile.getAbsolutePath());
-		} catch (IOException e) {
+			compressToFile(zos,srcFile.getAbsolutePath());
+		} catch (IOException e){
 			e.printStackTrace();
 			return false;
 		}

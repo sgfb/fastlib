@@ -82,26 +82,4 @@ public class AppInformation
 		}
 		return 0;
 	}
-
-	/**
-	 * 随机值
-	 * @param length 长度
-	 * @param max 每一位的限值0~9
-	 * @return
-	 */
-	private String randomStr(int length,int... max){
-		StringBuilder sb=new StringBuilder();
-		Random random=new Random();
-		
-		for(int i=0;i<length;i++){
-			int m=max.length<i+1?10:max[i];
-			if(m>10)
-				m=0;
-			if(m<0)
-				m=0;
-			sb.append(random.nextInt(m));
-		}
-		return sb.toString();
-	}
-
 }

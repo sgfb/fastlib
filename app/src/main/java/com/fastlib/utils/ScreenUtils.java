@@ -22,6 +22,18 @@ public class ScreenUtils {
 	}
 
 	/**
+	 * 获取某视图宽高
+	 * @param view
+	 * @return
+	 */
+	public static Point getSize(View view){
+		int w = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+		int h = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+		view.measure(w, h);
+		return new Point(view.getMeasuredWidth(),view.getMeasuredHeight());
+	}
+
+	/**
 	 * 获得屏幕高度
 	 * 
 	 * @param context

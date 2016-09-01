@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -36,6 +37,29 @@ public class ImageUtil{
 
     private ImageUtil(){
         //不实例化
+    }
+
+    /**
+     * 生成缩略图
+     * @param path
+     * @param limit
+     * @return
+     */
+    public static File getThumbImageFile(String path,String parent,int limit,int quality) throws IOException{
+        File f=new File(path);
+        if(f.exists())
+            System.out.println(f.length());
+        else
+            System.out.println("file not exists");
+        Bitmap bitmap=getThumbBitmap(path,limit);
+        File file=getTempFile(new File(parent));
+        FileOutputStream fos =new FileOutputStream(file);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream);
+        byte[] bytes = stream.toByteArray();
+        fos.write(bytes);
+        fos.close();
+        return file;
     }
 
     /**
@@ -336,6 +360,20 @@ public class ImageUtil{
         blur.forEach(allocOut);
         allocOut.copyTo(bitmap);
         rs.destroy();
+        return bitmap;
+    }
+
+    /**
+     * mp4文件取首帧
+     * @param filePath
+     * @return
+     */
+    private Bitmap getVideFirstFrame(String filePath) {
+        Bitmap bitmap;
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        retriever.setDataSource(filePath);
+        bitmap = retriever.getFrameAtTime();
+        retriever.release();
         return bitmap;
     }
 }

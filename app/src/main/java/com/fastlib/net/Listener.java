@@ -5,7 +5,7 @@ package com.fastlib.net;
  */
 public interface Listener {
 
-    void onResponseListener(Result result);
+    void onResponseListener(Request r,String result);
 
-    void onErrorListener(String error);
+    void onErrorListener(Request r,String error);
 }

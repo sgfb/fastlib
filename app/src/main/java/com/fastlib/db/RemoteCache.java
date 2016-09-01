@@ -74,30 +74,22 @@ public class RemoteCache {
         final Listener l=mRequest.getListener();
         if(list!=null&&list.size()>0) {
             cache = list.get(0);
-            Result result=new Result();
-            result.setSuccess(true);
-            result.setMessage("from database");
-//            result.setCode(0);
-            result.setBody(cache.getCache());
-            l.onResponseListener(result);
+            l.onResponseListener(mRequest,cache.getCache());
         }
         mRequest.setListener(new Listener() {
 
             @Override
-            public void onResponseListener(Result result) {
+            public void onResponseListener(Request r,String result) {
                 com.fastlib.bean.RemoteCache responseCache=new com.fastlib.bean.RemoteCache();
-                responseCache.setCache(result.getBody());
+                responseCache.setCache(result);
                 responseCache.setCacheName(mCacheName);
-                if(!loadMore)
-                    FastDatabase.getInstance().saveOrUpdate(responseCache);
-                if(l!=null)
-                    l.onResponseListener(result);
+                if(!loadMore) FastDatabase.getInstance().saveOrUpdate(responseCache);
+                if(l!=null) l.onResponseListener(r,result);
             }
 
             @Override
-            public void onErrorListener(String error){
-                if(l!=null)
-                    l.onErrorListener(error);
+            public void onErrorListener(Request r,String error){
+                if(l!=null) l.onErrorListener(r,error);
             }
         });
         NetQueue.getInstance().netRequest(mRequest);
@@ -125,7 +117,8 @@ public class RemoteCache {
      */
     public void loadMore(Map<String,String> params){
         loadMore=true;
-        mRequest.getParams().putAll(params);
+        if(mRequest.getParams()==null) mRequest.put(params);
+        else mRequest.getParams().putAll(params);
         NetQueue.getInstance().netRequest(mRequest);
     }
 

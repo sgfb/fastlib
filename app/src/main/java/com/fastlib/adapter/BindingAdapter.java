@@ -48,22 +48,11 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 	public abstract void binding(int position,N data,OldViewHolder holder);
 
 	/**
-	 * 返回的数据转换.通常情况下都需要覆写这个方法
+	 * 返回的数据转换
 	 * @param result
 	 * @return
 	 */
-	public List<N> translate(Result result){
-		if(result.isSuccess()){
-			try{
-				Gson gson=new Gson();
-				Type type=new TypeToken<List<N>>(){}.getType();
-				return gson.fromJson(result.getBody(),type);
-			}catch(JsonParseException e){
-				Log.d(TAG,e.toString());
-			}
-		}
-		return null;
-	}
+	public abstract List<N> translate(String result);
 
 	/**
 	 * 请求更多数据时的请求
@@ -186,7 +175,7 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 	}
 
 	@Override
-	public void onResponseListener(Result result){
+	public void onResponseListener(Request r,String result){
 		List<N> list=translate(result);
 
 		isLoading=false;
@@ -206,7 +195,8 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 	}
 
 	@Override
-	public void onErrorListener(String error) {
+	public void onErrorListener(Request r,String error){
+		isLoading=false;
 		System.out.println("BindingAdapter error:"+error);
 	}
 }

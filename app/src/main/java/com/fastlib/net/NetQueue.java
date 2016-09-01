@@ -57,7 +57,7 @@ public class NetQueue {
                     public void onComplete(NetProcessor processor1){
                         System.out.println(processor1);
                         mProcessing--;
-                        mBlockMap.put(processor1.getReqeust().getType(),false);
+                        mBlockMap.put(processor1.getRequest().getType(),false);
                         if(mProcessing<=mConfig.maxTask)
                             new Thread(callbackRunner).start();
                     }
@@ -84,7 +84,7 @@ public class NetQueue {
                             public void onComplete(NetProcessor processor1) {
                                 System.out.println(processor1);
                                 mProcessing--;
-                                mBlockMap.put(processor1.getReqeust().getType(),false);
+                                mBlockMap.put(processor1.getRequest().getType(),false);
                                 if(mProcessing<=mConfig.maxTask) {
                                     new Thread(callbackRunner).start();
                                 }

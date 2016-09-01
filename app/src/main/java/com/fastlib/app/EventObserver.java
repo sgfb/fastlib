@@ -157,6 +157,8 @@ public class EventObserver {
         List<String> eventName=mLocalObserverMap.get(subscriber);
         LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
 
+        if(eventName==null)
+            return;
         for(int i=0;i<eventName.size();i++){
             LocalReceiver receiver=mLocalObserver.get(eventName.get(i));
             if(receiver!=null){
