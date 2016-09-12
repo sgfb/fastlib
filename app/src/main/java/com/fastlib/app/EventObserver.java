@@ -60,9 +60,8 @@ public class EventObserver {
         mObserver =new HashMap<>();
         mLocalObserver=new HashMap<>();
         mLocalObserverMap=new HashMap<>();
-        for(String type:TYPE_ALL){
+        for(String type:TYPE_ALL)
             mObserver.put(type, new ReceiverWrapper(new Receiver(), new ArrayList<OnEventListener>()));
-        }
     }
 
     public static synchronized EventObserver getInstance(){

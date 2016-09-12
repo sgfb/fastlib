@@ -1,78 +1,50 @@
 package com.fastlib.adapter;
 
 import android.content.Context;
-import android.support.annotation.LayoutRes;
-import android.support.v7.widget.RecyclerView;
-import android.util.Log;
-import android.util.SparseArray;
+import android.text.TextUtils;
+import android.util.JsonReader;
+import android.util.JsonToken;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.BaseAdapter;
 
+import com.fastlib.base.OldViewHolder;
 import com.fastlib.db.RemoteCache;
-import com.fastlib.bean.StateViewHelper;
+import com.fastlib.interf.AdapterViewState;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
 import com.fastlib.utils.BindingView;
-import com.google.gson.Gson;
 
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Created by sgfb on 16/8/23.
- * RecyclerView集成适配器
+ * Created by sgfb on 16/9/2<br>
+ * 从服务器获取到的数据自动填充到对应的view<br>
+ * 1.需要有相应的ViewResolve(数据对视图解析器)<br>
+ * 2.需要view的id与接口字段名对齐
  */
-public abstract class BindingAdapter2<N> extends RecyclerView.Adapter<BindingAdapter2.ViewHolder> implements Listener{
-    public static final String TAG=BindingAdapter2.class.getSimpleName();
-    public static final int POSITION_HEAD =100;
-    public static final int POSITION_FOOT =101;
-    public static final int STATE_NONE=1;
-    public static final int STATE_LOADING=2;
-    public static final int STATE_ERROR_NET=2;
-    public static final int STATE_COMPLETE=3;
-
-    protected boolean isRefresh,isMore,isLoading,isSaveCache,isAutoBinding;
-    private int mLayoutId;
+public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
+    private int mItemLayoutId;
     private int mPerCount; //每次读取条数，默认为1
-    private Map<Integer,StateViewHelper> mStateViewHelper;
-    protected List<N> mData;
-    protected RemoteCache mRemoteCache;
-    protected BindingView mResolver;
+    protected boolean isRefresh,isMore,isLoading,isSaveCache;
+    protected Context mContext;
     protected Request mRequest;
-    protected Gson gson=new Gson();
-    protected StateViewHelper.ViewHelper mFootView,mHeadView;
+    protected BindingView mResolver;
+    private AdapterViewState mViewState;
+    private RemoteCache mRemoteCache;
+    protected List<Object> mResult; //接口数据树
+    protected List<Object> mData;
 
-    public BindingAdapter2(Context context,@LayoutRes int layoutId){
-        this(context,layoutId,false);
-    }
-
-    public BindingAdapter2(Context context,@LayoutRes int layoutId,boolean saveCache){
-        mLayoutId=layoutId;
-        isRefresh=true;
-        isMore=true;
-        isSaveCache=saveCache;
-        isLoading=false;
-        isAutoBinding=true;
-        mPerCount=1;
-        mRequest=getRequest();
-        mRequest.setListener(this);
-        mStateViewHelper=new HashMap<>();
-        mRemoteCache=new RemoteCache(mRequest);
-        mResolver=new BindingView(context,LayoutInflater.from(context).inflate(mLayoutId,null));
-        refresh();
-    }
-
-    /**
-     * 获取定义的请求
-     * @return
-     */
     public abstract Request getRequest();
 
-    public abstract void binding(BindingAdapter2.ViewHolder holder,N data,int position);
+    public abstract List<Object> handleRawData(Object rawData);
 
     /**
      * 请求更多数据时的请求
@@ -86,12 +58,56 @@ public abstract class BindingAdapter2<N> extends RecyclerView.Adapter<BindingAda
      */
     public abstract void getRefreshDataRequest(Request request);
 
+    public BindingAdapter2(Context context,int layoutId){
+        mContext=context;
+        mItemLayoutId=layoutId;
+        mRequest=getRequest();
+        mResolver=new BindingView(context,LayoutInflater.from(context).inflate(layoutId,null));
+        mRequest.setListener(this);
+        mRemoteCache =new RemoteCache(mRequest);
+        refresh();
+    }
+
     /**
-     * 定义数据转换
-     * @param result
-     * @return
+     * 手动绑定视图
+     * @param position
+     * @param data
+     * @param holder
      */
-    public abstract List<N> translate(String result);
+    public void binding(int position,Object data,OldViewHolder holder){
+
+    }
+
+    @Override
+    public int getCount() {
+        return mData==null?0:mData.size();
+    }
+
+    @Override
+    public Object getItem(int position){
+        return mData.get(position);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        final OldViewHolder viewHolder = getViewHolder(convertView, parent);
+        if(position>=getCount()-1&&isMore&&!isLoading)
+            loadMoreData();
+        Object obj=getItem(position);
+        if(obj!=null&&obj instanceof Map<?,?>)
+            mResolver.fromMapData(viewHolder.getConvertView(),(Map<String, Object>) obj);
+        binding(position,getItem(position),viewHolder);
+        return viewHolder.getConvertView();
+    }
+
+    private OldViewHolder getViewHolder(View convertView, ViewGroup parent) {
+        return OldViewHolder.get(mContext, convertView, parent, mItemLayoutId);
+    }
 
     /**
      * 向服务器请求的参数
@@ -99,6 +115,8 @@ public abstract class BindingAdapter2<N> extends RecyclerView.Adapter<BindingAda
     private void loadMoreData(){
         isLoading=true;
         isRefresh=false;
+        if(mViewState!=null)
+            mViewState.onStateChanged(AdapterViewState.STATE_LOADING);
         getMoreDataRequest(mRequest);
         if(isSaveCache)
             mRemoteCache.loadMore(mRequest.getParams());
@@ -118,138 +136,151 @@ public abstract class BindingAdapter2<N> extends RecyclerView.Adapter<BindingAda
             NetQueue.getInstance().netRequest(mRequest);
     }
 
-    public N getItem(int position){
-        if(getItemViewType(position)==0)
-            return mData.get(position-(mHeadView==null?0:1));
-        return null;
+    private Object translate(JsonReader jsonReader)throws IOException {
+        Object obj=null;
+        JsonToken jt=jsonReader.peek();
+
+        if(jt==JsonToken.BEGIN_ARRAY)
+            obj=readJsonArray(jsonReader);
+        else if(jt==JsonToken.BEGIN_OBJECT)
+            obj=readJsonObj(jsonReader);
+        jsonReader.close();
+        return obj;
     }
 
-    @Override
-    public void onBindViewHolder(BindingAdapter2.ViewHolder holder,int position){
-        if(position>=getItemCount()-1&&isMore&&!isLoading)
-            loadMoreData();
-        if(getItemViewType(position)==0){
-            if(isAutoBinding){
-                String json=gson.toJson(getItem(position));
-                mResolver.fromJson(json,holder.itemView);
+    private Object readJsonObj(JsonReader jsonReader) throws IOException{
+        jsonReader.beginObject();
+        Map<String,Object> map=new HashMap<>();
+        JsonToken jt=jsonReader.peek();
+        String name=null;
+
+        if(jt==JsonToken.NULL){
+            jsonReader.endObject();
+            return null;
+        }
+        while(jsonReader.hasNext()){
+            if(jt==JsonToken.NAME)
+                name=jsonReader.nextName();
+            else if(jt==JsonToken.BEGIN_OBJECT)
+                map.put(name,readJsonObj(jsonReader));
+            else if(jt==JsonToken.BEGIN_ARRAY)
+                map.put(name,readJsonArray(jsonReader));
+            else if(jt==JsonToken.BOOLEAN)
+                map.put(name,jsonReader.nextBoolean());
+            else if(jt==JsonToken.NUMBER){
+                double temp=jsonReader.nextDouble();
+                if(Math.abs(temp)>0&&Math.abs(temp)<1)
+                    map.put(name,temp);
+                else if(Math.abs(temp)>Integer.MAX_VALUE)
+                    map.put(name,(long)temp);
+                else
+                    map.put(name,(int)temp);
             }
-            binding(holder,getItem(position),position);
+            else if(jt==JsonToken.STRING)
+                map.put(name,jsonReader.nextString());
+            else if(jt==JsonToken.NULL){
+                jsonReader.nextNull();
+                map.put(name,null);
+            }
+            else jsonReader.skipValue();
+            jt=jsonReader.peek();
         }
+        jsonReader.endObject();
+        return map;
     }
 
-    @Override
-    public int getItemViewType(int position){
-        if(mHeadView!=null&&position==0)
-            return POSITION_HEAD;
-        if(mFootView!=null&&position==getItemCount()-1)
-            return POSITION_FOOT;
-        return 0;
-    }
+    private Object readJsonArray(JsonReader jsonReader) throws IOException{
+        jsonReader.beginArray();
+        List<Object> list=new ArrayList<>();
+        JsonToken jt=jsonReader.peek();
 
-    @Override
-    public long getItemId(int position) {
-        return super.getItemId(position);
-    }
-
-    @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType){
-        switch (viewType){
-            case 0:return new ViewHolder(LayoutInflater.from(parent.getContext()).inflate(mLayoutId,parent,false));
-            case POSITION_HEAD:return new ViewHolder(mHeadView.getView());
-            case POSITION_FOOT:return new ViewHolder(mFootView.getView());
+        if(jt==JsonToken.NULL){
+            jsonReader.endArray();
+            return null;
         }
-        return null;
+        while(jt!= JsonToken.END_ARRAY){
+            if(jt==JsonToken.BEGIN_OBJECT)
+                list.add(readJsonObj(jsonReader));
+            else if(jt==JsonToken.BEGIN_ARRAY)
+                list.add(readJsonArray(jsonReader));
+            else if(jt==JsonToken.BOOLEAN)
+                list.add(jsonReader.nextBoolean());
+            else if(jt==JsonToken.NUMBER){
+                double temp=jsonReader.nextDouble();
+                if(Math.abs(temp)>0&&Math.abs(temp)<1)
+                    list.add(temp);
+                else if(Math.abs(temp)>Integer.MAX_VALUE)
+                    list.add((long)temp);
+                else
+                    list.add((int)temp);
+            }
+            else if(jt==JsonToken.STRING)
+                list.add(jsonReader.nextString());
+            else if(jt==JsonToken.NULL)
+                list.add(null);
+            else jsonReader.skipValue();
+            jt=jsonReader.peek();
+        }
+        jsonReader.endArray();
+        return list;
     }
 
     @Override
-    public int getItemCount(){
-        int count=0;
-        if(mHeadView!=null) count++;
-        if(mFootView!=null) count++;
-        if(mData!=null) count+=mData.size();
-        return count;
-    }
+    public void onResponseListener(Request r, String result){
+        JsonReader jr=new JsonReader(new StringReader(result));
+        Object obj=null;
+        List<Object> dataList;
+        try {
+            obj = translate(jr);
+        } catch (IOException e){
+            //do noting
+        }
 
-    @Override
-    public void onResponseListener(Request r,String result){
         isLoading=false;
-        int startItem=getItemCount();
-        List<N> list=translate(result);
-        if(list==null||list.size()<=0){
+        if(obj==null){
             isMore=false;
             return;
         }
-        if(list.size()<mPerCount){
-            isMore = false;
+        dataList=handleRawData(obj);
+        if(dataList==null||dataList.size()<=0){
+            isMore=false;
+            if(mViewState!=null)
+                mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
+            return;
+        }
+        if(dataList.size()<mPerCount){
+            isMore=false;
+            if(mViewState!=null)
+                mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
         }
         if(isRefresh){
-            mData=list;
-            startItem=0;
+            mResult =new ArrayList<>();
+            mData=dataList;
         }
-        else mData.addAll(list);
-        int endItem=getItemCount();
-        notifyItemRangeChanged(startItem,endItem);
+        else mData.addAll(dataList);
+        mResult.add(obj);
+        notifyDataSetChanged();
     }
 
     @Override
-    public void onErrorListener(Request r,String error){
+    public void onErrorListener(Request r, String error){
         isLoading=false;
-        StateViewHelper helper=mStateViewHelper.get(STATE_ERROR_NET);
-        if(helper!=null)
-            setFootView(helper.helper);
-        Log.d(TAG, "网络异常:" + error);
+        System.out.println("BindingAdapter error:" + error);
     }
 
-    private void setHeadView(StateViewHelper.ViewHelper head){
-        mHeadView=head;
-        notifyItemInserted(0);
+    public void setViewStateListener(AdapterViewState state){
+        mViewState=state;
     }
 
-    private void setFootView(StateViewHelper.ViewHelper foot){
-        mFootView=foot;
-        notifyItemInserted(getItemCount()-1);
+    public void setLoadCount(int count){
+        mPerCount=count;
     }
 
-    public void putStateView(int state,StateViewHelper helper){
-        mStateViewHelper.put(state,helper);
-        if(state==STATE_NONE){
-            if(helper.position==POSITION_HEAD) setHeadView(helper.helper);
-            else setFootView(helper.helper);
-        }
+    public boolean isSaveCache(){
+        return isSaveCache;
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder{
-        private SparseArray<View> mViews;
-
-        public ViewHolder(View itemView){
-            super(itemView);
-            mViews=new SparseArray<>();
-        }
-
-        /**
-         * 获取子View
-         * @param viewId
-         * @return
-         */
-        @SuppressWarnings("unchecked")
-        public <V extends View> V getView(int viewId) {
-            View view = mViews.get(viewId);
-            if (view==null){
-                view=itemView.findViewById(viewId);
-                mViews.put(viewId,view);
-            }
-            return (V) view;
-        }
-
-        /**
-         * 绑定指定ID的文本信息
-         *
-         * @param viewId
-         * @param str
-         */
-        public void setText(int viewId, String str) {
-            TextView textView = getView(viewId);
-            textView.setText(str);
-        }
+    public void setIsSaveCache(boolean isSaveCache) {
+        this.isSaveCache = isSaveCache;
     }
 }

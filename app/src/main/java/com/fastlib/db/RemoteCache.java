@@ -6,7 +6,6 @@ import android.util.Log;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
-import com.fastlib.net.Result;
 
 import java.util.List;
 import java.util.Map;

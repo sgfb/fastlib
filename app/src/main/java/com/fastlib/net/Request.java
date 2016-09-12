@@ -1,5 +1,11 @@
 package com.fastlib.net;
 
+import android.app.Activity;
+import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
+
+import com.google.gson.annotations.Expose;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -8,17 +14,20 @@ import java.util.Map;
  * 请求体<br/>
  * 每个任务都是不同的，（NetQueue）会根据属性来配置请求，调整请求开始完成或失败后不同的事件
  */
-public class Request implements Comparable{
-    private int type;
-    private boolean sFile;
-    private boolean hadRootAddress; //是否已加入根地址
-    private boolean useFactory; //是否使用预设值
-    private String method;
-    private String mUrl;
-    private Downloadable mDownloadable;
-    private Listener mListener;
-    private Map<String,String> mParams;
-    private Map<String,File> mFiles;
+public class Request implements Comparable<Request>{
+    @Expose private boolean sFile;
+    @Expose private boolean hadRootAddress; //是否已加入根地址
+    @Expose private boolean useFactory; //是否使用预设值
+    @Expose private String method;
+    @Expose private String mUrl;
+    @Expose private Downloadable mDownloadable;
+    @Expose private Listener mListener;
+    @Expose private Map<String,String> mParams;
+    @Expose private Map<String,File> mFiles;
+    private NetProcessor mProcessor;
+    //加入activity或者fragment可以提升安全性
+    private Activity mActivity;
+    private Fragment mFragment;
 
     public Request(String url){
         this("POST",url);
@@ -28,22 +37,15 @@ public class Request implements Comparable{
         this("");
     }
 
-    public Request(String method,String mUrl){
-        this(method, mUrl,NetQueue.TYPE_INDEPEND);
-    }
-
-    public Request(String method,String mUrl,int type){
+    public Request(String method,String url){
         this.method=method.toUpperCase();
-        this.mUrl = mUrl;
-        this.type=type;
+        mUrl=url;
         useFactory=true;
     }
 
     @Override
-    public int compareTo(Object another){
-        if(another instanceof Request)
-            return ((Request) another).getUrl().equals(mUrl)?1:0;
-        return 0;
+    public int compareTo(@NonNull Request another){
+        return another.getUrl().equals(mUrl)?1:0;
     }
 
     /**
@@ -151,10 +153,6 @@ public class Request implements Comparable{
         return mFiles;
     }
 
-    public int getType(){
-        return type;
-    }
-
     public void setUrl(String mUrl){
         this.mUrl = mUrl;
     }
@@ -205,10 +203,6 @@ public class Request implements Comparable{
         return this;
     }
 
-    public void setType(int type) {
-        this.type = type;
-    }
-
     public boolean isHadRootAddress() {
         return hadRootAddress;
     }
@@ -219,5 +213,39 @@ public class Request implements Comparable{
 
     public boolean downloadable(){
         return mDownloadable!=null&&mDownloadable.getTargetFile()!=null&&mDownloadable.getTargetFile().exists();
+    }
+
+    public Request setHost(Activity activity){
+        mActivity=activity;
+        return this;
+    }
+
+    public Request setHost(Fragment fragment){
+        mFragment=fragment;
+        return this;
+    }
+
+    /**
+     * 仅在开始进行网络请求时使用这个方法
+     * @param processor
+     */
+    public void startProcess(NetProcessor processor){
+        mProcessor=processor;
+    }
+
+    /**
+     * 取消网络请求
+     * @return
+     */
+    public boolean cancel(){
+        return mProcessor!=null&&mProcessor.stop();
+    }
+
+    public Object getHost(){
+        if(mFragment!=null)
+            return mFiles;
+        if(mActivity!=null)
+            return mActivity;
+        return null;
     }
 }

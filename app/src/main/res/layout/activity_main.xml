@@ -4,8 +4,18 @@
               android:layout_width="match_parent"
               android:orientation="vertical">
 
-    <Button
-        android:id="@+id/bt"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+    <com.fastlib.AutofitGridView
+        android:id="@+id/autoGridView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <!--<com.fastlib.MyBanner-->
+        <!--android:id="@+id/banner"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="200dp"/>-->
+
+    <!--<com.fastlib.widget.PercentIndicator-->
+        <!--android:id="@+id/indicator"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="5dp"/>-->
 </LinearLayout>

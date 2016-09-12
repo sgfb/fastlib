@@ -1,17 +1,14 @@
 package com.fastlib.test;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Environment;
 
 import com.fastlib.app.FastApplication;
 import com.fastlib.net.DefaultDownload;
-import com.fastlib.net.Downloadable;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
-import com.fastlib.net.Result;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,7 +17,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.util.Iterator;
 import java.util.List;

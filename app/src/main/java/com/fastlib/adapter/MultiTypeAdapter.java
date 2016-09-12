@@ -11,7 +11,6 @@ import com.fastlib.interf.AdapterViewState;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
-import com.fastlib.net.Result;
 
 import java.util.HashMap;
 import java.util.Iterator;

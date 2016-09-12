@@ -55,12 +55,12 @@ public class Indicator extends View{
 		}
 	}
 	
-	public void indexChange(int index){
+	public void setCurrentItem(int index){
 		mIndex=index;
 		invalidate();
 	}
 	
-	public void setPageCount(int count){
+	public void setItemCount(int count){
 		mPageCount=count;
 		invalidate();
 	}
@@ -71,5 +71,13 @@ public class Indicator extends View{
 
 	public void setUnSelectPaint(Paint paint){
 		mUnSelectPaint=paint;
+	}
+
+	public void setSelectPaint(int color){
+		mSelectPaint.setColor(color);
+	}
+
+	public void setUnSelectPaint(int color){
+		mUnSelectPaint.setColor(color);
 	}
 }

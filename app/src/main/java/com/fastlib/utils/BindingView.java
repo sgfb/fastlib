@@ -76,6 +76,25 @@ public class BindingView{
         }
     }
 
+    public void fromMapData(View root,Map<String,Object> data){
+        fromMapData(root,data,mMap);
+    }
+
+    public void fromMapData(View root,Map<String,Object> data,Map<String,Integer> views){
+        Iterator<String> iter=data.keySet().iterator();
+        while(iter.hasNext()){
+            String key=iter.next();
+            Integer id=views.get(key);
+            if(id==null)
+                continue;
+            View view=root.findViewById(id);
+            ViewResolve vr=mResolves.get(view.getClass().getCanonicalName());
+            Object obj=data.get(key);
+            if(vr!=null)
+                vr.resolve(view,obj);
+        }
+    }
+
     public void putResolve(ViewResolve resolve,Class<? extends View> ...cla){
         for(Class<? extends View> c:cla)
             mResolves.put(c.getCanonicalName(),resolve);
@@ -117,7 +136,7 @@ public class BindingView{
      * 将数据解析成视图的桥梁
      */
     public interface ViewResolve{
-        void resolve(View view,JsonReader reader);
+        void resolve(View view,Object reader);
     }
 
     /**
@@ -126,28 +145,32 @@ public class BindingView{
     public final class TextViewResolve implements ViewResolve{
 
         @Override
-        public void resolve(View view,JsonReader reader){
+        public void resolve(View view,Object obj){
             TextView tv=(TextView)view;
-            try {
-                final JsonToken token=reader.peek();
-                switch (token){
-                    case NUMBER:
-                    case STRING:
-                        tv.setText(reader.nextString());
-                        break;
-                    case BOOLEAN:
-                        tv.setText(Boolean.toString(reader.nextBoolean()));
-                        break;
-                    case NULL:
-                        tv.setText(null);
-                        break;
-                    default:
-                        reader.skipValue();
-                        break;
+            if(obj instanceof JsonReader){
+                JsonReader reader= (JsonReader) obj;
+                try {
+                    final JsonToken token=reader.peek();
+                    switch (token){
+                        case NUMBER:
+                        case STRING:
+                            tv.setText(reader.nextString());
+                            break;
+                        case BOOLEAN:
+                            tv.setText(Boolean.toString(reader.nextBoolean()));
+                            break;
+                        case NULL:
+                            tv.setText(null);
+                            break;
+                        default:
+                            reader.skipValue();
+                            break;
+                    }
+                }catch(IOException e){
+                    //do noting
                 }
-            } catch (IOException e){
-                //do noting
             }
+            else tv.setText(obj.toString());
         }
     }
 
@@ -157,25 +180,40 @@ public class BindingView{
     public final class CheckBoxResolve implements ViewResolve{
 
         @Override
-        public void resolve(View view, JsonReader reader) {
+        public void resolve(View view,Object obj){
             CheckBox cb=(CheckBox)view;
-            try {
-                JsonToken token=reader.peek();
-                switch (token){
-                    case BOOLEAN:
-                        cb.setChecked(reader.nextBoolean());
-                        break;
-                    case STRING:
-                        String value=reader.nextString().toLowerCase();
-                        if(value.equals("true")||value.equals("false"))
-                            cb.setChecked(value.equals("true"));
-                        break;
-                    default:
-                        reader.skipValue();
-                        break;
+            if(obj instanceof Boolean){
+                boolean b= (boolean) obj;
+                cb.setChecked(b);
+            }
+            else if(obj instanceof Integer){
+                int i=(int)obj;
+                cb.setChecked(i>0);
+            }
+            else if(obj instanceof String){
+                String s= (String) obj;
+                cb.setChecked(!s.equals("0"));
+            }
+            else if(obj instanceof JsonReader){
+                JsonReader reader= (JsonReader) obj;
+                try {
+                    JsonToken token=reader.peek();
+                    switch (token){
+                        case BOOLEAN:
+                            cb.setChecked(reader.nextBoolean());
+                            break;
+                        case STRING:
+                            String value=reader.nextString().toLowerCase();
+                            if(value.equals("true")||value.equals("false"))
+                                cb.setChecked(value.equals("true"));
+                            break;
+                        default:
+                            reader.skipValue();
+                            break;
+                    }
+                } catch (IOException e) {
+                    //do noting
                 }
-            } catch (IOException e) {
-                //do noting
             }
         }
     }

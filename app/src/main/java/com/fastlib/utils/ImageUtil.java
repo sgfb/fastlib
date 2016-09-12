@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -22,21 +23,29 @@ import android.support.v8.renderscript.Allocation;
 import android.support.v8.renderscript.Element;
 import android.support.v8.renderscript.RenderScript;
 import android.support.v8.renderscript.ScriptIntrinsicBlur;
+import android.view.View;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class ImageUtil{
+    public static final String TAG=ImageUtil.class.getSimpleName();
     public static final int REQUEST_FROM_ALBUM=10000;
     public static final int REQUEST_FROM_CAMERA=10001;
     public static final int REQUEST_FROM_CROP=10002;
-
-    private static Uri latestImage;
+    public static final String KEY_LAST_IMAGE="lastImage";
 
     private ImageUtil(){
         //不实例化
+    }
+
+    private static void saveLastImage(Context context,Uri uri){
+        SharedPreferences.Editor edit=context.getSharedPreferences(TAG,Context.MODE_PRIVATE).edit();
+        edit.putString(KEY_LAST_IMAGE, uri.toString());
+        edit.commit();
     }
 
     /**
@@ -137,7 +146,7 @@ public class ImageUtil{
     }
 
     public static void openAlbum(Fragment fragment){
-        openAlbum(null,fragment,false);
+        openAlbum(null, fragment, false);
     }
 
     /**
@@ -145,7 +154,7 @@ public class ImageUtil{
      * @param activity
      */
     public static void openAlbum(Activity activity){
-        openAlbum(activity,null,false);
+        openAlbum(activity, null, false);
     }
 
     @TargetApi(18)
@@ -165,7 +174,7 @@ public class ImageUtil{
     }
 
     public static void openCamera(Fragment fragment){
-        openCamera(null,fragment,Uri.fromFile(getTempFile(null)));
+        openCamera(null, fragment, Uri.fromFile(getTempFile(null)));
     }
 
     public static void openCamera(Activity activity){
@@ -180,11 +189,14 @@ public class ImageUtil{
     public static void openCamera(Activity activity,Fragment fragment,Uri output){
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         intent.putExtra(MediaStore.EXTRA_OUTPUT,output);
-        latestImage=output;
-        if(activity!=null)
+        if(activity!=null){
+            saveLastImage(activity,output);
             activity.startActivityForResult(intent, REQUEST_FROM_CAMERA);
-        else
-            fragment.startActivityForResult(intent,REQUEST_FROM_CAMERA);
+        }
+        else {
+            saveLastImage(fragment.getContext(),output);
+            fragment.startActivityForResult(intent, REQUEST_FROM_CAMERA);
+        }
     }
 
     /**
@@ -194,7 +206,7 @@ public class ImageUtil{
      * @param crop
      */
     public static void startActionCrop(Activity activity,Uri data,int crop){
-        startActionCrop(activity,data,crop,Uri.fromFile(getTempFile(null)));
+        startActionCrop(activity, data, crop, Uri.fromFile(getTempFile(null)));
     }
 
     /**
@@ -206,8 +218,9 @@ public class ImageUtil{
      */
     public static void startActionCrop(Activity activity, Uri data, int crop, Uri outPut){
         Intent intent = new Intent("com.android.camera.action.CROP",null);
+        saveLastImage(activity,outPut);
         intent.setDataAndType(data, "image/*");
-        intent.putExtra(MediaStore.EXTRA_OUTPUT,latestImage=outPut);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT,outPut);
         intent.putExtra("circleCrop", true);
         intent.putExtra("crop", "true");
         intent.putExtra("aspectX", 1);// 裁剪框比例
@@ -226,11 +239,17 @@ public class ImageUtil{
     public static File getTempFile(@Nullable File parent){
         File file=null;
         if(parent!=null&&parent.exists())
-            file=new File(parent.getAbsolutePath()+File.separator+Long.toString(System.currentTimeMillis())+".tmp");
+            file=new File(parent.getAbsolutePath()+File.separator+Long.toString(System.currentTimeMillis())+".jpg");
         else{
             if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
-                file=new File(Environment.getExternalStorageDirectory().getAbsolutePath()+ File.separator+Environment.getDataDirectory()+File.separator+System.currentTimeMillis()+".tmp");
+                file=new File(Environment.getExternalStorageDirectory().getAbsolutePath()+File.separator+System.currentTimeMillis()+".jpg");
         }
+        if(file!=null)
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         return file;
     }
 
@@ -241,13 +260,15 @@ public class ImageUtil{
      * @param data
      * @return
      */
-    public static Uri getImageFromActive(int requestCode, int resultCode, Intent data){
+    public static Uri getImageFromActive(Context context,int requestCode, int resultCode, Intent data){
         if(resultCode!=Activity.RESULT_OK)
             return null;
 
         switch (requestCode){
             case REQUEST_FROM_CAMERA:
-                return latestImage;
+                SharedPreferences sp=context.getSharedPreferences(TAG,Context.MODE_PRIVATE);
+                Uri uri=Uri.parse(sp.getString(KEY_LAST_IMAGE,""));
+                return uri;
             case REQUEST_FROM_ALBUM:
                 return data.getData();
             default:
@@ -262,6 +283,8 @@ public class ImageUtil{
      * @return
      */
     public static String getImagePath(Context context,Uri uri){
+        if(uri==null)
+            return null;
         boolean isKitKat=Build.VERSION.SDK_INT>=Build.VERSION_CODES.KITKAT;
 
         if(isKitKat)
@@ -304,9 +327,12 @@ public class ImageUtil{
             final String[] split = docId.split(":");
             Uri contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
             final String selection = "_id=?";
+            final String type = split[0];
             final String[] selectionArgs = new String[] {split[1]};
             Cursor cursor = null;
 
+            if ("primary".equalsIgnoreCase(type))//小米兼容方案
+                return Environment.getExternalStorageDirectory() + "/" + split[1];
             try {
                 cursor = context.getContentResolver().query(contentUri,new String[]{MediaStore.Images.Media.DATA}, selection, selectionArgs,
                         null);
@@ -368,12 +394,48 @@ public class ImageUtil{
      * @param filePath
      * @return
      */
-    private Bitmap getVideFirstFrame(String filePath) {
+    private static Bitmap getVideFirstFrame(String filePath) {
         Bitmap bitmap;
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         retriever.setDataSource(filePath);
         bitmap = retriever.getFrameAtTime();
         retriever.release();
         return bitmap;
+    }
+
+    public static void saveVideoFrame(Context context,String srcFilePath,String name) throws IOException {
+        Bitmap bitmap=getVideFirstFrame(srcFilePath);
+        if(bitmap!=null)
+            saveImage(context,name,bitmap);
+    }
+
+    /**
+     * 保存view截图到文件中
+     * @param v
+     * @param f
+     */
+    public static void saveViewToFile(View v,File f){
+        saveViewToFile(v,f,1);
+    }
+
+    public static void saveViewToFile(View v,File f,float scale){
+        v.setDrawingCacheEnabled(true);
+        v.buildDrawingCache();
+        if(!f.exists())
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        Bitmap bitmap=v.getDrawingCache();
+        if(bitmap!=null)
+            try {
+                bitmap=Bitmap.createScaledBitmap(bitmap,(int)(bitmap.getWidth()*scale),(int)(bitmap.getHeight()*scale),true);
+                bitmap.compress(Bitmap.CompressFormat.PNG,100,new FileOutputStream(f));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        else
+            System.out.println("保存view到文件中失败");
     }
 }

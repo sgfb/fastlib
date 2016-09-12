@@ -1,6 +1,9 @@
 package com.fastlib.net;
 
+import android.app.Activity;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -12,6 +15,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -20,14 +25,13 @@ import java.util.concurrent.Executor;
  * 网络请求的具体处理.在结束时会保存一些状态<br/>
  * 这个类可以上传和下载文件,默认不支持中断
  */
-public class NetProcessor extends Thread{
+public class NetProcessor implements Runnable{
     private final String BOUNDARY=Long.toHexString(System.currentTimeMillis());
     private final String CRLF="\r\n";
     private final String END="--"+BOUNDARY+"--"+CRLF;
     private final int BUFF_LENGTH=1024;
     private final int CHUNK_LENGTH=4096;
 
-    private volatile boolean sRunning=true;
     private long Tx,Rx;
     private Request mRequest;
     private NetStatus mStatus;
@@ -35,6 +39,7 @@ public class NetProcessor extends Thread{
     private String mResponse;
     private OnCompleteListener mListener;
     private Executor mResponsePoster;
+    private HttpURLConnection mConnection;
 
     public NetProcessor(Request request, OnCompleteListener l, final Handler handler){
         mRequest=request;
@@ -42,11 +47,10 @@ public class NetProcessor extends Thread{
         mStatus=NetStatus.UNSTART;
         mResponsePoster=new Executor() {
             @Override
-            public void execute(Runnable command) {
+            public void execute(@NonNull Runnable command){
                 handler.post(command);
             }
         };
-        this.interrupt();
     }
 
     @Override
@@ -58,7 +62,7 @@ public class NetProcessor extends Thread{
             InputStream in;
             OutputStream out;
             URL url=new URL(mRequest.getUrl());
-            HttpURLConnection con=(HttpURLConnection)url.openConnection();
+            mConnection =(HttpURLConnection)url.openConnection();
             boolean isMulti=false,isPost=false;
 
             //检测是否可保存为文件
@@ -68,21 +72,22 @@ public class NetProcessor extends Thread{
                 isPost = true;
                 if(mRequest.getFiles()!=null&&mRequest.getFiles().size()>0){
                     isMulti = true;
-                    con.setChunkedStreamingMode(CHUNK_LENGTH);
+                    mConnection.setChunkedStreamingMode(CHUNK_LENGTH);
                 }
             }
-            con.setRequestMethod(mRequest.getMethod());
-            con.setDoInput(true);
+            mConnection.setRequestMethod(mRequest.getMethod());
+            mConnection.setDoInput(true);
             if(isPost) {
-                con.setDoOutput(true);
+                mConnection.setDoOutput(true);
                 if(isMulti){
-                    con.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
-                    con.setUseCaches(false);
+                    mConnection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
+                    mConnection.setUseCaches(false);
                 }
             }
-            con.connect();
-            if(isPost&&sRunning){
-                out = con.getOutputStream();
+            mConnection.connect();
+            mRequest.startProcess(this);
+            if(isPost){
+                out = mConnection.getOutputStream();
                 if(isMulti)
                     multipart(mRequest.getParams(), mRequest.getFiles(),out);
                 else{
@@ -95,12 +100,12 @@ public class NetProcessor extends Thread{
                 out.close();
             }
 
-            in=con.getInputStream();
+            in= mConnection.getInputStream();
             int len;
             byte[] data=new byte[BUFF_LENGTH];
             if(downloadFile!=null){
                 OutputStream fileOut=new FileOutputStream(downloadFile);
-                while((len=in.read(data))!=-1&&sRunning){
+                while((len=in.read(data))!=-1){
                     fileOut.write(data, 0, len);
                     Rx+=len;
                 }
@@ -108,22 +113,23 @@ public class NetProcessor extends Thread{
                 mResponse=downloadFile.getAbsolutePath();
             }
             else{
-                while((len=in.read(data))!=-1&&sRunning)
+                while((len=in.read(data))!=-1)
                     baos.write(data,0,len);
                 Rx+=baos.size();
                 mResponse = baos.toString();
             }
             baos.close();
             in.close();
-            con.disconnect();
-            if(sRunning){
-                mMessage="成功";
-                mStatus=NetStatus.SUCCESS;
-            }
-            else{
-                mMessage="中断";
-                mStatus=NetStatus.OTHER;
-            }
+            mConnection.disconnect();
+            mMessage=mConnection.getResponseMessage();
+            mStatus=NetStatus.SUCCESS;
+//            if(sRunning){
+//
+//            }
+//            else{
+//                mMessage="中断";
+//                mStatus=NetStatus.OTHER;
+//            }
         }catch (IOException e) {
             mMessage=e.toString();
             mStatus=NetStatus.ERROR;
@@ -132,16 +138,29 @@ public class NetProcessor extends Thread{
                 mListener.onComplete(this);
             final Listener l=mRequest.getListener();
             if(l!=null){
-                mResponsePoster.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        if(mStatus==NetStatus.SUCCESS)
-                            l.onResponseListener(mRequest,mResponse);
-                        else if(mStatus==NetStatus.ERROR){
-                            l.onErrorListener(mRequest,mMessage);
+                Object host=mRequest.getHost();
+                boolean hostAvailable=true; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为正常
+                if(host instanceof Fragment){
+                    Fragment fragment= (Fragment) host;
+                    if((fragment.isRemoving()||fragment.isDetached()))
+                        hostAvailable=false;
+                }
+                else if(host instanceof Activity){
+                    Activity activity=(Activity)host;
+                    if(activity.isFinishing())
+                        hostAvailable=false;
+                }
+                if(hostAvailable){
+                    mResponsePoster.execute(new Runnable(){
+                        @Override
+                        public void run(){
+                            if(mStatus==NetStatus.SUCCESS)
+                                l.onResponseListener(mRequest,mResponse);
+                            else if(mStatus==NetStatus.ERROR)
+                                l.onErrorListener(mRequest,mMessage);
                         }
-                    }
-                });
+                    });
+                }
             }
         }
     }
@@ -164,7 +183,7 @@ public class NetProcessor extends Thread{
         if(strParams!=null&&strParams.size()>0){
             Iterator<String> iter=strParams.keySet().iterator();
             StringBuilder sb=new StringBuilder();
-            while(iter.hasNext()&&sRunning){
+            while(iter.hasNext()){
                 String key=iter.next();
                 String value=strParams.get(key);
                 sb.append("--"+BOUNDARY).append(CRLF);
@@ -178,7 +197,7 @@ public class NetProcessor extends Thread{
 
         if(fileParams!=null&&fileParams.size()>0){
             Iterator<String> iter=fileParams.keySet().iterator();
-            while(iter.hasNext()&&sRunning){
+            while(iter.hasNext()){
                 StringBuilder sb=new StringBuilder();
                 String key=iter.next();
                 File value=fileParams.get(key);
@@ -210,11 +229,6 @@ public class NetProcessor extends Thread{
             out.write(data, 0, len);
     }
 
-    public void stopRequest(){
-        sRunning=false;
-        interrupt();
-    }
-
     @Override
     public String toString(){
         String txt="status:"+mStatus+" message:"+mMessage+" tx:"+Tx+" rx:"+Rx;
@@ -238,6 +252,13 @@ public class NetProcessor extends Thread{
     }
 
     public Request getRequest(){return mRequest;}
+
+    public boolean stop(){
+        if(mConnection==null)
+            return false;
+        mConnection.disconnect();
+        return true;
+    }
 
     public interface OnCompleteListener {
         void onComplete(NetProcessor processer);
