@@ -66,17 +66,17 @@ public class FastDatabase{
 
 	public static FastDatabase getDefaultInstance(){
 		sAttri.defaultAttribute();
-		sAttri.setFromDatabase(getDefaultDatabaseName());
+		sAttri.setWhichDatabase(getDefaultDatabaseName());
 		return sOwer;
 	}
 
 	/**
-	 * 注解主键并且设置了主键值，数据库中如果有这条数据则会返回对应的对象，否则返回null
+	 * 注解主键并且设置了主键值(不为null或0)，数据库中如果有这条数据则会返回对应的对象，否则返回null
 	 *
 	 * @param obj
 	 * @return
 	 */
-	public <T> T get(Object obj){
+	public boolean get(Object obj){
 		Field[] fields;
 		Field fieldKey=null;
 
@@ -92,21 +92,24 @@ public class FastDatabase{
 			if(fieldKey==null) {
 				if(sConfig.isOutInformation)
 					Log.w(TAG,"没有注解主键的对象无法使用get(Object obj)");
-				return null;
+				return false;
 			}
 			fieldKey.setAccessible(true);
 			Object key=fieldKey.get(obj);
-			List<T> list= (List<T>) get(obj.getClass(),fieldKey.getName(), Reflect.objToStr(key));
+			List<Object> list= (List<Object>) get(obj.getClass(),fieldKey.getName(), Reflect.objToStr(key));
 			if(list==null||list.size()==0){
-				if(sConfig.isOutInformation)
-				    Log.w(TAG, "向数据库中请求了一个不存在的数据");
+				if(sConfig.isOutInformation) {
+					Log.w(TAG, "向数据库中请求了一个不存在的数据");
+					return false;
+				}
 			}
 			else
-				return list.get(0);
+				Reflect.objToObj(list.get(0),obj);
 		} catch (IllegalAccessException e){
-			return null;
+			Log.w(TAG,e.getMessage());
+			return false;
 		}
-		return null;
+		return true;
 	}
 
 	/**
@@ -132,7 +135,7 @@ public class FastDatabase{
 	}
 
 	/**
-	 * 获取对象集合.有where来指定过滤
+	 * 获取对象集合.用where来指定过滤
 	 *
 	 * @param cla
 	 * @param where
@@ -156,12 +159,12 @@ public class FastDatabase{
 		}
 		database=prepare(null);
 		if(TextUtils.isEmpty(where))
-			cursor=database.rawQuery("select *from '"+tableName+"' "+order,null);
+			cursor=database.rawQuery("select *from '"+tableName+"' "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y,null);
 		else {
 			if(whereValue==null)
-				cursor=database.rawQuery("select *from '"+tableName+"' where "+where+" is null "+order,null);
+				cursor=database.rawQuery("select *from '"+tableName+"' where "+where+" is null "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y,null);
 			else
-			    cursor = database.rawQuery("select *from '" + tableName + "' where " + where + "=? "+order, new String[]{whereValue});
+			    cursor = database.rawQuery("select *from '" + tableName + "' where " + where + "=? "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y, new String[]{whereValue});
 		}
 		if(cursor==null) {
 			if(sConfig.isOutInformation)
@@ -176,10 +179,13 @@ public class FastDatabase{
 				Object obj=cla.newInstance();
 				Field[] fields=cla.getDeclaredFields();
 				for(Field field:fields){
+					DatabaseInject inject=field.getAnnotation(DatabaseInject.class);
 					field.setAccessible(true);
 					String type=field.getType().getSimpleName();
 					int columnIndex=cursor.getColumnIndex(field.getName());
 
+					if(inject!=null&&inject.ignore()) //跳过忽视字段
+						continue;
 					if(type.contains("this"))
 						continue;
 					if(field.getType().isArray()){
@@ -312,8 +318,21 @@ public class FastDatabase{
 	 * @return
 	 */
 	public boolean delete(Class<?> cla,String keyValue){
-		//TODO
-		return false;
+		Field keyField=null;
+		Field[] fileds=Reflect.getAllField(cla);
+		for(Field f:fileds){
+			DatabaseInject inject=f.getAnnotation(DatabaseInject.class);
+			if(inject!=null&&inject.keyPrimary()){
+				keyField=f;
+				break;
+			}
+		}
+		if(keyField==null){
+			if(sConfig.isOutInformation)
+				Log.w(TAG,"没有主键的对象无法使用delete(Class<?>,String)方法删除对象");
+			return false;
+		}
+		return delete(cla,keyField.getName(),keyValue);
 	}
 
 	/**
@@ -505,12 +524,12 @@ public class FastDatabase{
 		SQLiteDatabase db=prepare(null);
 		String tableName=obj.getClass().getName();
 
-		if(sAttri.getSaveMax()< Integer.MAX_VALUE){
-			List<?> list=getAll(obj.getClass());
-			if(list!=null&&list.size()>=sAttri.getSaveMax()){
-				delete(list.get(0));
-			}
-		}
+//		if(sAttri.getSaveMax()< Integer.MAX_VALUE){
+//			List<?> list=getAll(obj.getClass());
+//			if(list!=null&&list.size()>=sAttri.getSaveMax()){
+//				delete(list.get(0));
+//			}
+//		}
 		for(Field field:fields){
 			field.setAccessible(true);
 			String type=field.getType().getSimpleName();
@@ -519,8 +538,8 @@ public class FastDatabase{
 
 			if(fieldInject!=null&&fieldInject.ignore())
 				continue;
-			try {
-				if (fieldInject != null && fieldInject.keyPrimary() && fieldInject.autoincrement()) {
+			try{
+				if (fieldInject != null && fieldInject.keyPrimary() && fieldInject.autoincrement()){
 					int keyValue = field.getInt(obj);
 					if (keyValue <= 0)
 						continue;
@@ -596,7 +615,7 @@ public class FastDatabase{
 	}
 
 	/**
-	 * 保存或修改对象
+	 * 保存或修改对象.对没有指定主键的对象只有保存没有更新
 	 *
 	 * @param obj
 	 * @return
@@ -608,7 +627,7 @@ public class FastDatabase{
 
 		DatabaseTable table=loadAttribute(obj.getClass());
 		tableName=table.tableName;
-		//如果表存在并且有主键，尝试获取这个对象，如果不是null并且主键值不为0则尝试更新
+		//如果表存在并且有主键，尝试获取这个对象，如果不是null(如果是整型且值不为0)则尝试更新
 		if(tableExists(tableName)){
 			DatabaseTable.DatabaseColumn keyColumn=table.keyColumn;
 			if(keyColumn!=null){
@@ -619,18 +638,18 @@ public class FastDatabase{
 					if(Reflect.isInteger(field.getType().getSimpleName())){
 						int value=field.getInt(obj);
 						if(value>0){
-							Object data=get(obj);
-							if(data!=null){
+							List<?> data=get(obj.getClass(),keyColumn.columnName);
+							if(data!=null&&data.size()>0){
 								isUpdate = true;
-								update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
+								success=update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
 							}
 						}
 					}
 					else{
-						Object data=get(obj);
-						if(data!=null){
+						List<?> data=get(obj.getClass(),keyColumn.columnName);
+						if(data!=null&&data.size()>0){
 							isUpdate = true;
-							update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
+							success=update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
 						}
 					}
 				} catch (NoSuchFieldException e) {
@@ -695,8 +714,8 @@ public class FastDatabase{
 		return sOwer;
 	}
 
-	public FastDatabase limit(int limit){
-		sAttri.setLimit(limit);
+	public FastDatabase limit(int start,int end){
+		sAttri.limit(start, end);
 		return sOwer;
 	}
 
@@ -705,8 +724,13 @@ public class FastDatabase{
 		return sOwer;
 	}
 
+	/**
+	 * 仅单次保存数据到指定数据库而不转换数据库
+	 * @param databaseName
+	 * @return
+	 */
 	public FastDatabase toWhichDatabase(String databaseName){
-		sAttri.setFromDatabase(databaseName);
+		sAttri.setWhichDatabase(databaseName);
 		return sOwer;
 	}
 
@@ -784,7 +808,7 @@ public class FastDatabase{
 
 	private SQLiteDatabase prepare(final String sql) throws SQLiteException{
 		SQLiteDatabase database;
-		final String databaseName=TextUtils.isEmpty(sAttri.getFromDatabase())?sConfig.getDatabaseName():sAttri.getFromDatabase();
+		final String databaseName=TextUtils.isEmpty(sAttri.getWhichDatabase())?sConfig.getDatabaseName():sAttri.getWhichDatabase();
 		SQLiteOpenHelper helper=new SQLiteOpenHelper(mContext,databaseName,null, sConfig.getVersion()){
 
 			@Override
@@ -847,11 +871,12 @@ public class FastDatabase{
 	 * @param tableName
 	 */
 	private void checkTableChanged(SQLiteDatabase db, String tableName){
+		boolean needRebuildTable=false;//列被删除或字段类型被修改时重置表
 		Class<?> cla;
 		Field[] fields;
 		Map<String,Field> fieldMap=new HashMap<>();
-		List<String> convertDatas=new ArrayList<>(); //保存需要修改并且保留数据的列
-		List<String> needChangeColumn=new ArrayList<>();
+		List<String> convertDatas=new ArrayList<>(); //调整表结构时需要保留数据的列
+//		List<String> needChangeColumn=new ArrayList<>();
 		Map<String,String> newColumn=new HashMap<>();
 
 		try {
@@ -884,31 +909,35 @@ public class FastDatabase{
 			DatabaseTable.DatabaseColumn column=table.columnMap.get(key);
 			DatabaseInject inject;
 			Field field=fieldMap.remove(key);
+			convertDatas.add(column.columnName);
 
-			//也许类中某字段被删除了
+			//也许类中某字段被删除了,重建表
 			if(field==null){
-				needChangeColumn.add(key);
+				needRebuildTable=true;
+				convertDatas.remove(column.columnName);
 				continue;
 			}
 			//判断注解是否被修改
 			inject=field.getAnnotation(DatabaseInject.class);
-			if(column.isPrimaryKey){
-				if(inject==null||!inject.keyPrimary()) {
-					needChangeColumn.add(column.columnName);
+			if(!column.isPrimaryKey){
+				if(inject!=null&&inject.keyPrimary()){
+					convertDatas.remove(column.columnName);
+					needRebuildTable = true; //不能保证某字段在成为主键之前数据唯一
 				}
 			}
 			else{
-				if(inject!=null&&inject.keyPrimary())
-					needChangeColumn.add(column.columnName);
+				if(inject==null||!inject.keyPrimary())
+					needRebuildTable=true;
 			}
-			if(column.autoincrement){
-				if (inject==null||!inject.autoincrement()) {
-					needChangeColumn.add(column.columnName);
+			if(!column.autoincrement){
+				if(inject!=null&&inject.autoincrement()){
+					convertDatas.remove(column.columnName);
+					needRebuildTable = true; //不能保证某字段在成为主键之前数据唯一
 				}
 			}
 			else{
-				if(inject!=null&&inject.autoincrement())
-					needChangeColumn.add(column.columnName);
+				if(inject==null||!inject.autoincrement())
+					needRebuildTable=true;
 			}
 			String fieldType;
 			//如果是数组，判断组类型
@@ -916,31 +945,35 @@ public class FastDatabase{
 //				fieldType=field.getClass().getComponentType().getSimpleName();
 //			else
 //			    fieldType=field.getType().getSimpleName();
-			//判断类型是否被修改.integer改为任何类型都可以被兼容,real只被varchar兼容,varchar被修改不兼容其他类型
+			//判断类型是否被修改.integer改为任何类型都可以被兼容,real只被varchar兼容,varchar不兼容其他类型
 			fieldType=field.getType().getSimpleName();
 			switch (column.type){
 				case "integer":
-					if(!Reflect.isInteger(fieldType)){
-						needChangeColumn.add(column.columnName);
-						convertDatas.add(column.columnName);
-					}
+					if(!Reflect.isInteger(fieldType))
+						needRebuildTable=true;
 					break;
 				case "real":
-					if(!Reflect.isReal(fieldType)&&Reflect.isVarchar(fieldType)){
-						needChangeColumn.add(column.columnName);
-						convertDatas.add(column.columnName);
+					if(!Reflect.isReal(fieldType)){
+						needRebuildTable=true;
+						if(!Reflect.isVarchar(fieldType))
+							convertDatas.remove(column.columnName);
 					}
 					break;
 				case "varchar":
-					if(!Reflect.isVarchar(fieldType))
-						needChangeColumn.add(column.columnName);
+					if(!Reflect.isVarchar(fieldType)) {
+						needRebuildTable = true;
+						convertDatas.remove(column.columnName);
+					}
 					break;
 				default:
-					if(!field.getType().getName().equals(column.type))
-						needChangeColumn.add(column.columnName);
+					if(!field.getType().getName().equals(column.type)) {
+						needRebuildTable = true;
+						convertDatas.remove(column.columnName);
+					}
 					break;
 			}
 		}
+		//数据库表与类字段映射完后多余的字段将作为表新字段加入
 		iter=fieldMap.keySet().iterator();
 		while(iter.hasNext()){
 			String key=iter.next();
@@ -950,10 +983,8 @@ public class FastDatabase{
 			String fieldType=value.getType().getSimpleName();
 			newColumn.put(key,Reflect.toSQLType(fieldType));
 		}
-		if(needChangeColumn.size()>0||newColumn.size()>0){
-			boolean needChangeTable=(needChangeColumn.size()>0); //列被删除或字段类型被修改时重置表
-			alterTable(db, cla, convertDatas, newColumn,needChangeTable);
-		}
+		if(needRebuildTable||newColumn.size()>0)
+			alterTable(db, cla,convertDatas,newColumn,needRebuildTable);
 		else
 			if(sConfig.isOutInformation)
 				Log.d(TAG,"表 "+tableName+" 不需要修改");
@@ -965,14 +996,14 @@ public class FastDatabase{
 	 * @param cla
 	 * @param valueToValue 保留列和数据
 	 * @param newColumn 新列名与类型映射组
-	 * @param needDelete 是否需要重建表
+	 * @param needRebuildTable 是否需要重建表
 	 */
-	public void alterTable(SQLiteDatabase db,Class<?> cla,List<String> valueToValue,Map<String,String> newColumn,boolean needDelete){
-		String tableName=cla.getName();
+	public void alterTable(SQLiteDatabase db,Class<?> cla,List<String> valueToValue,Map<String,String> newColumn,boolean needRebuildTable){
+		String tableName=cla.getCanonicalName();
 		String tempName="temp_table_"+Long.toString(System.currentTimeMillis()); //数据转移用临时表
 		Iterator<String> iter;
 
-		if(!needDelete){
+		if(!needRebuildTable){
 			if(newColumn!=null&&newColumn.size()>0){
 				iter=newColumn.keySet().iterator();
 				while(iter.hasNext()){
@@ -1023,9 +1054,11 @@ public class FastDatabase{
 
 			for(String s:ss){
 				DatabaseTable.DatabaseColumn column=new DatabaseTable.DatabaseColumn();
-				s=s.trim();
-				column.columnName=s.substring(0, s.indexOf(' '));
-				column.type=s.substring(s.indexOf(' ')+1,s.length());
+				s =s.trim();
+				column.columnName=s.substring(0,s.indexOf(' '));
+				column.type=s.substring(s.indexOf(' ')).trim();
+				if(column.type.indexOf(' ')!=-1)
+				    column.type=column.type.substring(0,column.type.indexOf(' ')).trim();
 				column.isPrimaryKey=s.contains("primary");
 				column.autoincrement=s.contains("autoincrement");
 				dt.columnMap.put(column.columnName,column);

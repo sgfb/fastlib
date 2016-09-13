@@ -111,4 +111,78 @@ public class FastJson{
         jsonReader.endArray();
         return list;
     }
+
+    /**
+     * json解析后封装(辅助类)
+     */
+    public class JsonWrapper{
+        private Object mRaw;
+
+        public JsonWrapper(Object raw){
+            mRaw=raw;
+        }
+
+        /**
+         * 获取字符串.使用这个方法默认了json是map型的
+         * @param name
+         * @return
+         */
+        public String getString(String name,String def){
+            if(mRaw instanceof Map<?,?>){
+                Map<String,Object> map= (Map<String, Object>) mRaw;
+                return (String)map.get(name);
+            }
+            return def;
+        }
+
+        /**
+         * 获取整数.使用这个方法默认了json是map型的
+         * @param name
+         * @return
+         */
+        public int getInt(String name,int def){
+            if(mRaw instanceof Map<?,?>){
+                Map<String,Object> map= (Map<String, Object>) mRaw;
+                return (int)map.get(name);
+            }
+            return def;
+        }
+
+        /**
+         * 获取浮点数.使用这个方法默认了json是map型的
+         * @param name
+         * @param def
+         * @return
+         */
+        public float getFloat(String name,float def){
+            if(mRaw instanceof Map<?,?>){
+                Map<String,Object> map= (Map<String, Object>) mRaw;
+                return (float)map.get(name);
+            }
+            return def;
+        }
+
+        /**
+         * 获取一个对象,这个对象必须有空构造.使用这个方法默认了json是map型的
+         * @param name
+         * @param cla
+         * @param <T>
+         * @return
+         */
+        public <T> T get(String name,Class<T> cla){
+            try {
+                T t=cla.newInstance();
+                Map<String,Object> map= (Map<String, Object>) mRaw;
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        public Object getRaw(){
+            return mRaw;
+        }
+    }
 }

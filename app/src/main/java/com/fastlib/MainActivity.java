@@ -22,9 +22,11 @@ import android.widget.ListView;
 
 import com.bumptech.glide.Glide;
 import com.fastlib.adapter.BindingAdapter2;
+import com.fastlib.annotation.DatabaseInject;
 import com.fastlib.annotation.ViewInject;
 import com.fastlib.app.FastActivity;
 import com.fastlib.base.OldViewHolder;
+import com.fastlib.db.FastDatabase;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
@@ -54,72 +56,34 @@ import java.util.Map;
  * Created by sgfb on 16/5/10.
  */
 public class MainActivity extends FastActivity{
-    String path;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        final AutofitGridView gridview=(AutofitGridView)findViewById(R.id.autoGridView);
-        List<String> list=new ArrayList<>();
-        for(int i=0;i<10;i++)
-            list.add(Integer.toString(i*111));
-        gridview.addString(android.R.layout.simple_list_item_1,list);
-        gridview.setOnItemListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                View v=gridview.findViewByPosition(position);
-                if(v!=null)
-                    System.out.println(v.getTag());
-                else
-                    System.out.println("v is null");
-            }
-        });
-//        final MyBanner banner=(MyBanner)findViewById(R.id.banner);
-//        final PercentIndicator indicato=(PercentIndicator)findViewById(R.id.indicator);
-//        List<Object> list=new ArrayList<>();
-//        banner.setInfinite(true);
-//        for(int i=0;i<3;i++)
-//            list.add("http://img3.imgtn.bdimg.com/it/u=2477016780,243579597&fm=21&gp=0.jpg");
-//        banner.setData(list);
-//        indicato.setItemCount(list.size());
-//        banner.addOnPageChangeListener(new ViewPager.OnPageChangeListener(){
-//            @Override
-//            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-//                indicato.setPercent(position,positionOffset);
-//            }
-//
-//            @Override
-//            public void onPageSelected(int position) {
-//                if(position==0) banner.setCurrentItem(banner.getAdapter().getCount(), false);
-//                else if(position==banner.getAdapter().getCount()) banner.setCurrentItem(0,false);
-//            }
-//
-//            @Override
-//            public void onPageScrollStateChanged(int state) {
-//
-//            }
-//        });
     }
 
-//    @Override
-//    protected void onSaveInstanceState(Bundle outState) {
-//        super.onSaveInstanceState(outState);
-//        outState.putSerializable("photo",path);
-//    }
-//
-//    @Override
-//    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-//        super.onRestoreInstanceState(savedInstanceState);
-//        path=savedInstanceState.getString("photo");
-//
+    @ViewInject(id=R.id.bt)
+    public void onclick(View v){
+        Bean b=new Bean();
+        for(int i=0;i<10;i++){
+            b.name=Integer.toString(i*1111);
+            b.extraField=i;
+            FastDatabase.getDefaultInstance().saveOrUpdate(b);
+        }
+    }
 
-    @Override
-    public void onActivityResult(int requestCode,int resultCode,Intent data){
-        super.onActivityResult(requestCode,resultCode,data);
-        if(TextUtils.isEmpty(path))
-            System.out.println(requestCode+","+resultCode+","+data);
-        else
-            System.out.println(requestCode+","+resultCode+","+Uri.fromFile(new File(path)));
+    @ViewInject(id=R.id.bt2)
+    public void onclick2(View v){
+        List<Bean> list=FastDatabase.getDefaultInstance().limit(5,2).getAll(Bean.class);
+        if(list==null||list.size()<=0)
+            System.out.println("data empty");
+        for(Bean b:list)
+            System.out.println(b);
+    }
+
+    @ViewInject(id=R.id.bt3)
+    public void onclick3(View v){
+        FastDatabase.getDefaultInstance().delete(Bean.class,"2");
     }
 }

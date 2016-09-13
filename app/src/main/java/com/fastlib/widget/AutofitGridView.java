@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.widget;
 
 import android.animation.LayoutTransition;
 import android.content.Context;
@@ -27,9 +27,12 @@ public class AutofitGridView extends LinearLayout implements View.OnClickListene
     private int index;
 
     public AutofitGridView(Context context, AttributeSet attrs) {
-        super(context,attrs);
+        super(context, attrs);
         setOrientation(LinearLayout.VERTICAL);
-        mPaddingAndMargin=DensityUtils.dp2px(getContext(),55);
+        LinearLayout.LayoutParams lp= (LayoutParams) getLayoutParams();
+        if(lp!=null)
+            mPaddingAndMargin+=(lp.leftMargin+lp.rightMargin);
+        mPaddingAndMargin=getPaddingLeft()+getPaddingRight();
     }
 
     public void addString(@LayoutRes final int resId,final String... ss){
@@ -65,8 +68,11 @@ public class AutofitGridView extends LinearLayout implements View.OnClickListene
 
         if(getChildCount()>0){
             LinearLayout ll=(LinearLayout)getChildAt(getChildCount()-1);
-            int width = (int) (tv.getText().toString().length()*tv.getTextSize())+DensityUtils.dp2px(ll.getContext(),16);
-            if (ScreenUtils.getScreenWidth(getContext())<getSelfRight(ll)+width+mPaddingAndMargin){
+            int width = (int) (tv.getText().toString().length()*tv.getTextSize())+DensityUtils.dp2px(ll.getContext(),15);
+            int screenWidth=ScreenUtils.getScreenWidth(getContext());
+            int textRight=getSelfRight(ll)+width+mPaddingAndMargin;
+            System.out.println(screenWidth+"?"+textRight);
+            if (screenWidth<textRight){
                 LinearLayout ll2 = new LinearLayout(getContext());
 
                 ll2.setLayoutParams(lp2);
@@ -95,7 +101,7 @@ public class AutofitGridView extends LinearLayout implements View.OnClickListene
         int right=0;
         for(int i=0;i<v.getChildCount();i++){
             TextView tv= (TextView) v.getChildAt(i);
-            right+=(tv.getText().toString().length()*tv.getTextSize()+DensityUtils.dp2px(v.getContext(),16));
+            right+=(tv.getText().toString().length()*tv.getTextSize());
         }
         return right;
     }

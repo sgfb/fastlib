@@ -1,11 +1,14 @@
 package com.fastlib.utils;
 
+import android.util.Log;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 使反射变得更简单容易
@@ -167,5 +170,25 @@ public class Reflect{
 		Type genType=cla.getGenericSuperclass();
 		Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
 		return params[index];
+	}
+
+	/**
+	 * 将某对象参数移到另一个对象中(不包括超类中的参数)
+	 * @param from
+	 * @param to
+	 * @return
+	 */
+	public static boolean objToObj(Object from,Object to){
+		if(from.getClass()!=to.getClass())
+			return false;
+		Field[] fields=to.getClass().getDeclaredFields();
+		for(Field f:fields)
+			try {
+				f.set(to,f.get(from));
+			} catch (IllegalAccessException e){
+				Log.w("Reflect","objToObj exception:"+e.getMessage());
+				return false;
+			}
+		return true;
 	}
 }

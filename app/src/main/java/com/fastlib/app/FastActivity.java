@@ -9,16 +9,11 @@ import com.fastlib.annotation.ViewInject;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,6 +21,7 @@ import java.util.Map;
  */
 public class FastActivity extends AppCompatActivity{
     private Map<String,Request> mRequests;
+    private ActivityRefreshListener mRefreshListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
@@ -33,8 +29,10 @@ public class FastActivity extends AppCompatActivity{
         Request[] rs=FastApplication.getInstance().getRequestFromModule(FastActivity.class.getCanonicalName());
         mRequests=new HashMap<>();
         if(rs!=null){
-            for(Request r:rs)
-                mRequests.put(r.getUrl(),r);
+            for(Request r:rs){
+                r.setHost(this);
+                mRequests.put(r.getUrl(), r);
+            }
         }
     }
 
@@ -59,6 +57,7 @@ public class FastActivity extends AppCompatActivity{
     @Override
     protected void onDestroy(){
         super.onDestroy();
+        EventObserver2.getInstance().unsubscribe(this);
         if(mRequests!=null){
             Iterator<String> iter=mRequests.keySet().iterator();
             while(iter.hasNext()){
@@ -114,6 +113,19 @@ public class FastActivity extends AppCompatActivity{
             }
     }
 
+    public void refresh(){
+        if(mRefreshListener!=null)
+            mRefreshListener.refresh();
+        if(mRequests!=null){
+            Iterator<String> iter=mRequests.keySet().iterator();
+            while(iter.hasNext()){
+                String key=iter.next();
+                Request request=mRequests.get(key);
+                NetQueue.getInstance().netRequest(request);
+            }
+        }
+    }
+
     /**
      * 启动一个存在的指定url请求
      * @param url
@@ -131,5 +143,16 @@ public class FastActivity extends AppCompatActivity{
      */
     public Request getRequest(String url){
         return mRequests.get(url);
+    }
+
+    public void setRefreshListener(ActivityRefreshListener l){
+        mRefreshListener=l;
+    }
+
+    /**
+     * activity整个模块的网络请求刷新回调
+     */
+    public interface ActivityRefreshListener{
+        void refresh();
     }
 }

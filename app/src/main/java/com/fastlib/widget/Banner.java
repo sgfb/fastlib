@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.widget;
 
 import android.content.Context;
 import android.support.v4.view.PagerAdapter;
@@ -8,18 +8,18 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by sgfb on 16/3/23.
- * 轮播.指示器需要额外加装
+ * 通用轮播.指示器需要额外加装
  */
 public abstract class Banner extends ViewPager{
     private BannerAdapter mAdapter;
     private List<Object> mData;
     private boolean autoScroll=true;
-    private boolean infinite;
     private long scrollInterval=5000; //轮播间隔时间
 
     protected abstract HandlePage getHandleImageWithEvent();
@@ -61,34 +61,14 @@ public abstract class Banner extends ViewPager{
     public void setData(List<Object> data){
         if(data==null||data.size()==0)
             return;
-        if(infinite){
-            mData=new ArrayList<>(data);
-            mData.add(0,data.get(data.size()-1));
-            mData.add(data.get(0));
-        }
-        else
-            mData=data;
+        mData=data;
         mAdapter.notifyDataSetChanged();
         autoScroll=true;
         startAutoScroll();
     }
 
-    @Override
-    public void setCurrentItem(int position){
-        super.setCurrentItem(position);
-        if(!infinite||mData==null||mData.size()<=0)
-            return;
-//        if(position==0) setCurrentItem(mAdapter.getCount(),false);
-//        else if(position==mAdapter.getCount()) setCurrentItem(0,false);
-
-    }
-
     public void setInterval(long interval){
         scrollInterval=interval;
-    }
-
-    public void setInfinite(boolean infinite){
-        this.infinite=infinite;
     }
 
     private class BannerAdapter extends PagerAdapter{

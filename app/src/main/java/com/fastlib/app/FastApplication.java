@@ -28,6 +28,7 @@ public class FastApplication extends Application{
         super.onCreate();
         mApp=this;
         FastDatabase.build(this);
+        EventObserver2.build(this);
         readRequestPool();
     }
 
