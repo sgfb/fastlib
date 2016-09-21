@@ -1,9 +1,15 @@
 package com.fastlib.net;
 
 import android.app.Activity;
+import android.app.Application;
+import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.text.TextUtils;
+
+import com.fastlib.app.EventObserver;
+import com.fastlib.bean.EventDownloading;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -15,15 +21,13 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
 /**
  * 网络请求的具体处理.在结束时会保存一些状态<br/>
- * 这个类可以上传和下载文件,默认不支持中断
+ * 这个类可以上传和下载文件,支持中断,下载文件时每秒发送一次进度广播
  */
 public class NetProcessor implements Runnable{
     private final String BOUNDARY=Long.toHexString(System.currentTimeMillis());
@@ -45,16 +49,60 @@ public class NetProcessor implements Runnable{
         mRequest=request;
         mListener=l;
         mStatus=NetStatus.UNSTART;
-        mResponsePoster=new Executor() {
+        mResponsePoster=new Executor(){
             @Override
             public void execute(@NonNull Runnable command){
                 handler.post(command);
             }
         };
+        if(mRequest.getHost() instanceof Activity){
+            final Activity act= (Activity) mRequest.getHost();
+            act.getApplication().registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
+                @Override
+                public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+
+                }
+
+                @Override
+                public void onActivityStarted(Activity activity) {
+
+                }
+
+                @Override
+                public void onActivityResumed(Activity activity) {
+
+                }
+
+                @Override
+                public void onActivityPaused(Activity activity) {
+
+                }
+
+                @Override
+                public void onActivityStopped(Activity activity) {
+                    if(act==activity){
+                        act.getApplication().unregisterActivityLifecycleCallbacks(this);
+                        stop();
+                    }
+                }
+
+                @Override
+                public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
+
+                }
+
+                @Override
+                public void onActivityDestroyed(Activity activity) {
+
+                }
+            });
+        }
     }
 
     @Override
     public void run(){
+        if(mStatus==NetStatus.STOP)
+            return;
         try {
             mStatus=NetStatus.RUNNING;
             ByteArrayOutputStream baos=new ByteArrayOutputStream();
@@ -64,10 +112,15 @@ public class NetProcessor implements Runnable{
             URL url=new URL(mRequest.getUrl());
             mConnection =(HttpURLConnection)url.openConnection();
             boolean isMulti=false,isPost=false;
+            long existsLength=0;
 
             //检测是否可保存为文件
-            if(mRequest.downloadable())
-                downloadFile=mRequest.getDownloadable().getTargetFile();
+            if(mRequest.downloadable()) {
+                downloadFile = mRequest.getDownloadable().getTargetFile();
+                existsLength=downloadFile.length();
+                if(existsLength>0&&mRequest.getDownloadable().supportBreak()) //如果支持中断并且文件已部分存在,跳过部分流
+                    mConnection.addRequestProperty("Range:bytes",Long.toString(existsLength)+"-");
+            }
             if(mRequest.getMethod().equals("POST")){
                 isPost = true;
                 if(mRequest.getFiles()!=null&&mRequest.getFiles().size()>0){
@@ -84,6 +137,12 @@ public class NetProcessor implements Runnable{
                     mConnection.setUseCaches(false);
                 }
             }
+            String[] sessions=mRequest.getSession();
+            if(sessions!=null&&sessions.length>0){
+                mConnection.setRequestProperty("Cookie",sessions[0]); //当前仅取首个session
+            }
+            if(mStatus==NetStatus.STOP)
+                return;
             mConnection.connect();
             mRequest.startProcess(this);
             if(isPost){
@@ -101,14 +160,29 @@ public class NetProcessor implements Runnable{
             }
 
             in= mConnection.getInputStream();
+            String session=mConnection.getHeaderField("Set-Cookie");
+            if(!TextUtils.isEmpty(session))
+                mRequest.setSession(session.split(";"));
             int len;
             byte[] data=new byte[BUFF_LENGTH];
             if(downloadFile!=null){
-                OutputStream fileOut=new FileOutputStream(downloadFile);
+                OutputStream fileOut=new FileOutputStream(downloadFile,mRequest.getDownloadable().supportBreak());
+//                String disposition=mConnection.getHeaderField("Content-Disposition");
+//                String filename= URLDecoder.decode(disposition.substring(disposition.indexOf("filename=") + 9),"UTF-8");
+                int maxCount=mConnection.getContentLength();
+                int speed=0;
+                long timer=System.currentTimeMillis();
                 while((len=in.read(data))!=-1){
                     fileOut.write(data, 0, len);
                     Rx+=len;
+                    speed+=len;
+                    if((System.currentTimeMillis()-timer)>1000){ //每秒发送一次广播
+                        EventObserver.getInstance().sendEvent(new EventDownloading(maxCount,speed,downloadFile.getAbsolutePath()));
+                        speed=0;
+                        timer=System.currentTimeMillis();
+                    }
                 }
+                EventObserver.getInstance().sendEvent(new EventDownloading(maxCount,speed,downloadFile.getAbsolutePath())); //下载结束发一次广播
                 fileOut.close();
                 mResponse=downloadFile.getAbsolutePath();
             }
@@ -123,13 +197,6 @@ public class NetProcessor implements Runnable{
             mConnection.disconnect();
             mMessage=mConnection.getResponseMessage();
             mStatus=NetStatus.SUCCESS;
-//            if(sRunning){
-//
-//            }
-//            else{
-//                mMessage="中断";
-//                mStatus=NetStatus.OTHER;
-//            }
         }catch (IOException e) {
             mMessage=e.toString();
             mStatus=NetStatus.ERROR;
@@ -173,7 +240,6 @@ public class NetProcessor implements Runnable{
         while(iter.hasNext()){
             String key=iter.next();
             String value=params.get(key);
-
             sb.append(key).append("=").append(value).append("&");
         }
         sb.deleteCharAt(sb.length() - 1);
@@ -254,9 +320,15 @@ public class NetProcessor implements Runnable{
     public Request getRequest(){return mRequest;}
 
     public boolean stop(){
+        mStatus=NetStatus.STOP;
         if(mConnection==null)
             return false;
-        mConnection.disconnect();
+        new Thread(){
+            @Override
+            public void run(){
+                mConnection.disconnect();
+            }
+        }.start();
         return true;
     }
 
@@ -269,6 +341,7 @@ public class NetProcessor implements Runnable{
         RUNNING,
         ERROR,
         SUCCESS,
+        STOP,
         OTHER
     }
 }

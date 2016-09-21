@@ -1,16 +1,20 @@
 package com.fastlib.app;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.os.BatteryManager;
-import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
+
+import com.fastlib.annotation.Event;
 
 import java.io.Serializable;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -18,50 +22,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 将常用的系统广播集中起来，动态启动广播监听。本地自定义广播（注意这两个广播开启和移除使用的是不同的方法）
+ * Created by sgfb on 16/9/1.
  */
 public class EventObserver {
-    public static String TYPE_NETWORK=ConnectivityManager.CONNECTIVITY_ACTION;
-    public static String TYPE_BATTERY_CHANGED =Intent.ACTION_BATTERY_CHANGED;
-    public static String TYPE_BATTERY_LOW=Intent.ACTION_BATTERY_LOW;
-    public static String TYPE_BATTERY_OKAY=Intent.ACTION_BATTERY_OKAY;
-    public static String TYPE_HEADSET_PLUG=Intent.ACTION_HEADSET_PLUG;
-    public static String TYPE_TIME_TICK=Intent.ACTION_TIME_TICK;
-    public static String TYPE_BOOT_COMPLETED=Intent.ACTION_BOOT_COMPLETED;
-    public static String TYPE_PACKAGE_ADDED=Intent.ACTION_PACKAGE_ADDED;
-    public static String TYPE_PACKAGE_REMOVED=Intent.ACTION_PACKAGE_REMOVED;
-    public static String[] TYPE_ALL={
-            TYPE_NETWORK,TYPE_BATTERY_CHANGED,TYPE_BATTERY_LOW,TYPE_BATTERY_OKAY,
-            TYPE_HEADSET_PLUG, TYPE_TIME_TICK,TYPE_BOOT_COMPLETED,TYPE_PACKAGE_ADDED,
-            TYPE_PACKAGE_REMOVED};
+    public static final String TAG=EventObserver.class.getSimpleName();
+    public static boolean DEBUG=true;
 
-    public static String VALUE_HEADSET_NAME="name";
-    public static String VALUE_HEADSET_STATE="state";
-    public static String VALUE_HEADSET_MICROPHONE="microphone";
-    public static String VALUE_BATTERY_STATUS=BatteryManager.EXTRA_STATUS;
-    public static String VALUE_BATTERY_HEALTH=BatteryManager.EXTRA_HEALTH;
-    public static String VALUE_BATTERY_PRESENT=BatteryManager.EXTRA_PRESENT;
-    public static String VALUE_BATTERY_LEVEL=BatteryManager.EXTRA_LEVEL;
-    public static String VALUE_BATTERY_SCALE=BatteryManager.EXTRA_SCALE;
-    public static String VALUE_BATTERY_SMALLICON=BatteryManager.EXTRA_ICON_SMALL;
-    public static String VALUE_BATTERY_PLUGGED=BatteryManager.EXTRA_PLUGGED;
-    public static String VALUE_BATTERY_VOLTAGE=BatteryManager.EXTRA_VOLTAGE;
-    public static String VALUE_BATTERY_TEMPERATURE=BatteryManager.EXTRA_TEMPERATURE;
-    public static String VALUE_BATTERY_TECHNOLOGY=BatteryManager.EXTRA_TECHNOLOGY;
-
-    private static Map<String,ReceiverWrapper> mObserver;
-    private static Map<String,LocalReceiver> mLocalObserver;
-    private static Map<String,List<String>> mLocalObserverMap;
     private static EventObserver mOwer;
-    private static Context mContext;
+    private Map<String,LocalReceiver> mLocalObserver;   //订阅事件名->订阅广播
+    private Map<String,List<String>> mLocalObserverMap; //订阅者->订阅事件名
+    private Context mContext;
 
     private EventObserver(Context context){
         mContext=context;
-        mObserver =new HashMap<>();
         mLocalObserver=new HashMap<>();
         mLocalObserverMap=new HashMap<>();
-        for(String type:TYPE_ALL)
-            mObserver.put(type, new ReceiverWrapper(new Receiver(), new ArrayList<OnEventListener>()));
     }
 
     public static synchronized EventObserver getInstance(){
@@ -74,258 +49,228 @@ public class EventObserver {
     }
 
     /**
-     * 增加广播监听
-     * @param type 广播类型
-     * @param l 监听器
-     */
-    public void addObserver(String type,OnEventListener l){
-        ReceiverWrapper wrapper= mObserver.get(type);
-        if(wrapper.getListeners().size()==0){
-            IntentFilter filter=new IntentFilter(type);
-            mContext.registerReceiver(wrapper.getReceiver(),filter);
-        }
-        wrapper.getListeners().add(l);
-    }
-
-    /**
-     * 移除广播监听。如果某类型广播监听为0时回关闭这个广播
-     *
-     * @param type
-     * @param l
-     */
-    public void removeObserver(String type,OnEventListener l){
-        ReceiverWrapper wrapper= mObserver.get(type);
-        List<OnEventListener> list=wrapper.getListeners();
-        if(list.remove(l)&&list.size()==0)
-            mContext.unregisterReceiver(wrapper.getReceiver());
-    }
-
-    /**
-     * 移除所有广播（非本地自定义广播）
-     */
-    public void removeAllObserver(){
-        Iterator<String> iter= mObserver.keySet().iterator();
-
-        while(iter.hasNext()){
-            String type=iter.next();
-            ReceiverWrapper wrapper= mObserver.get(type);
-            //如果有监听，那么广播一定是开启的
-            if(wrapper.getListeners().size()>0)
-                mContext.unregisterReceiver(wrapper.getReceiver());
-        }
-    }
-
-
-    /**
      * 订阅本地事件
      * @param subscriber 订阅者
      * @param cla 订阅事件
-     * @param event 事件监听
      */
-    public void subscribe(Object subscriber,Class<?> cla,OnLocalEvent event){
-        String name=cla.getCanonicalName();
+    public void subscribe(Object subscriber,Class<?> cla){
+        String eventName=baseClassUpper(cla);
         String subscriberName=subscriber.getClass().getCanonicalName();
         LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
-        LocalReceiver receiver=mLocalObserver.get(name);
-        IntentFilter filter=new IntentFilter(name);
+        LocalReceiver receiver=mLocalObserver.get(eventName);
+        IntentFilter filter=new IntentFilter(eventName);
         List<String> eventNames=mLocalObserverMap.get(subscriberName);
+        //检测是否有注解的事件方法,如果没有则不加入订阅事件
+        Method eventMethod=findEventMethod(subscriber,cla);
+        if(eventMethod==null){
+            if(DEBUG)
+                Log.d(TAG,"订阅者"+subscriberName+"没有注解EventMethod,无法订阅事件"+eventName);
+            return;
+        }
 
-        if(receiver==null) {
+        if(receiver==null){
             receiver = new LocalReceiver();
-            mLocalObserver.put(name,receiver);
+            mLocalObserver.put(eventName,receiver);
             lbm.registerReceiver(receiver,filter);
         }
-        if(eventNames==null){
+        if(eventNames==null)
             eventNames=new ArrayList<>();
-            eventNames.add(name);
-        }
-        receiver.events.put(subscriberName, event);
+        if(!eventNames.contains(eventName))
+            eventNames.add(eventName);
         mLocalObserverMap.put(subscriber.getClass().getCanonicalName(), eventNames);
-    }
-
-    public void subscribe(Object subscriber,Class<?> cla,OnLocalEvent event,boolean once){
-
+        receiver.mSubscribes.put(subscriber,eventMethod);
+        if(DEBUG)
+            Log.d(TAG,"订阅者"+subscriberName+" 订阅事件"+eventName);
     }
 
     /**
-     * 移除本地事件监听
-     * @param obj
+     * 返回类型名，如果是基本类型转换为引用类
+     * @param cla
+     * @return
      */
-    public void unsubscribe(Object obj){
-        String subscriber=obj.getClass().getCanonicalName();
-        List<String> eventName=mLocalObserverMap.get(subscriber);
-        LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
+    private String baseClassUpper(Class<?> cla){
+        String name=cla.getCanonicalName();
+        if(name.equals(int.class.getCanonicalName()))
+            return Integer.class.getCanonicalName();
+        else if(name.equals(long.class.getCanonicalName()))
+            return Long.class.getCanonicalName();
+        else if(name.equals(float.class.getCanonicalName()))
+            return Float.class.getCanonicalName();
+        else if(name.equals(double.class.getCanonicalName()))
+            return Double.class.getCanonicalName();
+        else if(name.equals(short.class.getCanonicalName()))
+            return Short.class.getCanonicalName();
+        return name;
+    }
 
-        if(eventName==null)
-            return;
-        for(int i=0;i<eventName.size();i++){
-            LocalReceiver receiver=mLocalObserver.get(eventName.get(i));
-            if(receiver!=null){
-                receiver.events.remove(subscriber);
-                if(receiver.events.isEmpty())
-                    lbm.unregisterReceiver(receiver);
+    /**
+     * 遍历寻找存在的参数是订阅事件类的事件方法(注解EventMethod)
+     * @param obj 订阅者
+     * @param event 订阅事件
+     * @return
+     */
+    private Method findEventMethod(Object obj,Class<?> event){
+        Method method=null;
+        Method[] methods=obj.getClass().getDeclaredMethods();
+        if(methods==null||methods.length<=0)
+            return null;
+        for(Method m:methods){
+            Annotation anno=m.getAnnotation(Event.class);
+            if(anno!=null){
+                Class<?>[] params=m.getParameterTypes();
+                if(params!=null&&params.length>0&&params[0]==event){
+                    method=m;
+                    break;
+                }
             }
         }
+        return method;
+    }
+
+    /**
+     * 移除某订阅者所有订阅事件
+     * @param subscribe 订阅者
+     */
+    public void unsubscribe(Object subscribe){
+        String subscribeName=subscribe.getClass().getCanonicalName();
+        List<String> events=mLocalObserverMap.get(subscribeName);
+        if(events==null||events.size()<=0)
+            return;
+        List<String> temp =new ArrayList<>(events);
+        for(String event:temp)
+            unsubscribe(subscribe,event);
+    }
+
+    public void unsubscribe(Object subscriber,Class<?> event){
+        unsubscribe(subscriber,event.getCanonicalName());
+    }
+
+    /**
+     * 移除某订阅者的某个订阅事件
+     * @param subscriber 订阅者
+     * @param eventName 订阅事件名
+     */
+    public void unsubscribe(Object subscriber,String eventName){
+        String subscribeName=subscriber.getClass().getCanonicalName();
+        List<String> events=mLocalObserverMap.get(subscribeName);
+        LocalReceiver receiver=mLocalObserver.get(eventName);
+        LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
+
+        if(events==null) //如果这个订阅者还没订阅过事件就跳出
+            return;
+        events.remove(eventName);
+        receiver.mSubscribes.remove(subscriber);
+        if(receiver.mSubscribes.size()==0){
+            lbm.unregisterReceiver(receiver);
+            mLocalObserver.remove(eventName);
+        }
+        if(events.size()==0)
+            mLocalObserverMap.remove(subscribeName);
+        if(DEBUG)
+            Log.d(TAG, "订阅者" + subscribeName + "移除事件"+eventName);
     }
 
     /**
      * 发送本地事件
-     * @param subEvent
+     * @param event
      */
-    public void sendLocalEvent(Object subEvent){
+    public void sendEvent(Object event){
+        if(event==null){
+            if(DEBUG)
+                Log.d(TAG,"无法发送null事件");
+            return;
+        }
         LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
-        String name=subEvent.getClass().getCanonicalName();
+        String name=event.getClass().getCanonicalName();
         Intent intent=new Intent(name);
-        EntityWrapper entity=new EntityWrapper(subEvent);
-        intent.putExtra("entity", entity);
+        EntityWrapper entity=new EntityWrapper(event);
+        intent.putExtra("entity",entity);
         lbm.sendBroadcast(intent);
-    }
-
-    public void clear(){
-        removeAllObserver();
-        removeAllLocalObserver();
-    }
-
-    /**
-     * 清理所有本地事件订阅(这个方法必须在程序结束之前被调用)
-     */
-    public void removeAllLocalObserver(){
-        Iterator<String> iter=mLocalObserver.keySet().iterator();
-        LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
-
-        while(iter.hasNext()){
-            String key=iter.next();
-            LocalReceiver receiver=mLocalObserver.get(key);
-            lbm.unregisterReceiver(receiver);
-        }
-        mLocalObserver.clear();
-        mLocalObserverMap.clear();
-    }
-
-    public interface OnEventListener{
-
-    }
-
-    public static abstract class OnHeadsetListener implements OnEventListener{
-        public abstract void onEvent(Context context,int state,int microphone,String name);
-    }
-
-    public static abstract class OnNetworkListener implements OnEventListener{
-        public abstract void onEvent(Context context,NetworkInfo info);
-    }
-
-    public static abstract class OnBatteryListener implements OnEventListener{
-        public abstract void onEvent(boolean present,int status,int health,int level,
-                                     int scale,int smallIcon,int plugged,int voltage,int temperature,String technology);
-    }
-
-    class ReceiverWrapper{
-        List<OnEventListener> listeners;
-        Receiver receiver;
-
-        public ReceiverWrapper(Receiver r,List<OnEventListener> ls){
-            receiver=r;
-            listeners=ls;
-        }
-
-        public List<OnEventListener> getListeners() {
-            return listeners;
-        }
-
-        public void setListeners(List<OnEventListener> listeners) {
-            this.listeners = listeners;
-        }
-
-        public Receiver getReceiver() {
-            return receiver;
-        }
-
-        public void setReceiver(Receiver receiver) {
-            this.receiver = receiver;
-        }
-    }
-
-    class Receiver extends BroadcastReceiver{
-
-        @Override
-        public void onReceive(Context context, Intent intent){
-            String action=intent.getAction();
-            if(action.equals(TYPE_NETWORK)){
-                ConnectivityManager cm=(ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
-                NetworkInfo info=cm.getActiveNetworkInfo();
-                Iterator<OnEventListener> iter=getListenerIter(TYPE_NETWORK);
-
-                while(iter.hasNext()){
-                    OnNetworkListener l=(OnNetworkListener)iter.next();
-                    l.onEvent(context,info);
-                }
-            }
-            else if(action.equals(TYPE_HEADSET_PLUG)){
-                Bundle bundle=intent.getExtras();
-                Iterator<OnEventListener> iter=getListenerIter(TYPE_HEADSET_PLUG);
-
-                while(iter.hasNext()){
-                    OnHeadsetListener l=(OnHeadsetListener)iter.next();
-                    l.onEvent(context,bundle.getInt(VALUE_HEADSET_STATE),bundle.getInt(VALUE_HEADSET_MICROPHONE),bundle.getString(VALUE_HEADSET_NAME));
-                }
-            }
-            else if(action.equals(TYPE_BATTERY_CHANGED)){
-                Bundle bundle=intent.getExtras();
-                Iterator<OnEventListener> iter=getListenerIter(TYPE_BATTERY_CHANGED);
-
-                while(iter.hasNext()){
-                    OnBatteryListener l=(OnBatteryListener)iter.next();
-                    boolean present=bundle.getBoolean(VALUE_BATTERY_PRESENT);
-                    int health=bundle.getInt(VALUE_BATTERY_HEALTH);
-                    int status=bundle.getInt(VALUE_BATTERY_STATUS);
-                    int level=bundle.getInt(VALUE_BATTERY_LEVEL);
-                    int scale=bundle.getInt(VALUE_BATTERY_SCALE);
-                    int smallIcon=bundle.getInt(VALUE_BATTERY_SMALLICON);
-                    int plugged=bundle.getInt(VALUE_BATTERY_PLUGGED);
-                    int voltage=bundle.getInt(VALUE_BATTERY_VOLTAGE);
-                    int temperature=bundle.getInt(VALUE_BATTERY_TEMPERATURE);
-                    String technology=bundle.getString(VALUE_BATTERY_TECHNOLOGY);
-
-                    l.onEvent(present,status,health,level,scale,smallIcon,plugged,voltage,temperature,technology);
-                }
-            }
-        }
-    }
-
-    public Iterator getListenerIter(String type){
-        ReceiverWrapper wrapper= mObserver.get(type);
-        List<OnEventListener> list=wrapper.getListeners();
-        return list.iterator();
-    }
-
-    public interface OnLocalEvent {
-        void onEvent(Object subEvent);
-    }
-
-    public class EntityWrapper implements Serializable{
-        public Object obj;
-        public EntityWrapper(Object obj){
-            this.obj=obj;
-        }
+        if(DEBUG)
+            Log.d(TAG,"广播事件"+name);
     }
 
     public class LocalReceiver extends BroadcastReceiver{
-        Map<String,OnLocalEvent> events;
+        public Map<Object,Method> mSubscribes; //订阅者->事件方法
 
         public LocalReceiver(){
-            events =new HashMap<>();
+            mSubscribes=new HashMap<>();
         }
 
         @Override
         public void onReceive(Context context, Intent intent){
             EntityWrapper wrapper= (EntityWrapper) intent.getSerializableExtra("entity");
-
-            Iterator<String> iter=events.keySet().iterator();
-            while(iter.hasNext()) {
-                String key=iter.next();
-                OnLocalEvent event=events.get(key);
-                event.onEvent(wrapper.obj);
+            List<Object> invisibleSubscriber=new ArrayList<>();
+            Iterator<Object> iter=mSubscribes.keySet().iterator();
+            while(iter.hasNext()){
+                Object subscribe=iter.next();
+                boolean visible=checkVisible(subscribe);
+                if(!visible){
+                    invisibleSubscriber.add(subscribe);
+                    continue;
+                }
+                try {
+                    mSubscribes.get(subscribe).invoke(subscribe,wrapper.obj);
+                } catch (IllegalAccessException e) {
+                    //do noting
+                } catch (InvocationTargetException e) {
+                    // do noting
+                }
             }
+            for(Object obj:invisibleSubscriber)
+                unsubscribe(obj);
+        }
+    }
+
+    /**
+     * 检查订阅是否状态正常(这个是不通用的方法)
+     * @param subscriber
+     * @return 是否正常 默认为true
+     */
+    private boolean checkVisible(Object subscriber){
+        if(subscriber instanceof Activity){
+            Activity activity= (Activity) subscriber;
+            if(activity.isFinishing())
+                return false;
+        }else if(subscriber instanceof Fragment){
+            Fragment fragment=(Fragment)subscriber;
+            if(fragment.isRemoving()||fragment.isDetached())
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * 应用退出时应该调用这个方法清理所有数据
+     */
+    public void clear(){
+        if(DEBUG)
+            Log.d(TAG,"清理所有数据");
+        clearReceiver();
+        mLocalObserver.clear();
+        mLocalObserverMap.clear();
+        mContext=null;
+        mOwer=null;
+        System.gc();
+    }
+
+    /**
+     * 清理所有广播
+     */
+    private void clearReceiver(){
+        LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
+        Iterator<String> iter=mLocalObserver.keySet().iterator();
+        while(iter.hasNext()){
+            String key=iter.next();
+            LocalReceiver receiver=mLocalObserver.get(key);
+            lbm.unregisterReceiver(receiver);
+        }
+    }
+
+    public class EntityWrapper implements Serializable {
+        public Object obj;
+        public EntityWrapper(Object obj){
+            this.obj=obj;
         }
     }
 }

@@ -19,7 +19,7 @@ import java.util.Map;
 
 /**
  * Created by sgfb on 16/4/23.
- * 自动绑定数据与视图
+ * 键名对id自动绑定数据与视图
  */
 public class BindingView{
     private Map<String,ViewResolve> mResolves;
@@ -90,6 +90,7 @@ public class BindingView{
             View view=root.findViewById(id);
             ViewResolve vr=mResolves.get(view.getClass().getCanonicalName());
             Object obj=data.get(key);
+            view.setTag(obj);
             if(vr!=null)
                 vr.resolve(view,obj);
         }

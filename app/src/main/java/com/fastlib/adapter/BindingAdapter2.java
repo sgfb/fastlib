@@ -1,7 +1,6 @@
 package com.fastlib.adapter;
 
 import android.content.Context;
-import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.JsonToken;
 import android.view.LayoutInflater;
@@ -10,12 +9,13 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
 import com.fastlib.base.OldViewHolder;
-import com.fastlib.db.RemoteCache;
+import com.fastlib.db.RemoteCacheServer;
 import com.fastlib.interf.AdapterViewState;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
 import com.fastlib.utils.BindingView;
+import com.fastlib.utils.FastJson;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -38,7 +38,7 @@ public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
     protected Request mRequest;
     protected BindingView mResolver;
     private AdapterViewState mViewState;
-    private RemoteCache mRemoteCache;
+    private RemoteCacheServer mRemoteCacheServer;
     protected List<Object> mResult; //接口数据树
     protected List<Object> mData;
 
@@ -64,7 +64,7 @@ public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
         mRequest=getRequest();
         mResolver=new BindingView(context,LayoutInflater.from(context).inflate(layoutId,null));
         mRequest.setListener(this);
-        mRemoteCache =new RemoteCache(mRequest);
+        mRemoteCacheServer =new RemoteCacheServer(mRequest);
         refresh();
     }
 
@@ -119,7 +119,7 @@ public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
             mViewState.onStateChanged(AdapterViewState.STATE_LOADING);
         getMoreDataRequest(mRequest);
         if(isSaveCache)
-            mRemoteCache.loadMore(mRequest.getParams());
+            mRemoteCacheServer.loadMore(mRequest.getParams());
         else
             NetQueue.getInstance().netRequest(mRequest);
     }
@@ -131,107 +131,17 @@ public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
         isMore=true;
         getRefreshDataRequest(mRequest);
         if(isSaveCache)
-            mRemoteCache.start();
+            mRemoteCacheServer.start();
         else
             NetQueue.getInstance().netRequest(mRequest);
     }
 
-    private Object translate(JsonReader jsonReader)throws IOException {
-        Object obj=null;
-        JsonToken jt=jsonReader.peek();
-
-        if(jt==JsonToken.BEGIN_ARRAY)
-            obj=readJsonArray(jsonReader);
-        else if(jt==JsonToken.BEGIN_OBJECT)
-            obj=readJsonObj(jsonReader);
-        jsonReader.close();
-        return obj;
-    }
-
-    private Object readJsonObj(JsonReader jsonReader) throws IOException{
-        jsonReader.beginObject();
-        Map<String,Object> map=new HashMap<>();
-        JsonToken jt=jsonReader.peek();
-        String name=null;
-
-        if(jt==JsonToken.NULL){
-            jsonReader.endObject();
-            return null;
-        }
-        while(jsonReader.hasNext()){
-            if(jt==JsonToken.NAME)
-                name=jsonReader.nextName();
-            else if(jt==JsonToken.BEGIN_OBJECT)
-                map.put(name,readJsonObj(jsonReader));
-            else if(jt==JsonToken.BEGIN_ARRAY)
-                map.put(name,readJsonArray(jsonReader));
-            else if(jt==JsonToken.BOOLEAN)
-                map.put(name,jsonReader.nextBoolean());
-            else if(jt==JsonToken.NUMBER){
-                double temp=jsonReader.nextDouble();
-                if(Math.abs(temp)>0&&Math.abs(temp)<1)
-                    map.put(name,temp);
-                else if(Math.abs(temp)>Integer.MAX_VALUE)
-                    map.put(name,(long)temp);
-                else
-                    map.put(name,(int)temp);
-            }
-            else if(jt==JsonToken.STRING)
-                map.put(name,jsonReader.nextString());
-            else if(jt==JsonToken.NULL){
-                jsonReader.nextNull();
-                map.put(name,null);
-            }
-            else jsonReader.skipValue();
-            jt=jsonReader.peek();
-        }
-        jsonReader.endObject();
-        return map;
-    }
-
-    private Object readJsonArray(JsonReader jsonReader) throws IOException{
-        jsonReader.beginArray();
-        List<Object> list=new ArrayList<>();
-        JsonToken jt=jsonReader.peek();
-
-        if(jt==JsonToken.NULL){
-            jsonReader.endArray();
-            return null;
-        }
-        while(jt!= JsonToken.END_ARRAY){
-            if(jt==JsonToken.BEGIN_OBJECT)
-                list.add(readJsonObj(jsonReader));
-            else if(jt==JsonToken.BEGIN_ARRAY)
-                list.add(readJsonArray(jsonReader));
-            else if(jt==JsonToken.BOOLEAN)
-                list.add(jsonReader.nextBoolean());
-            else if(jt==JsonToken.NUMBER){
-                double temp=jsonReader.nextDouble();
-                if(Math.abs(temp)>0&&Math.abs(temp)<1)
-                    list.add(temp);
-                else if(Math.abs(temp)>Integer.MAX_VALUE)
-                    list.add((long)temp);
-                else
-                    list.add((int)temp);
-            }
-            else if(jt==JsonToken.STRING)
-                list.add(jsonReader.nextString());
-            else if(jt==JsonToken.NULL)
-                list.add(null);
-            else jsonReader.skipValue();
-            jt=jsonReader.peek();
-        }
-        jsonReader.endArray();
-        return list;
-    }
-
     @Override
     public void onResponseListener(Request r, String result){
-        JsonReader jr=new JsonReader(new StringReader(result));
         Object obj=null;
         List<Object> dataList;
         try {
-            obj = translate(jr);
+            obj = FastJson.fromJson(result);
         } catch (IOException e){
             //do noting
         }

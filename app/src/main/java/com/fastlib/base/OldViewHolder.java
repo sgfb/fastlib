@@ -1,6 +1,7 @@
 package com.fastlib.base;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -79,5 +80,26 @@ public class OldViewHolder {
 	public void setText(int viewId, String str) {
 		TextView textView = getView(viewId);
 		textView.setText(str);
+	}
+
+	/**
+	 * 设置文本到到指定textview后面
+	 * @param viewId
+	 * @param str
+     */
+	public void appendText(int viewId,String str){
+		TextView textView=getView(viewId);
+		textView.append(str);
+	}
+
+	/**
+	 * 设置文本到到指定textview前面
+	 * @param viewId
+	 * @param str
+	 */
+	public void insertFront(int viewId,String str){
+		TextView textView=getView(viewId);
+		String temp= TextUtils.isEmpty(textView.getText().toString())?"":textView.getText().toString();
+		textView.setText(str+temp);
 	}
 }

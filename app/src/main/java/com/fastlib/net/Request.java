@@ -1,6 +1,7 @@
 package com.fastlib.net;
 
 import android.app.Activity;
+import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 
@@ -24,6 +25,7 @@ public class Request implements Comparable<Request>{
     @Expose private Listener mListener;
     @Expose private Map<String,String> mParams;
     @Expose private Map<String,File> mFiles;
+    private String[] mSession; //留存的session
     private NetProcessor mProcessor;
     //加入activity或者fragment可以提升安全性
     private Activity mActivity;
@@ -215,6 +217,12 @@ public class Request implements Comparable<Request>{
         return mDownloadable!=null&&mDownloadable.getTargetFile()!=null&&mDownloadable.getTargetFile().exists();
     }
 
+    public Request setHost(Context context){
+        if(context instanceof Activity)
+            mActivity= (Activity) context;
+        return this;
+    }
+
     public Request setHost(Activity activity){
         mActivity=activity;
         return this;
@@ -241,9 +249,17 @@ public class Request implements Comparable<Request>{
         return mProcessor!=null&&mProcessor.stop();
     }
 
+    public String[] getSession(){
+        return mSession;
+    }
+
+    public void setSession(String[] session) {
+        mSession = session;
+    }
+
     public Object getHost(){
         if(mFragment!=null)
-            return mFiles;
+            return mFragment;
         if(mActivity!=null)
             return mActivity;
         return null;

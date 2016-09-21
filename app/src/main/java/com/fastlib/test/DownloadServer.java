@@ -1,7 +1,10 @@
 package com.fastlib.test;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Environment;
 
 import com.fastlib.app.FastApplication;
@@ -23,30 +26,36 @@ import java.util.List;
 
 /**
  * Created by sgfb on 16/3/31.
+ * 批量下载，图像加载
  */
-public class ImageCache {
-    public static final String SAVE_PATH_EXTERNAL= Environment.getExternalStorageDirectory().getAbsolutePath()+"/data/huanyu/cache";
-    public static final String SAVE_PATH_INTERNAL= FastApplication.getInstance().getCacheDir().getAbsolutePath();
-    private static int count;
+public class DownloadServer{
+    public static final String TAG=DownloadServer.class.getCanonicalName();
 
-    public ImageCache(){}
+    public DownloadServer(){}
 
-    public static void startDownloadImage(final List<String> uri, final OnDownloadCompletion completion){
+    /**
+     * 批量下载
+     * @param context
+     * @param uris
+     * @param completion
+     */
+    public static void startBatchDownload(final Context context, final List<String> uris, final OnDownloadedListener completion){
         final File dir;
         if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
-            dir=new File(SAVE_PATH_EXTERNAL);
+            dir=new File(context.getExternalCacheDir().getAbsolutePath()+File.separator+"file");
         else
-            dir=new File(SAVE_PATH_INTERNAL);
+            dir=new File(context.getCacheDir().getAbsolutePath()+File.separator+"file");
         if(!dir.exists())
             if(!dir.mkdirs())
                 return;
-        count=uri.size();
-        Iterator<String> iter=uri.iterator();
-        final String[] ss=new String[uri.size()];
+        final int count=uris.size();
+        Iterator<String> iter=uris.iterator();
+        final String[] ss=new String[uris.size()];
         int index=0;
+        clearDownloadedCount(context);
         while(iter.hasNext()){
             String s=iter.next();
-            Request r=new Request("post",s);
+            Request r=new Request("get",s);
             String name=s.replace('/',' ');
             File f=new File(dir,name);
             try {
@@ -55,11 +64,16 @@ public class ImageCache {
                 e.printStackTrace();
             }
             ss[index++]=dir.getAbsolutePath()+File.separator+name;
+            r.setHost(context);
             r.setDownloadable(new DefaultDownload(f));
-            r.setListener(new Listener() {
+            r.setListener(new Listener(){
                 @Override
                 public void onResponseListener(Request r,String result){
-                    completion.completion(ss);
+                    int downloadedCount=getDownloadedCount(context);
+                    increaseDownloadCount(context,downloadedCount);
+                    completion.partCompletion(ss[downloadedCount]);
+                    if(downloadedCount>=count-1)
+                        completion.completion(ss);
                 }
 
                 @Override
@@ -69,6 +83,23 @@ public class ImageCache {
             });
             NetQueue.getInstance().netRequest(r);
         }
+    }
+
+    private static int getDownloadedCount(Context context){
+        SharedPreferences sp=context.getSharedPreferences(FastApplication.NAME_SHAREPREFERENCES,Context.MODE_PRIVATE);
+        return sp.getInt("downloadedCount",0);
+    }
+
+    private static void increaseDownloadCount(Context context,int downloaded){
+        SharedPreferences sp=context.getSharedPreferences(FastApplication.NAME_SHAREPREFERENCES,Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor=sp.edit();
+        editor.putInt("downloadedCount",downloaded+1).apply();
+    }
+
+    private static void clearDownloadedCount(Context context){
+        SharedPreferences sp=context.getSharedPreferences(FastApplication.NAME_SHAREPREFERENCES,Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor=sp.edit();
+        editor.putInt("downloadedCount",0).apply();
     }
 
     public static void getImage(final File file, final String uri, final OnImageCompletion l){
@@ -97,11 +128,18 @@ public class ImageCache {
         }.start();
     }
 
+    /**
+     * 图像下载回调
+     */
     public interface OnImageCompletion{
         void completion(Bitmap bitmap);
     }
 
-    public interface OnDownloadCompletion{
+    /**
+     * 多文件下载时回调
+     */
+    public interface OnDownloadedListener {
+        void partCompletion(String filePath);
         void completion(String[] files);
     }
 }

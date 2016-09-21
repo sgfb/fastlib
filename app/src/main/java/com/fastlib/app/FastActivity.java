@@ -5,7 +5,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.fastlib.annotation.ViewInject;
+import com.fastlib.annotation.Bind;
+import com.fastlib.annotation.Event;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
 
@@ -20,20 +21,14 @@ import java.util.Map;
  * Created by sgfb on 16/9/5.
  */
 public class FastActivity extends AppCompatActivity{
-    private Map<String,Request> mRequests;
+    private Map<String,Request> mRequests; //这个activity中的所有网络请求
     private ActivityRefreshListener mRefreshListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        Request[] rs=FastApplication.getInstance().getRequestFromModule(FastActivity.class.getCanonicalName());
         mRequests=new HashMap<>();
-        if(rs!=null){
-            for(Request r:rs){
-                r.setHost(this);
-                mRequests.put(r.getUrl(), r);
-            }
-        }
+        registerEvents();
     }
 
     @Override
@@ -57,7 +52,7 @@ public class FastActivity extends AppCompatActivity{
     @Override
     protected void onDestroy(){
         super.onDestroy();
-        EventObserver2.getInstance().unsubscribe(this);
+        EventObserver.getInstance().unsubscribe(this);
         if(mRequests!=null){
             Iterator<String> iter=mRequests.keySet().iterator();
             while(iter.hasNext()){
@@ -67,11 +62,28 @@ public class FastActivity extends AppCompatActivity{
         }
     }
 
+    /**
+     * 注册方法中的广播事件,如果有
+     */
+    private void registerEvents(){
+        Method[] methods=getClass().getDeclaredMethods();
+        if(methods!=null&&methods.length>0)
+            for(Method m:methods){
+                Event em=m.getAnnotation(Event.class);
+                if(em!=null){ //如果EventMethod注解非空，说明这个是一个广播方法
+                    Class<?>[] clas=m.getParameterTypes();
+                    if(clas==null||clas.length!=1) //如果形参空或长度不为1跳过(这也许不是一个标准的广播方法)
+                        continue;
+                    EventObserver.getInstance().subscribe(this,clas[0]);
+                }
+            }
+    }
+
     private void injectViewEvent(){
         Method[] methods=getClass().getDeclaredMethods();
         if(methods!=null&&methods.length>0)
         for(final Method m:methods){
-            ViewInject vi=m.getAnnotation(ViewInject.class);
+            Bind vi=m.getAnnotation(Bind.class);
             if(vi!=null){
                 int[] ids=vi.id();
                 if(ids!=null&&ids.length>0){
@@ -98,7 +110,7 @@ public class FastActivity extends AppCompatActivity{
 
         if(fields!=null&&fields.length>0)
             for(Field field:fields){
-                ViewInject vi=field.getAnnotation(ViewInject.class);
+                Bind vi=field.getAnnotation(Bind.class);
                 if(vi!=null){
                     int[] ids=vi.id();
                     if(ids!=null&&ids.length>0){
@@ -142,7 +154,23 @@ public class FastActivity extends AppCompatActivity{
      * @return
      */
     public Request getRequest(String url){
-        return mRequests.get(url);
+        return getRequest("POST",url);
+    }
+
+    /**
+     * 获取指定url请求,可能为null
+     * @param method
+     * @param url
+     * @return
+     */
+    public Request getRequest(String method,String url){
+        Request request=mRequests.get(url);
+        if(request==null){
+            request=new Request(method,url);
+            request.setHost(this);
+            mRequests.put(url,request);
+        }
+        return request;
     }
 
     public void setRefreshListener(ActivityRefreshListener l){

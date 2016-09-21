@@ -2,7 +2,7 @@ package com.fastlib.bean;
 
 import android.util.Log;
 
-import com.fastlib.annotation.DatabaseInject;
+import com.fastlib.annotation.Database;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 
@@ -16,10 +16,10 @@ import java.io.Serializable;
  */
 @SuppressWarnings("serial")
 public abstract class Entity implements Serializable {
-	@DatabaseInject(ignore=true)
+	@Database(ignore=true)
 	public static final String TAG=Entity.class.getSimpleName();
 
-	@DatabaseInject(keyPrimary = true,autoincrement = true)
+	@Database(keyPrimary = true,autoincrement = true)
 	protected int id;
 
 	public int getId() {

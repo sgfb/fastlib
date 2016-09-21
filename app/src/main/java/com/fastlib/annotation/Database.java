@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.FIELD,ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface DatabaseInject{
+public @interface Database {
 	
 	//数据库中列名
 	String columnName() default "";

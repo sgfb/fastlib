@@ -7,11 +7,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.fastlib.annotation.DatabaseInject;
+import com.fastlib.annotation.Database;
 import com.fastlib.bean.DatabaseTable;
 import com.fastlib.utils.Reflect;
 import com.google.gson.Gson;
-import com.google.gson.JsonParseException;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -83,7 +82,7 @@ public class FastDatabase{
 		try {
 			fields=Reflect.getAllField(obj.getClass());
 			for(int i=0;i<fields.length;i++){
-				DatabaseInject inject=fields[i].getAnnotation(DatabaseInject.class);
+				Database inject=fields[i].getAnnotation(Database.class);
 				if(inject!=null&&inject.keyPrimary()){
 					fieldKey=fields[i];
 					break;
@@ -123,7 +122,7 @@ public class FastDatabase{
 		Field[] fields=cla.getDeclaredFields();
 		String key=null;
 		for(Field f:fields){
-			DatabaseInject columnInject=f.getAnnotation(DatabaseInject.class);
+			Database columnInject=f.getAnnotation(Database.class);
 			if(columnInject!=null&&columnInject.keyPrimary()){
 				key=f.getName();
 				break;
@@ -146,7 +145,7 @@ public class FastDatabase{
 		String tableName;
 		SQLiteDatabase database;
 		Cursor cursor;
-		List<Object> list=new ArrayList<>();
+		List<T> list=new ArrayList<>();
 		String order="";
 
 		if(!TextUtils.isEmpty(sAttri.getOrderBy())){
@@ -176,10 +175,10 @@ public class FastDatabase{
 		Gson gson=new Gson();
 		while(!cursor.isAfterLast()){
 			try {
-				Object obj=cla.newInstance();
+				T obj=cla.newInstance();
 				Field[] fields=cla.getDeclaredFields();
 				for(Field field:fields){
-					DatabaseInject inject=field.getAnnotation(DatabaseInject.class);
+					Database inject=field.getAnnotation(Database.class);
 					field.setAccessible(true);
 					String type=field.getType().getSimpleName();
 					int columnIndex=cursor.getColumnIndex(field.getName());
@@ -239,7 +238,8 @@ public class FastDatabase{
 		}
 		cursor.close();
 		database.close();
-		return List.class.cast(list);
+		return list;
+//		return List.class.cast(list);
 	}
 
 	public <T> List<T> getAll(Class<T> cla){
@@ -261,7 +261,7 @@ public class FastDatabase{
 
 		for(Field field:fields){
 			field.setAccessible(true);
-			DatabaseInject tableInject=field.getAnnotation(DatabaseInject.class);
+			Database tableInject=field.getAnnotation(Database.class);
 			if(tableInject!=null&&tableInject.keyPrimary()){
 				primaryField=field;
 				break;
@@ -269,7 +269,7 @@ public class FastDatabase{
 		}
 
 		if(primaryField!=null){
-			DatabaseInject columnInject=primaryField.getAnnotation(DatabaseInject.class);
+			Database columnInject=primaryField.getAnnotation(Database.class);
 
 			if(columnInject!=null&&!TextUtils.isEmpty(columnInject.columnName()))
 				columnName=columnInject.columnName();
@@ -321,7 +321,7 @@ public class FastDatabase{
 		Field keyField=null;
 		Field[] fileds=Reflect.getAllField(cla);
 		for(Field f:fileds){
-			DatabaseInject inject=f.getAnnotation(DatabaseInject.class);
+			Database inject=f.getAnnotation(Database.class);
 			if(inject!=null&&inject.keyPrimary()){
 				keyField=f;
 				break;
@@ -432,7 +432,7 @@ public class FastDatabase{
 		for(Field field:fields){
 			field.setAccessible(true);
 			String type=field.getType().getSimpleName();
-			DatabaseInject fieldInject=field.getAnnotation(DatabaseInject.class);
+			Database fieldInject=field.getAnnotation(Database.class);
 			String columnName;
 
 			if(fieldInject!=null&&!TextUtils.isEmpty(fieldInject.columnName()))
@@ -501,7 +501,7 @@ public class FastDatabase{
 			    database.update("'" + tableName + "'",cv,where+"=?",new String[]{whereValue});
 			database.setTransactionSuccessful();
 			if(sConfig.isOutInformation)
-				Log.d(TAG, sConfig.getDatabaseName()+"<--u-- "+tableName);
+				Log.d(TAG,TextUtils.isEmpty(sAttri.getWhichDatabase())?sConfig.getDatabaseName():sAttri.getWhichDatabase()+"<--u-- "+tableName);
 		}catch(SQLiteException e){
 			if(sConfig.isOutInformation)
 				Log.d(TAG,"更新数据失败，异常："+e.toString());
@@ -533,7 +533,7 @@ public class FastDatabase{
 		for(Field field:fields){
 			field.setAccessible(true);
 			String type=field.getType().getSimpleName();
-			DatabaseInject fieldInject=field.getAnnotation(DatabaseInject.class);
+			Database fieldInject=field.getAnnotation(Database.class);
 			String columnName;
 
 			if(fieldInject!=null&&fieldInject.ignore())
@@ -603,7 +603,7 @@ public class FastDatabase{
 			db.insert("'" + tableName + "'", null, cv);
 			db.setTransactionSuccessful();
 			if(sConfig.isOutInformation)
-				Log.d(TAG, sConfig.getDatabaseName()+"<----"+tableName);
+				Log.d(TAG,TextUtils.isEmpty(sAttri.getWhichDatabase())?sConfig.getDatabaseName():sAttri.getWhichDatabase()+"<----"+tableName);
 		}catch(SQLiteException e){
 			return false;
 		}
@@ -635,10 +635,10 @@ public class FastDatabase{
 				try {
 					field = obj.getClass().getDeclaredField(table.keyFieldName);
 					field.setAccessible(true);
+					Object keyValue=field.get(obj);
 					if(Reflect.isInteger(field.getType().getSimpleName())){
-						int value=field.getInt(obj);
-						if(value>0){
-							List<?> data=get(obj.getClass(),keyColumn.columnName);
+						if(((int)keyValue)>0){
+							List<?> data=get(obj.getClass(),keyValue.toString());
 							if(data!=null&&data.size()>0){
 								isUpdate = true;
 								success=update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
@@ -646,7 +646,7 @@ public class FastDatabase{
 						}
 					}
 					else{
-						List<?> data=get(obj.getClass(),keyColumn.columnName);
+						List<?> data=get(obj.getClass(),keyValue.toString());
 						if(data!=null&&data.size()>0){
 							isUpdate = true;
 							success=update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
@@ -780,7 +780,7 @@ public class FastDatabase{
 		dt.tableName=cla.getName();
 
 		for(Field f:fields){
-			DatabaseInject fieldInject=f.getAnnotation(DatabaseInject.class);
+			Database fieldInject=f.getAnnotation(Database.class);
 			DatabaseTable.DatabaseColumn column=new DatabaseTable.DatabaseColumn();
 			String type=f.getType().getSimpleName();
 
@@ -892,7 +892,7 @@ public class FastDatabase{
 		for(Field field:fields) {
 			field.setAccessible(true);
 			String columnName=field.getName(); //列名以注解为优先，默认字段名
-			DatabaseInject inject=field.getAnnotation(DatabaseInject.class);
+			Database inject=field.getAnnotation(Database.class);
 			if(inject!=null){
 				if(inject.ignore())
 					continue;
@@ -907,7 +907,7 @@ public class FastDatabase{
 		while(iter.hasNext()){
 			String key=iter.next();
 			DatabaseTable.DatabaseColumn column=table.columnMap.get(key);
-			DatabaseInject inject;
+			Database inject;
 			Field field=fieldMap.remove(key);
 			convertDatas.add(column.columnName);
 
@@ -918,7 +918,7 @@ public class FastDatabase{
 				continue;
 			}
 			//判断注解是否被修改
-			inject=field.getAnnotation(DatabaseInject.class);
+			inject=field.getAnnotation(Database.class);
 			if(!column.isPrimaryKey){
 				if(inject!=null&&inject.keyPrimary()){
 					convertDatas.remove(column.columnName);

@@ -3,7 +3,7 @@ package com.fastlib.adapter;
 import java.util.List;
 
 import com.fastlib.base.OldViewHolder;
-import com.fastlib.db.RemoteCache;
+import com.fastlib.db.RemoteCacheServer;
 import com.fastlib.interf.AdapterViewState;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
@@ -25,7 +25,7 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 	protected List<N> mData;
 	private AdapterViewState mViewState;
 	private Request mRequest;
-	private RemoteCache mRemoteCache;
+	private RemoteCacheServer mRemoteCacheServer;
 	private int mItemLayoutId;
 	//每次读取条数，默认为1
 	private int mPerCount;
@@ -74,7 +74,7 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 		isMore=true;
 		isLoading=false;
 		mRequest.setListener(this);
-		mRemoteCache =new RemoteCache(mRequest);
+		mRemoteCacheServer =new RemoteCacheServer(mRequest);
 		refresh();
 	}
 
@@ -116,7 +116,7 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 			mViewState.onStateChanged(AdapterViewState.STATE_LOADING);
 		getMoreDataRequest(mRequest);
 		if(isSaveCache)
-			mRemoteCache.loadMore(mRequest.getParams());
+			mRemoteCacheServer.loadMore(mRequest.getParams());
 		else
 		    NetQueue.getInstance().netRequest(mRequest);
 	}
@@ -128,7 +128,7 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 		isMore=true;
 		getRefreshDataRequest(mRequest);
 		if(isSaveCache)
-			mRemoteCache.start();
+			mRemoteCacheServer.start();
 		else
 			NetQueue.getInstance().netRequest(mRequest);
 	}

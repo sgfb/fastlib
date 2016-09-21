@@ -10,7 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.fastlib.db.RemoteCache;
+import com.fastlib.db.RemoteCacheServer;
 import com.fastlib.bean.StateViewHelper;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
@@ -40,7 +40,7 @@ public abstract class BindingAdapterForRecycler<N> extends RecyclerView.Adapter<
     private int mPerCount; //每次读取条数，默认为1
     private Map<Integer,StateViewHelper> mStateViewHelper;
     protected List<N> mData;
-    protected RemoteCache mRemoteCache;
+    protected RemoteCacheServer mRemoteCacheServer;
     protected BindingView mResolver;
     protected Request mRequest;
     protected Gson gson=new Gson();
@@ -61,7 +61,7 @@ public abstract class BindingAdapterForRecycler<N> extends RecyclerView.Adapter<
         mRequest=getRequest();
         mRequest.setListener(this);
         mStateViewHelper=new HashMap<>();
-        mRemoteCache=new RemoteCache(mRequest);
+        mRemoteCacheServer =new RemoteCacheServer(mRequest);
         mResolver=new BindingView(context,LayoutInflater.from(context).inflate(mLayoutId,null));
         refresh();
     }
@@ -101,7 +101,7 @@ public abstract class BindingAdapterForRecycler<N> extends RecyclerView.Adapter<
         isRefresh=false;
         getMoreDataRequest(mRequest);
         if(isSaveCache)
-            mRemoteCache.loadMore(mRequest.getParams());
+            mRemoteCacheServer.loadMore(mRequest.getParams());
         else
             NetQueue.getInstance().netRequest(mRequest);
     }
@@ -113,7 +113,7 @@ public abstract class BindingAdapterForRecycler<N> extends RecyclerView.Adapter<
         isMore=true;
         getRefreshDataRequest(mRequest);
         if(isSaveCache)
-            mRemoteCache.start();
+            mRemoteCacheServer.start();
         else
             NetQueue.getInstance().netRequest(mRequest);
     }

@@ -12,4 +12,10 @@ public interface Downloadable{
      * @return 目标文件
      */
     File getTargetFile();
+
+    /**
+     * 是否支持中断
+     * @return 中断支持
+     */
+    boolean supportBreak();
 }
