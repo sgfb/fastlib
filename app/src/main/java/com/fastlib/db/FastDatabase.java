@@ -23,7 +23,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 /**
- * 非orm数据库.封装一些与数据库交互的基本操作
+ * 封装一些与数据库交互的基本操作
  * @author sgfb
  */
 public class FastDatabase{
@@ -80,7 +80,7 @@ public class FastDatabase{
 		Field fieldKey=null;
 
 		try {
-			fields=Reflect.getAllField(obj.getClass());
+			fields=obj.getClass().getDeclaredFields();
 			for(int i=0;i<fields.length;i++){
 				Database inject=fields[i].getAnnotation(Database.class);
 				if(inject!=null&&inject.keyPrimary()){
@@ -163,7 +163,7 @@ public class FastDatabase{
 			if(whereValue==null)
 				cursor=database.rawQuery("select *from '"+tableName+"' where "+where+" is null "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y,null);
 			else
-			    cursor = database.rawQuery("select *from '" + tableName + "' where " + where + "=? "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y, new String[]{whereValue});
+				cursor = database.rawQuery("select *from '" + tableName + "' where " + where + "=? "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y, new String[]{whereValue});
 		}
 		if(cursor==null) {
 			if(sConfig.isOutInformation)
@@ -183,9 +183,13 @@ public class FastDatabase{
 					String type=field.getType().getSimpleName();
 					int columnIndex=cursor.getColumnIndex(field.getName());
 
+					if(columnIndex==-1)
+						continue;
 					if(inject!=null&&inject.ignore()) //跳过忽视字段
 						continue;
 					if(type.contains("this"))
+						continue;
+					if(type.contains("$"))
 						continue;
 					if(field.getType().isArray()){
 						String json=cursor.getString(columnIndex);
@@ -194,37 +198,37 @@ public class FastDatabase{
 					}
 
 					switch(type){
-					case "int":
-						field.setInt(obj, cursor.getInt(columnIndex));
-						break;
-					case "long":
-						field.setLong(obj, cursor.getLong(columnIndex));
-						break;
-					case "short":
-						field.setShort(obj, cursor.getShort(columnIndex));
-						break;
-					case "boolean":
-						int value=cursor.getInt(columnIndex);
-						field.setBoolean(obj,value>0);
-						break;
-					case "float":
-						field.setFloat(obj, cursor.getFloat(columnIndex));
-						break;
-					case "double":
-						field.setDouble(obj, cursor.getDouble(columnIndex));
-						break;
-					case "String":
-						field.set(obj, cursor.getString(columnIndex));
-						break;
-					default:
-						String json=cursor.getString(columnIndex);
-						try{
-							Object preObj=gson.fromJson(json,field.getType());
-							field.set(obj,preObj);
-						}catch(RuntimeException e){
-							continue;
-						}
-						break;
+						case "int":
+							field.setInt(obj, cursor.getInt(columnIndex));
+							break;
+						case "long":
+							field.setLong(obj, cursor.getLong(columnIndex));
+							break;
+						case "short":
+							field.setShort(obj, cursor.getShort(columnIndex));
+							break;
+						case "boolean":
+							int value=cursor.getInt(columnIndex);
+							field.setBoolean(obj,value>0);
+							break;
+						case "float":
+							field.setFloat(obj, cursor.getFloat(columnIndex));
+							break;
+						case "double":
+							field.setDouble(obj, cursor.getDouble(columnIndex));
+							break;
+						case "String":
+							field.set(obj, cursor.getString(columnIndex));
+							break;
+						default:
+							String json=cursor.getString(columnIndex);
+							try{
+								Object preObj=gson.fromJson(json,field.getType());
+								field.set(obj,preObj);
+							}catch(RuntimeException e){
+								continue;
+							}
+							break;
 					}
 				}
 				list.add(obj);
@@ -277,27 +281,27 @@ public class FastDatabase{
 				columnName=primaryField.getName();
 			try{
 				switch(primaryField.getType().getSimpleName()){
-				case "short":
-					columnValue=Short.toString(primaryField.getShort(obj));
-					break;
-				case "int":
-					columnValue=Integer.toString(primaryField.getInt(obj));
-					break;
-				case "String":
-					columnValue=(String)primaryField.get(obj);
-					break;
-				case "long":
-					columnValue=Long.toString(primaryField.getLong(obj));
-					break;
-				case "float":
-					columnValue=Float.toString(primaryField.getFloat(obj));
-					break;
-				case "double":
-					columnValue=Double.toString(primaryField.getDouble(obj));
-					break;
-				default:
-					Log.w(TAG,"不支持 short,int,long,String,float,double 之外的类型做为主键");
-					return false;
+					case "short":
+						columnValue=Short.toString(primaryField.getShort(obj));
+						break;
+					case "int":
+						columnValue=Integer.toString(primaryField.getInt(obj));
+						break;
+					case "String":
+						columnValue=(String)primaryField.get(obj);
+						break;
+					case "long":
+						columnValue=Long.toString(primaryField.getLong(obj));
+						break;
+					case "float":
+						columnValue=Float.toString(primaryField.getFloat(obj));
+						break;
+					case "double":
+						columnValue=Double.toString(primaryField.getDouble(obj));
+						break;
+					default:
+						Log.w(TAG,"不支持 short,int,long,String,float,double 之外的类型做为主键");
+						return false;
 				}
 			}catch (IllegalAccessException | IllegalArgumentException e) {
 				e.printStackTrace();
@@ -319,7 +323,7 @@ public class FastDatabase{
 	 */
 	public boolean delete(Class<?> cla,String keyValue){
 		Field keyField=null;
-		Field[] fileds=Reflect.getAllField(cla);
+		Field[] fileds=cla.getDeclaredFields();
 		for(Field f:fileds){
 			Database inject=f.getAnnotation(Database.class);
 			if(inject!=null&&inject.keyPrimary()){
@@ -358,7 +362,7 @@ public class FastDatabase{
 		if(whereValue==null)
 			cursor=database.rawQuery("select *from '"+tableName+"' where+"+where+" is null",null);
 		else
-		    cursor=database.rawQuery("select *from '" + tableName + "' where " + where+"=?",new String[]{whereValue});
+			cursor=database.rawQuery("select *from '" + tableName + "' where " + where+"=?",new String[]{whereValue});
 		cursor.moveToFirst();
 		if(cursor.isAfterLast()){
 			Log.w(TAG,"表中不存在 "+where+"值为"+whereValue+ "的数据");
@@ -381,7 +385,7 @@ public class FastDatabase{
 				database.close();
 			}
 			return true;
-	    }
+		}
 	}
 
 	/**
@@ -416,7 +420,7 @@ public class FastDatabase{
 			if(whereValue==null)
 				cursor=database.rawQuery("select *from '"+tableName+"' where "+where+" is null",null);
 			else
-			    cursor=database.rawQuery("select *from '"+tableName+"' where "+where+"=?",new String[]{whereValue});
+				cursor=database.rawQuery("select *from '"+tableName+"' where "+where+"=?",new String[]{whereValue});
 			if(cursor==null||cursor.isAfterLast()) {
 				if(sConfig.isOutInformation)
 					Log.d(TAG,"更新数据失败，没有找到要更新的数据");
@@ -427,7 +431,7 @@ public class FastDatabase{
 			}
 			cursor.close();
 		}
-		fields=Reflect.getAllField(obj.getClass());
+		fields=obj.getClass().getDeclaredFields();
 
 		for(Field field:fields){
 			field.setAccessible(true);
@@ -441,6 +445,10 @@ public class FastDatabase{
 				columnName=field.getName();
 			//自动增长主键过滤
 			if(fieldInject!=null&&fieldInject.keyPrimary()&&fieldInject.autoincrement())
+				continue;
+			if(columnName.contains("this"))
+				continue;
+			if(columnName.contains("$"))
 				continue;
 			try{
 				switch(type){
@@ -498,7 +506,7 @@ public class FastDatabase{
 			if(whereValue==null)
 				database.update("'"+tableName+"'",cv,null,null);
 			else
-			    database.update("'" + tableName + "'",cv,where+"=?",new String[]{whereValue});
+				database.update("'" + tableName + "'",cv,where+"=?",new String[]{whereValue});
 			database.setTransactionSuccessful();
 			if(sConfig.isOutInformation)
 				Log.d(TAG,TextUtils.isEmpty(sAttri.getWhichDatabase())?sConfig.getDatabaseName():sAttri.getWhichDatabase()+"<--u-- "+tableName);
@@ -519,7 +527,7 @@ public class FastDatabase{
 	 * @return
 	 */
 	private boolean save(Object obj){
-		Field[] fields=Reflect.getAllField(obj.getClass());
+		Field[] fields=obj.getClass().getDeclaredFields();
 		ContentValues cv=new ContentValues();
 		SQLiteDatabase db=prepare(null);
 		String tableName=obj.getClass().getName();
@@ -550,7 +558,9 @@ public class FastDatabase{
 					columnName = field.getName();
 				if(columnName.contains("this"))
 					continue;
-				switch (type) {
+				if(columnName.contains("$"))
+					continue;
+				switch (type){
 					case "boolean":
 						cv.put(columnName, field.getBoolean(obj));
 						break;
@@ -758,6 +768,8 @@ public class FastDatabase{
 				continue;
 			if(column.columnName.contains("this"))
 				continue;
+			if(column.columnName.contains("$"))
+				continue;
 			sb.append(column.columnName)
 					.append(" " + column.type);
 			if(column.isPrimaryKey)
@@ -776,7 +788,7 @@ public class FastDatabase{
 
 	private DatabaseTable loadAttribute(Class<?> cla){
 		DatabaseTable dt=new DatabaseTable();
-		Field[] fields=Reflect.getAllField(cla);
+		Field[] fields=cla.getDeclaredFields();
 		dt.tableName=cla.getName();
 
 		for(Field f:fields){
@@ -787,7 +799,7 @@ public class FastDatabase{
 			if(f.getClass().isArray())
 				type=f.getType().getName();
 			column.columnName=f.getName();
-			column.type=Reflect.toSQLType(type);
+			column.type= Reflect.toSQLType(type);
 			if(fieldInject!=null){
 				if(!TextUtils.isEmpty(fieldInject.columnName()))
 					column.columnName=fieldInject.columnName();
@@ -888,7 +900,7 @@ public class FastDatabase{
 				Log.d(TAG,"删除表"+tableName);
 			return;
 		}
-		fields=Reflect.getAllField(cla);
+		fields=cla.getDeclaredFields();
 		for(Field field:fields) {
 			field.setAccessible(true);
 			String columnName=field.getName(); //列名以注解为优先，默认字段名
@@ -979,6 +991,8 @@ public class FastDatabase{
 			String key=iter.next();
 			if(key.contains("this"))
 				continue;
+			if(key.contains("$"))
+				continue;
 			Field value=fieldMap.get(key);
 			String fieldType=value.getType().getSimpleName();
 			newColumn.put(key,Reflect.toSQLType(fieldType));
@@ -986,8 +1000,8 @@ public class FastDatabase{
 		if(needRebuildTable||newColumn.size()>0)
 			alterTable(db, cla,convertDatas,newColumn,needRebuildTable);
 		else
-			if(sConfig.isOutInformation)
-				Log.d(TAG,"表 "+tableName+" 不需要修改");
+		if(sConfig.isOutInformation)
+			Log.d(TAG,"表 "+tableName+" 不需要修改");
 	}
 
 	/**
@@ -1058,7 +1072,7 @@ public class FastDatabase{
 				column.columnName=s.substring(0,s.indexOf(' '));
 				column.type=s.substring(s.indexOf(' ')).trim();
 				if(column.type.indexOf(' ')!=-1)
-				    column.type=column.type.substring(0,column.type.indexOf(' ')).trim();
+					column.type=column.type.substring(0,column.type.indexOf(' ')).trim();
 				column.isPrimaryKey=s.contains("primary");
 				column.autoincrement=s.contains("autoincrement");
 				dt.columnMap.put(column.columnName,column);
@@ -1080,7 +1094,7 @@ public class FastDatabase{
 		boolean exists=!(cursor==null||cursor.getCount()<=0);
 
 		if(cursor!=null)
-		    cursor.close();
+			cursor.close();
 		db.close();
 		return exists;
 	}
