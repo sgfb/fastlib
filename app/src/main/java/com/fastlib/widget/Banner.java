@@ -19,7 +19,7 @@ import java.util.List;
 public abstract class Banner extends ViewPager{
     private BannerAdapter mAdapter;
     private List<Object> mData;
-    private boolean autoScroll=true;
+    private boolean autoScroll=false; //初始化设置false才能自动轮播
     private long scrollInterval=5000; //轮播间隔时间
 
     protected abstract HandlePage getHandleImageWithEvent();
@@ -49,13 +49,19 @@ public abstract class Banner extends ViewPager{
                     startAutoScroll();
                 }
             }
-        }, scrollInterval);
+        },scrollInterval);
     }
 
     public void setAutoScroll(boolean autoScroll){
-        this.autoScroll=autoScroll;
-        if(autoScroll)
-            startAutoScroll();
+        if(!this.autoScroll&&autoScroll){
+            this.autoScroll=true;
+            postDelayed(new Runnable(){
+                @Override
+                public void run(){
+                    startAutoScroll();
+                }
+            },scrollInterval);
+        }
     }
 
     public void setData(List<Object> data){
@@ -63,8 +69,15 @@ public abstract class Banner extends ViewPager{
             return;
         mData=data;
         mAdapter.notifyDataSetChanged();
-        autoScroll=true;
-        startAutoScroll();
+        if(!autoScroll){ //如果没有自动轮播,延迟一个轮播间隔启动自动轮播
+            postDelayed(new Runnable(){
+                @Override
+                public void run(){
+                    autoScroll=true;
+                    startAutoScroll();
+                }
+            },scrollInterval);
+        }
     }
 
     public void setInterval(long interval){

@@ -1,18 +1,13 @@
 package com.fastlib.widget;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.fastlib.R;
 import com.fastlib.bean.StateLocationView;
-import com.fastlib.interf.AdapterViewState;
+import com.fastlib.base.AdapterViewState;
 
 import android.content.Context;
-import android.content.res.TypedArray;
-import android.graphics.Canvas;
-import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -20,13 +15,8 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.ItemDecoration;
 import android.support.v7.widget.RecyclerView.ViewHolder;
 import android.util.AttributeSet;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnTouchListener;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.RelativeLayout;
 
 /**

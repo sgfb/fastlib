@@ -1,7 +1,7 @@
 package com.fastlib.widget;
 
 import com.fastlib.bean.StateLocationView;
-import com.fastlib.interf.AdapterViewState;
+import com.fastlib.base.AdapterViewState;
 
 import android.content.Context;
 import android.util.AttributeSet;

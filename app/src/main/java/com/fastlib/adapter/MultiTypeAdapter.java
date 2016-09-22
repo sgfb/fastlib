@@ -7,7 +7,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
 import com.fastlib.base.OldViewHolder;
-import com.fastlib.interf.AdapterViewState;
+import com.fastlib.base.AdapterViewState;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;

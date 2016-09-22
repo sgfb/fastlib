@@ -25,6 +25,7 @@ public class Request implements Comparable<Request>{
     @Expose private Listener mListener;
     @Expose private Map<String,String> mParams;
     @Expose private Map<String,File> mFiles;
+    private Object mTag; //额外信息
     private String[] mSession; //留存的session
     private NetProcessor mProcessor;
     //加入activity或者fragment可以提升安全性
@@ -257,11 +258,24 @@ public class Request implements Comparable<Request>{
         mSession = session;
     }
 
+    public Object getTag() {
+        return mTag;
+    }
+
+    public void setTag(Object tag) {
+        mTag = tag;
+    }
+
     public Object getHost(){
         if(mFragment!=null)
             return mFragment;
         if(mActivity!=null)
             return mActivity;
         return null;
+    }
+
+    @Override
+    public String toString(){
+        return "url:"+mUrl+" method:"+method+" params:"+mParams+" uploadFile:"+mFiles;
     }
 }

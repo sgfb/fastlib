@@ -2,46 +2,27 @@ package com.fastlib;
 
 
 import android.os.Bundle;
-import android.os.Environment;
+import android.support.v7.widget.AppCompatImageView;
 import android.view.View;
-import android.widget.TextView;
+import android.widget.ImageView;
 
-import com.fastlib.annotation.Bind;
-import com.fastlib.annotation.Event;
+import com.bumptech.glide.Glide;
 import com.fastlib.app.FastActivity;
-import com.fastlib.bean.EventDownloading;
-import com.fastlib.net.DefaultDownload;
-import com.fastlib.net.NetQueue;
+import com.fastlib.base.JsonActivity;
 import com.fastlib.net.Request;
+import com.fastlib.utils.JsonBinder;
+import com.fastlib.widget.FastSwipeRefresh;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.List;
 
 /**
  * Created by sgfb on 16/5/10.
  */
 public class MainActivity extends FastActivity{
-    @Bind(id=R.id.text)
-    TextView tv;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-    }
-
-    @Bind(id=R.id.bt)
-    public void onclick(View v){
-
-    }
-
-    @Bind(id=R.id.bt2)
-    public void onclick2(View v){
-
-    }
-
-    @Event
-    public void downloading(EventDownloading loading){
-
     }
 }

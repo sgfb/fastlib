@@ -15,7 +15,7 @@ import com.fastlib.bean.StateViewHelper;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
-import com.fastlib.utils.BindingView;
+import com.fastlib.utils.JsonBinder;
 import com.google.gson.Gson;
 
 import java.util.HashMap;
@@ -35,13 +35,12 @@ public abstract class BindingAdapterForRecycler<N> extends RecyclerView.Adapter<
     public static final int STATE_ERROR_NET=2;
     public static final int STATE_COMPLETE=3;
 
-    protected boolean isRefresh,isMore,isLoading,isSaveCache,isAutoBinding;
+    protected boolean isRefresh,isMore,isLoading,isSaveCache;
     private int mLayoutId;
     private int mPerCount; //每次读取条数，默认为1
     private Map<Integer,StateViewHelper> mStateViewHelper;
     protected List<N> mData;
     protected RemoteCacheServer mRemoteCacheServer;
-    protected BindingView mResolver;
     protected Request mRequest;
     protected Gson gson=new Gson();
     protected StateViewHelper.ViewHelper mFootView,mHeadView;
@@ -56,13 +55,11 @@ public abstract class BindingAdapterForRecycler<N> extends RecyclerView.Adapter<
         isMore=true;
         isSaveCache=saveCache;
         isLoading=false;
-        isAutoBinding=true;
         mPerCount=1;
         mRequest=getRequest();
         mRequest.setListener(this);
         mStateViewHelper=new HashMap<>();
         mRemoteCacheServer =new RemoteCacheServer(mRequest);
-        mResolver=new BindingView(context,LayoutInflater.from(context).inflate(mLayoutId,null));
         refresh();
     }
 
@@ -129,10 +126,6 @@ public abstract class BindingAdapterForRecycler<N> extends RecyclerView.Adapter<
         if(position>=getItemCount()-1&&isMore&&!isLoading)
             loadMoreData();
         if(getItemViewType(position)==0){
-            if(isAutoBinding){
-                String json=gson.toJson(getItem(position));
-                mResolver.fromJson(json,holder.itemView);
-            }
             binding(holder,getItem(position),position);
         }
     }

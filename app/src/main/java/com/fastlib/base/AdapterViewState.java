@@ -1,4 +1,4 @@
-package com.fastlib.interf;
+package com.fastlib.base;
 
 import android.view.View;
 

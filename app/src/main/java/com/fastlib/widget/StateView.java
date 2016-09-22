@@ -6,7 +6,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import com.fastlib.interf.AdapterViewState;
+import com.fastlib.base.AdapterViewState;
 
 import java.util.HashMap;
 import java.util.Map;

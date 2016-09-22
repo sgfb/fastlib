@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.fastlib.base.OldViewHolder;
 import com.fastlib.db.RemoteCacheServer;
-import com.fastlib.interf.AdapterViewState;
+import com.fastlib.base.AdapterViewState;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;

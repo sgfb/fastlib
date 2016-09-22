@@ -17,12 +17,13 @@ import android.widget.RelativeLayout;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 
 import com.fastlib.R;
-import com.fastlib.interf.Delayable;
+import com.fastlib.base.Delayable;
 
 /**
  * Created by sgfb on 16/2/25.
  * 快速集合式的TabLayout.支持视图延迟加载
  */
+@Deprecated
 public class FastTab extends FrameLayout implements ViewPager.OnPageChangeListener{
     private ViewPager mViewPager;
     private FragmentPagerAdapter mAdapter;

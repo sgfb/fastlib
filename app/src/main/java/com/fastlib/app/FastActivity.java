@@ -149,7 +149,7 @@ public class FastActivity extends AppCompatActivity{
     }
 
     /**
-     * 获取指定url请求,可能为null
+     * 获取指定url请求
      * @param url
      * @return
      */
@@ -158,7 +158,7 @@ public class FastActivity extends AppCompatActivity{
     }
 
     /**
-     * 获取指定url请求,可能为null
+     * 获取指定url请求
      * @param method
      * @param url
      * @return
@@ -171,6 +171,10 @@ public class FastActivity extends AppCompatActivity{
             mRequests.put(url,request);
         }
         return request;
+    }
+
+    public void addRequest(Request request){
+        mRequests.put(request.getUrl(),request);
     }
 
     public void setRefreshListener(ActivityRefreshListener l){

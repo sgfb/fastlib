@@ -1,26 +1,23 @@
 package com.fastlib.adapter;
 
 import android.content.Context;
-import android.util.JsonReader;
-import android.util.JsonToken;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
 import com.fastlib.base.OldViewHolder;
+import com.fastlib.base.Refreshable;
 import com.fastlib.db.RemoteCacheServer;
-import com.fastlib.interf.AdapterViewState;
+import com.fastlib.base.AdapterViewState;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
-import com.fastlib.utils.BindingView;
+import com.fastlib.utils.JsonBinder;
 import com.fastlib.utils.FastJson;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,21 +27,21 @@ import java.util.Map;
  * 1.需要有相应的ViewResolve(数据对视图解析器)<br>
  * 2.需要view的id与接口字段名对齐
  */
-public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
+public abstract class BindingJsonAdapter extends BaseAdapter implements Listener,Refreshable.RefreshCallback{
     private int mItemLayoutId;
     private int mPerCount; //每次读取条数，默认为1
     protected boolean isRefresh,isMore,isLoading,isSaveCache;
     protected Context mContext;
     protected Request mRequest;
-    protected BindingView mResolver;
+    protected JsonBinder mResolver;
     private AdapterViewState mViewState;
     private RemoteCacheServer mRemoteCacheServer;
+    private Refreshable mRefresh;
+    private DataCallback mCallback;
     protected List<Object> mResult; //接口数据树
     protected List<Object> mData;
 
     public abstract Request getRequest();
-
-    public abstract List<Object> handleRawData(Object rawData);
 
     /**
      * 请求更多数据时的请求
@@ -58,11 +55,11 @@ public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
      */
     public abstract void getRefreshDataRequest(Request request);
 
-    public BindingAdapter2(Context context,int layoutId){
+    public BindingJsonAdapter(Context context, int layoutId){
         mContext=context;
         mItemLayoutId=layoutId;
         mRequest=getRequest();
-        mResolver=new BindingView(context,LayoutInflater.from(context).inflate(layoutId,null));
+        mResolver=new JsonBinder(context,LayoutInflater.from(context).inflate(layoutId,null));
         mRequest.setListener(this);
         mRemoteCacheServer =new RemoteCacheServer(mRequest);
         refresh();
@@ -76,6 +73,14 @@ public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
      */
     public void binding(int position,Object data,OldViewHolder holder){
 
+    }
+
+    /**
+     * 获取额外数据(不包括状态).通常是列表头部
+     * @return 额外数据
+     */
+    public Object getExtra(Object raw){
+        return null;
     }
 
     @Override
@@ -110,6 +115,15 @@ public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
     }
 
     /**
+     * 将原始数据中的列表数据过滤出来.这个方法通常都是要重写的
+     * @param rawData
+     * @return
+     */
+    public List<Object> handleRawData(Object rawData){
+        return (List<Object>)rawData;
+    }
+
+    /**
      * 向服务器请求的参数
      */
     private void loadMoreData(){
@@ -125,6 +139,8 @@ public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
     }
 
     public void refresh(){
+        if(mRefresh!=null)
+            mRefresh.setRefreshStatus(true);
         isLoading=true;
         isRefresh=true;
         //刷新之后也许有更多数据？
@@ -138,6 +154,8 @@ public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
 
     @Override
     public void onResponseListener(Request r, String result){
+        if(mRefresh!=null)
+            mRefresh.setRefreshStatus(false);
         Object obj=null;
         List<Object> dataList;
         try {
@@ -152,11 +170,16 @@ public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
             return;
         }
         dataList=handleRawData(obj);
-        if(dataList==null||dataList.size()<=0){
+        if(dataList==null||dataList.size()<=0){ //如果解析后的列表数据空,置没有更多数据标志
             isMore=false;
             if(mViewState!=null)
                 mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
             return;
+        }
+        if(mCallback!=null){
+            mCallback.rawData(obj);
+            mCallback.standardData(dataList);
+            mCallback.extraData(getExtra(obj));
         }
         if(dataList.size()<mPerCount){
             isMore=false;
@@ -174,6 +197,8 @@ public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
 
     @Override
     public void onErrorListener(Request r, String error){
+        if(mRefresh!=null)
+            mRefresh.setRefreshStatus(false);
         isLoading=false;
         System.out.println("BindingAdapter error:" + error);
     }
@@ -192,5 +217,42 @@ public abstract class BindingAdapter2 extends BaseAdapter implements Listener{
 
     public void setIsSaveCache(boolean isSaveCache) {
         this.isSaveCache = isSaveCache;
+    }
+
+    public void setRefreshLayout(Refreshable refresh){
+        mRefresh=refresh;
+        mRefresh.setRefreshCallback(this);
+    }
+
+    public void setDataCallback(DataCallback callback){
+        mCallback=callback;
+    }
+
+    @Override
+    public void startRefresh(){
+        refresh();
+    }
+
+    /**
+     * 当从服务器获取到数据时回调
+     */
+    public interface DataCallback{
+        /**
+         * 原始数据
+         * @param raw
+         */
+        void rawData(Object raw);
+
+        /**
+         * 过滤后的列表数据
+         * @param data
+         */
+        void standardData(List<Object> data);
+
+        /**
+         * 其他数据
+         * @param data
+         */
+        void extraData(Object data);
     }
 }

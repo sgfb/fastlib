@@ -12,25 +12,32 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 /**
  * Created by sgfb on 16/4/23.
- * 键名对id自动绑定数据与视图
+ * Json键名对id自动绑定数据与视图
  */
-public class BindingView{
+public class JsonBinder{
     private Map<String,ViewResolve> mResolves;
     private Map<String,Integer> mMap;
     private Context mContext;
 
-    public BindingView(Context context){
+    public JsonBinder(Context context){
         this(context, null);
     }
 
-    public BindingView(Context context,View convertView){
+    /**
+     * 应在setContentView之后使用此构造
+     * @param activity
+     */
+    public JsonBinder(Activity activity){
+        this(activity,activity.findViewById(android.R.id.content));
+    }
+
+    public JsonBinder(Context context, View convertView){
         mContext=context;
         mResolves=new HashMap<>();
         mMap=new HashMap<>();
@@ -42,38 +49,6 @@ public class BindingView{
         mResolves.put(AppCompatCheckBox.class.getCanonicalName(), cbResolve);
         if(convertView!=null)
             getAllChild(mMap,convertView);
-    }
-
-    public void fromJson(String json,Activity activity){
-        fromJson(json, activity.findViewById(android.R.id.content));
-    }
-
-    public void fromJson(String json,View root){
-        fromJson(json, root, mMap);
-    }
-
-    public void fromJson(String json,View root,Map<String,Integer> map){
-        JsonReader jr=new JsonReader(new StringReader(json));
-        try {
-            jr.beginObject();
-            while(jr.hasNext()){
-                if(jr.peek()!=JsonToken.NAME)
-                    jr.skipValue();
-                String name=jr.nextName();
-                if(checkContain(map, name)){
-                    int id=map.get(name);
-                    final View view=root.findViewById(id);
-                    ViewResolve vr=mResolves.get(view.getClass().getCanonicalName());
-                    if(vr!=null)
-                        vr.resolve(view,jr);
-                    else
-                        jr.skipValue();
-                }
-            }
-            jr.endObject();
-        } catch (IOException e){
-            e.printStackTrace();
-        }
     }
 
     public void fromMapData(View root,Map<String,Object> data){

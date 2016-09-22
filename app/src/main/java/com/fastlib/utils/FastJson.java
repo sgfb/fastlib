@@ -115,7 +115,7 @@ public class FastJson{
     /**
      * json解析后封装(辅助类)
      */
-    public class JsonWrapper{
+    public static class JsonWrapper{
         private Object mRaw;
 
         public JsonWrapper(Object raw){

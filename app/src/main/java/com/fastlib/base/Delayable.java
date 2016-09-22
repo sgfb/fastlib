@@ -1,4 +1,4 @@
-package com.fastlib.interf;
+package com.fastlib.base;
 
 /**
  * Created by sgfb on 16/2/25.
