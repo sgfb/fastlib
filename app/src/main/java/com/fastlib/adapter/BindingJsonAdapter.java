@@ -27,7 +27,7 @@ import java.util.Map;
  * 1.需要有相应的ViewResolve(数据对视图解析器)<br>
  * 2.需要view的id与接口字段名对齐
  */
-public abstract class BindingJsonAdapter extends BaseAdapter implements Listener,Refreshable.RefreshCallback{
+public abstract class BindingJsonAdapter extends BaseAdapter implements Listener{
     private int mItemLayoutId;
     private int mPerCount; //每次读取条数，默认为1
     protected boolean isRefresh,isMore,isLoading,isSaveCache;
@@ -36,8 +36,7 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
     protected JsonBinder mResolver;
     private AdapterViewState mViewState;
     private RemoteCacheServer mRemoteCacheServer;
-    private Refreshable mRefresh;
-    private DataCallback mCallback;
+    private RemoteCallback mCallback;
     protected List<Object> mResult; //接口数据树
     protected List<Object> mData;
 
@@ -139,8 +138,6 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
     }
 
     public void refresh(){
-        if(mRefresh!=null)
-            mRefresh.setRefreshStatus(true);
         isLoading=true;
         isRefresh=true;
         //刷新之后也许有更多数据？
@@ -154,8 +151,6 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
 
     @Override
     public void onResponseListener(Request r, String result){
-        if(mRefresh!=null)
-            mRefresh.setRefreshStatus(false);
         Object obj=null;
         List<Object> dataList;
         try {
@@ -197,9 +192,9 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
 
     @Override
     public void onErrorListener(Request r, String error){
-        if(mRefresh!=null)
-            mRefresh.setRefreshStatus(false);
         isLoading=false;
+        if(mCallback!=null)
+            mCallback.error(error);
         System.out.println("BindingAdapter error:" + error);
     }
 
@@ -219,24 +214,14 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
         this.isSaveCache = isSaveCache;
     }
 
-    public void setRefreshLayout(Refreshable refresh){
-        mRefresh=refresh;
-        mRefresh.setRefreshCallback(this);
-    }
-
-    public void setDataCallback(DataCallback callback){
+    public void setDataCallback(RemoteCallback callback){
         mCallback=callback;
     }
 
-    @Override
-    public void startRefresh(){
-        refresh();
-    }
-
     /**
-     * 当从服务器获取到数据时回调
+     * 当从服务器返回时回调
      */
-    public interface DataCallback{
+    public interface RemoteCallback{
         /**
          * 原始数据
          * @param raw
@@ -254,5 +239,11 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
          * @param data
          */
         void extraData(Object data);
+
+        /**
+         * 错误时回调
+         * @param msg
+         */
+        void error(String msg);
     }
 }

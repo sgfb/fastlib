@@ -3,6 +3,7 @@ package com.fastlib.adapter;
 import java.util.List;
 
 import com.fastlib.base.OldViewHolder;
+import com.fastlib.base.Refreshable;
 import com.fastlib.db.RemoteCacheServer;
 import com.fastlib.base.AdapterViewState;
 import com.fastlib.net.Listener;
@@ -24,14 +25,15 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 	protected Context mContext;
 	protected List<N> mData;
 	private AdapterViewState mViewState;
-	private Request mRequest;
+	protected Request mRequest;
 	private RemoteCacheServer mRemoteCacheServer;
+	private Refreshable mRefreshLayout;
 	private int mItemLayoutId;
 	//每次读取条数，默认为1
 	private int mPerCount;
 	protected boolean isRefresh,isMore,isLoading,isSaveCache;
 
-	public abstract Request getRequest();
+	public abstract Request generateRequest();
 
 	/**
 	 * 数据绑定视图
@@ -66,7 +68,7 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 
 	public BindingAdapter(Context context,@NonNull int resId,boolean saveCache){
 		mContext=context;
-		mRequest=getRequest();
+		mRequest= generateRequest();
 		isSaveCache=saveCache;
 		mPerCount=1;
 		mItemLayoutId=resId;
@@ -149,6 +151,10 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 		this.isSaveCache = isSaveCache;
 	}
 
+	public void setRefreshLayout(Refreshable refreshLayout){
+		mRefreshLayout=refreshLayout;
+	}
+
 	/**
 	 * 设置是否仅请求一次,需要在请求之前设置
 	 * @param requestOnce
@@ -170,6 +176,8 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 
 	@Override
 	public void onResponseListener(Request r,String result){
+		if(mRefreshLayout!=null)
+			mRefreshLayout.setRefreshStatus(false);
 		List<N> list=translate(result);
 
 		isLoading=false;
@@ -190,6 +198,8 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 
 	@Override
 	public void onErrorListener(Request r,String error){
+		if(mRefreshLayout!=null)
+			mRefreshLayout.setRefreshStatus(false);
 		isLoading=false;
 		System.out.println("BindingAdapter error:"+error);
 	}
