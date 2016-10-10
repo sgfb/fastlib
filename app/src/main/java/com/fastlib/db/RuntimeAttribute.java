@@ -6,12 +6,14 @@ import android.graphics.Point;
  * Created by sgfb on 16/3/21.
  * 数据库运行时一些参数
  */
-public final class DatabaseAttribute{
+public final class RuntimeAttribute{
     private boolean asc;
-    private String orderBy;
-    private String whichDatabase; //不转换数据库而保存数据到某个数据库.如果这个数据库不存在,这条语句将被丢弃不会抛出异常
     private int saveMax; //最大保存数,如果超出了这个值删除历史直到符合这个值
     private int start, size; //合起来就是limit
+    private String orderBy;
+    private String whichDatabase; //仅本次操作,保存数据到指定数据库.如果这个数据库不存在,这条语句将被丢弃不会抛出异常
+    private String[] selectColumn;
+    private String[] unselectColumn;//如果这个字段为空取再判断selectColumn，如果selectColumn也是空，取所有列。如果这个字段不为空将不使用selectColumn字段
 
     public void defaultAttribute(){
         asc=true;
@@ -61,5 +63,21 @@ public final class DatabaseAttribute{
 
     public Point getLimit(){
         return new Point(start, size);
+    }
+
+    public void select(String... selectColumn){
+        this.selectColumn=selectColumn;
+    }
+
+    public String[] getSelectColumn(){
+        return selectColumn;
+    }
+
+    public void unselect(String... unselectColumn){
+        this.unselectColumn=unselectColumn;
+    }
+
+    public String[] getUnselectColumn(){
+        return unselectColumn;
     }
 }

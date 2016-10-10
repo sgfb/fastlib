@@ -2,6 +2,7 @@ package com.fastlib.db;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -33,7 +34,7 @@ public class FastDatabase{
 	private static final Object slock=new Object();
 	private static FastDatabase sOwer;
 	private static DatabaseConfig sConfig;
-	private static DatabaseAttribute sAttri;
+	private static RuntimeAttribute sAttri;
 	private CustomUpdate mCustomUpdate;
 
 	private Context mContext;
@@ -44,7 +45,7 @@ public class FastDatabase{
 
 	private FastDatabase(Context context,DatabaseConfig config){
 		mContext=context.getApplicationContext();
-		sAttri=new DatabaseAttribute();
+		sAttri=new RuntimeAttribute();
 		sConfig =config;
 		if(sConfig ==null)
 			sConfig =new DatabaseConfig();
@@ -95,6 +96,9 @@ public class FastDatabase{
 			}
 			fieldKey.setAccessible(true);
 			Object key=fieldKey.get(obj);
+			//TODO test
+			if("".equals(sAttri.getOrderBy()))
+				sAttri.setOrderBy(fieldKey.getName());
 			List<Object> list= (List<Object>) get(obj.getClass(),fieldKey.getName(), Reflect.objToStr(key));
 			if(list==null||list.size()==0){
 				if(sConfig.isOutInformation) {
@@ -130,6 +134,9 @@ public class FastDatabase{
 		}
 		if(TextUtils.isEmpty(key))
 			return null;
+		//TODO test
+		if("".equals(sAttri.getOrderBy()))
+			sAttri.setOrderBy(key);
 		return get(cla, key, keyValue);
 	}
 
@@ -147,9 +154,25 @@ public class FastDatabase{
 		Cursor cursor;
 		List<T> list=new ArrayList<>();
 		String order="";
+		String selectColumn=getSelectColumn(cla);
 
-		if(!TextUtils.isEmpty(sAttri.getOrderBy())){
-			order="order by "+sAttri.getOrderBy()+" "+(sAttri.isAsc()?"asc":"desc");
+		//TODO test
+		if(sAttri.getOrderBy()!=null){
+			if("".equals(sAttri.getOrderBy())){
+				Field[] fields=cla.getDeclaredFields();
+				String key=null;
+				for(Field f:fields){
+					Database columnInject=f.getAnnotation(Database.class);
+					if(columnInject!=null&&columnInject.keyPrimary()){
+						key=f.getName();
+						break;
+					}
+				}
+				if(!TextUtils.isEmpty(key))
+					sAttri.setOrderBy(key);
+			}
+			if(!TextUtils.isEmpty(sAttri.getOrderBy()))
+			    order="order by "+sAttri.getOrderBy()+" "+(sAttri.isAsc()?"asc":"desc");
 		}
 		tableName=cla.getCanonicalName();
 		if(!tableExists(tableName)){
@@ -158,12 +181,12 @@ public class FastDatabase{
 		}
 		database=prepare(null);
 		if(TextUtils.isEmpty(where))
-			cursor=database.rawQuery("select *from '"+tableName+"' "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y,null);
+			cursor=database.rawQuery("select "+selectColumn+" from '"+tableName+"' "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y,null);
 		else {
 			if(whereValue==null)
-				cursor=database.rawQuery("select *from '"+tableName+"' where "+where+" is null "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y,null);
+				cursor=database.rawQuery("select "+selectColumn+" from '"+tableName+"' where "+where+" is null "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y,null);
 			else
-				cursor = database.rawQuery("select *from '" + tableName + "' where " + where + "=? "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y, new String[]{whereValue});
+				cursor = database.rawQuery("select "+selectColumn+" from '" + tableName + "' where " + where + "=? "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y, new String[]{whereValue});
 		}
 		if(cursor==null) {
 			if(sConfig.isOutInformation)
@@ -252,7 +275,6 @@ public class FastDatabase{
 
 	/**
 	 * 如果obj中没有注解主键，请使用delete(Object obj,String where,String whereValue)
-	 *
 	 * @param obj
 	 * @return
 	 */
@@ -523,97 +545,107 @@ public class FastDatabase{
 
 	/**
 	 * 保存对象到数据库
-	 * @param obj
+	 * @param array
 	 * @return
 	 */
-	private boolean save(Object obj){
-		Field[] fields=obj.getClass().getDeclaredFields();
-		ContentValues cv=new ContentValues();
-		SQLiteDatabase db=prepare(null);
-		String tableName=obj.getClass().getName();
+	private boolean save(Object[] array){
+		if(array==null||array.length<=0)
+			return false; //没什么对象可存应该返回false的吗？
+		Object availableObj=null;
 
-//		if(sAttri.getSaveMax()< Integer.MAX_VALUE){
-//			List<?> list=getAll(obj.getClass());
-//			if(list!=null&&list.size()>=sAttri.getSaveMax()){
-//				delete(list.get(0));
-//			}
-//		}
-		for(Field field:fields){
-			field.setAccessible(true);
-			String type=field.getType().getSimpleName();
-			Database fieldInject=field.getAnnotation(Database.class);
-			String columnName;
-
-			if(fieldInject!=null&&fieldInject.ignore())
-				continue;
-			try{
-				if (fieldInject != null && fieldInject.keyPrimary() && fieldInject.autoincrement()){
-					int keyValue = field.getInt(obj);
-					if (keyValue <= 0)
-						continue;
-				}
-				if (fieldInject != null && !TextUtils.isEmpty(fieldInject.columnName()))
-					columnName = fieldInject.columnName();
-				else
-					columnName = field.getName();
-				if(columnName.contains("this"))
-					continue;
-				if(columnName.contains("$"))
-					continue;
-				switch (type){
-					case "boolean":
-						cv.put(columnName, field.getBoolean(obj));
-						break;
-					case "short":
-						cv.put(columnName, field.getShort(obj));
-						break;
-					case "int":
-						cv.put(columnName, field.getInt(obj));
-						break;
-					case "long":
-						cv.put(columnName, field.getLong(obj));
-						break;
-					case "float":
-						cv.put(columnName, field.getFloat(obj));
-						break;
-					case "double":
-						cv.put(columnName, field.getDouble(obj));
-						break;
-					case "char":
-						char c = field.getChar(obj);
-						if (c == 0)
-							cv.putNull(columnName);
-						else
-							cv.put(columnName, String.valueOf(c));
-						break;
-					case "String":
-						String s = (String) field.get(obj);
-						if (s == null)
-							cv.putNull(columnName);
-						else
-							cv.put(columnName, s);
-						break;
-					default:
-						Object pre = field.get(obj);
-						Gson gson = new Gson();
-						String json = gson.toJson(pre);
-
-						if (pre == null)
-							cv.putNull(columnName);
-						else
-							cv.put(columnName, json);
-						break;
-				}
-			}catch(IllegalAccessException | IllegalArgumentException e){
-				return false;
+		for(Object obj:array) //取首个非null对象
+		    if(obj!=null){
+				availableObj=obj;
+				break;
 			}
-		}
+		if(availableObj==null)
+			return false;
+		SQLiteDatabase db=prepare(null);
+		ContentValues cv=new ContentValues();
+		Field[] fields=availableObj.getClass().getDeclaredFields();
+		String tableName=availableObj.getClass().getName();
+
 		try{
 			db.beginTransaction();
-			db.insert("'" + tableName + "'", null, cv);
+			for(Object obj:array){
+				if(obj==null) //跳过null对象
+					continue;
+				cv.clear();
+				for(Field field:fields){
+					field.setAccessible(true);
+					String type=field.getType().getSimpleName();
+					Database fieldInject=field.getAnnotation(Database.class);
+					String columnName;
+
+					if(fieldInject!=null&&fieldInject.ignore())
+						continue;
+					try{
+						if (fieldInject != null && fieldInject.keyPrimary() && fieldInject.autoincrement()){
+							int keyValue = field.getInt(obj);
+							if (keyValue <= 0)
+								continue;
+						}
+						if (fieldInject != null && !TextUtils.isEmpty(fieldInject.columnName()))
+							columnName = fieldInject.columnName();
+						else
+							columnName = field.getName();
+						if(columnName.contains("this"))
+							continue;
+						if(columnName.contains("$"))
+							continue;
+						switch (type){
+							case "boolean":
+								cv.put(columnName, field.getBoolean(obj));
+								break;
+							case "short":
+								cv.put(columnName, field.getShort(obj));
+								break;
+							case "int":
+								cv.put(columnName, field.getInt(obj));
+								break;
+							case "long":
+								cv.put(columnName, field.getLong(obj));
+								break;
+							case "float":
+								cv.put(columnName, field.getFloat(obj));
+								break;
+							case "double":
+								cv.put(columnName, field.getDouble(obj));
+								break;
+							case "char":
+								char c = field.getChar(obj);
+								if (c == 0)
+									cv.putNull(columnName);
+								else
+									cv.put(columnName, String.valueOf(c));
+								break;
+							case "String":
+								String s = (String) field.get(obj);
+								if (s == null)
+									cv.putNull(columnName);
+								else
+									cv.put(columnName, s);
+								break;
+							default:
+								Object pre = field.get(obj);
+								Gson gson = new Gson();
+								String json = gson.toJson(pre);
+
+								if (pre == null)
+									cv.putNull(columnName);
+								else
+									cv.put(columnName, json);
+								break;
+						}
+					}catch(IllegalAccessException | IllegalArgumentException e){
+						return false;
+					}
+				}
+				db.insert("'" + tableName + "'", null, cv);
+				if(sConfig.isOutInformation)
+					Log.d(TAG,TextUtils.isEmpty(sAttri.getWhichDatabase())?sConfig.getDatabaseName():sAttri.getWhichDatabase()+"<----"+tableName);
+			}
 			db.setTransactionSuccessful();
-			if(sConfig.isOutInformation)
-				Log.d(TAG,TextUtils.isEmpty(sAttri.getWhichDatabase())?sConfig.getDatabaseName():sAttri.getWhichDatabase()+"<----"+tableName);
 		}catch(SQLiteException e){
 			return false;
 		}
@@ -625,16 +657,25 @@ public class FastDatabase{
 	}
 
 	/**
-	 * 保存或修改对象.对没有指定主键的对象只有保存没有更新
-	 *
-	 * @param obj
+	 * 判断再集中后存储
+	 * @param objs
 	 * @return
-	 */
-	public boolean saveOrUpdate(Object obj){
+     */
+	private boolean saveOrUpdate(Object[] objs){
+		Object obj=null;
 		String tableName;
 		boolean isUpdate=false;
 		boolean success=true;
 
+		if(objs==null||objs.length<=0)
+			return false;
+		for(Object object:objs)
+		    if(object!=null){
+				obj=object;
+				break;
+			}
+		if(obj==null)
+			return false;
 		DatabaseTable table=loadAttribute(obj.getClass());
 		tableName=table.tableName;
 		//如果表存在并且有主键，尝试获取这个对象，如果不是null(如果是整型且值不为0)则尝试更新
@@ -678,9 +719,41 @@ public class FastDatabase{
 			final String sql=generateCreateTableSql(obj.getClass());
 			SQLiteDatabase db=prepare(sql);
 			db.close();
-			success=save(obj);
+			success=save(objs);
 		}
 		return success;
+	}
+
+
+	/**
+	 * 保存或修改对象.对没有指定主键的对象只有保存没有更新.支持传入数组，列表和映射
+	 * @param obj
+	 * @return
+	 */
+	public boolean saveOrUpdate(Object obj){
+		if(obj==null)
+			return false;
+		Object[] objs;
+		if(obj instanceof Collection){
+			Collection collection= (Collection) obj;
+			objs=collection.toArray();
+		}
+		else if(obj instanceof Map){
+			Map<?,?> map= (Map<?, ?>) obj;
+			Iterator<?> iter=map.keySet().iterator();
+			int index=0;
+			objs=new Object[map.size()];
+			while(iter.hasNext())
+				objs[index++]=map.get(iter.next());
+		}
+		else if(obj.getClass().isArray())
+			objs= (Object[]) obj;
+		else{
+			//也许obj是一个普通引用
+			objs=new Object[1];
+			objs[0]=obj;
+		}
+		return saveOrUpdate(objs);
 	}
 
 	/**
@@ -718,19 +791,68 @@ public class FastDatabase{
 			Log.d(TAG,"表"+table+"不存在");
 	}
 
+	/**
+	 * 取数据时根据主键排序
+	 * @param asc
+	 * @return current database
+     */
+	public FastDatabase orderBy(boolean asc){
+		sAttri.setAsc(asc);
+		sAttri.setOrderBy(""); //空字符串代表使用主键字段
+		return sOwer;
+	}
+
+	/**
+	 * 排序
+	 * @param asc 如果是true为升序，反之降序
+	 * @param columnName
+     * @return
+     */
 	public FastDatabase orderBy(boolean asc,String columnName){
 		sAttri.setAsc(asc);
 		sAttri.setOrderBy(columnName);
 		return sOwer;
 	}
 
+	/**
+	 * 取数据时行限制
+	 * @param start
+	 * @param end
+     * @return current database
+     */
 	public FastDatabase limit(int start,int end){
 		sAttri.limit(start, end);
 		return sOwer;
 	}
 
+	/**
+	 * 某表中最大数量行，超出将删除前面的行
+	 * @param max
+	 * @return current database
+     */
+	@Deprecated
 	public FastDatabase maxSave(int max){
 		sAttri.setSaveMax(max);
+		return sOwer;
+	}
+
+	/**
+	 * 仅取某些列字段
+	 * @param columns
+	 * @return current database
+     */
+	public FastDatabase select(String... columns){
+		sAttri.select(columns);
+		return sOwer;
+	}
+
+	/**
+	 * 不要某些列字段
+	 * @param columns
+	 * @return current database
+     */
+	public FastDatabase unselect(String... columns){
+		sAttri.unselect(columns);
 		return sOwer;
 	}
 
@@ -1081,6 +1203,58 @@ public class FastDatabase{
 			return dt;
 		}
 		return null;
+	}
+
+	/**
+	 * 过滤要取的列
+	 * @return 要取的列
+     */
+	private String getSelectColumn(Class<?> cla){
+		StringBuilder sb=new StringBuilder();
+		String[] unSelect=sAttri.getUnselectColumn();
+		String[] select=sAttri.getSelectColumn();
+		if((unSelect==null||unSelect.length==0)){
+			if((select==null||select.length==0))
+				return "*";
+			else{
+				for(String s:select)
+					sb.append(s).append(",");
+			}
+		}
+		else{
+			List<String> fieldsName=getFieldsNameWithoutIgnore(cla); //在需要时使用反射,提高性能
+			if(fieldsName!=null&&!fieldsName.isEmpty()) {
+				for (String filter : unSelect)
+					fieldsName.remove(filter);
+				for(String s:fieldsName)
+					sb.append(s).append(",");
+			}
+		}
+		if(sb.length()>0)
+			sb.deleteCharAt(sb.length()-1);
+		else
+			sb.append("*");
+		return sb.toString();
+	}
+
+	/**
+	 * 获取没有注解Ignore的所有字段
+	 * @param cla
+	 * @return 没有注解Ignore的所有字段
+     */
+	private static List<String> getFieldsNameWithoutIgnore(Class<?> cla){
+		Field[] fields=cla.getDeclaredFields();
+
+		if(fields==null||fields.length==0)
+			return null;
+		List<String> fieldsName=new ArrayList<>(fields.length);
+		for(int i=0;i<fields.length;i++){
+			Database inject=fields[i].getAnnotation(Database.class);
+			if(inject!=null&&inject.ignore())
+				continue;
+			fieldsName.add(fields[i].getName());
+		}
+		return fieldsName;
 	}
 
 	/**

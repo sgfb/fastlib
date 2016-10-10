@@ -6,8 +6,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -57,28 +59,21 @@ public class Reflect{
 		}
 		return content;
 	}
-	
+
 	/**
-	 * 
-	 * @param obj
-	 * @param fieldName
-	 * @return
-	 * @throws NoSuchFieldException 
-	 * @throws IllegalArgumentException 
-	 * @throws IllegalAccessException 
-	 */
-	public static boolean isList(Object obj,String fieldName) throws NoSuchFieldException, IllegalAccessException, IllegalArgumentException{
-		boolean bList=false;
-		Field field=null;
-		
-		field=obj.getClass().getDeclaredField(fieldName);
-		field.setAccessible(true);
+	 * 判断是否某族类
+	 * @param field 要判断的字段
+	 * @param patriarch 族长
+     * @return
+     */
+	public static boolean isFamily(Field field,Class<?> patriarch){
+		boolean result;
 		try{
-			bList=field.get(obj).getClass().asSubclass(List.class)!=null;
+			result=field.getType().asSubclass(patriarch) != null;
 		}catch(ClassCastException e){
 			return false;
 		}
-		return bList;
+		return result;
 	}
 
 	public static String objToStr(Object obj){

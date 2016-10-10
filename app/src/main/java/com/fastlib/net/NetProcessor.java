@@ -2,14 +2,17 @@ package com.fastlib.net;
 
 import android.app.Activity;
 import android.app.Application;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 
 import com.fastlib.app.EventObserver;
 import com.fastlib.bean.EventDownloading;
+import com.fastlib.bean.EventUploading;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -22,23 +25,26 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
 /**
  * 网络请求的具体处理.在结束时会保存一些状态<br/>
- * 这个类可以上传和下载文件,支持中断,下载文件时每秒发送一次进度广播
+ * 这个类可以上传和下载文件,支持中断,下载文件时每秒发送一次进度广播(EventDownloading)
  */
 public class NetProcessor implements Runnable{
     private final String BOUNDARY=Long.toHexString(System.currentTimeMillis());
     private final String CRLF="\r\n";
     private final String END="--"+BOUNDARY+"--"+CRLF;
-    private final int BUFF_LENGTH=1024;
+    private final int BUFF_LENGTH=4096;
     private final int CHUNK_LENGTH=4096;
+
+    public static long mDiffServerTime; //与服务器时间差
 
     private long Tx,Rx;
     private Request mRequest;
-    private NetStatus mStatus;
+    private volatile NetStatus mStatus;
     private String mMessage;
     private String mResponse;
     private OnCompleteListener mListener;
@@ -57,6 +63,7 @@ public class NetProcessor implements Runnable{
         };
         if(mRequest.getHost() instanceof Activity){
             final Activity act= (Activity) mRequest.getHost();
+            if(Build.VERSION.SDK_INT>=14)
             act.getApplication().registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
                 @Override
                 public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
@@ -79,7 +86,7 @@ public class NetProcessor implements Runnable{
                 }
 
                 @Override
-                public void onActivityStopped(Activity activity) {
+                public void onActivityStopped(Activity activity){
                     if(act==activity){
                         act.getApplication().unregisterActivityLifecycleCallbacks(this);
                         stop();
@@ -104,7 +111,7 @@ public class NetProcessor implements Runnable{
         if(mStatus==NetStatus.STOP)
             return;
         try {
-            mStatus=NetStatus.RUNNING;
+            mStatus=NetStatus.RUNNING_SEND;
             ByteArrayOutputStream baos=new ByteArrayOutputStream();
             File downloadFile=null;
             InputStream in;
@@ -160,6 +167,7 @@ public class NetProcessor implements Runnable{
             }
 
             in= mConnection.getInputStream();
+            mStatus=NetStatus.RUNNING_RECEIVE;
             String session=mConnection.getHeaderField("Set-Cookie");
             if(!TextUtils.isEmpty(session))
                 mRequest.setSession(session.split(";"));
@@ -194,12 +202,22 @@ public class NetProcessor implements Runnable{
             }
             baos.close();
             in.close();
+            List<String> trustHost=NetQueue.getInstance().getConfig().getTrustHost();
+            if(trustHost!=null){
+                for(String host:trustHost){
+                    if(url.getHost().equals(host)){
+                        mDiffServerTime=mConnection.getDate()-System.currentTimeMillis();
+                        break;
+                    }
+                }
+            }
             mConnection.disconnect();
             mMessage=mConnection.getResponseMessage();
             mStatus=NetStatus.SUCCESS;
-        }catch (IOException e) {
+        }catch(IOException e){
             mMessage=e.toString();
-            mStatus=NetStatus.ERROR;
+            if(mStatus!=NetStatus.STOP) //如果是stop引起的异常，不修改状态
+                mStatus=NetStatus.ERROR;
         } finally{
             if(mListener!=null)
                 mListener.onComplete(this);
@@ -273,10 +291,9 @@ public class NetProcessor implements Runnable{
                     sb.append("Content-type: "+ URLConnection.guessContentTypeFromName(value.getName())).append(CRLF);
                     sb.append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
                     out.write(sb.toString().getBytes());
+                    Tx+=sb.toString().getBytes().length;
                     copyFileToStream(value, out);
                     out.write(CRLF.getBytes());
-                    Tx+=sb.toString().getBytes().length;
-                    Tx+=value.length();
                 }
             }
         }
@@ -290,9 +307,22 @@ public class NetProcessor implements Runnable{
         InputStream in=new FileInputStream(file);
         byte[] data=new byte[1024];
         int len;
+        long time=System.currentTimeMillis();
+        long count=0;
+        int speed=0;
 
-        while((len=in.read(data))!=-1)
-            out.write(data, 0, len);
+        while((len=in.read(data))!=-1){
+            out.write(data,0,len);
+            count+=len;
+            speed+=len;
+            Tx+=len;
+
+            if((System.currentTimeMillis()-time)>1000){
+                EventObserver.getInstance().sendEvent(new EventUploading(speed,count,file.getAbsolutePath()));
+                speed=0;
+                time=System.currentTimeMillis();
+            }
+        }
     }
 
     @Override
@@ -319,16 +349,39 @@ public class NetProcessor implements Runnable{
 
     public Request getRequest(){return mRequest;}
 
+    /**
+     * 停止网络请求
+     * @return 如果返回true说明正常停止了请求，如果是false可能请求未开始或已结束或其他
+     */
     public boolean stop(){
-        mStatus=NetStatus.STOP;
-        if(mConnection==null)
+        if(mStatus==NetStatus.SUCCESS)
             return false;
-        new Thread(){
+        if(mConnection==null){
+            mStatus=NetStatus.STOP;
+            return false;
+        }
+        Thread stopThread=new Thread("stop request thread"){
             @Override
             public void run(){
-                mConnection.disconnect();
+                try {
+                    if(mConnection.getDoOutput()&&mStatus==NetStatus.RUNNING_SEND){
+                        OutputStream out = mConnection.getOutputStream();
+                        out.close();
+                    }
+                    if(mConnection.getDoInput()&&mStatus==NetStatus.RUNNING_RECEIVE){
+                        InputStream in = mConnection.getInputStream();
+                        in.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }finally{
+                    mConnection.disconnect();
+                    mStatus=NetStatus.STOP;
+                }
             }
-        }.start();
+        };
+        stopThread.setPriority(Thread.MAX_PRIORITY);
+        stopThread.start();
         return true;
     }
 
@@ -338,7 +391,8 @@ public class NetProcessor implements Runnable{
 
     public enum NetStatus{
         UNSTART,
-        RUNNING,
+        RUNNING_SEND,
+        RUNNING_RECEIVE,
         ERROR,
         SUCCESS,
         STOP,

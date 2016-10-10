@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -31,11 +32,12 @@ public class NetQueue{
     private NetQueue(){
         mRequestQueue=new ArrayBlockingQueue<>(30);
         mRequestPool=new ThreadPoolExecutor(8,30,30, TimeUnit.SECONDS,mRequestQueue);
+        mConfig=new Config();
     }
 
     public static synchronized NetQueue getInstance(){
         if(mOwer==null)
-            mOwer=new NetQueue();
+            mOwer = new NetQueue();
         return mOwer;
     }
 
@@ -104,6 +106,7 @@ public class NetQueue{
         private boolean isTrackTraffic;
         private boolean useStatus;
         private int maxTask;
+        private List<String> mTrustHost; //信任站点，当前仅用于过滤保存时间
 
         public void setTrackTraffic(boolean track){
             isTrackTraffic=track;
@@ -127,6 +130,14 @@ public class NetQueue{
 
         public int getMaxTask(){
             return maxTask;
+        }
+
+        public List<String> getTrustHost() {
+            return mTrustHost;
+        }
+
+        public void setTrustHost(List<String> trustHost) {
+            mTrustHost = trustHost;
         }
 
         @Override

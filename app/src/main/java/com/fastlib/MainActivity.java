@@ -1,33 +1,54 @@
 package com.fastlib;
 
 
-import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.support.annotation.IdRes;
-import android.support.v7.widget.AppCompatImageView;
+import android.os.Environment;
 import android.view.View;
-import android.widget.ImageView;
-import android.widget.ListView;
+import android.widget.EditText;
+import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
-import com.fastlib.adapter.BindingJsonAdapter;
+import com.fastlib.annotation.Bind;
+import com.fastlib.annotation.Event;
 import com.fastlib.app.FastActivity;
-import com.fastlib.base.JsonActivity;
+import com.fastlib.bean.EventDownloading;
+import com.fastlib.bean.EventUploading;
 import com.fastlib.db.FastDatabase;
+import com.fastlib.net.DefaultDownload;
+import com.fastlib.net.Listener;
+import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
-import com.fastlib.utils.JsonBinder;
-import com.fastlib.widget.FastSwipeRefresh;
+import com.fastlib.utils.N;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by sgfb on 16/5/10.
  */
 public class MainActivity extends FastActivity{
+    @Bind(R.id.et)
+    EditText et;
 
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        FastDatabase.getDefaultInstance().getConfig().setOutInfomation(false);
+    }
+
+    @Bind(R.id.bt)
+    public void save(View v){
+
+    }
+
+    @Bind(R.id.bt2)
+    public void show(View v){
+
     }
 }

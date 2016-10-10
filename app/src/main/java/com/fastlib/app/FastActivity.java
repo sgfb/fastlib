@@ -85,7 +85,7 @@ public class FastActivity extends AppCompatActivity{
         for(final Method m:methods){
             Bind vi=m.getAnnotation(Bind.class);
             if(vi!=null){
-                int[] ids=vi.id();
+                int[] ids=vi.value();
                 if(ids!=null&&ids.length>0){
                     for(int id:ids){
                         View v=findViewById(id);
@@ -112,7 +112,7 @@ public class FastActivity extends AppCompatActivity{
             for(Field field:fields){
                 Bind vi=field.getAnnotation(Bind.class);
                 if(vi!=null){
-                    int[] ids=vi.id();
+                    int[] ids=vi.value();
                     if(ids!=null&&ids.length>0){
                         try {
                             field.setAccessible(true);
