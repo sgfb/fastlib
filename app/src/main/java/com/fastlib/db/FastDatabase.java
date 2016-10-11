@@ -929,11 +929,11 @@ public class FastDatabase{
 					dt.keyColumn = column;
 					dt.keyFieldName=f.getName();
 				}
-				if(!Reflect.isInteger(type)&&!Reflect.isReal(type)&&!Reflect.isVarchar(type))
-					throw new UnsupportedOperationException("不支持数组或者引用类成为任何键");
 				column.isPrimaryKey=fieldInject.keyPrimary();
 				column.autoincrement=fieldInject.autoincrement();
 				column.isIgnore=fieldInject.ignore();
+				if(column.isPrimaryKey&&!Reflect.isInteger(type)&&!Reflect.isReal(type)&&!Reflect.isVarchar(type))
+					throw new UnsupportedOperationException("不支持数组或者引用类成为任何键");
 			}
 			dt.columnMap.put(f.getName(),column);
 		}

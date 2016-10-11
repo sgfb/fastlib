@@ -1,12 +1,14 @@
 package com.fastlib.app;
 
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.Event;
+import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
 
@@ -23,6 +25,7 @@ import java.util.Map;
 public class FastActivity extends AppCompatActivity{
     private Map<String,Request> mRequests; //这个activity中的所有网络请求
     private ActivityRefreshListener mRefreshListener;
+    private boolean mMutexRunning=false; //互斥网络请求是否运行中
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
@@ -57,7 +60,9 @@ public class FastActivity extends AppCompatActivity{
             Iterator<String> iter=mRequests.keySet().iterator();
             while(iter.hasNext()){
                 String key=iter.next();
-                mRequests.get(key).cancel();
+                Request r=mRequests.get(key);
+                if(r.getType()== Request.RequestType.DEFAULT)
+                    r.cancel();
             }
         }
     }
@@ -138,43 +143,52 @@ public class FastActivity extends AppCompatActivity{
         }
     }
 
-    /**
-     * 启动一个存在的指定url请求
-     * @param url
-     */
-    public void startNet(String url){
-        Request r=mRequests.get(url);
-        if(r!=null)
-            NetQueue.getInstance().netRequest(r);
-    }
-
-    /**
-     * 获取指定url请求
-     * @param url
-     * @return
-     */
-    public Request getRequest(String url){
-        return getRequest("POST",url);
-    }
-
-    /**
-     * 获取指定url请求
-     * @param method
-     * @param url
-     * @return
-     */
-    public Request getRequest(String method,String url){
-        Request request=mRequests.get(url);
-        if(request==null){
-            request=new Request(method,url);
-            request.setHost(this);
-            mRequests.put(url,request);
-        }
-        return request;
-    }
-
     public void addRequest(Request request){
         mRequests.put(request.getUrl(),request);
+    }
+
+    /**
+     * 将请求存储到列表中并且发起请求
+     * @param r
+     */
+    public void net(Request r){
+        if(mMutexRunning)
+            return;
+        if(mRequests.get(r.getUrl())==null)
+            mRequests.put(r.getUrl(),r);
+        NetQueue.getInstance().netRequest(r);
+    }
+
+    /**
+     * 启动一个互斥网络请求，当这个请求开始时当前模块不接受其他网络请求，也不会存起来
+     * @param view
+     * @param request
+     */
+    public void startMutexRequest(@Nullable final View view, Request request){
+        mMutexRunning=true;
+        if(view!=null)
+            view.setEnabled(false);
+        //如果activity被销毁Listener不会回调，当前的需求可以使用Listener回调
+        final Listener listener=request.getListener();
+        if(listener!=null){
+            request.setListener(new Listener() {
+                @Override
+                public void onResponseListener(Request r, String result){
+                    if(view!=null)
+                        view.setEnabled(true);
+                    mMutexRunning=false;
+                    listener.onResponseListener(r,result);
+                }
+
+                @Override
+                public void onErrorListener(Request r, String error){
+                    if(view!=null)
+                        view.setEnabled(true);
+                    mMutexRunning=false;
+                    listener.onErrorListener(r,error);
+                }
+            });
+        }
     }
 
     public void setRefreshListener(ActivityRefreshListener l){

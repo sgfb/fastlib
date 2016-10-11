@@ -21,7 +21,7 @@ import java.util.Map;
  * Json键名对id自动绑定数据与视图
  */
 public class JsonBinder{
-    private Map<String,ViewResolve> mResolves;
+    private Map<Class,ViewResolve> mResolves;
     private Map<String,Integer> mMap;
     private Context mContext;
 
@@ -43,10 +43,10 @@ public class JsonBinder{
         mMap=new HashMap<>();
         TextViewResolve tvResolve=new TextViewResolve();
         CheckBoxResolve cbResolve=new CheckBoxResolve();
-        mResolves.put(TextView.class.getCanonicalName(),tvResolve);
-        mResolves.put(AppCompatTextView.class.getCanonicalName(),tvResolve);
-        mResolves.put(CheckBox.class.getCanonicalName(),cbResolve);
-        mResolves.put(AppCompatCheckBox.class.getCanonicalName(), cbResolve);
+        mResolves.put(TextView.class,tvResolve);
+        mResolves.put(AppCompatTextView.class,tvResolve);
+        mResolves.put(CheckBox.class,cbResolve);
+        mResolves.put(AppCompatCheckBox.class, cbResolve);
         if(convertView!=null)
             getAllChild(mMap,convertView);
     }
@@ -63,7 +63,7 @@ public class JsonBinder{
             if(id==null)
                 continue;
             View view=root.findViewById(id);
-            ViewResolve vr=mResolves.get(view.getClass().getCanonicalName());
+            ViewResolve vr=mResolves.get(view.getClass());
             Object obj=data.get(key);
             view.setTag(obj);
             if(vr!=null)
@@ -73,7 +73,7 @@ public class JsonBinder{
 
     public void putResolve(ViewResolve resolve,Class<? extends View> ...cla){
         for(Class<? extends View> c:cla)
-            mResolves.put(c.getCanonicalName(),resolve);
+            mResolves.put(c,resolve);
     }
 
     /**

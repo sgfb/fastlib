@@ -5,6 +5,7 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 
+import com.fastlib.annotation.Database;
 import com.google.gson.annotations.Expose;
 
 import java.io.File;
@@ -25,11 +26,17 @@ public class Request implements Comparable<Request>{
     @Expose private Listener mListener;
     @Expose private Map<String,String> mParams;
     @Expose private Map<String,File> mFiles;
+    @Database(keyPrimary = true,autoincrement = true)
+    private int id; //仅必达请求有id
+    private RequestType mType=RequestType.DEFAULT;
     private Object mTag; //额外信息
     private String[] mSession; //留存的session
+    @Database(ignore = true)
     private NetProcessor mProcessor;
     //加入activity或者fragment可以提升安全性
+    @Database(ignore = true)
     private Activity mActivity;
+    @Database(ignore = true)
     private Fragment mFragment;
 
     public Request(String url){
@@ -266,6 +273,14 @@ public class Request implements Comparable<Request>{
         mTag = tag;
     }
 
+    public RequestType getType() {
+        return mType;
+    }
+
+    public void setType(RequestType type) {
+        mType = type;
+    }
+
     public Object getHost(){
         if(mFragment!=null)
             return mFragment;
@@ -277,5 +292,17 @@ public class Request implements Comparable<Request>{
     @Override
     public String toString(){
         return "url:"+mUrl+" method:"+method+" params:"+mParams+" uploadFile:"+mFiles;
+    }
+
+    /**
+     * 请求类型</br>
+     * 1.默认 一切行动照正常规则来</br>
+     * 2.全局请求 不受模块限制，独立于模块之外</br>
+     * 3.必达请求 在请求开始的时候存入数据库，仅成功送达后删除，并且在错误返回后重试
+     */
+    public enum RequestType{
+        DEFAULT,
+        GLOBAL,
+        MUSTSEND
     }
 }
