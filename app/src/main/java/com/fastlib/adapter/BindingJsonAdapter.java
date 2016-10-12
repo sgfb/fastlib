@@ -1,13 +1,14 @@
 package com.fastlib.adapter;
 
 import android.content.Context;
+import android.support.annotation.Nullable;
+import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
 import com.fastlib.base.OldViewHolder;
-import com.fastlib.base.Refreshable;
 import com.fastlib.db.RemoteCacheServer;
 import com.fastlib.base.AdapterViewState;
 import com.fastlib.net.Listener;
@@ -28,19 +29,25 @@ import java.util.Map;
  * 2.需要view的id与接口字段名对齐
  */
 public abstract class BindingJsonAdapter extends BaseAdapter implements Listener{
-    private int mItemLayoutId;
-    private int mPerCount; //每次读取条数，默认为1
     protected boolean isRefresh,isMore,isLoading,isSaveCache;
     protected Context mContext;
-    protected Request mRequest;
-    protected JsonBinder mResolver;
+    protected List<Integer> mLayouts;
+    protected List<Request> mRequest;
+    protected List<JsonBinder> mResolver;
+    protected List<Object> mResult; //接口数据树
+    protected List<ObjWithType> mData;
+    protected int mCurrentRequestIndex;
+
+    private int mPerCount; //每次读取条数，默认为1
     private AdapterViewState mViewState;
     private RemoteCacheServer mRemoteCacheServer;
     private RemoteCallback mCallback;
-    protected List<Object> mResult; //接口数据树
-    protected List<Object> mData;
 
-    public abstract Request getRequest();
+    /**
+     * id布局对请求
+     * @return
+     */
+    public abstract SparseArray<Request> generateRequestWithLayoutId();
 
     /**
      * 请求更多数据时的请求
@@ -54,13 +61,23 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
      */
     public abstract void getRefreshDataRequest(Request request);
 
-    public BindingJsonAdapter(Context context, int layoutId){
+    public BindingJsonAdapter(Context context){
         mContext=context;
-        mItemLayoutId=layoutId;
-        mRequest=getRequest();
-        mResolver=new JsonBinder(context,LayoutInflater.from(context).inflate(layoutId,null));
-        mRequest.setListener(this);
-        mRemoteCacheServer =new RemoteCacheServer(mRequest);
+        mData=new ArrayList<>();
+        mResolver=new ArrayList<>();
+        mRequest=new ArrayList<>();
+        mLayouts=new ArrayList<>();
+        mPerCount=1;
+        SparseArray<Request> requestWithLayout= generateRequestWithLayoutId();
+        for(int i=0;i<requestWithLayout.size();i++){
+            int id=requestWithLayout.keyAt(i);
+            Request request=requestWithLayout.get(id);
+            request.setListener(this);
+            mLayouts.add(id);
+            mRequest.add(request);
+            mResolver.add(new JsonBinder(context,LayoutInflater.from(context).inflate(id,null)));
+        }
+//        mRemoteCacheServer =new RemoteCacheServer(mRequest);
         refresh();
     }
 
@@ -89,7 +106,7 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
 
     @Override
     public Object getItem(int position){
-        return mData.get(position);
+        return mData.get(position).obj;
     }
 
     @Override
@@ -98,27 +115,34 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        final OldViewHolder viewHolder = getViewHolder(convertView, parent);
+    public int getItemViewType(int position){
+        return mData.get(position).type;
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent){
+        final OldViewHolder viewHolder = getViewHolder(getItemViewType(position),convertView,parent);
         if(position>=getCount()-1&&isMore&&!isLoading)
             loadMoreData();
         Object obj=getItem(position);
         if(obj!=null&&obj instanceof Map<?,?>)
-            mResolver.fromMapData(viewHolder.getConvertView(),(Map<String, Object>) obj);
+            mResolver.get(getItemViewType(position)).fromMapData(viewHolder.getConvertView(),(Map<String, Object>) obj);
         binding(position,getItem(position),viewHolder);
         return viewHolder.getConvertView();
     }
 
-    private OldViewHolder getViewHolder(View convertView, ViewGroup parent) {
-        return OldViewHolder.get(mContext, convertView, parent, mItemLayoutId);
+    private OldViewHolder getViewHolder(int layoutIndex,View convertView, ViewGroup parent){
+        return OldViewHolder.get(mContext, convertView, parent,mLayouts.get(layoutIndex));
     }
 
     /**
      * 将原始数据中的列表数据过滤出来.这个方法通常都是要重写的
-     * @param rawData
+     * @param rawData 原始数据,可能是空的
      * @return
      */
-    public List<Object> handleRawData(Object rawData){
+    public List<Object> handleRawData(@Nullable Object rawData){
+        if(rawData==null)
+            return null;
         return (List<Object>)rawData;
     }
 
@@ -130,11 +154,12 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
         isRefresh=false;
         if(mViewState!=null)
             mViewState.onStateChanged(AdapterViewState.STATE_LOADING);
-        getMoreDataRequest(mRequest);
+        Request currentRequest=mRequest.get(mCurrentRequestIndex);
+        getMoreDataRequest(currentRequest);
         if(isSaveCache)
-            mRemoteCacheServer.loadMore(mRequest.getParams());
+            mRemoteCacheServer.loadMore(currentRequest.getParams());
         else
-            NetQueue.getInstance().netRequest(mRequest);
+            NetQueue.getInstance().netRequest(currentRequest);
     }
 
     public void refresh(){
@@ -142,17 +167,20 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
         isRefresh=true;
         //刷新之后也许有更多数据？
         isMore=true;
-        getRefreshDataRequest(mRequest);
+        mCurrentRequestIndex=0;
+        Request currentRequest=mRequest.get(mCurrentRequestIndex);
+        getRefreshDataRequest(currentRequest);
         if(isSaveCache)
             mRemoteCacheServer.start();
         else
-            NetQueue.getInstance().netRequest(mRequest);
+            NetQueue.getInstance().netRequest(currentRequest);
     }
 
     @Override
     public void onResponseListener(Request r, String result){
         Object obj=null;
         List<Object> dataList;
+        int type=mCurrentRequestIndex;
         try {
             obj = FastJson.fromJson(result);
         } catch (IOException e){
@@ -160,32 +188,27 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
         }
 
         isLoading=false;
-        if(obj==null){
-            isMore=false;
-            return;
-        }
         dataList=handleRawData(obj);
-        if(dataList==null||dataList.size()<=0){ //如果解析后的列表数据空,置没有更多数据标志
-            isMore=false;
-            if(mViewState!=null)
-                mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
-            return;
+        if(dataList==null||dataList.size()<=mPerCount){
+            mCurrentRequestIndex++;
+            if(mCurrentRequestIndex>=mRequest.size()){
+                isMore=false;
+                if(mViewState!=null)
+                    mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
+                return;
+            }
         }
         if(mCallback!=null){
             mCallback.rawData(obj);
             mCallback.standardData(dataList);
             mCallback.extraData(getExtra(obj));
         }
-        if(dataList.size()<mPerCount){
-            isMore=false;
-            if(mViewState!=null)
-                mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
-        }
-        if(isRefresh){
+        if(isRefresh)
             mResult =new ArrayList<>();
-            mData=dataList;
+        if(dataList!=null){
+            for(Object element:dataList)
+                mData.add(new ObjWithType(type,element));
         }
-        else mData.addAll(dataList);
         mResult.add(obj);
         notifyDataSetChanged();
     }
@@ -218,6 +241,10 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
         mCallback=callback;
     }
 
+    public List<Request> getRequest() {
+        return mRequest;
+    }
+
     /**
      * 当从服务器返回时回调
      */
@@ -245,5 +272,15 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
          * @param msg
          */
         void error(String msg);
+    }
+
+    public static class ObjWithType{
+        public int type;
+        public Object obj;
+
+        public ObjWithType(int type,Object obj){
+            this.type=type;
+            this.obj=obj;
+        }
     }
 }

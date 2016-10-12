@@ -71,7 +71,9 @@ public abstract class JsonActivity extends FastActivity implements Listener{
             mContentRequest.setListener(this);
         }
         if(mAdapter!=null) {
-            addRequest(mAdapter.getRequest());
+            List<Request> requests=mAdapter.getRequest();
+            for(Request r:requests)
+                addRequest(r);
             //适配器接口取额外数据
             mAdapter.setDataCallback(new BindingJsonAdapter.RemoteCallback() {
 
@@ -90,7 +92,7 @@ public abstract class JsonActivity extends FastActivity implements Listener{
                 public void extraData(Object data){
                     //强制规范？
                     if (data instanceof Map<?, ?>)
-                        mContentBinding.fromMapData(mContentView, (Map<String, Object>) data);
+                        mContentBinding.fromMapData(mContentView,(Map<String, Object>) data);
                 }
 
                 @Override

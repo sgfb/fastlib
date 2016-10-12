@@ -1,4 +1,4 @@
-package com.fastlib.app;
+package com.fastlib.base;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;

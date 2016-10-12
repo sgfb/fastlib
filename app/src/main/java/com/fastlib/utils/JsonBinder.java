@@ -14,6 +14,7 @@ import android.widget.TextView;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,6 +48,14 @@ public class JsonBinder{
         mResolves.put(AppCompatTextView.class,tvResolve);
         mResolves.put(CheckBox.class,cbResolve);
         mResolves.put(AppCompatCheckBox.class, cbResolve);
+        //TODO test
+        mResolves.put(MyBanner.class, new ViewResolve() {
+            @Override
+            public void resolve(View view, Object reader) {
+                MyBanner mb= (MyBanner) view;
+                mb.setData((List<Object>) reader);
+            }
+        });
         if(convertView!=null)
             getAllChild(mMap,convertView);
     }
