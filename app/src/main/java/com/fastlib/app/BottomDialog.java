@@ -4,9 +4,13 @@ import android.app.Dialog;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 
@@ -18,7 +22,7 @@ import com.fastlib.R;
  */
 public class BottomDialog extends DialogFragment{
 
-    public BottomDialog getInstance(@LayoutRes int layoutId){
+    public static BottomDialog getInstance(@LayoutRes int layoutId){
         BottomDialog dialog=new BottomDialog();
         Bundle bundle=new Bundle();
         bundle.putInt("id",layoutId);

@@ -13,6 +13,9 @@ import android.widget.ProgressBar;
 
 import com.fastlib.R;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+
 
 /**
  * Created by sgfb on 16/9/29.
@@ -29,7 +32,7 @@ public abstract class AbsWebViewActivity extends AppCompatActivity{
 
     public abstract void webTitle(String title);
 
-    protected void init(int webViewId,int progressId){
+    protected void init(int webViewId,int progressId) throws UnsupportedEncodingException {
         mWebView= (WebView) findViewById(webViewId);
         mProgress = (ProgressBar) findViewById(progressId);
         mUrl=getIntent().getStringExtra(ARG_URL);
@@ -43,7 +46,7 @@ public abstract class AbsWebViewActivity extends AppCompatActivity{
         if(TextUtils.isEmpty(data))
             mWebView.loadUrl(mUrl);
         else
-            mWebView.loadData(data,"text/html","UTF-8");
+            mWebView.loadData(data,"text/html;charset=UTF-8",null);
     }
 
     @Override

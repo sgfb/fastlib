@@ -25,7 +25,7 @@ public abstract class Banner extends ViewPager{
     protected abstract HandlePage getHandleImageWithEvent();
 
     public Banner(Context context){
-        this(context, null);
+        super(context);
         init();
     }
 

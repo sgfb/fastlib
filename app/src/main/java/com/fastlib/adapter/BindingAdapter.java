@@ -174,27 +174,27 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 			mData.addAll(list);
 	}
 
-	@Override
-	public void onResponseListener(Request r,String result){
-		if(mRefreshLayout!=null)
-			mRefreshLayout.setRefreshStatus(false);
-		List<N> list=translate(result);
-
-		isLoading=false;
-		if(list==null||list.size()<=0){
-			isMore=false;
-			if(mViewState!=null)
-				mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
-			return;
-		}
-		if(list.size()<mPerCount){
-			isMore = false;
-			if(mViewState!=null)
-				mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
-		}
-		dataRefresh(list);
-		notifyDataSetChanged();
-	}
+//	@Override
+//	public void onResponseListener(Request r,String result){
+//		if(mRefreshLayout!=null)
+//			mRefreshLayout.setRefreshStatus(false);
+//		List<N> list=translate(result);
+//
+//		isLoading=false;
+//		if(list==null||list.size()<=0){
+//			isMore=false;
+//			if(mViewState!=null)
+//				mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
+//			return;
+//		}
+//		if(list.size()<mPerCount){
+//			isMore = false;
+//			if(mViewState!=null)
+//				mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
+//		}
+//		dataRefresh(list);
+//		notifyDataSetChanged();
+//	}
 
 	@Override
 	public void onErrorListener(Request r,String error){

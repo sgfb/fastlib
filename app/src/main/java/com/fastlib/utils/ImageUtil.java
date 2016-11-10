@@ -45,7 +45,7 @@ public class ImageUtil{
     private static void saveLastImage(Context context,Uri uri){
         SharedPreferences.Editor edit=context.getSharedPreferences(TAG,Context.MODE_PRIVATE).edit();
         edit.putString(KEY_LAST_IMAGE, uri.toString());
-        edit.commit();
+        edit.apply();
     }
 
     /**
@@ -206,7 +206,7 @@ public class ImageUtil{
      * @param crop
      */
     public static void startActionCrop(Activity activity,Uri data,int crop){
-        startActionCrop(activity, data, crop, Uri.fromFile(getTempFile(null)));
+        startActionCrop(activity, data, crop,Uri.fromFile(getTempFile(null)));
     }
 
     /**
@@ -217,17 +217,17 @@ public class ImageUtil{
      * @param outPut
      */
     public static void startActionCrop(Activity activity, Uri data, int crop, Uri outPut){
-        Intent intent = new Intent("com.android.camera.action.CROP",null);
+        Intent intent = new Intent("com.android.camera.action.CROP");
         saveLastImage(activity,outPut);
         intent.setDataAndType(data, "image/*");
         intent.putExtra(MediaStore.EXTRA_OUTPUT,outPut);
-        intent.putExtra("circleCrop", true);
+        intent.putExtra("circleCrop",false);
         intent.putExtra("crop", "true");
         intent.putExtra("aspectX", 1);// 裁剪框比例
         intent.putExtra("aspectY", 1);
         intent.putExtra("outputX", crop);// 输出图片大小
         intent.putExtra("outputY", crop);
-        intent.putExtra("scale", true);// 去黑边
+        intent.putExtra("scale", true);
         intent.putExtra("scaleUpIfNeeded", true);// 去黑边
         activity.startActivityForResult(intent,REQUEST_FROM_CROP);
     }
@@ -265,10 +265,10 @@ public class ImageUtil{
             return null;
 
         switch (requestCode){
+            case REQUEST_FROM_CROP:
             case REQUEST_FROM_CAMERA:
                 SharedPreferences sp=context.getSharedPreferences(TAG,Context.MODE_PRIVATE);
-                Uri uri=Uri.parse(sp.getString(KEY_LAST_IMAGE,""));
-                return uri;
+                return Uri.parse(sp.getString(KEY_LAST_IMAGE,""));
             case REQUEST_FROM_ALBUM:
                 return data.getData();
             default:

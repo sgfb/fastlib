@@ -1,5 +1,10 @@
 package com.fastlib.utils;
 
+import android.graphics.Color;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -89,6 +94,13 @@ public class Utils{
         Pattern p = Pattern.compile("^[1][3-8]\\d{9}$");
         Matcher m = p.matcher(phone);
         return m.matches();
+    }
+
+    public static SpannableStringBuilder getTextSomeOtherColor(int start,int end,String text,Color color){
+        SpannableStringBuilder ssb=new SpannableStringBuilder(text);
+        ForegroundColorSpan foregroundColor=new ForegroundColorSpan(Color.RED);
+        ssb.setSpan(foregroundColor,start,end,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return ssb;
     }
 
     /**

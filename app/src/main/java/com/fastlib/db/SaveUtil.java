@@ -63,8 +63,8 @@ public class SaveUtil{
         return sp.getAll().get(key);
     }
 
-    public static Object getFromSp(Context context,String name,String key,String def){
-        Object obj=getFromSp(context,name,key,def);
+    public static Object getFromSp(Context context,String name,String key,Object def){
+        Object obj=getFromSp(context,name,key);
         if(obj==null)
             obj=def;
         return obj;

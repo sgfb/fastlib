@@ -67,13 +67,18 @@ public class DownloadServer{
             r.setHost(context);
             r.setDownloadable(new DefaultDownload(f));
             r.setListener(new Listener(){
+//                @Override
+//                public void onResponseListener(Request r,String result){
+//                    int downloadedCount=getDownloadedCount(context);
+//                    increaseDownloadCount(context,downloadedCount);
+//                    completion.partCompletion(ss[downloadedCount]);
+//                    if(downloadedCount>=count-1)
+//                        completion.completion(ss);
+//                }
+
                 @Override
-                public void onResponseListener(Request r,String result){
-                    int downloadedCount=getDownloadedCount(context);
-                    increaseDownloadCount(context,downloadedCount);
-                    completion.partCompletion(ss[downloadedCount]);
-                    if(downloadedCount>=count-1)
-                        completion.completion(ss);
+                public void onResponseListener(Request r, Object result) {
+
                 }
 
                 @Override

@@ -156,18 +156,6 @@ public class Reflect{
 	}
 
 	/**
-	 * 获取泛型(没有进行安全检查)
-	 * @param cla
-	 * @param index
-	 * @return
-	 */
-	public static Type getGenericity(Class<?> cla,int index){
-		Type genType=cla.getGenericSuperclass();
-		Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
-		return params[index];
-	}
-
-	/**
 	 * 将某对象参数移到另一个对象中(不包括超类中的参数)
 	 * @param from
 	 * @param to

@@ -5,10 +5,14 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 
+import com.fastlib.MainActivity;
 import com.fastlib.annotation.Database;
 import com.google.gson.annotations.Expose;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,28 +20,23 @@ import java.util.Map;
  * 请求体<br/>
  * 每个任务都是不同的，（NetQueue）会根据属性来配置请求，调整请求开始完成或失败后不同的事件
  */
-public class Request implements Comparable<Request>{
-    @Expose private boolean sFile;
-    @Expose private boolean hadRootAddress; //是否已加入根地址
-    @Expose private boolean useFactory; //是否使用预设值
-    @Expose private String method;
-    @Expose private String mUrl;
-    @Expose private Downloadable mDownloadable;
-    @Expose private Listener mListener;
-    @Expose private Map<String,String> mParams;
-    @Expose private Map<String,File> mFiles;
-    @Database(keyPrimary = true,autoincrement = true)
-    private int id; //仅必达请求有id
+public class Request<T> implements Comparable<Request>{
+    private boolean sFile;
+    private boolean hadRootAddress; //是否已加入根地址
+    private boolean useFactory; //是否使用预设值
+    private String method;
+    private String mUrl;
+    private Downloadable mDownloadable;
+    private Map<String,String> mParams;
+    private Map<String,File> mFiles;
     private RequestType mType=RequestType.DEFAULT;
     private Object mTag; //额外信息
     private String[] mSession; //留存的session
-    @Database(ignore = true)
     private NetProcessor mProcessor;
     //加入activity或者fragment可以提升安全性
-    @Database(ignore = true)
     private Activity mActivity;
-    @Database(ignore = true)
     private Fragment mFragment;
+    private Listener<T> mListener;
 
     public Request(String url){
         this("POST",url);
@@ -167,7 +166,7 @@ public class Request implements Comparable<Request>{
         this.mUrl = mUrl;
     }
 
-    public Request setListener(Listener l){
+    public Request setListener(Listener<T> l){
         mListener=l;
         return this;
     }
@@ -279,6 +278,10 @@ public class Request implements Comparable<Request>{
 
     public void setType(RequestType type) {
         mType = type;
+    }
+
+    public Type getTokenType(){
+        return com.google.gson.internal.$Gson$Types.newParameterizedTypeWithOwner(null,ArrayList.class,MainActivity.Bean.class);
     }
 
     public Object getHost(){

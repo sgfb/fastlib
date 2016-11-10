@@ -172,12 +172,17 @@ public class FastActivity extends AppCompatActivity{
         final Listener listener=request.getListener();
         if(listener!=null){
             request.setListener(new Listener() {
+//                @Override
+//                public void onResponseListener(Request r, String result){
+//                    if(view!=null)
+//                        view.setEnabled(true);
+//                    mMutexRunning=false;
+//                    listener.onResponseListener(r,result);
+//                }
+
                 @Override
-                public void onResponseListener(Request r, String result){
-                    if(view!=null)
-                        view.setEnabled(true);
-                    mMutexRunning=false;
-                    listener.onResponseListener(r,result);
+                public void onResponseListener(Request r, Object result) {
+
                 }
 
                 @Override

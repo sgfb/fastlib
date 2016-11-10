@@ -65,13 +65,18 @@ public class RemoteCacheServer{
         }
         mRequest.setListener(new Listener(){
 
-            @Override
-            public void onResponseListener(Request r,String result) {
+//            @Override
+            public void onResponseListener(Request r,String result){
                 RemoteCache responseCache=new RemoteCache();
                 responseCache.setCache(result);
                 responseCache.setCacheName(mCacheName);
                 if(!loadMore) database.saveOrUpdate(responseCache);
                 if(l!=null) l.onResponseListener(r,result);
+            }
+
+            @Override
+            public void onResponseListener(Request r, Object result) {
+
             }
 
             @Override

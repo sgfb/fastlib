@@ -163,26 +163,26 @@ public abstract class BindingAdapterForRecycler<N> extends RecyclerView.Adapter<
         return count;
     }
 
-    @Override
-    public void onResponseListener(Request r,String result){
-        isLoading=false;
-        int startItem=getItemCount();
-        List<N> list=translate(result);
-        if(list==null||list.size()<=0){
-            isMore=false;
-            return;
-        }
-        if(list.size()<mPerCount){
-            isMore = false;
-        }
-        if(isRefresh){
-            mData=list;
-            startItem=0;
-        }
-        else mData.addAll(list);
-        int endItem=getItemCount();
-        notifyItemRangeChanged(startItem,endItem);
-    }
+//    @Override
+//    public void onResponseListener(Request r,String result){
+//        isLoading=false;
+//        int startItem=getItemCount();
+//        List<N> list=translate(result);
+//        if(list==null||list.size()<=0){
+//            isMore=false;
+//            return;
+//        }
+//        if(list.size()<mPerCount){
+//            isMore = false;
+//        }
+//        if(isRefresh){
+//            mData=list;
+//            startItem=0;
+//        }
+//        else mData.addAll(list);
+//        int endItem=getItemCount();
+//        notifyItemRangeChanged(startItem,endItem);
+//    }
 
     @Override
     public void onErrorListener(Request r,String error){

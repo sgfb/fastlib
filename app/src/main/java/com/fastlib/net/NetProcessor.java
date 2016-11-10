@@ -5,7 +5,6 @@ import android.app.Application;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
@@ -13,6 +12,8 @@ import android.text.TextUtils;
 import com.fastlib.app.EventObserver;
 import com.fastlib.bean.EventDownloading;
 import com.fastlib.bean.EventUploading;
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -21,9 +22,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -214,38 +218,78 @@ public class NetProcessor implements Runnable{
             mConnection.disconnect();
             mMessage=mConnection.getResponseMessage();
             mStatus=NetStatus.SUCCESS;
+            toggleCallback();
         }catch(IOException e){
             mMessage=e.toString();
             if(mStatus!=NetStatus.STOP) //如果是stop引起的异常，不修改状态
                 mStatus=NetStatus.ERROR;
+            toggleCallback();
         } finally{
             if(mListener!=null)
                 mListener.onComplete(this);
-            final Listener l=mRequest.getListener();
-            if(l!=null){
-                Object host=mRequest.getHost();
-                boolean hostAvailable=true; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为正常
-                if(host instanceof Fragment){
-                    Fragment fragment= (Fragment) host;
-                    if((fragment.isRemoving()||fragment.isDetached()))
-                        hostAvailable=false;
-                }
-                else if(host instanceof Activity){
-                    Activity activity=(Activity)host;
-                    if(activity.isFinishing())
-                        hostAvailable=false;
-                }
-                if(hostAvailable){
-                    mResponsePoster.execute(new Runnable(){
-                        @Override
-                        public void run(){
-                            if(mStatus==NetStatus.SUCCESS)
-                                l.onResponseListener(mRequest,mResponse);
-                            else if(mStatus==NetStatus.ERROR)
-                                l.onErrorListener(mRequest,mMessage);
+        }
+    }
+
+    private void toggleCallback(){
+        final Listener l=mRequest.getListener();
+        Runnable runOnMainThread = null;
+        if(l!=null){
+            Object host=mRequest.getHost();
+            boolean hostAvailable=true; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为正常
+            if(host instanceof Fragment){
+                Fragment fragment= (Fragment) host;
+                if((fragment.isRemoving()||fragment.isDetached()))
+                    hostAvailable=false;
+            }
+            else if(host instanceof Activity){
+                Activity activity=(Activity)host;
+                if(activity.isFinishing())
+                    hostAvailable=false;
+            }
+            if(hostAvailable){
+                //泛型解析,如果是String返回原始数据
+                if(mStatus==NetStatus.SUCCESS){
+                    Method[] ms=l.getClass().getDeclaredMethods();
+                    List<Method> duplicate=new ArrayList<>();
+                    Type realType=null;
+                    for(Method m:ms){
+                        if("onResponseListener".equals(m.getName()))
+                            duplicate.add(m);
+                    }
+                    for(Method m:duplicate){
+                        if(m.getGenericParameterTypes()[1]!=Object.class){
+                            realType=m.getGenericParameterTypes()[1];
+                            break;
                         }
-                    });
+                    }
+                    Gson gson=new Gson();
+                    try{
+                        final Object responseObj;
+                        if(realType==null||realType==String.class)
+                            responseObj=mResponse;
+                        else
+                            responseObj=gson.fromJson(mResponse,realType);
+                        runOnMainThread=new Runnable() {
+                            @Override
+                            public void run(){
+                                l.onResponseListener(mRequest,responseObj);
+                            }
+                        };
+                    }catch (JsonParseException e){
+                        System.out.println("解析时出现异常:"+e.getMessage());
+                        mMessage=e.getMessage();
+                        mStatus=NetStatus.ERROR;
+                    }
                 }
+                if(mStatus==NetStatus.ERROR)
+                    runOnMainThread=new Runnable(){
+                        @Override
+                        public void run() {
+                            l.onErrorListener(mRequest,mMessage);
+                        }
+                    };
+                if(runOnMainThread!=null)
+                    mResponsePoster.execute(runOnMainThread);
             }
         }
     }

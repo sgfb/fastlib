@@ -176,42 +176,42 @@ public abstract class BindingJsonAdapter extends BaseAdapter implements Listener
             NetQueue.getInstance().netRequest(currentRequest);
     }
 
-    @Override
-    public void onResponseListener(Request r, String result){
-        Object obj=null;
-        List<Object> dataList;
-        int type=mCurrentRequestIndex;
-        try {
-            obj = FastJson.fromJson(result);
-        } catch (IOException e){
-            //do noting
-        }
-
-        isLoading=false;
-        dataList=handleRawData(obj);
-        if(dataList==null||dataList.size()<=mPerCount){
-            mCurrentRequestIndex++;
-            if(mCurrentRequestIndex>=mRequest.size()){
-                isMore=false;
-                if(mViewState!=null)
-                    mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
-                return;
-            }
-        }
-        if(mCallback!=null){
-            mCallback.rawData(obj);
-            mCallback.standardData(dataList);
-            mCallback.extraData(getExtra(obj));
-        }
-        if(isRefresh)
-            mResult =new ArrayList<>();
-        if(dataList!=null){
-            for(Object element:dataList)
-                mData.add(new ObjWithType(type,element));
-        }
-        mResult.add(obj);
-        notifyDataSetChanged();
-    }
+//    @Override
+//    public void onResponseListener(Request r, String result){
+//        Object obj=null;
+//        List<Object> dataList;
+//        int type=mCurrentRequestIndex;
+//        try {
+//            obj = FastJson.fromJson(result);
+//        } catch (IOException e){
+//            //do noting
+//        }
+//
+//        isLoading=false;
+//        dataList=handleRawData(obj);
+//        if(dataList==null||dataList.size()<=mPerCount){
+//            mCurrentRequestIndex++;
+//            if(mCurrentRequestIndex>=mRequest.size()){
+//                isMore=false;
+//                if(mViewState!=null)
+//                    mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
+//                return;
+//            }
+//        }
+//        if(mCallback!=null){
+//            mCallback.rawData(obj);
+//            mCallback.standardData(dataList);
+//            mCallback.extraData(getExtra(obj));
+//        }
+//        if(isRefresh)
+//            mResult =new ArrayList<>();
+//        if(dataList!=null){
+//            for(Object element:dataList)
+//                mData.add(new ObjWithType(type,element));
+//        }
+//        mResult.add(obj);
+//        notifyDataSetChanged();
+//    }
 
     @Override
     public void onErrorListener(Request r, String error){

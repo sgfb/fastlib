@@ -138,38 +138,38 @@ public abstract class MultiTypeAdapter extends BaseAdapter implements Listener{
         notifyDataSetChanged();
     }
 
-    @Override
-    public void onResponseListener(Request r,String result){
-        if(mRefreshLayout!=null)
-            mRefreshLayout.setRefreshing(false);
-        List<ObjWithType> list=translate(r,result);
-
-        isLoading=false;
-        if(list==null||list.size()<=Math.min(0,mPerCount)){ //如果为true说明当前request已全部接收数据完毕了,尝试跳到下一个request中
-            mCurrentRequestIndex++;
-            if(mCurrentRequestIndex>=mRequest.size()){
-                isMore=false;
-                if(mViewState!=null)
-                    mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
-            }
-        }
-        if(isRefresh)
-            mData = list;
-        else{
-            int index=mRequest.indexOf(r);
-            if(index==mRequest.size()-1)
-                mData.addAll(list);
-            else {
-                int listIndex = 0;
-                for (int i = 0; i <=index; i++)
-                    listIndex += mRequestIndex.get(mRequest.get(i));
-                mData.addAll(listIndex,list);
-            }
-        }
-        if(r!=null)
-            mRequestIndex.put(r,mRequestIndex.get(r)+list.size());
-        notifyDataSetChanged();
-    }
+//    @Override
+//    public void onResponseListener(Request r,String result){
+//        if(mRefreshLayout!=null)
+//            mRefreshLayout.setRefreshing(false);
+//        List<ObjWithType> list=translate(r,result);
+//
+//        isLoading=false;
+//        if(list==null||list.size()<=Math.min(0,mPerCount)){ //如果为true说明当前request已全部接收数据完毕了,尝试跳到下一个request中
+//            mCurrentRequestIndex++;
+//            if(mCurrentRequestIndex>=mRequest.size()){
+//                isMore=false;
+//                if(mViewState!=null)
+//                    mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
+//            }
+//        }
+//        if(isRefresh)
+//            mData = list;
+//        else{
+//            int index=mRequest.indexOf(r);
+//            if(index==mRequest.size()-1)
+//                mData.addAll(list);
+//            else {
+//                int listIndex = 0;
+//                for (int i = 0; i <=index; i++)
+//                    listIndex += mRequestIndex.get(mRequest.get(i));
+//                mData.addAll(listIndex,list);
+//            }
+//        }
+//        if(r!=null)
+//            mRequestIndex.put(r,mRequestIndex.get(r)+list.size());
+//        notifyDataSetChanged();
+//    }
 
     @Override
     public void onErrorListener(Request r,String error){
