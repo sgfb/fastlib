@@ -20,7 +20,7 @@ import java.util.Map;
  * 请求体<br/>
  * 每个任务都是不同的，（NetQueue）会根据属性来配置请求，调整请求开始完成或失败后不同的事件
  */
-public class Request<T> implements Comparable<Request>{
+public class Request implements Comparable<Request>{
     private boolean sFile;
     private boolean hadRootAddress; //是否已加入根地址
     private boolean useFactory; //是否使用预设值
@@ -36,7 +36,7 @@ public class Request<T> implements Comparable<Request>{
     //加入activity或者fragment可以提升安全性
     private Activity mActivity;
     private Fragment mFragment;
-    private Listener<T> mListener;
+    private Listener mListener;
 
     public Request(String url){
         this("POST",url);
@@ -166,7 +166,7 @@ public class Request<T> implements Comparable<Request>{
         this.mUrl = mUrl;
     }
 
-    public Request setListener(Listener<T> l){
+    public Request setListener(Listener l){
         mListener=l;
         return this;
     }
@@ -278,10 +278,6 @@ public class Request<T> implements Comparable<Request>{
 
     public void setType(RequestType type) {
         mType = type;
-    }
-
-    public Type getTokenType(){
-        return com.google.gson.internal.$Gson$Types.newParameterizedTypeWithOwner(null,ArrayList.class,MainActivity.Bean.class);
     }
 
     public Object getHost(){

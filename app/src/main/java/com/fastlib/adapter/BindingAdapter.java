@@ -19,7 +19,7 @@ import android.widget.BaseAdapter;
 /**
  * 绑定适配器，将视图与服务器中的数据捆绑
  */
-public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
+public abstract class BindingAdapter<N> extends BaseAdapter implements Listener<String>{
 	public static final String TAG=BindingAdapter.class.getSimpleName();
 
 	protected Context mContext;
@@ -174,27 +174,27 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener{
 			mData.addAll(list);
 	}
 
-//	@Override
-//	public void onResponseListener(Request r,String result){
-//		if(mRefreshLayout!=null)
-//			mRefreshLayout.setRefreshStatus(false);
-//		List<N> list=translate(result);
-//
-//		isLoading=false;
-//		if(list==null||list.size()<=0){
-//			isMore=false;
-//			if(mViewState!=null)
-//				mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
-//			return;
-//		}
-//		if(list.size()<mPerCount){
-//			isMore = false;
-//			if(mViewState!=null)
-//				mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
-//		}
-//		dataRefresh(list);
-//		notifyDataSetChanged();
-//	}
+	@Override
+	public void onResponseListener(Request r,String result){
+		if(mRefreshLayout!=null)
+			mRefreshLayout.setRefreshStatus(false);
+		List<N> list=translate(result);
+
+		isLoading=false;
+		if(list==null||list.size()<=0){
+			isMore=false;
+			if(mViewState!=null)
+				mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
+			return;
+		}
+		if(list.size()<mPerCount){
+			isMore = false;
+			if(mViewState!=null)
+				mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
+		}
+		dataRefresh(list);
+		notifyDataSetChanged();
+	}
 
 	@Override
 	public void onErrorListener(Request r,String error){

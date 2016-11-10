@@ -25,7 +25,7 @@ import java.util.Map;
  * Created by sgfb on 16/9/21.
  * 绑定来自服务器的json数据填充
  */
-public abstract class JsonActivity extends FastActivity implements Listener{
+public abstract class JsonActivity extends FastActivity implements Listener<String>{
     private View mContentView; //标准视图
     private ListView mList;
     private Refreshable mRefresh;
@@ -160,24 +160,23 @@ public abstract class JsonActivity extends FastActivity implements Listener{
         View refreshView=findViewById(viewId);
         if(refreshView instanceof Refreshable)
             mRefresh= (Refreshable) refreshView;
-        //增强网络请求Request指定返回支持。增强响应效果，暂时移除RemoteCacheServer
     }
 
-//    @Override
-//    public void onResponseListener(Request r, String result){
-//        if(mContentView ==null)
-//            return;
-//        if(mRefresh!=null)
-//            mRefresh.setRefreshStatus(false);
-//        try {
-//            Object obj=FastJson.fromJson(result);
-//            if(obj!=null&&obj instanceof Map<?,?>)
-//                mContentBinding.fromMapData(mContentView, (Map<String, Object>) obj);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        inflaterContent(mContentView);
-//    }
+    @Override
+    public void onResponseListener(Request r, String result){
+        if(mContentView ==null)
+            return;
+        if(mRefresh!=null)
+            mRefresh.setRefreshStatus(false);
+        try {
+            Object obj=FastJson.fromJson(result);
+            if(obj!=null&&obj instanceof Map<?,?>)
+                mContentBinding.fromMapData(mContentView, (Map<String, Object>) obj);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        inflaterContent(mContentView);
+    }
 
     @Override
     public void onErrorListener(Request r, String error) {
