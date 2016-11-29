@@ -2,6 +2,7 @@ package com.fastlib.db;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.util.Log;
 
 import java.io.File;
@@ -19,9 +20,29 @@ import java.util.Objects;
  */
 public class SaveUtil{
     public static final String TAG=SaveUtil.class.getSimpleName();
+    public static String sSpName="default"; //存入SharedPreferences时的默认名
+
 
     private SaveUtil(){
         //can't instance
+    }
+
+    /**
+     * 创建临时文件夹中的分类文件夹
+     * @param context 上下文
+     * @param type 取Environment中文件夹类型
+     * @return
+     */
+    public static File getExternalTempFolder(Context context,String type){
+        File root=context.getExternalCacheDir();
+        File folder=new File(root,type);
+        if(!folder.exists())
+            folder.mkdir();
+        return folder;
+    }
+
+    public static void saveToSp(Context context,String key,Object obj){
+        saveToSp(context,sSpName,key,obj);
     }
 
     /**
@@ -116,13 +137,14 @@ public class SaveUtil{
     }
 
     /**
-     * 计算缓存占用容量
+     * 计算缓存占用容量(内部加外部)
      * @param context
      * @return
      */
     public static long cacheSize(Context context){
-        File directory=context.getCacheDir();
-        return fileSize(directory);
+        File internalDir=context.getCacheDir();
+        File externalDir=context.getExternalCacheDir();
+        return fileSize(internalDir)+fileSize(externalDir);
     }
 
     /**
@@ -143,13 +165,15 @@ public class SaveUtil{
     }
 
     /**
-     * 清理内部缓存<br/>
+     * 清理缓存(内部加外部)<br/>
      * 如果缓存放在其他位置,请使用clearFile(File file)
      * @param context
      */
     public static void clearCache(Context context){
-        File directory=context.getCacheDir();
-        clearFile(directory);
+        File internalDir=context.getCacheDir();
+        File externalDir=context.getExternalCacheDir();
+        clearFile(internalDir);
+        clearFile(externalDir);
     }
 
     /**

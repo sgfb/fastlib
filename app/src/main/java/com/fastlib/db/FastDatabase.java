@@ -116,8 +116,49 @@ public class FastDatabase{
 	}
 
 	/**
+	 * 获取第一条记录
+	 * @param cla
+	 * @param <T>
+     * @return
+     */
+	public <T> T getFirst(Class<T> cla){
+		List<T> all=getAll(cla);
+		if(all!=null&&!all.isEmpty())
+			return all.get(0);
+		return null;
+	}
+
+	/**
+	 * 获取第一条记录.指定主键值(使用这个方法的实体类必须有主键)
+	 * @param cla
+	 * @param keyValue
+	 * @param <T>
+     * @return
+     */
+	public <T> T getFirst(Class<T> cla,String keyValue){
+		List<T> list=get(cla,keyValue);
+		if(list!=null&&!list.isEmpty())
+			return list.get(0);
+		return null;
+	}
+
+	/**
+	 * 获取第一条记录.指定列名值过滤
+	 * @param cla
+	 * @param where
+	 * @param keyValue
+	 * @param <T>
+     * @return
+     */
+	public <T> T getFirst(Class<T> cla,String where,String keyValue){
+		List<T> list=get(cla,where,keyValue);
+		if(list!=null&&!list.isEmpty())
+			return list.get(0);
+		return null;
+	}
+
+	/**
 	 * 返回某主键值为keyValue对象。使用这个方法对象类中必须有主键
-	 *
 	 * @param cla
 	 * @param keyValue 主键值
 	 * @return
@@ -135,7 +176,7 @@ public class FastDatabase{
 		if(TextUtils.isEmpty(key))
 			return null;
 		//TODO test
-		if("".equals(sAttri.getOrderBy()))
+		if(!TextUtils.isEmpty(sAttri.getOrderBy()))
 			sAttri.setOrderBy(key);
 		return get(cla, key, keyValue);
 	}

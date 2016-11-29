@@ -25,14 +25,6 @@ public class FastApplication extends Application{
         EventObserver.build(this);
     }
 
-    @Override
-    public void onTerminate(){
-        super.onTerminate();
-        System.out.println("onTerminate");
-        EventObserver.getInstance().clear();
-        saveNetFlow();
-    }
-
     /**
      * 保存一下流量使用情况，如果未使用不保存
      */

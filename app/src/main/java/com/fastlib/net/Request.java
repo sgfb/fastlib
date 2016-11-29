@@ -5,14 +5,12 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 
-import com.fastlib.MainActivity;
-import com.fastlib.annotation.Database;
-import com.google.gson.annotations.Expose;
-import com.google.gson.reflect.TypeToken;
+import android.app.Activity;
+import android.content.Context;
+import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 
 import java.io.File;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,6 +24,7 @@ public class Request implements Comparable<Request>{
     private boolean useFactory; //是否使用预设值
     private String method;
     private String mUrl;
+    private String mGenericName;
     private Downloadable mDownloadable;
     private Map<String,String> mParams;
     private Map<String,File> mFiles;
@@ -55,6 +54,21 @@ public class Request implements Comparable<Request>{
     @Override
     public int compareTo(@NonNull Request another){
         return another.getUrl().equals(mUrl)?1:0;
+    }
+
+    public Request start(){
+        NetQueue.getInstance().netRequest(this);
+        return this;
+    }
+
+    public Request start(Fragment fragment){
+        mFragment=fragment;
+        return start();
+    }
+
+    public Request start(Activity activity){
+        mActivity=activity;
+        return start();
     }
 
     /**
@@ -278,6 +292,14 @@ public class Request implements Comparable<Request>{
 
     public void setType(RequestType type) {
         mType = type;
+    }
+
+    public String getGenericName() {
+        return mGenericName;
+    }
+
+    public void setGenericName(String genericName) {
+        mGenericName = genericName;
     }
 
     public Object getHost(){

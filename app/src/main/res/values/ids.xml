@@ -3,4 +3,8 @@
     <item type="id" name="swipe"/>
     <item type="id" name="headView"/>
     <item type="id" name="bottomView"/>
+
+    <!--AbsActivityPreviewImage必需-->
+    <item type="id" name="viewPager"/>
+    <item type="id" name="indicator"/>
 </resources>

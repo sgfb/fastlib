@@ -9,4 +9,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="bt"/>
+
+    <Button
+        android:id="@+id/bt2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="bt2"/>
 </LinearLayout>

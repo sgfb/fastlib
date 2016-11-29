@@ -1,4 +1,4 @@
-package com.fastlib.utils;
+package com.fastlib.utils.json;
 
 import android.app.Activity;
 import android.content.Context;
@@ -11,10 +11,12 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,8 +25,9 @@ import java.util.Map;
  */
 public class JsonBinder{
     private Map<Class,ViewResolve> mResolves;
-    private Map<String,Integer> mMap;
+    private Map<String,Integer> mIdWithName; //视图id值与视图名映射
     private Context mContext;
+    private View mRootView;
 
     public JsonBinder(Context context){
         this(context, null);
@@ -41,7 +44,8 @@ public class JsonBinder{
     public JsonBinder(Context context, View convertView){
         mContext=context;
         mResolves=new HashMap<>();
-        mMap=new HashMap<>();
+        mIdWithName =new HashMap<>();
+        mRootView=convertView;
         TextViewResolve tvResolve=new TextViewResolve();
         CheckBoxResolve cbResolve=new CheckBoxResolve();
         mResolves.put(TextView.class,tvResolve);
@@ -49,13 +53,32 @@ public class JsonBinder{
         mResolves.put(CheckBox.class,cbResolve);
         mResolves.put(AppCompatCheckBox.class, cbResolve);
         if(convertView!=null)
-            getAllChild(mMap,convertView);
+            getAllChild(mIdWithName,convertView);
     }
 
+    /**
+     * 绑定json数据到视图,使用解析时的根视图
+     * @param data
+     */
+    public void fromMapData(Map<String,Object> data){
+        fromMapData(mRootView,data);
+    }
+
+    /**
+     * 绑定json数据到视图,使用自定义的根视图
+     * @param root
+     * @param data
+     */
     public void fromMapData(View root,Map<String,Object> data){
-        fromMapData(root,data,mMap);
+        fromMapData(root,data, mIdWithName);
     }
 
+    /**
+     * 绑定json数据到视图,使用自定义的根视图和视图名与id映射
+     * @param root
+     * @param data
+     * @param views
+     */
     public void fromMapData(View root,Map<String,Object> data,Map<String,Integer> views){
         Iterator<String> iter=data.keySet().iterator();
         while(iter.hasNext()){
@@ -183,6 +206,10 @@ public class JsonBinder{
                             String value=reader.nextString().toLowerCase();
                             if(value.equals("true")||value.equals("false"))
                                 cb.setChecked(value.equals("true"));
+                            break;
+                        case NUMBER:
+                            double doubleValue=reader.nextDouble();
+                            cb.setChecked(doubleValue>0);
                             break;
                         default:
                             reader.skipValue();

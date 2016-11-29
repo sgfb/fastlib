@@ -27,6 +27,7 @@ import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -130,7 +131,7 @@ public class NetProcessor implements Runnable{
                 downloadFile = mRequest.getDownloadable().getTargetFile();
                 existsLength=downloadFile.length();
                 if(existsLength>0&&mRequest.getDownloadable().supportBreak()) //如果支持中断并且文件已部分存在,跳过部分流
-                    mConnection.addRequestProperty("Range:bytes",Long.toString(existsLength)+"-");
+                    mConnection.addRequestProperty("Range","bytes="+Long.toString(existsLength)+"-");
             }
             if(mRequest.getMethod().equals("POST")){
                 isPost = true;
@@ -189,12 +190,12 @@ public class NetProcessor implements Runnable{
                     Rx+=len;
                     speed+=len;
                     if((System.currentTimeMillis()-timer)>1000){ //每秒发送一次广播
-                        EventObserver.getInstance().sendEvent(new EventDownloading(maxCount,speed,downloadFile.getAbsolutePath()));
+                        EventObserver.getInstance().sendEvent(new EventDownloading(maxCount,speed,downloadFile.getAbsolutePath(),mRequest));
                         speed=0;
                         timer=System.currentTimeMillis();
                     }
                 }
-                EventObserver.getInstance().sendEvent(new EventDownloading(maxCount,speed,downloadFile.getAbsolutePath())); //下载结束发一次广播
+                EventObserver.getInstance().sendEvent(new EventDownloading(maxCount,speed,downloadFile.getAbsolutePath(),mRequest)); //下载结束发一次广播
                 fileOut.close();
                 mResponse=downloadFile.getAbsolutePath();
             }
@@ -249,16 +250,22 @@ public class NetProcessor implements Runnable{
             if(hostAvailable){
                 //泛型解析,如果是String返回原始数据
                 if(mStatus==NetStatus.SUCCESS){
+                    StringBuilder genericName=new StringBuilder(TextUtils.isEmpty(mRequest.getGenericName())?"onResponseListener,1":mRequest.getGenericName());
+                    int typeIndex=getTypeIndex(genericName);
+                    if(typeIndex==-1){
+                        genericName=new StringBuilder("onResponseListener");
+                        typeIndex=1;
+                    }
                     Method[] ms=l.getClass().getDeclaredMethods();
                     List<Method> duplicate=new ArrayList<>();
                     Type realType=null;
                     for(Method m:ms){
-                        if("onResponseListener".equals(m.getName()))
+                        if(genericName.toString().equals(m.getName()))
                             duplicate.add(m);
                     }
                     for(Method m:duplicate){
-                        if(m.getGenericParameterTypes()[1]!=Object.class){
-                            realType=m.getGenericParameterTypes()[1];
+                        if(m.getGenericParameterTypes()[typeIndex]!=Object.class){
+                            realType=m.getGenericParameterTypes()[typeIndex];
                             break;
                         }
                     }
@@ -291,6 +298,19 @@ public class NetProcessor implements Runnable{
                 if(runOnMainThread!=null)
                     mResponsePoster.execute(runOnMainThread);
             }
+        }
+    }
+
+    private int getTypeIndex(StringBuilder sb){
+        int index=sb.indexOf(",");
+        if(index==-1)
+            return -1;
+        String strIndex=sb.substring(index+1);
+        try{
+            sb.delete(sb.length()-2,sb.length());
+            return Integer.parseInt(strIndex);
+        }catch (NumberFormatException e){
+            return -1;
         }
     }
 

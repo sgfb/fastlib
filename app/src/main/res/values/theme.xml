@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources> xmlns:android="http://schemas.android.com/apk/res/android">
     
-    <style name="MaterialTheme" parent="Theme.AppCompat.NoActionBar">
+    <style name="MaterialTheme" parent="Theme.AppCompat">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <!-- ActionBar color -->
@@ -10,4 +10,5 @@
         <item name="android:windowBackground">@color/Grey_200</item>
         <item name="android:textColor">@android:color/black</item>
     </style>
+
 </resources>

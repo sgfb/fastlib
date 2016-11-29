@@ -49,17 +49,23 @@ public class ImageUtil{
     }
 
     /**
-     * 生成缩略图
-     * @param path
-     * @param limit
+     * 图像缩略
+     * @param deleteEither 是否删除占空间大的图像
+     * @param resultSmaller 是否返回占更小的图像
+     * @param limit 限制最大宽高
+     * @param quality 图像质量
+     * @param path 源图像路径
+     * @param parent 压缩图像存储父路径
      * @return
+     * @throws IOException
      */
-    public static File getThumbImageFile(String path,String parent,int limit,int quality) throws IOException{
+    public static File getThumbImageFile(boolean deleteEither,boolean resultSmaller,int limit,int quality,String path,String parent)throws IOException{
         File f=new File(path);
         if(f.exists())
             System.out.println(f.length());
         else
             System.out.println("file not exists");
+        File smallerFile,bigerFile;
         Bitmap bitmap=getThumbBitmap(path,limit);
         File file=getTempFile(new File(parent));
         FileOutputStream fos =new FileOutputStream(file);
@@ -68,7 +74,29 @@ public class ImageUtil{
         byte[] bytes = stream.toByteArray();
         fos.write(bytes);
         fos.close();
+        if(f.length()<file.length()){
+            smallerFile=f;
+            bigerFile=file;
+        }
+        else{
+            smallerFile=file;
+            bigerFile=f;
+        }
+        if(deleteEither)
+            bigerFile.delete();
+        if(resultSmaller)
+            return smallerFile;
         return file;
+    }
+
+    /**
+     * 生成缩略图
+     * @param path
+     * @param limit
+     * @return
+     */
+    public static File getThumbImageFile(int limit,int quality,String path,String parent)throws IOException{
+        return getThumbImageFile(false,false,limit,quality,path,parent);
     }
 
     /**
@@ -99,7 +127,7 @@ public class ImageUtil{
             options.inSampleSize = max / limit+1;
         if(!highQuality)
             options.inPreferredConfig= Bitmap.Config.ARGB_4444;
-        return BitmapFactory.decodeFile(path, options);
+        return BitmapFactory.decodeFile(path,options);
     }
 
     /**
@@ -263,7 +291,6 @@ public class ImageUtil{
     public static Uri getImageFromActive(Context context,int requestCode, int resultCode, Intent data){
         if(resultCode!=Activity.RESULT_OK)
             return null;
-
         switch (requestCode){
             case REQUEST_FROM_CROP:
             case REQUEST_FROM_CAMERA:

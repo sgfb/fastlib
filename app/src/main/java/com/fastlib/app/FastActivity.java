@@ -64,6 +64,7 @@ public class FastActivity extends AppCompatActivity{
                 if(r.getType()== Request.RequestType.DEFAULT)
                     r.cancel();
             }
+            mRequests.clear();
         }
     }
 
@@ -71,17 +72,18 @@ public class FastActivity extends AppCompatActivity{
      * 注册方法中的广播事件,如果有
      */
     private void registerEvents(){
-        Method[] methods=getClass().getDeclaredMethods();
-        if(methods!=null&&methods.length>0)
-            for(Method m:methods){
-                Event em=m.getAnnotation(Event.class);
-                if(em!=null){ //如果EventMethod注解非空，说明这个是一个广播方法
-                    Class<?>[] clas=m.getParameterTypes();
-                    if(clas==null||clas.length!=1) //如果形参空或长度不为1跳过(这也许不是一个标准的广播方法)
-                        continue;
-                    EventObserver.getInstance().subscribe(this,clas[0]);
-                }
-            }
+        EventObserver.getInstance().subscribe(this);
+//        Method[] methods=getClass().getDeclaredMethods();
+//        if(methods!=null&&methods.length>0)
+//            for(Method m:methods){
+//                Event em=m.getAnnotation(Event.class);
+//                if(em!=null){ //如果EventMethod注解非空，说明这个是一个广播方法
+//                    Class<?>[] clas=m.getParameterTypes();
+//                    if(clas==null||clas.length!=1) //如果形参空或长度不为1跳过(这也许不是一个标准的广播方法)
+//                        continue;
+//                    EventObserver.getInstance().subscribe(this,clas[0]);
+//                }
+//            }
     }
 
     private void injectViewEvent(){
@@ -171,17 +173,10 @@ public class FastActivity extends AppCompatActivity{
         //如果activity被销毁Listener不会回调，当前的需求可以使用Listener回调
         final Listener listener=request.getListener();
         if(listener!=null){
-            request.setListener(new Listener() {
-//                @Override
-//                public void onResponseListener(Request r, String result){
-//                    if(view!=null)
-//                        view.setEnabled(true);
-//                    mMutexRunning=false;
-//                    listener.onResponseListener(r,result);
-//                }
+            request.setListener(new Listener<String>(){
 
                 @Override
-                public void onResponseListener(Request r, Object result) {
+                public void onResponseListener(Request r,String result) {
 
                 }
 

@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.fastlib.base.OldViewHolder;
 import com.fastlib.base.Refreshable;
-import com.fastlib.db.RemoteCacheServer;
 import com.fastlib.base.AdapterViewState;
 import com.fastlib.net.Listener;
 import com.fastlib.net.NetQueue;
@@ -19,14 +18,14 @@ import android.widget.BaseAdapter;
 /**
  * 绑定适配器，将视图与服务器中的数据捆绑
  */
-public abstract class BindingAdapter<N> extends BaseAdapter implements Listener<String>{
+public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listener<R>{
 	public static final String TAG=BindingAdapter.class.getSimpleName();
 
 	protected Context mContext;
 	protected List<N> mData;
 	private AdapterViewState mViewState;
 	protected Request mRequest;
-	private RemoteCacheServer mRemoteCacheServer;
+//	private RemoteCacheServer mRemoteCacheServer;
 	private Refreshable mRefreshLayout;
 	private int mItemLayoutId;
 	//每次读取条数，默认为1
@@ -48,7 +47,7 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener<
 	 * @param result
 	 * @return
 	 */
-	public abstract List<N> translate(String result);
+	public abstract List<N> translate(R result);
 
 	/**
 	 * 请求更多数据时的请求
@@ -76,7 +75,8 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener<
 		isMore=true;
 		isLoading=false;
 		mRequest.setListener(this);
-		mRemoteCacheServer =new RemoteCacheServer(mRequest);
+		mRequest.setGenericName("translate,0");
+//		mRemoteCacheServer =new RemoteCacheServer(mRequest);
 		refresh();
 	}
 
@@ -96,7 +96,7 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener<
 	}
 
 	@Override
-	public View getView(int position, View convertView, ViewGroup parent) {
+	public View getView(int position, View convertView, ViewGroup parent){
 		final OldViewHolder viewHolder = getViewHolder(convertView, parent);
 		if(position>=getCount()-1&&isMore&&!isLoading)
 			loadMoreData();
@@ -104,7 +104,7 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener<
 		return viewHolder.getConvertView();
 	}
 
-	private OldViewHolder getViewHolder(View convertView, ViewGroup parent) {
+	private OldViewHolder getViewHolder(View convertView, ViewGroup parent){
 		return OldViewHolder.get(mContext, convertView, parent, mItemLayoutId);
 	}
 
@@ -117,9 +117,9 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener<
 		if(mViewState!=null)
 			mViewState.onStateChanged(AdapterViewState.STATE_LOADING);
 		getMoreDataRequest(mRequest);
-		if(isSaveCache)
-			mRemoteCacheServer.loadMore(mRequest.getParams());
-		else
+//		if(isSaveCache)
+//			mRemoteCacheServer.loadMore(mRequest.getParams());
+//		else
 		    NetQueue.getInstance().netRequest(mRequest);
 	}
 
@@ -129,9 +129,9 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener<
 		//刷新之后也许有更多数据？
 		isMore=true;
 		getRefreshDataRequest(mRequest);
-		if(isSaveCache)
-			mRemoteCacheServer.start();
-		else
+//		if(isSaveCache)
+//			mRemoteCacheServer.start();
+//		else
 			NetQueue.getInstance().netRequest(mRequest);
 	}
 
@@ -175,7 +175,7 @@ public abstract class BindingAdapter<N> extends BaseAdapter implements Listener<
 	}
 
 	@Override
-	public void onResponseListener(Request r,String result){
+	public void onResponseListener(Request request,R result){
 		if(mRefreshLayout!=null)
 			mRefreshLayout.setRefreshStatus(false);
 		List<N> list=translate(result);

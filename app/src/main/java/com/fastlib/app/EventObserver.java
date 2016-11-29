@@ -20,6 +20,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by sgfb on 16/9/1.
@@ -29,6 +32,7 @@ public class EventObserver {
     public static boolean DEBUG=true;
 
     private static EventObserver mOwer;
+    private ThreadPoolExecutor mThreadPool;
     private Map<String,LocalReceiver> mLocalObserver;   //订阅事件名->订阅广播
     private Map<String,List<String>> mLocalObserverMap; //订阅者->订阅事件名
     private Context mContext;
@@ -37,6 +41,7 @@ public class EventObserver {
         mContext=context;
         mLocalObserver=new HashMap<>();
         mLocalObserverMap=new HashMap<>();
+        mThreadPool=new ThreadPoolExecutor(4,10,30, TimeUnit.SECONDS,new ArrayBlockingQueue<Runnable>(12)); //初始化一个比较小的线程池
     }
 
     public static synchronized EventObserver getInstance(){
@@ -49,38 +54,38 @@ public class EventObserver {
     }
 
     /**
-     * 订阅本地事件
+     * 订阅注册者所有有Event注解的本地事件.这个方法将会遍历订阅者所有方法效率略低于subscribe(Object,Class)
      * @param subscriber 订阅者
-     * @param cla 订阅事件
      */
-    public void subscribe(Object subscriber,Class<?> cla){
-        String eventName=baseClassUpper(cla);
+    public void subscribe(Object subscriber){
         String subscriberName=subscriber.getClass().getCanonicalName();
         LocalBroadcastManager lbm=LocalBroadcastManager.getInstance(mContext);
-        LocalReceiver receiver=mLocalObserver.get(eventName);
-        IntentFilter filter=new IntentFilter(eventName);
         List<String> eventNames=mLocalObserverMap.get(subscriberName);
-        //检测是否有注解的事件方法,如果没有则不加入订阅事件
-        Method eventMethod=findEventMethod(subscriber,cla);
-        if(eventMethod==null){
-            if(DEBUG)
-                Log.d(TAG,"订阅者"+subscriberName+"没有注解EventMethod,无法订阅事件"+eventName);
-            return;
-        }
+        List<Method> eventMethods=findEventMethods(subscriber);
 
-        if(receiver==null){
-            receiver = new LocalReceiver();
-            mLocalObserver.put(eventName,receiver);
-            lbm.registerReceiver(receiver,filter);
+        if(eventMethods==null||eventMethods.isEmpty()){
+            if(DEBUG)
+                Log.d(TAG,"订阅者"+subscriberName+"没有正常的广播接受方法,请检查是否添加了Event注解和广播方法参数");
+            return;
         }
         if(eventNames==null)
             eventNames=new ArrayList<>();
-        if(!eventNames.contains(eventName))
-            eventNames.add(eventName);
-        mLocalObserverMap.put(subscriber.getClass().getCanonicalName(), eventNames);
-        receiver.mSubscribes.put(subscriber,eventMethod);
-        if(DEBUG)
-            Log.d(TAG,"订阅者"+subscriberName+" 订阅事件"+eventName);
+        for(Method m:eventMethods){
+            String eventName=baseClassUpper(m.getParameterTypes()[0]); //仅取第一个参数作为广播目标
+            LocalReceiver receiver=mLocalObserver.get(eventName);
+            IntentFilter filter=new IntentFilter(eventName);
+            if(receiver==null){
+                receiver = new LocalReceiver();
+                mLocalObserver.put(eventName,receiver);
+                lbm.registerReceiver(receiver,filter);
+            }
+            if(!eventNames.contains(eventName))
+                eventNames.add(eventName);
+            mLocalObserverMap.put(subscriber.getClass().getCanonicalName(),eventNames);
+            receiver.mSubscribes.put(subscriber,m);
+            if(DEBUG)
+                Log.d(TAG,"订阅者"+subscriberName+"订阅事件"+eventName);
+        }
     }
 
     /**
@@ -104,27 +109,24 @@ public class EventObserver {
     }
 
     /**
-     * 遍历寻找存在的参数是订阅事件类的事件方法(注解EventMethod)
-     * @param obj 订阅者
-     * @param event 订阅事件
+     * 遍历注解Event的接受广播方法
+     * @param obj
      * @return
      */
-    private Method findEventMethod(Object obj,Class<?> event){
-        Method method=null;
-        Method[] methods=obj.getClass().getDeclaredMethods();
-        if(methods==null||methods.length<=0)
+    private List<Method> findEventMethods(Object obj){
+        List<Method> eventMethods=new ArrayList<>();
+        Method[] allMethod=obj.getClass().getDeclaredMethods();
+        if(allMethod==null||allMethod.length==0)
             return null;
-        for(Method m:methods){
+        for(Method m:allMethod){
             Annotation anno=m.getAnnotation(Event.class);
             if(anno!=null){
                 Class<?>[] params=m.getParameterTypes();
-                if(params!=null&&params.length>0&&params[0]==event){
-                    method=m;
-                    break;
-                }
+                if(params!=null&&params.length>0) //判断广播接收事件参数是否正常
+                    eventMethods.add(m);
             }
         }
-        return method;
+        return eventMethods;
     }
 
     /**
@@ -190,6 +192,9 @@ public class EventObserver {
             Log.d(TAG,"广播事件"+name);
     }
 
+    /**
+     * 事件广播中转.运行在主线程中
+     */
     public class LocalReceiver extends BroadcastReceiver{
         public Map<Object,Method> mSubscribes; //订阅者->事件方法
 
@@ -199,22 +204,40 @@ public class EventObserver {
 
         @Override
         public void onReceive(Context context, Intent intent){
-            EntityWrapper wrapper= (EntityWrapper) intent.getSerializableExtra("entity");
+            final EntityWrapper wrapper= (EntityWrapper) intent.getSerializableExtra("entity");
             List<Object> invisibleSubscriber=new ArrayList<>();
             Iterator<Object> iter=mSubscribes.keySet().iterator();
             while(iter.hasNext()){
-                Object subscribe=iter.next();
+                final Object subscribe=iter.next();
                 boolean visible=checkVisible(subscribe);
                 if(!visible){
                     invisibleSubscriber.add(subscribe);
                     continue;
                 }
-                try {
-                    mSubscribes.get(subscribe).invoke(subscribe,wrapper.obj);
+                try{
+                    final Method m=mSubscribes.get(subscribe);
+                    Event anno=m.getAnnotation(Event.class);
+
+                    m.setAccessible(true);
+                    if(anno.value()) //是否在主线程调用,如果不是进入线程池
+                        m.invoke(subscribe,wrapper.obj);
+                    else
+                        mThreadPool.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    m.invoke(subscribe,wrapper.obj);
+                                } catch (IllegalAccessException e) {
+                                    Log.w(TAG,"方法调起失败:"+e.getMessage());
+                                } catch (InvocationTargetException e) {
+                                    Log.w(TAG,"方法调起失败:"+e.getMessage());
+                                }
+                            }
+                        });
                 } catch (IllegalAccessException e) {
-                    //do noting
+                    Log.w(TAG,"方法调起失败:"+e.getMessage());
                 } catch (InvocationTargetException e) {
-                    // do noting
+                    Log.w(TAG,"方法调起失败:"+e.getMessage());
                 }
             }
             for(Object obj:invisibleSubscriber)
