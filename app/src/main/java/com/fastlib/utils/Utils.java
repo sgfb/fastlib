@@ -3,6 +3,7 @@ package com.fastlib.utils;
 import android.graphics.Color;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 
 import java.io.File;
@@ -23,6 +24,38 @@ public class Utils{
 
     private Utils(){
         //no instance
+    }
+
+    public int safeToString(String value,int defValue){
+        try{
+            return Integer.parseInt(value);
+        }catch (NumberFormatException e){
+            return defValue;
+        }
+    }
+
+    public long safeToString(String value,long defValue){
+        try{
+            return Long.parseLong(value);
+        }catch (NumberFormatException e){
+            return defValue;
+        }
+    }
+
+    public float safeToString(String value,float defValue){
+        try{
+            return Float.parseFloat(value);
+        }catch (NumberFormatException e){
+            return defValue;
+        }
+    }
+
+    public double safeToString(String value,double defValue){
+        try{
+            return Double.parseDouble(value);
+        }catch (NumberFormatException e){
+            return defValue;
+        }
     }
 
     /**

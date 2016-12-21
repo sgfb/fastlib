@@ -11,6 +11,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 
 import java.io.File;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,6 +37,7 @@ public class Request implements Comparable<Request>{
     private Activity mActivity;
     private Fragment mFragment;
     private Listener mListener;
+    private Type mGenericType; //泛型解析类型
 
     public Request(String url){
         this("POST",url);
@@ -300,6 +302,14 @@ public class Request implements Comparable<Request>{
 
     public void setGenericName(String genericName) {
         mGenericName = genericName;
+    }
+
+    public Type getGenericType() {
+        return mGenericType;
+    }
+
+    public void setGenericType(Type genericType) {
+        mGenericType = genericType;
     }
 
     public Object getHost(){

@@ -41,7 +41,7 @@ public class EventObserver {
         mContext=context;
         mLocalObserver=new HashMap<>();
         mLocalObserverMap=new HashMap<>();
-        mThreadPool=new ThreadPoolExecutor(4,10,30, TimeUnit.SECONDS,new ArrayBlockingQueue<Runnable>(12)); //初始化一个比较小的线程池
+        mThreadPool=new ThreadPoolExecutor(4,8,30, TimeUnit.SECONDS,new ArrayBlockingQueue<Runnable>(32)); //初始化一个比较小的线程池
     }
 
     public static synchronized EventObserver getInstance(){
@@ -65,7 +65,7 @@ public class EventObserver {
 
         if(eventMethods==null||eventMethods.isEmpty()){
             if(DEBUG)
-                Log.d(TAG,"订阅者"+subscriberName+"没有正常的广播接受方法,请检查是否添加了Event注解和广播方法参数");
+                Log.d(TAG,"订阅者"+subscriberName+"没有广播接受方法,请检查是否添加了Event注解和广播方法参数");
             return;
         }
         if(eventNames==null)

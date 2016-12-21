@@ -41,7 +41,7 @@ public abstract class AbsPreviewImageActivity extends FastActivity implements Vi
         mIndicator=(TextView)findViewById(R.id.indicator);
         mData=getIntent().getStringArrayListExtra(ARG_IMAGES);
         int index=getIntent().getIntExtra(ARG_INDEX,0);
-        mViewPager.setAdapter(new SimpleAdapter());
+        mViewPager.setAdapter(new ImagePreviewAdapter());
         mViewPager.setCurrentItem(index, false);
         mViewPager.addOnPageChangeListener(this);
         if(mData==null||mData.size()<=0)
@@ -69,7 +69,8 @@ public abstract class AbsPreviewImageActivity extends FastActivity implements Vi
 
     }
 
-    private class SimpleAdapter extends PagerAdapter{
+    private class ImagePreviewAdapter extends PagerAdapter{
+        int mChildCount=0;
 
         @Override
         public int getCount() {
@@ -92,6 +93,21 @@ public abstract class AbsPreviewImageActivity extends FastActivity implements Vi
         @Override
         public void destroyItem(ViewGroup container, int position, Object object) {
             container.removeView((View) object);
+        }
+
+        @Override
+        public int getItemPosition(Object object){
+            if(mChildCount>0){
+                mChildCount--;
+                return POSITION_NONE;
+            }
+            return super.getItemPosition(object);
+        }
+
+        @Override
+        public void notifyDataSetChanged(){
+            mChildCount=getCount();
+            super.notifyDataSetChanged();
         }
     }
 }

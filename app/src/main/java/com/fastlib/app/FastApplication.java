@@ -15,12 +15,10 @@ import java.util.Date;
  */
 public class FastApplication extends Application{
     public static final String NAME_SHAREPREFERENCES="fastlib";
-    private static FastApplication mApp;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        mApp=this;
         FastDatabase.build(this);
         EventObserver.build(this);
     }
@@ -36,9 +34,5 @@ public class FastApplication extends Application{
         netFlow.time= TimeUtil.dateToString(new Date(System.currentTimeMillis()));
         if(netFlow.requestCount>0)
             FastDatabase.getDefaultInstance().saveOrUpdate(netFlow);
-    }
-
-    public static FastApplication getInstance(){
-        return mApp;
     }
 }

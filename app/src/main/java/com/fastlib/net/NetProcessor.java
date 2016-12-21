@@ -33,6 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * 网络请求的具体处理.在结束时会保存一些状态<br/>
@@ -124,8 +126,10 @@ public class NetProcessor implements Runnable{
             URL url=new URL(mRequest.getUrl());
             mConnection =(HttpURLConnection)url.openConnection();
             boolean isMulti=false,isPost=false;
-            long existsLength=0;
+            long existsLength;
 
+            //TODO test
+            mConnection.addRequestProperty("Content-Type","gzip");
             //检测是否可保存为文件
             if(mRequest.downloadable()) {
                 downloadFile = mRequest.getDownloadable().getTargetFile();
@@ -166,7 +170,11 @@ public class NetProcessor implements Runnable{
                     loadParams(mRequest.getParams(),sb);
                     byte[] data=sb.toString().getBytes();
                     Tx+=data.length;
-                    out.write(data);
+                    //TODO test
+                    GZIPOutputStream zipOUt=new GZIPOutputStream(out);
+                    zipOUt.write(data);
+                    zipOUt.close();
+//                    out.write(data);
                 }
                 out.close();
             }
@@ -250,6 +258,7 @@ public class NetProcessor implements Runnable{
             if(hostAvailable){
                 //泛型解析,如果是String返回原始数据
                 if(mStatus==NetStatus.SUCCESS){
+                    l.onDataResult(mResponse);
                     StringBuilder genericName=new StringBuilder(TextUtils.isEmpty(mRequest.getGenericName())?"onResponseListener,1":mRequest.getGenericName());
                     int typeIndex=getTypeIndex(genericName);
                     if(typeIndex==-1){

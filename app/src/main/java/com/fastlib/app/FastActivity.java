@@ -23,14 +23,10 @@ import java.util.Map;
  * Created by sgfb on 16/9/5.
  */
 public class FastActivity extends AppCompatActivity{
-    private Map<String,Request> mRequests; //这个activity中的所有网络请求
-    private ActivityRefreshListener mRefreshListener;
-    private boolean mMutexRunning=false; //互斥网络请求是否运行中
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        mRequests=new HashMap<>();
         registerEvents();
     }
 
@@ -56,16 +52,6 @@ public class FastActivity extends AppCompatActivity{
     protected void onDestroy(){
         super.onDestroy();
         EventObserver.getInstance().unsubscribe(this);
-        if(mRequests!=null){
-            Iterator<String> iter=mRequests.keySet().iterator();
-            while(iter.hasNext()){
-                String key=iter.next();
-                Request r=mRequests.get(key);
-                if(r.getType()== Request.RequestType.DEFAULT)
-                    r.cancel();
-            }
-            mRequests.clear();
-        }
     }
 
     /**
@@ -73,17 +59,6 @@ public class FastActivity extends AppCompatActivity{
      */
     private void registerEvents(){
         EventObserver.getInstance().subscribe(this);
-//        Method[] methods=getClass().getDeclaredMethods();
-//        if(methods!=null&&methods.length>0)
-//            for(Method m:methods){
-//                Event em=m.getAnnotation(Event.class);
-//                if(em!=null){ //如果EventMethod注解非空，说明这个是一个广播方法
-//                    Class<?>[] clas=m.getParameterTypes();
-//                    if(clas==null||clas.length!=1) //如果形参空或长度不为1跳过(这也许不是一个标准的广播方法)
-//                        continue;
-//                    EventObserver.getInstance().subscribe(this,clas[0]);
-//                }
-//            }
     }
 
     private void injectViewEvent(){
@@ -103,9 +78,9 @@ public class FastActivity extends AppCompatActivity{
                                     try {
                                         m.invoke(FastActivity.this,v);
                                     } catch (IllegalAccessException e){
-
+                                        System.out.println("IllegalAccessException:"+e.getMessage());
                                     } catch (InvocationTargetException e){
-
+                                        System.out.println("InvocationTargetException:"+e.getMessage());
                                     }
                                 }
                             });
@@ -130,75 +105,5 @@ public class FastActivity extends AppCompatActivity{
                     }
                 }
             }
-    }
-
-    public void refresh(){
-        if(mRefreshListener!=null)
-            mRefreshListener.refresh();
-        if(mRequests!=null){
-            Iterator<String> iter=mRequests.keySet().iterator();
-            while(iter.hasNext()){
-                String key=iter.next();
-                Request request=mRequests.get(key);
-                NetQueue.getInstance().netRequest(request);
-            }
-        }
-    }
-
-    public void addRequest(Request request){
-        mRequests.put(request.getUrl(),request);
-    }
-
-    /**
-     * 将请求存储到列表中并且发起请求
-     * @param r
-     */
-    public void net(Request r){
-        if(mMutexRunning)
-            return;
-        if(mRequests.get(r.getUrl())==null)
-            mRequests.put(r.getUrl(),r);
-        NetQueue.getInstance().netRequest(r);
-    }
-
-    /**
-     * 启动一个互斥网络请求，当这个请求开始时当前模块不接受其他网络请求，也不会存起来
-     * @param view
-     * @param request
-     */
-    public void startMutexRequest(@Nullable final View view, Request request){
-        mMutexRunning=true;
-        if(view!=null)
-            view.setEnabled(false);
-        //如果activity被销毁Listener不会回调，当前的需求可以使用Listener回调
-        final Listener listener=request.getListener();
-        if(listener!=null){
-            request.setListener(new Listener<String>(){
-
-                @Override
-                public void onResponseListener(Request r,String result) {
-
-                }
-
-                @Override
-                public void onErrorListener(Request r, String error){
-                    if(view!=null)
-                        view.setEnabled(true);
-                    mMutexRunning=false;
-                    listener.onErrorListener(r,error);
-                }
-            });
-        }
-    }
-
-    public void setRefreshListener(ActivityRefreshListener l){
-        mRefreshListener=l;
-    }
-
-    /**
-     * activity整个模块的网络请求刷新回调
-     */
-    public interface ActivityRefreshListener{
-        void refresh();
     }
 }

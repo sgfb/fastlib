@@ -2,9 +2,11 @@ package com.fastlib.db;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 import android.graphics.Color;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -25,6 +27,24 @@ public class SaveUtil{
 
     private SaveUtil(){
         //can't instance
+    }
+
+    /**
+     * 以字符串读取assets中的某文件
+     * @param path
+     * @param am
+     * @return 文件字符串
+     * @throws IOException
+     */
+    public static String loadAssetsFileToString(String path,AssetManager am) throws IOException {
+        InputStream in=am.open(path);
+        byte[] data=new byte[1024];
+        int len;
+        ByteArrayOutputStream baos=new ByteArrayOutputStream();
+        while((len=in.read(data))!=-1)
+            baos.write(data,0,len);
+        in.close();
+        return baos.toString();
     }
 
     /**
