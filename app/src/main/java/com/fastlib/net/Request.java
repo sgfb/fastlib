@@ -4,15 +4,15 @@ import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-
-import android.app.Activity;
-import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
+import android.support.v4.util.Pair;
+import android.text.TextUtils;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,24 +20,25 @@ import java.util.Map;
  * 每个任务都是不同的，（NetQueue）会根据属性来配置请求，调整请求开始完成或失败后不同的事件
  */
 public class Request implements Comparable<Request>{
-    private boolean sFile;
+    private boolean isSaveCookies; //是否留存Cookies
     private boolean hadRootAddress; //是否已加入根地址
     private boolean useFactory; //是否使用预设值
     private String method;
     private String mUrl;
     private String mGenericName;
+    private Pair<String,String> mSendCookies;
     private Downloadable mDownloadable;
     private Map<String,String> mParams;
     private Map<String,File> mFiles;
     private RequestType mType=RequestType.DEFAULT;
     private Object mTag; //额外信息
-    private String[] mSession; //留存的session
+    private String[] mCookies; //留存的cookies
     private NetProcessor mProcessor;
     //加入activity或者fragment可以提升安全性
     private Activity mActivity;
     private Fragment mFragment;
-    private Listener mListener;
-    private Type mGenericType; //泛型解析类型
+    private ExtraListener mListener;
+    private Type mGenericType; //根据Listener生成的返回类类型存根
 
     public Request(String url){
         this("POST",url);
@@ -162,6 +163,19 @@ public class Request implements Comparable<Request>{
         }
     }
 
+    private int getTypeIndex(StringBuilder sb){
+        int index=sb.indexOf(",");
+        if(index==-1)
+            return -1;
+        String strIndex=sb.substring(index+1);
+        try{
+            sb.delete(sb.length()-2,sb.length());
+            return Integer.parseInt(strIndex);
+        }catch (NumberFormatException e){
+            return -1;
+        }
+    }
+
     public  Map<String,String> getParams(){
         return mParams;
     }
@@ -182,12 +196,55 @@ public class Request implements Comparable<Request>{
         this.mUrl = mUrl;
     }
 
-    public Request setListener(Listener l){
-        mListener=l;
+    public Request setListener(final Listener l){
+        //泛型解析,如果是Object返回原始字节流,String返回字符
+        StringBuilder genericName=new StringBuilder(TextUtils.isEmpty(mGenericName)?"onResponseListener,1":mGenericName);
+        int typeIndex=getTypeIndex(genericName);
+        if(typeIndex==-1){
+            genericName=new StringBuilder("onResponseListener");
+            typeIndex=1;
+        }
+        Method[] ms=l.getClass().getDeclaredMethods();
+        List<Method> duplicate=new ArrayList<>();
+        for(Method m:ms){
+            if(genericName.toString().equals(m.getName()))
+                duplicate.add(m);
+        }
+        for(Method m:duplicate){
+            if(m.getGenericParameterTypes()[typeIndex]!=Object.class){
+                mGenericType=m.getGenericParameterTypes()[typeIndex];
+                break;
+            }
+        }
+        if(l instanceof ExtraListener)
+            mListener= (ExtraListener) l;
+        else{
+            mListener=new ExtraListener(){
+                @Override
+                public void onRawData(byte[] data) {
+                    //do noting
+                }
+
+                @Override
+                public void onTranslateJson(String json) {
+                    //do noting
+                }
+
+                @Override
+                public void onResponseListener(Request r, Object result) {
+                    l.onResponseListener(r,result);
+                }
+
+                @Override
+                public void onErrorListener(Request r, String error) {
+                    l.onErrorListener(r,error);
+                }
+            };
+        }
         return this;
     }
 
-    public Listener getListener(){
+    public ExtraListener getListener(){
         return mListener;
     }
 
@@ -200,14 +257,6 @@ public class Request implements Comparable<Request>{
     public Request setMethod(String method){
         this.method=method.toUpperCase();
         return this;
-    }
-
-    public boolean isFile() {
-        return sFile;
-    }
-
-    public void setFile(boolean sFile) {
-        this.sFile = sFile;
     }
 
     public Request setDownloadable(Downloadable d){
@@ -272,12 +321,12 @@ public class Request implements Comparable<Request>{
         return mProcessor!=null&&mProcessor.stop();
     }
 
-    public String[] getSession(){
-        return mSession;
+    public String[] getCookies(){
+        return mCookies;
     }
 
-    public void setSession(String[] session) {
-        mSession = session;
+    public void setCookies(String[] cookies) {
+        mCookies = cookies;
     }
 
     public Object getTag() {
@@ -304,12 +353,24 @@ public class Request implements Comparable<Request>{
         mGenericName = genericName;
     }
 
-    public Type getGenericType() {
-        return mGenericType;
+    public Pair<String, String> getSendCookies() {
+        return mSendCookies;
     }
 
-    public void setGenericType(Type genericType) {
-        mGenericType = genericType;
+    public boolean isSaveCookies() {
+        return isSaveCookies;
+    }
+
+    public void setSaveCookies(boolean saveCookies) {
+        isSaveCookies = saveCookies;
+    }
+
+    public void setSendCookies(Pair<String, String> sendCookies) {
+        mSendCookies = sendCookies;
+    }
+
+    public Type getGenericType() {
+        return mGenericType;
     }
 
     public Object getHost(){

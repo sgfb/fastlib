@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -41,7 +42,7 @@ public class EventObserver {
         mContext=context;
         mLocalObserver=new HashMap<>();
         mLocalObserverMap=new HashMap<>();
-        mThreadPool=new ThreadPoolExecutor(4,8,30, TimeUnit.SECONDS,new ArrayBlockingQueue<Runnable>(32)); //初始化一个比较小的线程池
+        mThreadPool= (ThreadPoolExecutor) Executors.newFixedThreadPool(8);
     }
 
     public static synchronized EventObserver getInstance(){

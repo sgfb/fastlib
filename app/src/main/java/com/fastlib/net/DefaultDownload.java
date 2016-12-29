@@ -9,6 +9,7 @@ import java.io.IOException;
 public class DefaultDownload implements Downloadable {
     private File mTargetFile;
     private boolean mSupportBreak;
+    private boolean mChangeIfHadName;
 
     public DefaultDownload(String path){
         this(new File(path));
@@ -19,6 +20,10 @@ public class DefaultDownload implements Downloadable {
     }
 
     public DefaultDownload(File target,boolean supportBreak){
+        this(target,false,true);
+    }
+
+    public DefaultDownload(File target,boolean supportBreak,boolean changeIfHadName){
         mTargetFile=target;
         mSupportBreak=supportBreak;
         if(!mTargetFile.exists())
@@ -42,5 +47,10 @@ public class DefaultDownload implements Downloadable {
     @Override
     public boolean supportBreak() {
         return mSupportBreak;
+    }
+
+    @Override
+    public boolean changeIfHadName() {
+        return mChangeIfHadName;
     }
 }

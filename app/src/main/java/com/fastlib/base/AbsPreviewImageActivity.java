@@ -9,7 +9,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.fastlib.R;
-import com.fastlib.app.FastActivity;
 import com.fastlib.utils.N;
 import com.fastlib.widget.PinchImageView;
 

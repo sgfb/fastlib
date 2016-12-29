@@ -18,7 +18,7 @@ import android.widget.BaseAdapter;
 /**
  * 绑定适配器，将视图与服务器中的数据捆绑
  */
-public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listener<R>{
+public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listener<R> {
 	public static final String TAG=BindingAdapter.class.getSimpleName();
 
 	protected Context mContext;

@@ -1,23 +1,15 @@
 package com.fastlib.app;
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.fastlib.annotation.Bind;
-import com.fastlib.annotation.Event;
-import com.fastlib.net.Listener;
-import com.fastlib.net.NetQueue;
-import com.fastlib.net.Request;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 /**
  * Created by sgfb on 16/9/5.
@@ -64,30 +56,30 @@ public class FastActivity extends AppCompatActivity{
     private void injectViewEvent(){
         Method[] methods=getClass().getDeclaredMethods();
         if(methods!=null&&methods.length>0)
-        for(final Method m:methods){
-            Bind vi=m.getAnnotation(Bind.class);
-            if(vi!=null){
-                int[] ids=vi.value();
-                if(ids!=null&&ids.length>0){
-                    for(int id:ids){
-                        View v=findViewById(id);
-                        if(v!=null)
-                            v.setOnClickListener(new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    try {
-                                        m.invoke(FastActivity.this,v);
-                                    } catch (IllegalAccessException e){
-                                        System.out.println("IllegalAccessException:"+e.getMessage());
-                                    } catch (InvocationTargetException e){
-                                        System.out.println("InvocationTargetException:"+e.getMessage());
+            for(final Method m:methods){
+                Bind vi=m.getAnnotation(Bind.class);
+                if(vi!=null){
+                    int[] ids=vi.value();
+                    if(ids!=null&&ids.length>0){
+                        for(int id:ids){
+                            View v=findViewById(id);
+                            if(v!=null)
+                                v.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        try {
+                                            m.invoke(FastActivity.this,v);
+                                        } catch (IllegalAccessException e){
+                                            System.out.println("IllegalAccessException:"+e.getMessage());
+                                        } catch (InvocationTargetException e){
+                                            System.out.println("InvocationTargetException:"+e.getMessage());
+                                        }
                                     }
-                                }
-                            });
+                                });
+                        }
                     }
                 }
             }
-        }
         Field[] fields=getClass().getDeclaredFields();
 
         if(fields!=null&&fields.length>0)

@@ -18,4 +18,10 @@ public interface Downloadable{
      * @return 中断支持
      */
     boolean supportBreak();
+
+    /**
+     * 如果服务器给予了文件名,是否修改文件名
+     * @return 是否支持
+     */
+    boolean changeIfHadName();
 }

@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
+import android.view.TextureView;
 
 import com.fastlib.app.EventObserver;
 import com.fastlib.bean.EventDownloading;
@@ -29,12 +30,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * 网络请求的具体处理.在结束时会保存一些状态<br/>
@@ -50,10 +50,10 @@ public class NetProcessor implements Runnable{
     public static long mDiffServerTime; //与服务器时间差
 
     private long Tx,Rx;
+    private byte[] mResponse;
     private Request mRequest;
     private volatile NetStatus mStatus;
     private String mMessage;
-    private String mResponse;
     private OnCompleteListener mListener;
     private Executor mResponsePoster;
     private HttpURLConnection mConnection;
@@ -128,8 +128,6 @@ public class NetProcessor implements Runnable{
             boolean isMulti=false,isPost=false;
             long existsLength;
 
-            //TODO test
-            mConnection.addRequestProperty("Content-Type","gzip");
             //检测是否可保存为文件
             if(mRequest.downloadable()) {
                 downloadFile = mRequest.getDownloadable().getTargetFile();
@@ -149,14 +147,12 @@ public class NetProcessor implements Runnable{
             if(isPost) {
                 mConnection.setDoOutput(true);
                 if(isMulti){
-                    mConnection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
+                    mConnection.setRequestProperty("Content-Type", "multipart/form-data; boundary="+BOUNDARY);
                     mConnection.setUseCaches(false);
                 }
             }
-            String[] sessions=mRequest.getSession();
-            if(sessions!=null&&sessions.length>0){
-                mConnection.setRequestProperty("Cookie",sessions[0]); //当前仅取首个session
-            }
+            if(mRequest.getSendCookies()!=null)
+                mConnection.setRequestProperty(mRequest.getSendCookies().first,mRequest.getSendCookies().second);
             if(mStatus==NetStatus.STOP)
                 return;
             mConnection.connect();
@@ -170,26 +166,29 @@ public class NetProcessor implements Runnable{
                     loadParams(mRequest.getParams(),sb);
                     byte[] data=sb.toString().getBytes();
                     Tx+=data.length;
-                    //TODO test
-                    GZIPOutputStream zipOUt=new GZIPOutputStream(out);
-                    zipOUt.write(data);
-                    zipOUt.close();
-//                    out.write(data);
+                    out.write(data);
                 }
                 out.close();
             }
 
             in= mConnection.getInputStream();
             mStatus=NetStatus.RUNNING_RECEIVE;
-            String session=mConnection.getHeaderField("Set-Cookie");
-            if(!TextUtils.isEmpty(session))
-                mRequest.setSession(session.split(";"));
+            if(mRequest.isSaveCookies()){
+                String cookies=mConnection.getHeaderField("Set-Cookie");
+                if(!TextUtils.isEmpty(cookies))
+                    mRequest.setCookies(cookies.split(";"));
+            }
             int len;
             byte[] data=new byte[BUFF_LENGTH];
+            //如果支持,修改下载的文件名
             if(downloadFile!=null){
                 OutputStream fileOut=new FileOutputStream(downloadFile,mRequest.getDownloadable().supportBreak());
-//                String disposition=mConnection.getHeaderField("Content-Disposition");
-//                String filename= URLDecoder.decode(disposition.substring(disposition.indexOf("filename=") + 9),"UTF-8");
+                String disposition=mConnection.getHeaderField("Content-Disposition");
+                if(!TextUtils.isEmpty(disposition)&&disposition.length()>9&&mRequest.getDownloadable().changeIfHadName()){
+                    String filename= URLDecoder.decode(disposition.substring(disposition.indexOf("filename=") + 9),"UTF-8");
+                    if(!TextUtils.isEmpty(filename))
+                        downloadFile.renameTo(new File(downloadFile.getParent()+File.separator+filename));
+                }
                 int maxCount=mConnection.getContentLength();
                 int speed=0;
                 long timer=System.currentTimeMillis();
@@ -205,17 +204,17 @@ public class NetProcessor implements Runnable{
                 }
                 EventObserver.getInstance().sendEvent(new EventDownloading(maxCount,speed,downloadFile.getAbsolutePath(),mRequest)); //下载结束发一次广播
                 fileOut.close();
-                mResponse=downloadFile.getAbsolutePath();
+                mResponse=downloadFile.getAbsolutePath().getBytes();
             }
             else{
                 while((len=in.read(data))!=-1)
                     baos.write(data,0,len);
                 Rx+=baos.size();
-                mResponse = baos.toString();
+                mResponse = baos.toByteArray();
             }
             baos.close();
             in.close();
-            List<String> trustHost=NetQueue.getInstance().getConfig().getTrustHost();
+            List<String> trustHost=NetQueue.getInstance().getConfig().getTrustHost(); //调整信任服务器时间差
             if(trustHost!=null){
                 for(String host:trustHost){
                     if(url.getHost().equals(host)){
@@ -240,7 +239,7 @@ public class NetProcessor implements Runnable{
     }
 
     private void toggleCallback(){
-        final Listener l=mRequest.getListener();
+        final ExtraListener l=mRequest.getListener();
         Runnable runOnMainThread = null;
         if(l!=null){
             Object host=mRequest.getHost();
@@ -256,35 +255,23 @@ public class NetProcessor implements Runnable{
                     hostAvailable=false;
             }
             if(hostAvailable){
-                //泛型解析,如果是String返回原始数据
                 if(mStatus==NetStatus.SUCCESS){
-                    l.onDataResult(mResponse);
-                    StringBuilder genericName=new StringBuilder(TextUtils.isEmpty(mRequest.getGenericName())?"onResponseListener,1":mRequest.getGenericName());
-                    int typeIndex=getTypeIndex(genericName);
-                    if(typeIndex==-1){
-                        genericName=new StringBuilder("onResponseListener");
-                        typeIndex=1;
-                    }
-                    Method[] ms=l.getClass().getDeclaredMethods();
-                    List<Method> duplicate=new ArrayList<>();
-                    Type realType=null;
-                    for(Method m:ms){
-                        if(genericName.toString().equals(m.getName()))
-                            duplicate.add(m);
-                    }
-                    for(Method m:duplicate){
-                        if(m.getGenericParameterTypes()[typeIndex]!=Object.class){
-                            realType=m.getGenericParameterTypes()[typeIndex];
-                            break;
-                        }
-                    }
+                    l.onRawData(mResponse);
+                    Type realType=mRequest.getGenericType();
                     Gson gson=new Gson();
                     try{
                         final Object responseObj;
-                        if(realType==null||realType==String.class)
+                        if(realType==null||realType==Object.class)
                             responseObj=mResponse;
-                        else
-                            responseObj=gson.fromJson(mResponse,realType);
+                        else if(realType==String.class) {
+                            responseObj = new String(mResponse);
+                            l.onTranslateJson((String) responseObj);
+                        }
+                        else {
+                            String json=new String(mResponse);
+                            l.onTranslateJson(json);
+                            responseObj = gson.fromJson(json, realType);
+                        }
                         runOnMainThread=new Runnable() {
                             @Override
                             public void run(){
@@ -307,19 +294,6 @@ public class NetProcessor implements Runnable{
                 if(runOnMainThread!=null)
                     mResponsePoster.execute(runOnMainThread);
             }
-        }
-    }
-
-    private int getTypeIndex(StringBuilder sb){
-        int index=sb.indexOf(",");
-        if(index==-1)
-            return -1;
-        String strIndex=sb.substring(index+1);
-        try{
-            sb.delete(sb.length()-2,sb.length());
-            return Integer.parseInt(strIndex);
-        }catch (NumberFormatException e){
-            return -1;
         }
     }
 

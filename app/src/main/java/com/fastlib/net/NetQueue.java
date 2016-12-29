@@ -3,6 +3,7 @@ package com.fastlib.net;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import com.fastlib.db.FastDatabase;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -24,15 +26,13 @@ public class NetQueue{
     private static NetQueue mOwer;
     public int mRequestCount=0;
     public long Tx,Rx;
-    private ThreadPoolExecutor mRequestPool;
-    private BlockingQueue<Runnable> mRequestQueue;
+    private ThreadPoolExecutor mRequestPool; //公共网络请求池
     private DataFactory mFactory;
     private Config mConfig;
     private String mRootAddress;
 
     private NetQueue(){
-        mRequestQueue=new ArrayBlockingQueue<>(30);
-        mRequestPool=new ThreadPoolExecutor(8,30,30,TimeUnit.SECONDS,mRequestQueue);
+        mRequestPool= (ThreadPoolExecutor) Executors.newFixedThreadPool(8);
         mConfig=new Config();
     }
 
@@ -47,6 +47,10 @@ public class NetQueue{
      * @param request
      */
     public void netRequest(Request request){
+        netRequest(request,null);
+    }
+
+    public void netRequest(Request request,ThreadPoolExecutor pool){
         if(mFactory!=null&&request.isUseFactory()){
             Map<String,String> map=request.getParams();
             if(map==null){
@@ -61,11 +65,10 @@ public class NetQueue{
         }
         if(request.getType()== Request.RequestType.MUSTSEND)
             FastDatabase.getDefaultInstance().saveOrUpdate(request);
-        enqueue(request);
+        enqueue(request,pool);
     }
 
-    private void enqueue(Request request){
-
+    private void enqueue(Request request,@Nullable ThreadPoolExecutor pool){
         NetProcessor processor=new NetProcessor(request,new NetProcessor.OnCompleteListener() {
             @Override
             public void onComplete(NetProcessor processor1){
@@ -78,7 +81,10 @@ public class NetQueue{
                 System.out.println(processor1);
             }
         },new Handler(Looper.getMainLooper()));
-        mRequestPool.execute(processor);
+        if(pool!=null)
+            pool.execute(processor);
+        else
+            mRequestPool.execute(processor);
     }
 
     public void close(){

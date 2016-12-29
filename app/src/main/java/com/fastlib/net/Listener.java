@@ -1,14 +1,10 @@
 package com.fastlib.net;
 
 /**
- * Created by sgfb on 16/2/11.
+ * Created by sgfb on 16/12/28.
  */
-public interface Listener<T>{
 
-    /**
-     * 数据返回时调用,这个方法运行在子线程中,可以进行一些耗时操作
-     */
-    void onDataResult(String json);
+public interface Listener<T>{
 
     /**
      * 数据原型回调

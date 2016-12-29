@@ -162,9 +162,24 @@ public class SaveUtil{
      * @return
      */
     public static long cacheSize(Context context){
+        return cacheSize(context,null);
+    }
+
+    /**
+     * 计算缓存占用容量(内部加外部加额外文件夹列表)
+     * @param context
+     * @param cacheFolders
+     * @return
+     */
+    public static long cacheSize(Context context,File[] cacheFolders){
         File internalDir=context.getCacheDir();
         File externalDir=context.getExternalCacheDir();
-        return fileSize(internalDir)+fileSize(externalDir);
+        long len=fileSize(internalDir)+fileSize(externalDir);
+        if(cacheFolders!=null){
+            for(File f:cacheFolders)
+                len+=fileSize(f);
+        }
+        return len;
     }
 
     /**
