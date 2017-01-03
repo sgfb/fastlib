@@ -66,7 +66,7 @@ public class FastDatabase{
 
 	public static FastDatabase getDefaultInstance(){
 		sAttri.defaultAttribute();
-		sAttri.setWhichDatabase(getDefaultDatabaseName());
+		sAttri.setToWhichDatabase(getDefaultDatabaseName());
 		return sOwer;
 	}
 
@@ -98,7 +98,7 @@ public class FastDatabase{
 			Object key=fieldKey.get(obj);
 			//TODO test
 			if("".equals(sAttri.getOrderBy()))
-				sAttri.setOrderBy(fieldKey.getName());
+				sAttri.orderBy(fieldKey.getName());
 			List<Object> list= (List<Object>) get(obj.getClass(),fieldKey.getName(), Reflect.objToStr(key));
 			if(list==null||list.size()==0){
 				if(sConfig.isOutInformation) {
@@ -177,7 +177,7 @@ public class FastDatabase{
 			return null;
 		//TODO test
 		if(!TextUtils.isEmpty(sAttri.getOrderBy()))
-			sAttri.setOrderBy(key);
+			sAttri.orderBy(key);
 		return get(cla, key, keyValue);
 	}
 
@@ -210,7 +210,7 @@ public class FastDatabase{
 					}
 				}
 				if(!TextUtils.isEmpty(key))
-					sAttri.setOrderBy(key);
+					sAttri.orderBy(key);
 			}
 			if(!TextUtils.isEmpty(sAttri.getOrderBy()))
 			    order="order by "+sAttri.getOrderBy()+" "+(sAttri.isAsc()?"asc":"desc");
@@ -222,12 +222,12 @@ public class FastDatabase{
 		}
 		database=prepare(null);
 		if(TextUtils.isEmpty(where))
-			cursor=database.rawQuery("select "+selectColumn+" from '"+tableName+"' "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y,null);
+			cursor=database.rawQuery("select "+selectColumn+" from '"+tableName+"' "+order+" limit "+sAttri.getStart()+","+sAttri.getSize(),null);
 		else {
 			if(whereValue==null)
-				cursor=database.rawQuery("select "+selectColumn+" from '"+tableName+"' where "+where+" is null "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y,null);
+				cursor=database.rawQuery("select "+selectColumn+" from '"+tableName+"' where "+where+" is null "+order+" limit "+sAttri.getStart()+","+sAttri.getSize(),null);
 			else
-				cursor = database.rawQuery("select "+selectColumn+" from '" + tableName + "' where " + where + "=? "+order+" limit "+sAttri.getLimit().x+","+sAttri.getLimit().y, new String[]{whereValue});
+				cursor = database.rawQuery("select "+selectColumn+" from '" + tableName + "' where " + where + "=? "+order+" limit "+sAttri.getStart()+","+sAttri.getSize(), new String[]{whereValue});
 		}
 		if(cursor==null) {
 			if(sConfig.isOutInformation)
@@ -324,8 +324,8 @@ public class FastDatabase{
 		Field primaryField=null;
 		String columnName;
 		String columnValue;
-		//是否有主键
 
+		//是否有主键
 		for(Field field:fields){
 			field.setAccessible(true);
 			Database tableInject=field.getAnnotation(Database.class);
@@ -440,7 +440,7 @@ public class FastDatabase{
 				database.beginTransaction();
 				database.execSQL("delete from '"+tableName+"' where "+where+"="+whereValue);
 				database.setTransactionSuccessful();
-				Log.i(TAG, sConfig.getDatabaseName()+"--d--"+Integer.toString(count)+"->"+tableName);
+				Log.i(TAG,(TextUtils.isEmpty(sAttri.getWhichDatabase())) +"--d--"+Integer.toString(count)+"->"+tableName);
 			}catch(SQLiteException e){
 				return false;
 			}finally{
@@ -572,7 +572,7 @@ public class FastDatabase{
 				database.update("'" + tableName + "'",cv,where+"=?",new String[]{whereValue});
 			database.setTransactionSuccessful();
 			if(sConfig.isOutInformation)
-				Log.d(TAG,TextUtils.isEmpty(sAttri.getWhichDatabase())?sConfig.getDatabaseName():sAttri.getWhichDatabase()+"<--u-- "+tableName);
+				Log.d(TAG,(TextUtils.isEmpty(sAttri.getWhichDatabase())?sConfig.getDatabaseName():sAttri.getWhichDatabase())+"<--u-- "+tableName);
 		}catch(SQLiteException e){
 			if(sConfig.isOutInformation)
 				Log.d(TAG,"更新数据失败，异常："+e.toString());
@@ -684,7 +684,7 @@ public class FastDatabase{
 				}
 				db.insert("'" + tableName + "'", null, cv);
 				if(sConfig.isOutInformation)
-					Log.d(TAG,TextUtils.isEmpty(sAttri.getWhichDatabase())?sConfig.getDatabaseName():sAttri.getWhichDatabase()+"<----"+tableName);
+					Log.d(TAG,(TextUtils.isEmpty(sAttri.getWhichDatabase())?sConfig.getDatabaseName():sAttri.getWhichDatabase())+"<----"+tableName);
 			}
 			db.setTransactionSuccessful();
 		}catch(SQLiteException e){
@@ -838,8 +838,8 @@ public class FastDatabase{
 	 * @return current database
      */
 	public FastDatabase orderBy(boolean asc){
-		sAttri.setAsc(asc);
-		sAttri.setOrderBy(""); //空字符串代表使用主键字段
+		sAttri.setOrderAsc(asc);
+		sAttri.orderBy(""); //空字符串代表使用主键字段
 		return sOwer;
 	}
 
@@ -850,8 +850,8 @@ public class FastDatabase{
      * @return
      */
 	public FastDatabase orderBy(boolean asc,String columnName){
-		sAttri.setAsc(asc);
-		sAttri.setOrderBy(columnName);
+		sAttri.setOrderAsc(asc);
+		sAttri.orderBy(columnName);
 		return sOwer;
 	}
 
@@ -883,7 +883,7 @@ public class FastDatabase{
 	 * @return current database
      */
 	public FastDatabase select(String... columns){
-		sAttri.select(columns);
+		sAttri.setSelectColumn(columns);
 		return sOwer;
 	}
 
@@ -893,7 +893,7 @@ public class FastDatabase{
 	 * @return current database
      */
 	public FastDatabase unselect(String... columns){
-		sAttri.unselect(columns);
+		sAttri.setUnselectColumn(columns);
 		return sOwer;
 	}
 
@@ -903,7 +903,7 @@ public class FastDatabase{
 	 * @return
 	 */
 	public FastDatabase toWhichDatabase(String databaseName){
-		sAttri.setWhichDatabase(databaseName);
+		sAttri.setToWhichDatabase(databaseName);
 		return sOwer;
 	}
 

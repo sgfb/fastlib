@@ -6,20 +6,40 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.fastlib.annotation.Bind;
+import com.fastlib.net.NetQueue;
+import com.fastlib.net.Request;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Created by sgfb on 16/9/5.
  */
 public class FastActivity extends AppCompatActivity{
+    private Thread mMainThread;
+    protected ThreadPoolExecutor mThreadPool= (ThreadPoolExecutor) Executors.newFixedThreadPool(4);
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        registerEvents();
+        mMainThread =Thread.currentThread();
+        mThreadPool.execute(new Runnable(){
+            @Override
+            public void run(){
+                registerEvents();
+            }
+        });
+    }
+
+    protected void net(Request request){
+        NetQueue.getInstance().netRequest(mThreadPool,request.setHost(this));
+    }
+
+    protected void startTasks(TaskChain tc){
+        TaskChain.processTaskChain(this,mThreadPool, mMainThread,tc);
     }
 
     @Override
@@ -44,6 +64,7 @@ public class FastActivity extends AppCompatActivity{
     protected void onDestroy(){
         super.onDestroy();
         EventObserver.getInstance().unsubscribe(this);
+        mThreadPool.shutdownNow();
     }
 
     /**
@@ -60,7 +81,7 @@ public class FastActivity extends AppCompatActivity{
                 Bind vi=m.getAnnotation(Bind.class);
                 if(vi!=null){
                     int[] ids=vi.value();
-                    if(ids!=null&&ids.length>0){
+                    if(ids.length>0){
                         for(int id:ids){
                             View v=findViewById(id);
                             if(v!=null)
@@ -87,7 +108,7 @@ public class FastActivity extends AppCompatActivity{
                 Bind vi=field.getAnnotation(Bind.class);
                 if(vi!=null){
                     int[] ids=vi.value();
-                    if(ids!=null&&ids.length>0){
+                    if(ids.length>0){
                         try {
                             field.setAccessible(true);
                             field.set(FastActivity.this,findViewById(ids[0]));

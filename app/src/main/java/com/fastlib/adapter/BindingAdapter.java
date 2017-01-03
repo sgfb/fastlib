@@ -1,6 +1,7 @@
 package com.fastlib.adapter;
 
 import java.util.List;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import com.fastlib.base.OldViewHolder;
 import com.fastlib.base.Refreshable;
@@ -10,7 +11,7 @@ import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
+import android.support.annotation.LayoutRes;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -27,9 +28,9 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 	protected Request mRequest;
 //	private RemoteCacheServer mRemoteCacheServer;
 	private Refreshable mRefreshLayout;
+	private ThreadPoolExecutor mThreadPool;
 	private int mItemLayoutId;
-	//每次读取条数，默认为1
-	private int mPerCount;
+	private int mPerCount; //每次读取条数，默认为1
 	protected boolean isRefresh,isMore,isLoading,isSaveCache;
 
 	public abstract Request generateRequest();
@@ -61,11 +62,11 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 	 */
 	public abstract void getRefreshDataRequest(Request request);
 
-	public BindingAdapter(Context context,@NonNull int resId){
-		this(context, resId, false);
+	public BindingAdapter(Context context,@LayoutRes int resId){
+		this(context,resId,false);
 	}
 
-	public BindingAdapter(Context context,@NonNull int resId,boolean saveCache){
+	public BindingAdapter(Context context,@LayoutRes int resId,boolean saveCache){
 		mContext=context;
 		mRequest= generateRequest();
 		isSaveCache=saveCache;
@@ -97,15 +98,11 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent){
-		final OldViewHolder viewHolder = getViewHolder(convertView, parent);
+		final OldViewHolder viewHolder = OldViewHolder.get(mContext, convertView, parent, mItemLayoutId);
 		if(position>=getCount()-1&&isMore&&!isLoading)
 			loadMoreData();
 		binding(position,getItem(position),viewHolder);
 		return viewHolder.getConvertView();
-	}
-
-	private OldViewHolder getViewHolder(View convertView, ViewGroup parent){
-		return OldViewHolder.get(mContext, convertView, parent, mItemLayoutId);
 	}
 
 	/**
@@ -120,7 +117,7 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 //		if(isSaveCache)
 //			mRemoteCacheServer.loadMore(mRequest.getParams());
 //		else
-		    NetQueue.getInstance().netRequest(mRequest);
+		    NetQueue.getInstance().netRequest(mThreadPool,mRequest);
 	}
 
 	public void refresh(){
@@ -132,7 +129,7 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 //		if(isSaveCache)
 //			mRemoteCacheServer.start();
 //		else
-			NetQueue.getInstance().netRequest(mRequest);
+			NetQueue.getInstance().netRequest(mThreadPool,mRequest);
 	}
 
 	public void setViewStateListener(AdapterViewState state){
@@ -153,6 +150,14 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 
 	public void setRefreshLayout(Refreshable refreshLayout){
 		mRefreshLayout=refreshLayout;
+	}
+
+	public ThreadPoolExecutor getThreadPool(){
+		return mThreadPool;
+	}
+
+	public void setThreadPool(ThreadPoolExecutor threadPool) {
+		mThreadPool = threadPool;
 	}
 
 	/**

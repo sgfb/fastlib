@@ -11,9 +11,6 @@ import android.widget.TextView;
 
 /**
  * 通用View持有者
- * 
- * @author Administrator
- * 
  */
 public class OldViewHolder {
 

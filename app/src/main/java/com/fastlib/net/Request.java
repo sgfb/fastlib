@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.FutureTask;
 
 /**
  * 请求体<br/>
@@ -23,17 +24,20 @@ public class Request implements Comparable<Request>{
     private boolean isSaveCookies; //是否留存Cookies
     private boolean hadRootAddress; //是否已加入根地址
     private boolean useFactory; //是否使用预设值
+    private boolean isSendGzip; //指定这次请求发送时是否压缩成gzip流
+    private boolean isReceiveGzip; //指定这次请求是否使用gzip解码
     private String method;
     private String mUrl;
     private String mGenericName;
     private Pair<String,String> mSendCookies;
     private Downloadable mDownloadable;
+    private List<Pair<String,String>> mHeadExtra; //额外头部信息
     private Map<String,String> mParams;
     private Map<String,File> mFiles;
     private RequestType mType=RequestType.DEFAULT;
     private Object mTag; //额外信息
     private String[] mCookies; //留存的cookies
-    private NetProcessor mProcessor;
+    private FutureTask<Integer> mFutureTask;
     //加入activity或者fragment可以提升安全性
     private Activity mActivity;
     private Fragment mFragment;
@@ -197,7 +201,7 @@ public class Request implements Comparable<Request>{
     }
 
     public Request setListener(final Listener l){
-        //泛型解析,如果是Object返回原始字节流,String返回字符
+        //泛型解析,如果是Object返回原始字节流,String返回字符,其它类型就尝试gson解析
         StringBuilder genericName=new StringBuilder(TextUtils.isEmpty(mGenericName)?"onResponseListener,1":mGenericName);
         int typeIndex=getTypeIndex(genericName);
         if(typeIndex==-1){
@@ -242,6 +246,19 @@ public class Request implements Comparable<Request>{
             };
         }
         return this;
+    }
+
+    /**
+     * 取消网络请求
+     */
+    public void cancel(){
+        if(mFutureTask==null||mFutureTask.isDone()||mFutureTask.isCancelled()){
+            System.out.println("网络请求未开始");
+            return;
+        }
+        mFutureTask.cancel(true);
+        if(mListener!=null)
+            mListener.onErrorListener(this,"取消请求 "+mUrl);
     }
 
     public ExtraListener getListener(){
@@ -305,20 +322,12 @@ public class Request implements Comparable<Request>{
         return this;
     }
 
-    /**
-     * 仅在开始进行网络请求时使用这个方法
-     * @param processor
-     */
-    public void startProcess(NetProcessor processor){
-        mProcessor=processor;
+    public FutureTask<Integer> getFutureTask() {
+        return mFutureTask;
     }
 
-    /**
-     * 取消网络请求
-     * @return
-     */
-    public boolean cancel(){
-        return mProcessor!=null&&mProcessor.stop();
+    public void setFutureTask(FutureTask<Integer> futureTask) {
+        mFutureTask = futureTask;
     }
 
     public String[] getCookies(){
@@ -371,6 +380,30 @@ public class Request implements Comparable<Request>{
 
     public Type getGenericType() {
         return mGenericType;
+    }
+
+    public boolean isReceiveGzip() {
+        return isReceiveGzip;
+    }
+
+    public void setReceiveGzip(boolean receiveGzip) {
+        isReceiveGzip = receiveGzip;
+    }
+
+    public boolean isSendGzip() {
+        return isSendGzip;
+    }
+
+    public void setSendGzip(boolean sendGzip) {
+        isSendGzip = sendGzip;
+    }
+
+    public List<Pair<String, String>> getHeadExtra() {
+        return mHeadExtra;
+    }
+
+    public void setHeadExtra(List<Pair<String, String>> headExtra) {
+        mHeadExtra = headExtra;
     }
 
     public Object getHost(){

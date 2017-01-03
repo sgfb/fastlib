@@ -16,20 +16,8 @@
         android:layout_height="wrap_content"
         android:text="bt2"/>
 
-    <TextView
-        android:background="?attr/selectableItemBackground"
+    <ImageView
+        android:id="@+id/image"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:enabled="true"
-        android:clickable="true"
-        android:text="just long long \n text long text"/>
-
-    <TextView
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:enabled="true"
-        android:clickable="true"
-        android:text="just long long \n text long text"/>
+        android:layout_height="wrap_content"/>
 </LinearLayout>

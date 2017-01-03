@@ -89,8 +89,8 @@ public class ZipUtils {
 	}
 	
 	public static String uncompressFile(File file){
-		CheckedInputStream cis=null;
-		ZipInputStream zis=null;
+		CheckedInputStream cis;
+		ZipInputStream zis;
 		
 		try {
 			cis=new CheckedInputStream(new FileInputStream(file),new CRC32());

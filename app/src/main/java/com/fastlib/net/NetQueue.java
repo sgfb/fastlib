@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.db.FastDatabase;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -47,17 +49,19 @@ public class NetQueue{
      * @param request
      */
     public void netRequest(Request request){
-        netRequest(request,null);
+        netRequest(null,request);
     }
 
-    public void netRequest(Request request,ThreadPoolExecutor pool){
+    public void netRequest(ThreadPoolExecutor pool,Request request){
         if(mFactory!=null&&request.isUseFactory()){
             Map<String,String> map=request.getParams();
             if(map==null){
                 map=new HashMap<>();
                 request.setParams(map);
             }
-            map.putAll(mFactory.extraData());
+            if(mFactory.extraData()!=null)
+                for(Pair<String,String> pair:mFactory.extraData())
+                    map.put(pair.first,pair.second);
         }
         if(!TextUtils.isEmpty(mRootAddress)&&!request.isHadRootAddress()){
             request.setUrl(mRootAddress + request.getUrl());
@@ -81,10 +85,12 @@ public class NetQueue{
                 System.out.println(processor1);
             }
         },new Handler(Looper.getMainLooper()));
+        FutureTask<Integer> ft=new FutureTask<>(processor,0);
+        request.setFutureTask(ft);
         if(pool!=null)
-            pool.execute(processor);
+            pool.execute(ft);
         else
-            mRequestPool.execute(processor);
+            mRequestPool.execute(ft);
     }
 
     public void close(){
@@ -118,32 +124,14 @@ public class NetQueue{
 
     public static class Config implements Cloneable{
         private boolean isTrackTraffic;
-        private boolean useStatus;
-        private int maxTask;
         private List<String> mTrustHost; //信任站点，当前仅用于过滤保存时间
 
         public void setTrackTraffic(boolean track){
             isTrackTraffic=track;
         }
 
-        public void setMaxTask(int max){
-            maxTask=max;
-        }
-
-        public void setUseStatus(boolean use){
-            useStatus=use;
-        }
-
-        public boolean isUseStatus(){
-            return useStatus;
-        }
-
         public boolean isTrackTraffic(){
             return isTrackTraffic;
-        }
-
-        public int getMaxTask(){
-            return maxTask;
         }
 
         public List<String> getTrustHost() {
@@ -165,6 +153,6 @@ public class NetQueue{
     }
 
     public interface DataFactory{
-        Map<String,String> extraData();
+        List<Pair<String,String>> extraData();
     }
 }

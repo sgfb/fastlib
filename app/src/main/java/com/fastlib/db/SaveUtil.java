@@ -24,19 +24,18 @@ public class SaveUtil{
     public static final String TAG=SaveUtil.class.getSimpleName();
     public static String sSpName="default"; //存入SharedPreferences时的默认名
 
-
     private SaveUtil(){
         //can't instance
     }
 
     /**
-     * 以字符串读取assets中的某文件
-     * @param path
+     * 读取assets中的某文件
      * @param am
-     * @return 文件字符串
+     * @param path
+     * @return 源数据
      * @throws IOException
      */
-    public static String loadAssetsFileToString(String path,AssetManager am) throws IOException {
+    public static byte[] loadAssetsFileToString(AssetManager am,String path) throws IOException {
         InputStream in=am.open(path);
         byte[] data=new byte[1024];
         int len;
@@ -44,7 +43,7 @@ public class SaveUtil{
         while((len=in.read(data))!=-1)
             baos.write(data,0,len);
         in.close();
-        return baos.toString();
+        return baos.toByteArray();
     }
 
     /**
@@ -95,6 +94,16 @@ public class SaveUtil{
     /**
      * 从SharedPreferences中取出数据
      * @param context
+     * @param key
+     * @return
+     */
+    public static Object getFromSp(Context context,String key){
+        return getFromSp(context,sSpName,key);
+    }
+
+    /**
+     * 指定sp文件名从SharedPreferences中取出数据
+     * @param context
      * @param name
      * @param key
      * @return
@@ -104,6 +113,25 @@ public class SaveUtil{
         return sp.getAll().get(key);
     }
 
+    /**
+     * 从SharedPreferences中取出数据,如果不存在某数据返回默认数据
+     * @param context
+     * @param key
+     * @param def
+     * @return
+     */
+    public static Object getFromSp(Context context,String key,Object def){
+        return getFromSp(context,sSpName,key,def);
+    }
+
+    /**
+     * 指定sp文件名从SharedPreferences中取出数据,如果不存在某数据返回默认数据
+     * @param context
+     * @param name
+     * @param key
+     * @param def
+     * @return
+     */
     public static Object getFromSp(Context context,String name,String key,Object def){
         Object obj=getFromSp(context,name,key);
         if(obj==null)
