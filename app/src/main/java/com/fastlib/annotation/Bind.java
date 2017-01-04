@@ -11,5 +11,14 @@ import java.lang.annotation.Target;
 @Target({ElementType.FIELD,ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Bind {
-	int[] value();
+	int[] value(); //要绑定的视图id值
+	boolean runOnWorkThread() default false; //是否运行在工作线程中,有返回的方法这个属性无效
+	BindType bindType() default BindType.CLICK;
+
+	enum BindType{
+		CLICK,
+		LONG_CLICK,
+		ITEM_CLICK,
+		ITEM_LONG_CLICK
+	}
 }

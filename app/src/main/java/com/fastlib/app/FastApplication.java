@@ -19,7 +19,6 @@ public class FastApplication extends Application{
     @Override
     public void onCreate() {
         super.onCreate();
-        FastDatabase.build(this);
         EventObserver.build(this);
     }
 
@@ -33,6 +32,6 @@ public class FastApplication extends Application{
         netFlow.takeByte=NetQueue.getInstance().Tx;
         netFlow.time= TimeUtil.dateToString(new Date(System.currentTimeMillis()));
         if(netFlow.requestCount>0)
-            FastDatabase.getDefaultInstance().saveOrUpdate(netFlow);
+            FastDatabase.getDefaultInstance(this).saveOrUpdate(netFlow);
     }
 }

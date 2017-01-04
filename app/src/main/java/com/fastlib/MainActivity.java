@@ -4,81 +4,82 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.util.Pair;
 import android.util.Base64;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.fastlib.annotation.Bind;
+import com.fastlib.annotation.Database;
 import com.fastlib.app.FastActivity;
+import com.fastlib.app.TaskChain;
+import com.fastlib.db.FastDatabase;
+import com.fastlib.db.FilterCommand;
 import com.fastlib.db.SaveUtil;
 import com.fastlib.db.ServerCache;
 import com.fastlib.net.Listener;
 import com.fastlib.net.Request;
+import com.fastlib.utils.N;
 import com.fastlib.utils.ZipUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.zip.ZipInputStream;
 
 /**
  * Created by sgfb on 16/12/29.
  */
-public class MainActivity extends FastActivity {
-    @Bind(R.id.image)
-    ImageView iv;
-    ServerCache mServerCache;
-    Request mRequest;
+public class MainActivity extends FastActivity{
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        init();
-    }
-
-    private void init(){
-        mRequest=new Request("http://192.168.131.125:8084/FastProject/Test")
-                .put("image",new File(Environment.getExternalStorageDirectory().getAbsolutePath()+File.separator+"test.png"))
-                .put("user_login","13353353534")
-                .put("token","sdfoijasofojdsfoiasjfiosjdfoijasdfjioijof")
-                .put("content","long long long long long long long long long long long long long long long long long long long long long long long long " +
-                        "oaidsjfoasjdfoijsdfoijaosdjfojsdofijoi噢嘶佛山大家佛啊扫地机佛教啊送大家佛撒娇的佛教萨当年佛啊诶你佛 i 啊睡觉哦放 i 家 text")
-                .setListener(new Listener<List<Bean>>(){
-                    @Override
-                    public void onResponseListener(Request r,List<Bean> result){
-                        for(Bean b:result)
-                            System.out.println(b);
-                    }
-                    @Override
-                    public void onErrorListener(Request r, String error) {
-                        System.out.println("error:"+error);
-                    }
-        });
-        mRequest.setSendGzip(true);
-        mRequest.setReceiveGzip(true);
-//        mServerCache=new ServerCache(request,"testCache",null,mThreadPool);
-//        mServerCache.setCacheTimeLife(1000*10);
     }
 
     @Bind(R.id.bt)
     public void commit1(View v){
-        net(mRequest);
-//        mServerCache.refresh(false);
+        Random random=new Random();
+        final List<Bean> list=new ArrayList<>();
+        for(int i=0;i<15;i++){
+            Bean b=new Bean();
+            b.sex=random.nextBoolean()?"男":"女";
+            b.name="no name";
+            list.add(b);
+        }
+        startTasks(new TaskChain(new Runnable() {
+            @Override
+            public void run() {
+                FastDatabase.getDefaultInstance(MainActivity.this).saveOrUpdate(list);
+            }
+        }).next(TaskChain.TYPE_THREAD_ON_MAIN, new Runnable() {
+            @Override
+            public void run() {
+                N.showShort(MainActivity.this,"保存完毕");
+            }
+        }));
     }
 
     @Bind(R.id.bt2)
     public void commit2(View v){
-        ServerCache sc=new ServerCache(new Request(""),"testCache",null,mThreadPool);
+        FastDatabase.getDefaultInstance(this).delete(Bean.class,"id",FilterCommand.biger("20"));
     }
 
-    public class Bean{
-        public int id;
-        public String name;
-
-        @Override
-        public String toString() {
-            return "id:"+id+" name:"+name;
+    @Bind(R.id.bt3)
+    public void commit3(View v){
+        List<Bean> list=FastDatabase.getDefaultInstance(this).getAll(Bean.class);
+        if(list!=null&&!list.isEmpty()){
+            for(Bean b:list)
+                System.out.println(b);
         }
+        else
+            System.out.println("list is empty");
     }
 }

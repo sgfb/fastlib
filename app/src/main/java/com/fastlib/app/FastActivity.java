@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.net.NetQueue;
@@ -74,7 +75,82 @@ public class FastActivity extends AppCompatActivity{
         EventObserver.getInstance().subscribe(this);
     }
 
+    /**
+     * 运行一段代码如果有异常自行处理
+     * @param runOnWorkThread
+     * @param m
+     * @param objs
+     */
+    private boolean invokeWithoutError(boolean runOnWorkThread,final Method m,final Object... objs){
+        if(runOnWorkThread)
+            mThreadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        m.invoke(FastActivity.this,objs);
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    } catch (InvocationTargetException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        else
+            try {
+                Object result=m.invoke(FastActivity.this,objs);
+                if(result instanceof Boolean)
+                    return (Boolean)result;
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+                return false;
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+                return false;
+            }
+        return false;
+    }
+
+    private void bindListener(final Method m, View v, final Bind vi){
+        switch(vi.bindType()){
+            case CLICK:
+                v.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(final View v){
+                        invokeWithoutError(vi.runOnWorkThread(),m,v);
+                    }
+                });
+                break;
+            case LONG_CLICK:
+                v.setOnLongClickListener(new View.OnLongClickListener() {
+                    @Override
+                    public boolean onLongClick(View v){
+                        return invokeWithoutError(vi.runOnWorkThread(),m,v);
+                    }
+                });
+                break;
+            case ITEM_CLICK:
+                ((AdapterView)v).setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        invokeWithoutError(vi.runOnWorkThread(),m,parent,view,position,id);
+                    }
+                });
+                break;
+            case ITEM_LONG_CLICK:
+                ((AdapterView)v).setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+                    @Override
+                    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                        return invokeWithoutError(vi.runOnWorkThread(),m,parent,view,position,id);
+                    }
+                });
+                break;
+            default:
+                break;
+        }
+    }
+
     private void injectViewEvent(){
+        //绑定控件方法
         Method[] methods=getClass().getDeclaredMethods();
         if(methods!=null&&methods.length>0)
             for(final Method m:methods){
@@ -85,24 +161,14 @@ public class FastActivity extends AppCompatActivity{
                         for(int id:ids){
                             View v=findViewById(id);
                             if(v!=null)
-                                v.setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        try {
-                                            m.invoke(FastActivity.this,v);
-                                        } catch (IllegalAccessException e){
-                                            System.out.println("IllegalAccessException:"+e.getMessage());
-                                        } catch (InvocationTargetException e){
-                                            System.out.println("InvocationTargetException:"+e.getMessage());
-                                        }
-                                    }
-                                });
+                                bindListener(m,v,vi);
                         }
                     }
                 }
             }
-        Field[] fields=getClass().getDeclaredFields();
 
+        //绑定视图到属性
+        Field[] fields=getClass().getDeclaredFields();
         if(fields!=null&&fields.length>0)
             for(Field field:fields){
                 Bind vi=field.getAnnotation(Bind.class);

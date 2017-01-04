@@ -67,8 +67,6 @@ public class NetQueue{
             request.setUrl(mRootAddress + request.getUrl());
             request.setHadRootAddress(true);
         }
-        if(request.getType()== Request.RequestType.MUSTSEND)
-            FastDatabase.getDefaultInstance().saveOrUpdate(request);
         enqueue(request,pool);
     }
 
@@ -76,9 +74,6 @@ public class NetQueue{
         NetProcessor processor=new NetProcessor(request,new NetProcessor.OnCompleteListener() {
             @Override
             public void onComplete(NetProcessor processor1){
-                Request request1=processor1.getRequest();
-                if(request1.getType()== Request.RequestType.MUSTSEND)
-                    FastDatabase.getDefaultInstance().delete(request1);
                 mRequestCount++;
                 Tx+=processor1.getTx();
                 Rx+=processor1.getRx();

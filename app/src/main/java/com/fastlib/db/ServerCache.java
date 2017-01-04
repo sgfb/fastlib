@@ -1,5 +1,6 @@
 package com.fastlib.db;
 
+import android.content.Context;
 import android.support.annotation.Nullable;
 
 import com.fastlib.bean.RemoteCache;
@@ -17,6 +18,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class ServerCache{
     private long mCacheTimeLife =0; //缓存生存长度.默认没有生存时间
+    private Context mContext;
     private RemoteCache mCache;
     private ThreadPoolExecutor mThreadPool;
     private Request mRequest;
@@ -91,7 +93,7 @@ public class ServerCache{
     }
 
     private FastDatabase getFastDatabase(){
-        return mToDatabase==null? FastDatabase.getInstance():FastDatabase.getInstance().toWhichDatabase(mToDatabase);
+        return mToDatabase==null?new FastDatabase(mContext):new FastDatabase(mContext).toWhichDatabase(mToDatabase);
     }
 
     /**
