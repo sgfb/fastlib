@@ -1,26 +1,35 @@
 package com.fastlib.app;
 
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 
 import com.fastlib.annotation.Bind;
+import com.fastlib.bean.PermissionRequest;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Created by sgfb on 16/9/5.
+ * Activity基本封装
  */
 public class FastActivity extends AppCompatActivity{
     private Thread mMainThread;
+    private Map<String,PermissionRequest> mPermissionMap=new HashMap<>();
     protected ThreadPoolExecutor mThreadPool= (ThreadPoolExecutor) Executors.newFixedThreadPool(4);
 
     @Override
@@ -35,12 +44,53 @@ public class FastActivity extends AppCompatActivity{
         });
     }
 
+    /**
+     * 启动网络请求
+     * @param request
+     */
     protected void net(Request request){
         NetQueue.getInstance().netRequest(mThreadPool,request.setHost(this));
     }
 
+    /**
+     * 启动一个任务链
+     * @param tc
+     */
     protected void startTasks(TaskChain tc){
         TaskChain.processTaskChain(this,mThreadPool, mMainThread,tc);
+    }
+
+    /**
+     * 6.0后请求权限
+     * @param permission
+     * @param grantedAfterProcess
+     * @param deniedAfterProcess
+     */
+    protected void requestPermission(String permission,Runnable grantedAfterProcess,Runnable deniedAfterProcess){
+        if(ContextCompat.checkSelfPermission(this,permission)== PackageManager.PERMISSION_GRANTED)
+            grantedAfterProcess.run();
+        else{
+            if(!mPermissionMap.containsKey(permission)){
+                int requestCode= mPermissionMap.size()+1;
+                mPermissionMap.put(permission,new PermissionRequest(requestCode,grantedAfterProcess,deniedAfterProcess));
+                ActivityCompat.requestPermissions(this, new String[]{permission},requestCode);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults){
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        for(int i=0;i<permissions.length;i++){
+            PermissionRequest pr= mPermissionMap.remove(permissions[i]);
+            if(pr!=null){
+                if(grantResults[i]==PackageManager.PERMISSION_GRANTED)
+                    pr.hadPermissionProcess.run();
+                else
+                    pr.deniedPermissionProcess.run();
+                break;
+            }
+        }
     }
 
     @Override
