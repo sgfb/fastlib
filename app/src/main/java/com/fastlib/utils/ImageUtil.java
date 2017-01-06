@@ -2,6 +2,7 @@ package com.fastlib.utils;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -37,6 +38,7 @@ public class ImageUtil{
     public static final int REQUEST_FROM_CAMERA=10001;
     public static final int REQUEST_FROM_CROP=10002;
     public static final String KEY_LAST_IMAGE="lastImage";
+    public static Uri mLastUri;
 
     private ImageUtil(){
         //不实例化
@@ -44,6 +46,7 @@ public class ImageUtil{
 
     private static void saveLastImage(Context context,Uri uri){
         SharedPreferences.Editor edit=context.getSharedPreferences(TAG,Context.MODE_PRIVATE).edit();
+        mLastUri=uri;
         edit.putString(KEY_LAST_IMAGE, uri.toString());
         edit.apply();
     }
@@ -201,31 +204,53 @@ public class ImageUtil{
             fragment.startActivityForResult(intent,REQUEST_FROM_ALBUM);
     }
 
+    /**
+     * 开启相机，不指定生成照片位置，默认为存储卡根部
+     * @param fragment
+     */
     public static void openCamera(Fragment fragment){
         openCamera(fragment, Uri.fromFile(getTempFile(null)));
     }
 
+    /**
+     * 开启相机，不指定生成照片位置，默认为存储卡根部
+     * @param activity
+     */
     public static void openCamera(Activity activity){
         openCamera(activity, Uri.fromFile(getTempFile(null))); //默认写在存储卡内
     }
 
-/**
+    public static void openCamera(Activity activity,Uri outPut){
+        openCamera(activity,null,outPut);
+    }
+
+    public static void openCamera(Fragment fragment,Uri outPut){
+        openCamera(null,fragment,outPut);
+    }
+
+    /**
      * 指定照片存储位置启动相机
      * @param activity
      * @param outPut
      */
-    public static void openCamera(Activity activity,Uri outPut){
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+    private static void openCamera(Activity activity,Fragment fragment,Uri outPut){
+        Intent intent=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        //如果version大于22,包装uri
+        if(Build.VERSION.SDK_INT>Build.VERSION_CODES.LOLLIPOP_MR1){
+            ContentValues cv=new ContentValues(1);
+            Context context=activity==null?fragment.getContext():activity;
+            cv.put(MediaStore.Images.Media.DATA,outPut.getPath());
+            outPut=context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,cv);
+        }
         intent.putExtra(MediaStore.EXTRA_OUTPUT,outPut);
-        saveLastImage(activity,outPut);
-        activity.startActivityForResult(intent, REQUEST_FROM_CAMERA);
-    }
-
-    private static void openCamera(Fragment fragment,Uri outPut){
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        intent.putExtra(MediaStore.EXTRA_OUTPUT,outPut);
-        saveLastImage(fragment.getContext(),outPut);
-        fragment.startActivityForResult(intent,REQUEST_FROM_CAMERA);
+        if(activity==null){
+            saveLastImage(fragment.getContext(),outPut);
+            fragment.startActivityForResult(intent,REQUEST_FROM_CAMERA);
+        }
+        else{
+            saveLastImage(activity,outPut);
+            activity.startActivityForResult(intent,REQUEST_FROM_CAMERA);
+        }
     }
 
     /**
@@ -296,7 +321,7 @@ public class ImageUtil{
             case REQUEST_FROM_CROP:
             case REQUEST_FROM_CAMERA:
                 SharedPreferences sp=context.getSharedPreferences(TAG,Context.MODE_PRIVATE);
-                return Uri.parse(sp.getString(KEY_LAST_IMAGE,""));
+                return mLastUri==null?Uri.parse(sp.getString(KEY_LAST_IMAGE,"")):mLastUri;
             case REQUEST_FROM_ALBUM:
                 return data.getData();
             default:
@@ -373,6 +398,13 @@ public class ImageUtil{
                     cursor.close();
             }
             return null;
+        }else if(uri.toString().startsWith("content://")){
+            Cursor cursor=context.getContentResolver().query(uri,new String[]{MediaStore.Images.Media.DATA},null,null,null);
+            int indexColumn=cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+            String path=cursor.getString(indexColumn);
+            cursor.close();
+            return path;
         }
         else{
             String scheme=uri.getScheme();

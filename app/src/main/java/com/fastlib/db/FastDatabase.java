@@ -10,6 +10,7 @@ import java.util.Map;
 
 import com.fastlib.annotation.Database;
 import com.fastlib.bean.DatabaseTable;
+import com.fastlib.net.NetQueue;
 import com.fastlib.utils.Reflect;
 import com.google.gson.Gson;
 
@@ -61,54 +62,22 @@ public class FastDatabase{
 	}
 
 	/**
-	 * 注解主键并且设置了主键值(不为null或0)，数据库中如果有这条数据则会返回对应的对象，否则返回null
-	 * 使用getFirst替代
-	 * @param obj
-	 * @return
-	 */
-	@Deprecated
-	public boolean get(Object obj){
-		Field[] fields;
-		Field fieldKey=null;
-
-		try {
-			fields=obj.getClass().getDeclaredFields();
-			for(int i=0;i<fields.length;i++){
-				Database inject=fields[i].getAnnotation(Database.class);
-				if(inject!=null&&inject.keyPrimary()){
-					fieldKey=fields[i];
-					break;
-				}
+	 * 异步获取数据库请求第一条纪录
+	 * @param cla
+	 * @param listener
+	 * @param <T>
+     */
+	public <T> void getFirstAsync(final Class<T> cla, final DatabaseListener<T> listener){
+		NetQueue.sRequestPool.execute(new Runnable(){
+			@Override
+			public void run(){
+				listener.onResult(getFirst(cla));
 			}
-			if(fieldKey==null) {
-				if(sConfig.isOutInformation)
-					Log.w(TAG,"没有注解主键的对象无法使用get(Object obj)");
-				return false;
-			}
-			fieldKey.setAccessible(true);
-			Object key=fieldKey.get(obj);
-			String value=Reflect.objToStr(key);
-			FilterCommand valueCommand=TextUtils.isEmpty(value)?FilterCommand.emptyVaue():FilterCommand.equal(value);
-			if(!TextUtils.isEmpty(mAttribute.getOrderBy()))
-				mAttribute.orderBy(fieldKey.getName());
-			List<Object> list= (List<Object>) get(obj.getClass(),fieldKey.getName(),valueCommand);
-			if(list==null||list.size()==0){
-				if(sConfig.isOutInformation) {
-					Log.w(TAG, "向数据库中请求了一个不存在的数据");
-					return false;
-				}
-			}
-			else
-				Reflect.objToObj(list.get(0),obj);
-		} catch (IllegalAccessException e){
-			Log.w(TAG,e.getMessage());
-			return false;
-		}
-		return true;
+		});
 	}
 
 	/**
-	 * 获取第一条记录
+	 * 获取数据库请求第一条记录
 	 * @param cla
 	 * @param <T>
      * @return
@@ -121,13 +90,13 @@ public class FastDatabase{
 	}
 
 	/**
-	 * 获取第一条记录.指定主键值(使用这个方法的实体类必须有主键)
+	 * 获取第一条记录.有过滤命令
 	 * @param cla
 	 * @param keyValue
 	 * @param <T>
      * @return
      */
-	public <T> T getFirst(Class<T> cla,FilterCommand keyValue){
+	public <T> T getFirst(Class<T> cla,FilterCondition keyValue){
 		List<T> list=limit(0,1).get(cla,keyValue);
 		if(list!=null&&!list.isEmpty())
 			return list.get(0);
@@ -142,7 +111,7 @@ public class FastDatabase{
 	 * @param <T>
      * @return
      */
-	public <T> T getFirst(Class<T> cla,String where,FilterCommand keyValue){
+	public <T> T getFirst(Class<T> cla,String where,FilterCondition keyValue){
 		List<T> list=limit(0,1).get(cla,where,keyValue);
 		if(list!=null&&!list.isEmpty())
 			return list.get(0);
@@ -155,7 +124,7 @@ public class FastDatabase{
 	 * @param keyValue 主键值
 	 * @return
 	 */
-	public <T> List<T> get(Class<T> cla,FilterCommand keyValue){
+	public <T> List<T> get(Class<T> cla,FilterCondition keyValue){
 		Field[] fields=cla.getDeclaredFields();
 		String key=null;
 		for(Field f:fields){
@@ -181,7 +150,7 @@ public class FastDatabase{
 	 * @param whereValueCommand
 	 * @return
 	 */
-	public <T> List<T> get(Class<T> cla,String where,FilterCommand whereValueCommand){
+	public <T> List<T> get(Class<T> cla,String where,FilterCondition whereValueCommand){
 		String tableName;
 		SQLiteDatabase database;
 		Cursor cursor;
@@ -199,12 +168,12 @@ public class FastDatabase{
 		}
 		//如果第一个过滤条件不存在,尝试将后面的条件往前提
 		if(TextUtils.isEmpty(where)&&!mAttribute.getFilterList().isEmpty()){
-			Pair<String,FilterCommand> pair=mAttribute.getFilterList().remove(0);
+			Pair<String,FilterCondition> pair=mAttribute.getFilterList().remove(0);
 			where=pair.first;
 			whereValueCommand=pair.second;
 		}
 		if(!TextUtils.isEmpty(where)) {
-			condition = "where " + where + whereValueCommand.getExpression();
+			condition = "where " + where + whereValueCommand.getExpression(where);
 			if(!TextUtils.isEmpty(whereValueCommand.getValue()))
 				selectionArgs.add(whereValueCommand.getValue());
 		}
@@ -375,7 +344,7 @@ public class FastDatabase{
 			Log.w(TAG, "错误的使用了delete(Object obj),obj没有注解主键");
 			return false;
 		}
-		FilterCommand fc=TextUtils.isEmpty(columnValue)?FilterCommand.emptyVaue():FilterCommand.equal(columnValue);
+		FilterCondition fc=TextUtils.isEmpty(columnValue)? FilterCondition.emptyVaue(): FilterCondition.equal(columnValue);
 		return delete(obj.getClass(), columnName,fc);
 	}
 
@@ -385,7 +354,7 @@ public class FastDatabase{
 	 * @param keyValue
 	 * @return
 	 */
-	public boolean delete(Class<?> cla,FilterCommand keyValue){
+	public boolean delete(Class<?> cla,FilterCondition keyValue){
 		Field keyField=null;
 		Field[] fileds=cla.getDeclaredFields();
 		for(Field f:fileds){
@@ -411,7 +380,7 @@ public class FastDatabase{
 	 * @param whereValue
 	 * @return
 	 */
-	public boolean delete(Class<?> cla,String where,FilterCommand whereValue){
+	public boolean delete(Class<?> cla,String where,FilterCondition whereValue){
 		String tableName;
 		Cursor cursor;
 		SQLiteDatabase database;
@@ -426,12 +395,12 @@ public class FastDatabase{
 			return false;
 		}
 		if(TextUtils.isEmpty(where)&&!mAttribute.getFilterList().isEmpty()){
-			Pair<String,FilterCommand> pair=mAttribute.getFilterList().remove(0);
+			Pair<String,FilterCondition> pair=mAttribute.getFilterList().remove(0);
 			where=pair.first;
 			whereValue=pair.second;
 		}
 		if(!TextUtils.isEmpty(where)){
-			condition="where "+where+" "+whereValue.getExpression()+" ";
+			condition="where "+where+" "+whereValue.getExpression(where)+" ";
 			if(whereValue.getValue()!=null)
 				selectionArgs.add(whereValue.getValue());
 		}
@@ -747,7 +716,7 @@ public class FastDatabase{
 					Object keyValue=field.get(obj);
 					if(Reflect.isInteger(field.getType().getSimpleName())){
 						if(((int)keyValue)>0){
-							List<?> data=get(obj.getClass(),FilterCommand.equal(keyValue.toString()));
+							List<?> data=get(obj.getClass(), FilterCondition.equal(keyValue.toString()));
 							if(data!=null&&data.size()>0){
 								isUpdate = true;
 								success=update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
@@ -755,7 +724,7 @@ public class FastDatabase{
 						}
 					}
 					else{
-						List<?> data=get(obj.getClass(),FilterCommand.equal(keyValue.toString()));
+						List<?> data=get(obj.getClass(), FilterCondition.equal(keyValue.toString()));
 						if(data!=null&&data.size()>0){
 							isUpdate = true;
 							success=update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
@@ -918,7 +887,7 @@ public class FastDatabase{
 	 * @param command
 	 * @return
      */
-	public FastDatabase addFilter(String fieldName,FilterCommand command){
+	public FastDatabase addFilter(String fieldName,FilterCondition command){
 		mAttribute.addFilter(fieldName,command);
 		return this;
 	}
@@ -1268,12 +1237,12 @@ public class FastDatabase{
      */
 	private String getFilters(List<String> args){
 		StringBuilder filtersStr=new StringBuilder("");
-		List<Pair<String,FilterCommand>> filterList=mAttribute.getFilterList();
+		List<Pair<String,FilterCondition>> filterList=mAttribute.getFilterList();
 		if(filterList==null||filterList.isEmpty())
 			return filtersStr.toString();
-		for(Pair<String,FilterCommand> filter:filterList) {
-			filtersStr.append(" and "+filter.first+filter.second.getExpression());
-			if(filter.second.getType()!=FilterCommand.TYPE_NULL)
+		for(Pair<String,FilterCondition> filter:filterList) {
+			filtersStr.append(" and "+filter.first+filter.second.getExpression(""));
+			if(filter.second.getType()!= FilterCondition.TYPE_NULL)
 				args.add(filter.second.getValue());
 		}
 		return filtersStr.toString();

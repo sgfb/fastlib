@@ -7,17 +7,12 @@ import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
-import com.fastlib.db.FastDatabase;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by sgfb on 16/9/1.
@@ -28,13 +23,12 @@ public class NetQueue{
     private static NetQueue mOwer;
     public int mRequestCount=0;
     public long Tx,Rx;
-    private ThreadPoolExecutor mRequestPool; //公共网络请求池
+    public static ThreadPoolExecutor sRequestPool =(ThreadPoolExecutor) Executors.newFixedThreadPool(10); //公共网络请求池
     private DataFactory mFactory;
     private Config mConfig;
     private String mRootAddress;
 
     private NetQueue(){
-        mRequestPool= (ThreadPoolExecutor) Executors.newFixedThreadPool(8);
         mConfig=new Config();
     }
 
@@ -85,11 +79,11 @@ public class NetQueue{
         if(pool!=null)
             pool.execute(ft);
         else
-            mRequestPool.execute(ft);
+            sRequestPool.execute(ft);
     }
 
     public void close(){
-        mRequestPool.shutdownNow();
+        sRequestPool.shutdownNow();
         mOwer=null;
     }
 

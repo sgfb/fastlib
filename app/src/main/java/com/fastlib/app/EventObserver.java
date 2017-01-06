@@ -10,6 +10,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.fastlib.annotation.Event;
+import com.fastlib.net.NetQueue;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -33,7 +34,6 @@ public class EventObserver {
     public static boolean DEBUG=true;
 
     private static EventObserver mOwer;
-    private ThreadPoolExecutor mThreadPool;
     private Map<String,LocalReceiver> mLocalObserver;   //订阅事件名->订阅广播
     private Map<String,List<String>> mLocalObserverMap; //订阅者->订阅事件名
     private Context mContext;
@@ -42,7 +42,6 @@ public class EventObserver {
         mContext=context;
         mLocalObserver=new HashMap<>();
         mLocalObserverMap=new HashMap<>();
-        mThreadPool= (ThreadPoolExecutor) Executors.newFixedThreadPool(8);
     }
 
     public static synchronized EventObserver getInstance(){
@@ -223,7 +222,7 @@ public class EventObserver {
                     if(anno.value()) //是否在主线程调用,如果不是进入线程池
                         m.invoke(subscribe,wrapper.obj);
                     else
-                        mThreadPool.execute(new Runnable() {
+                        NetQueue.sRequestPool.execute(new Runnable() {
                             @Override
                             public void run() {
                                 try {

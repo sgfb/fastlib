@@ -1,11 +1,16 @@
 package com.fastlib.app;
 
+import android.Manifest;
+import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -14,7 +19,10 @@ import com.fastlib.annotation.Bind;
 import com.fastlib.bean.PermissionRequest;
 import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
+import com.fastlib.utils.ImageUtil;
+import com.fastlib.utils.N;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -30,6 +38,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class FastActivity extends AppCompatActivity{
     private Thread mMainThread;
     private Map<String,PermissionRequest> mPermissionMap=new HashMap<>();
+    private PhotoResultListener mPhotoResultListener;
     protected ThreadPoolExecutor mThreadPool= (ThreadPoolExecutor) Executors.newFixedThreadPool(4);
 
     @Override
@@ -61,6 +70,66 @@ public class FastActivity extends AppCompatActivity{
     }
 
     /**
+     * 开启获取相册照片
+     * @param photoResultListener
+     */
+    protected void openAlbum(final PhotoResultListener photoResultListener){
+        requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE, new Runnable() {
+            @Override
+            public void run() {
+                mPhotoResultListener=photoResultListener;
+                ImageUtil.openAlbum(FastActivity.this);
+            }
+        }, new Runnable() {
+            @Override
+            public void run() {
+                N.showShort(FastActivity.this,"请开启读存储卡权限");
+            }
+        });
+    }
+
+    /**
+     * 开启相机获取照片并且指定存储位置
+     * @param photoResultListener
+     * @param path
+     */
+    protected void openCamera(final PhotoResultListener photoResultListener, final String path){
+        requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, new Runnable() {
+            @Override
+            public void run(){
+                requestPermission(Manifest.permission.CAMERA, new Runnable() {
+                    @Override
+                    public void run(){
+                        mPhotoResultListener=photoResultListener;
+                        if(TextUtils.isEmpty(path))
+                            ImageUtil.openCamera(FastActivity.this);
+                        else
+                            ImageUtil.openCamera(FastActivity.this,Uri.fromFile(new File(path)));
+                    }
+                }, new Runnable() {
+                    @Override
+                    public void run() {
+                        N.showShort(FastActivity.this,"请开启使用照相机权限");
+                    }
+                });
+            }
+        }, new Runnable() {
+            @Override
+            public void run(){
+                N.showShort(FastActivity.this,"请开启写存储卡权限");
+            }
+        });
+    }
+
+    /**
+     * 开启相机获取照片
+     * @param photoResultListener
+     */
+    protected void openCamera(PhotoResultListener photoResultListener){
+        openCamera(photoResultListener,null);
+    }
+
+    /**
      * 6.0后请求权限
      * @param permission
      * @param grantedAfterProcess
@@ -75,6 +144,19 @@ public class FastActivity extends AppCompatActivity{
                 mPermissionMap.put(permission,new PermissionRequest(requestCode,grantedAfterProcess,deniedAfterProcess));
                 ActivityCompat.requestPermissions(this, new String[]{permission},requestCode);
             }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(resultCode!=Activity.RESULT_OK)
+            return;
+        Uri photoUri=ImageUtil.getImageFromActive(this,requestCode,resultCode,data);
+        if(photoUri!=null){
+            String photoPath=ImageUtil.getImagePath(this,photoUri);
+            if(mPhotoResultListener!=null)
+                mPhotoResultListener.onPhotoResult(photoPath);
         }
     }
 
@@ -234,5 +316,12 @@ public class FastActivity extends AppCompatActivity{
                     }
                 }
             }
+    }
+
+    /**
+     * 请求相机或相册时图像回调接口
+     */
+    public interface PhotoResultListener{
+        void onPhotoResult(String path);
     }
 }
