@@ -17,7 +17,7 @@ public final class RuntimeAttribute{
     private String mWhichDatabase; //仅本次操作,保存数据到指定数据库.如果这个数据库不存在,这条语句将被丢弃不会抛出异常
     private String[] mSelectColumn;
     private String[] mUnselectColumn;//如果这个字段为空取再判断selectColumn，如果selectColumn也是空，取所有列。如果这个字段不为空将不使用selectColumn字段
-    private List<Pair<String,FilterCondition>> mFilterList=new ArrayList<>();
+    private FilterCommand mFilterCommand;
 
     public RuntimeAttribute(){
         defaultAttribute();
@@ -116,7 +116,7 @@ public final class RuntimeAttribute{
         return mStart;
     }
 
-    public int getSize() {
+    public int getEnd() {
         return mSize;
     }
 
@@ -136,15 +136,11 @@ public final class RuntimeAttribute{
         return mUnselectColumn;
     }
 
-    public void addFilter(String fieldName,FilterCondition filter){
-        mFilterList.add(new Pair<>(fieldName,filter));
+    public FilterCommand getFilterCommand() {
+        return mFilterCommand;
     }
 
-    public Pair<String, FilterCondition> removeFilter(int index){
-        return mFilterList.remove(index);
-    }
-
-    public List<Pair<String,FilterCondition>> getFilterList(){
-        return mFilterList;
+    public void setFilterCommand(FilterCommand filterCommand) {
+        mFilterCommand = filterCommand;
     }
 }

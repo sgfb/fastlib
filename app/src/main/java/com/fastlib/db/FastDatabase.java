@@ -83,120 +83,41 @@ public class FastDatabase{
      * @return
      */
 	public <T> T getFirst(Class<T> cla){
-		List<T> all=limit(0,1).getAll(cla);
+		List<T> all=limit(0,1).get(cla);
 		if(all!=null&&!all.isEmpty())
 			return all.get(0);
 		return null;
 	}
 
 	/**
-	 * 获取第一条记录.有过滤命令
+	 * 获取表中数据
 	 * @param cla
-	 * @param keyValue
-	 * @param <T>
-     * @return
-     */
-	public <T> T getFirst(Class<T> cla,FilterCondition keyValue){
-		List<T> list=limit(0,1).get(cla,keyValue);
-		if(list!=null&&!list.isEmpty())
-			return list.get(0);
-		return null;
-	}
-
-	/**
-	 * 获取第一条记录.指定列名值过滤
-	 * @param cla
-	 * @param where
-	 * @param keyValue
-	 * @param <T>
-     * @return
-     */
-	public <T> T getFirst(Class<T> cla,String where,FilterCondition keyValue){
-		List<T> list=limit(0,1).get(cla,where,keyValue);
-		if(list!=null&&!list.isEmpty())
-			return list.get(0);
-		return null;
-	}
-
-	/**
-	 * 返回某主键值为keyValue对象。使用这个方法对象类中必须有主键
-	 * @param cla
-	 * @param keyValue 主键值
 	 * @return
 	 */
-	public <T> List<T> get(Class<T> cla,FilterCondition keyValue){
-		Field[] fields=cla.getDeclaredFields();
-		String key=null;
-		for(Field f:fields){
-			Database columnInject=f.getAnnotation(Database.class);
-			if(columnInject!=null&&columnInject.keyPrimary()){
-				key=f.getName();
-				break;
-			}
-		}
-		if(TextUtils.isEmpty(key))
-			return null;
-
-		if(!TextUtils.isEmpty(mAttribute.getOrderBy()))
-			mAttribute.orderBy(key);
-		return get(cla, key, keyValue);
-	}
-
-	/**
-	 * 获取对象集合.用where来指定过滤
-	 *
-	 * @param cla
-	 * @param where
-	 * @param whereValueCommand
-	 * @return
-	 */
-	public <T> List<T> get(Class<T> cla,String where,FilterCondition whereValueCommand){
-		String tableName;
-		SQLiteDatabase database;
-		Cursor cursor;
-		List<T> list=new ArrayList<>();
-		String order="";
-		String selectColumn=getSelectColumn(cla);
-		String filters; //额外过滤条件
-		String condition=""; //基础过滤条件
-		List<String> selectionArgs=new ArrayList<>();
-
-		tableName=cla.getCanonicalName();
+	public <T> List<T> get(Class<T> cla){
+		String tableName=cla.getCanonicalName();
 		if(!tableExists(tableName)){
 			Log.w(TAG, sConfig.getDatabaseName()+" 不存在表 "+tableName);
 			return null;
 		}
-		//如果第一个过滤条件不存在,尝试将后面的条件往前提
-		if(TextUtils.isEmpty(where)&&!mAttribute.getFilterList().isEmpty()){
-			Pair<String,FilterCondition> pair=mAttribute.getFilterList().remove(0);
-			where=pair.first;
-			whereValueCommand=pair.second;
-		}
-		if(!TextUtils.isEmpty(where)) {
-			condition = "where " + where + whereValueCommand.getExpression(where);
-			if(!TextUtils.isEmpty(whereValueCommand.getValue()))
-				selectionArgs.add(whereValueCommand.getValue());
-		}
-		filters=getFilters(selectionArgs);
-		if(mAttribute.getOrderBy()!=null){
-			if("".equals(mAttribute.getOrderBy())){
-				Field[] fields=cla.getDeclaredFields();
-				String key=null;
-				for(Field f:fields){
-					Database columnInject=f.getAnnotation(Database.class);
-					if(columnInject!=null&&columnInject.keyPrimary()){
-						key=f.getName();
-						break;
-					}
-				}
-				if(!TextUtils.isEmpty(key))
-					mAttribute.orderBy(key);
-			}
-			if(!TextUtils.isEmpty(mAttribute.getOrderBy()))
-				order="order by "+mAttribute.getOrderBy()+" "+(mAttribute.isAsc()?"asc":"desc");
-		}
+		SQLiteDatabase database;
+		Cursor cursor;
+		String order="";
+		String selectColumn=getSelectColumn(cla);
+		String filters; //额外过滤条件
+		String condition=""; //基础过滤条件
+		String key= getKeyName(cla);
+		List<String> selectionArgs=new ArrayList<>();
+		List<T> list=new ArrayList<>();
+
+		//调整表名,特殊内部嵌套类
+		tableName=tableName.replace("$",".");
+		filters=getFilters(key,mAttribute.getFilterCommand(),selectionArgs);
+		//排序条件
+		if(!TextUtils.isEmpty(mAttribute.getOrderBy()))
+			order="order by "+mAttribute.getOrderBy()+" "+(mAttribute.isAsc()?"asc":"desc");
 		database=prepare(null);
-		String complete="select "+selectColumn+" from '"+tableName+"' "+condition+filters+" "+order+" limit "+mAttribute.getStart()+","+mAttribute.getSize()+" ";
+		String complete="select "+selectColumn+" from '"+tableName+"' "+condition+filters+" "+order+" limit "+mAttribute.getStart()+","+mAttribute.getEnd()+" ";
 		String[] args=selectionArgs.isEmpty()?null:selectionArgs.toArray(new String[]{});
 		cursor=database.rawQuery(complete,args);
 		if(cursor==null){
@@ -279,19 +200,14 @@ public class FastDatabase{
 		return list;
 	}
 
-	public <T> List<T> getAll(Class<T> cla){
-		return get(cla, null, null);
-	}
-
 	/**
-	 * 如果obj中没有注解主键，请使用delete(Object obj,String where,String whereValue)
+	 * 删除对象(obj对象必需有主键)
 	 * @param obj
 	 * @return
 	 */
 	public boolean delete(Object obj){
 		Field[] fields=obj.getClass().getDeclaredFields();
 		Field primaryField=null;
-		String columnName;
 		String columnValue;
 
 		//是否有主键
@@ -305,12 +221,6 @@ public class FastDatabase{
 		}
 
 		if(primaryField!=null){
-			Database columnInject=primaryField.getAnnotation(Database.class);
-
-			if(columnInject!=null&&!TextUtils.isEmpty(columnInject.columnName()))
-				columnName=columnInject.columnName();
-			else
-				columnName=primaryField.getName();
 			try{
 				switch(primaryField.getType().getSimpleName()){
 					case "short":
@@ -344,74 +254,37 @@ public class FastDatabase{
 			Log.w(TAG, "错误的使用了delete(Object obj),obj没有注解主键");
 			return false;
 		}
-		FilterCondition fc=TextUtils.isEmpty(columnValue)? FilterCondition.emptyVaue(): FilterCondition.equal(columnValue);
-		return delete(obj.getClass(), columnName,fc);
+		mAttribute.setFilterCommand(new And(FilterCondition.equal(columnValue)));
+		return delete(obj.getClass());
 	}
 
 	/**
-	 * 删除主键值为keyValue的数据，需要注解主键
+	 * 删除数据
 	 * @param cla
-	 * @param keyValue
 	 * @return
 	 */
-	public boolean delete(Class<?> cla,FilterCondition keyValue){
-		Field keyField=null;
-		Field[] fileds=cla.getDeclaredFields();
-		for(Field f:fileds){
-			Database inject=f.getAnnotation(Database.class);
-			if(inject!=null&&inject.keyPrimary()){
-				keyField=f;
-				break;
-			}
-		}
-		if(keyField==null){
-			if(sConfig.isOutInformation)
-				Log.w(TAG,"没有主键的对象无法使用delete(Class<?>,String)方法删除对象");
-			return false;
-		}
-
-		return delete(cla,keyField.getName(),keyValue);
-	}
-
-	/**
-	 * 输出某条数据，以where为过滤条件
-	 * @param cla
-	 * @param where
-	 * @param whereValue
-	 * @return
-	 */
-	public boolean delete(Class<?> cla,String where,FilterCondition whereValue){
-		String tableName;
-		Cursor cursor;
-		SQLiteDatabase database;
-		String condition="";
-		String filters;
-		List<String> selectionArgs=new ArrayList<>();
-		int count; //查到对应行的总数
-
-		tableName=cla.getName();
+	public boolean delete(Class<?> cla){
+		String tableName=cla.getName();
 		if(!tableExists(tableName)){
 			Log.w(TAG, "数据库 " + sConfig.getDatabaseName() + "中不存在表 " + tableName);
 			return false;
 		}
-		if(TextUtils.isEmpty(where)&&!mAttribute.getFilterList().isEmpty()){
-			Pair<String,FilterCondition> pair=mAttribute.getFilterList().remove(0);
-			where=pair.first;
-			whereValue=pair.second;
-		}
-		if(!TextUtils.isEmpty(where)){
-			condition="where "+where+" "+whereValue.getExpression(where)+" ";
-			if(whereValue.getValue()!=null)
-				selectionArgs.add(whereValue.getValue());
-		}
-		filters=getFilters(selectionArgs);
+		Cursor cursor;
+		SQLiteDatabase database;
+		String filters;
+		String key= getKeyName(cla);
+		List<String> selectionArgs=new ArrayList<>();
+		int count; //查到对应行的总数
+
+		tableName=tableName.replace("$",".");
+		filters=getFilters(key,mAttribute.getFilterCommand(),selectionArgs);
 		database=prepare(null);
-		String complete="select "+" *from '"+tableName+"' "+condition+filters+" limit "+mAttribute.getStart()+","+mAttribute.getSize()+" ";
+		String complete="select *from '"+tableName+"' "+filters+" limit "+mAttribute.getStart()+","+mAttribute.getEnd()+" ";
 		String[] args=selectionArgs.isEmpty()?null:selectionArgs.toArray(new String[]{});
 		cursor=database.rawQuery(complete,args);
 		cursor.moveToFirst();
 		if(cursor.isAfterLast()){
-			Log.w(TAG,"表中不存在 "+where+"值为"+whereValue.getValue()+ "的数据");
+			Log.w(TAG,"表中不存在要删除的数据");
 			cursor.close();
 			database.close();
 			return false;
@@ -421,7 +294,7 @@ public class FastDatabase{
 			cursor.close();
 			try{
 				database.beginTransaction();
-				String deleteCommand="delete from '"+tableName+"' "+condition+filters;
+				String deleteCommand="delete from '"+tableName+"' "+filters;
 				if(args!=null)
 					for(String replaceStr:args)
 						deleteCommand=deleteCommand.replaceFirst("[?]","'"+replaceStr+"'");
@@ -439,19 +312,21 @@ public class FastDatabase{
 	}
 
 	/**
-	 * 可以对无主键或者非主键查询的对象保存
+	 * 更新数据
 	 * @param obj
-	 * @param where
-	 * @param whereValue
-	 * @return
+	 * @return 是否成功更新
 	 */
-	public boolean update(@NonNull Object obj,String where,String whereValue){
+	public boolean update(@NonNull Object obj){
 		SQLiteDatabase database;
 		String tableName;
+		String filter;
 		ContentValues cv=new ContentValues();
 		Field[] fields;
+		List<String> args=new ArrayList<>();
+		String[] ss;
+		int count; //总更新了多少数据
 
-		tableName=obj.getClass().getName();
+		tableName=obj.getClass().getCanonicalName();
 		//如果表不存在或者表中没有这条数据，则返回false
 		if(!tableExists(tableName)) {
 			if(sConfig.isOutInformation)
@@ -464,24 +339,21 @@ public class FastDatabase{
 			return false;
 		}
 		database=prepare(null);
-		if(!TextUtils.isEmpty(where)){
-			Cursor cursor;
-			if(whereValue==null)
-				cursor=database.rawQuery("select *from '"+tableName+"' where "+where+" is null",null);
-			else
-				cursor=database.rawQuery("select *from '"+tableName+"' where "+where+"=?",new String[]{whereValue});
-			if(cursor==null||cursor.isAfterLast()) {
-				if(sConfig.isOutInformation)
-					Log.d(TAG,"更新数据失败，没有找到要更新的数据");
-				if(cursor!=null)
-					cursor.close();
-				database.close();
-				return false;
-			}
+		//先检测数据是否存在
+		filter=getFilters(getKeyName(obj.getClass()),mAttribute.getFilterCommand(),args);
+		Cursor cursor=database.rawQuery("select *from '"+tableName+"'"+filter,ss=args.toArray(new String[]{}));
+		cursor.moveToFirst();
+		if(cursor.isAfterLast()){
+			if(sConfig.isOutInformation)
+				Log.d(TAG,"更新数据失败,没有找到要更新的数据");
 			cursor.close();
+			database.close();
+			return false;
 		}
+		count=cursor.getCount();
+		cursor.close();
+		//开始遍历所有字段来更新数据
 		fields=obj.getClass().getDeclaredFields();
-
 		for(Field field:fields){
 			field.setAccessible(true);
 			String type=field.getType().getSimpleName();
@@ -551,14 +423,13 @@ public class FastDatabase{
 		}
 
 		try{
+			//削掉前面的where
+			filter=filter.substring(6,filter.length());
 			database.beginTransaction();
-			if(whereValue==null)
-				database.update("'"+tableName+"'",cv,null,null);
-			else
-				database.update("'" + tableName + "'",cv,where+"=?",new String[]{whereValue});
+			database.update("'"+tableName+"'",cv,filter,ss);
 			database.setTransactionSuccessful();
 			if(sConfig.isOutInformation)
-				Log.d(TAG,(TextUtils.isEmpty(mAttribute.getWhichDatabase())?sConfig.getDatabaseName():mAttribute.getWhichDatabase())+"<--u-- "+tableName);
+				Log.d(TAG,(TextUtils.isEmpty(mAttribute.getWhichDatabase())?sConfig.getDatabaseName():mAttribute.getWhichDatabase())+"<--u-"+count+"- "+tableName);
 		}catch(SQLiteException e){
 			if(sConfig.isOutInformation)
 				Log.d(TAG,"更新数据失败，异常："+e.toString());
@@ -716,18 +587,24 @@ public class FastDatabase{
 					Object keyValue=field.get(obj);
 					if(Reflect.isInteger(field.getType().getSimpleName())){
 						if(((int)keyValue)>0){
-							List<?> data=get(obj.getClass(), FilterCondition.equal(keyValue.toString()));
+							mAttribute.setFilterCommand(new And(FilterCondition.equal(keyValue.toString())));
+							List<?> data=get(obj.getClass());
+							mAttribute.setFilterCommand(null);
 							if(data!=null&&data.size()>0){
 								isUpdate = true;
-								success=update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
+								success=addFilter(new And(FilterCondition.equal(Reflect.objToStr(keyValue)))).update(obj);
+//								success=update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
 							}
 						}
 					}
 					else{
-						List<?> data=get(obj.getClass(), FilterCondition.equal(keyValue.toString()));
+						mAttribute.setFilterCommand(new And(FilterCondition.equal(keyValue.toString())));
+						List<?> data=get(obj.getClass());
+						mAttribute.setFilterCommand(null);
 						if(data!=null&&data.size()>0){
 							isUpdate = true;
-							success=update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
+							success=addFilter(new And(FilterCondition.equal(Reflect.objToStr(keyValue)))).update(obj);
+//							success=update(obj,table.keyColumn.columnName,Reflect.objToStr(field.get(obj)));
 						}
 					}
 				} catch (NoSuchFieldException e) {
@@ -887,13 +764,31 @@ public class FastDatabase{
 	 * @param command
 	 * @return
      */
-	public FastDatabase addFilter(String fieldName,FilterCondition command){
-		mAttribute.addFilter(fieldName,command);
+	public FastDatabase addFilter(FilterCommand command){
+		mAttribute.setFilterCommand(command);
 		return this;
 	}
 
 	public void setCustomUpdate(CustomUpdate custom){
 		mCustomUpdate=custom;
+	}
+
+	/**
+	 * 获取主键名
+	 * @param cla
+	 * @return
+	 */
+	private String getKeyName(Class<?> cla){
+		Field[] fields=cla.getDeclaredFields();
+		String key=null;
+		for(Field f:fields){
+			Database columnInject=f.getAnnotation(Database.class);
+			if(columnInject!=null&&columnInject.keyPrimary()){
+				key=f.getName();
+				break;
+			}
+		}
+		return TextUtils.isEmpty(key)?null:key;
 	}
 
 	/**
@@ -1233,19 +1128,27 @@ public class FastDatabase{
 
 	/**
 	 * 编译过滤语句
-	 * @return 过滤语句
+	 * @param key 主键名
+	 * @param filterCommand 过滤命令
+	 * @param args 对应值
+     * @return
      */
-	private String getFilters(List<String> args){
-		StringBuilder filtersStr=new StringBuilder("");
-		List<Pair<String,FilterCondition>> filterList=mAttribute.getFilterList();
-		if(filterList==null||filterList.isEmpty())
-			return filtersStr.toString();
-		for(Pair<String,FilterCondition> filter:filterList) {
-			filtersStr.append(" and "+filter.first+filter.second.getExpression(""));
-			if(filter.second.getType()!= FilterCondition.TYPE_NULL)
-				args.add(filter.second.getValue());
+	private String getFilters(String key,FilterCommand filterCommand,List<String> args){
+		StringBuilder command=new StringBuilder("");
+		if(filterCommand==null)
+			return command.toString();
+		command.append(" where ").append(filterCommand.getFilterCondition().getExpression(key));
+		if(filterCommand.getFilterCondition().getType()!=FilterCondition.TYPE_NOT_NULL&&filterCommand.getFilterCondition().getType()!=FilterCondition.TYPE_NULL)
+		    args.add(filterCommand.getFilterCondition().getValue());
+		filterCommand=filterCommand.getNext();
+		while(filterCommand!=null) {
+			command.append(" ").append(filterCommand.getType() == FilterCommand.TYPE_AND ? "and" : "or").append(" ");
+			command.append(filterCommand.getFilterCondition().getExpression(key));
+			if(filterCommand.getFilterCondition().getType()!=FilterCondition.TYPE_NOT_NULL&&filterCommand.getFilterCondition().getType()!=FilterCondition.TYPE_NULL)
+			    args.add(filterCommand.getFilterCondition().getValue());
+			filterCommand=filterCommand.getNext();
 		}
-		return filtersStr.toString();
+		return command.toString();
 	}
 
 	/**

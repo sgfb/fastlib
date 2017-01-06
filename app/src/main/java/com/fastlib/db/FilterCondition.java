@@ -51,6 +51,14 @@ public final class FilterCondition{
         return new FilterCondition(TYPE_NULL,field,null);
     }
 
+    public static FilterCondition notEmptyValue(){
+        return new FilterCondition(TYPE_NOT_NULL,null);
+    }
+
+    public static FilterCondition notEmptyValue(String field){
+        return new FilterCondition(TYPE_NOT_NULL,field,null);
+    }
+
     public static FilterCondition equal(String value){
         return new FilterCondition(TYPE_EQUAL,value);
     }

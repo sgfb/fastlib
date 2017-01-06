@@ -43,7 +43,7 @@ public class ServerCache{
     }
 
     private void init(){
-        getFastDatabase().get(mCache); //尝试从数据库中获取一下缓存
+        getFastDatabase().addFilter(new And(FilterCondition.equal(mCache.cacheName))).get(RemoteCache.class); //尝试从数据库中获取一下缓存
         mOldListener=mRequest.getListener();
         mRequest.setListener(new ExtraListener() {
             @Override
