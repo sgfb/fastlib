@@ -13,12 +13,13 @@ import java.util.Map;
 
 /**
  * Created by sgfb on 16/11/13.
+ * json转换时留存的最小单元
  */
 @SuppressWarnings("unchecked")
 public final class JsonObject{
-    private String mJsonRaw;
-    private String mKey;
-    private Object mValue;
+    private String mJsonRaw; //本单元的原始json字符串，可以进行二次json解析
+    private String mKey; //json名
+    private Object mValue; //json值
 
     public JsonObject(String raw,String key,Object value){
         mJsonRaw=raw;
@@ -27,12 +28,13 @@ public final class JsonObject{
     }
 
     /**
-     * 根据键名返回值
+     * 根据键名返回值,将会逐层往下找,直到第一个或null返回
      * @param key
      * @param <T>
+     * @throws ClassCastException
      * @return
      */
-    public <T> T findValue(String key){
+    public <T> T findValue(String key)throws ClassCastException{
         if(TextUtils.equals(mKey,key))
             return getValue();
         else{
@@ -45,13 +47,12 @@ public final class JsonObject{
                     Iterator<String> iter=joMap.keySet().iterator();
                     while(iter.hasNext()){
                         T t=joMap.get(iter.next()).findValue(key);
-                        if(t!=null)
-                            return t;
+                        return t;
                     }
                 }
             }
         }
-        return null;
+        throw new ClassCastException();
     }
 
     /**
@@ -59,18 +60,31 @@ public final class JsonObject{
      * @param context
      * @param id
      * @param <T>
+     * @throws ClassCastException
      * @return
      */
-    public <T> T findValue(Context context, @IdRes int id){
+    public <T> T findValue(Context context, @IdRes int id) throws ClassCastException{
         return findValue(context.getResources().getResourceEntryName(id));
     }
 
-    public <T> T getValue(){
+    /**
+     * 获取值
+     * @param <T>
+     * @return
+     * @throws ClassCastException
+     */
+    public <T> T getValue()throws ClassCastException{
         if(mValue==null)
-            return null;
+            throw new ClassCastException();
         return (T) mValue;
     }
 
+    /**
+     * 类类型转换
+     * @param cla
+     * @param <T>
+     * @return
+     */
     public <T> T getValue(Class<?> cla){
         Gson gson=new Gson();
         try{
@@ -80,6 +94,12 @@ public final class JsonObject{
         }
     }
 
+    /**
+     * 特定类型转换
+     * @param type
+     * @param <T>
+     * @return
+     */
     public <T> T getValue(Type type){
         Gson gson=new Gson();
         try{

@@ -1,6 +1,8 @@
 package com.fastlib.base;
 
 import android.content.Context;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
@@ -77,6 +79,11 @@ public class OldViewHolder {
 	public void setText(int viewId, String str) {
 		TextView textView = getView(viewId);
 		textView.setText(str);
+	}
+
+	public void setText(int viewId,SpannableStringBuilder ss){
+		TextView textView = getView(viewId);
+		textView.setText(ss);
 	}
 
 	/**

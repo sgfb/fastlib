@@ -5,6 +5,9 @@ package com.fastlib.db;
  */
 
 public interface DatabaseListener<T>{
-
+    /**
+     * 回调数据库单条数据.这个回调运行在UI线程中
+     * @param data
+     */
     void onResult(T data);
 }

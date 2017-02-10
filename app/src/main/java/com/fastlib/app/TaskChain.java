@@ -14,6 +14,7 @@ public class TaskChain{
     public static final int TYPE_THREAD_ON_WORK=2;
 
     private TaskChain mNext=null;
+    private TaskChain mLast=null;
     private Pair<Integer,Runnable> mTask;
 
     public TaskChain(Runnable runnable){
@@ -29,7 +30,15 @@ public class TaskChain{
     }
 
     public TaskChain next(int type,Runnable runnable){
-        mNext=new TaskChain(type,runnable);
+        if(mLast==null)
+            mLast=new TaskChain(type,runnable);
+        else{
+            TaskChain tc=new TaskChain(type,runnable);
+            mLast.mNext=tc;
+            mLast=tc;
+        }
+        if(mNext==null)
+            mNext=mLast;
         return this;
     }
 

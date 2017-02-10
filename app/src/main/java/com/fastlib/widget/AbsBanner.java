@@ -9,8 +9,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -21,8 +19,8 @@ public abstract class AbsBanner extends ViewPager {
 
     private BannerAdapter mAdapter;
     private List<Object> mData;
-    private boolean autoScroll = false; //初始化设置false才能自动轮播
-    private long scrollInterval = 5000; //轮播间隔时间
+    private boolean mAutoScroll = false; //初始化设置false才能自动轮播
+    private long mScrollInterval = 5000; //轮播间隔时间
 
     protected abstract HandlePage getHandleImageWithEvent();
 
@@ -48,23 +46,23 @@ public abstract class AbsBanner extends ViewPager {
         postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (autoScroll) {
+                if (mAutoScroll) {
                     setCurrentItem((getCurrentItem() + 1) % mAdapter.getCount(), true);
                     startAutoScroll();
                 }
             }
-        }, scrollInterval);
+        }, mScrollInterval);
     }
 
     public void setAutoScroll(boolean autoScroll) {
-        if (!this.autoScroll && autoScroll) {
-            this.autoScroll = true;
+        if (!this.mAutoScroll && autoScroll) {
+            this.mAutoScroll = true;
             postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     startAutoScroll();
                 }
-            }, scrollInterval);
+            }, mScrollInterval);
         }
     }
 
@@ -73,19 +71,19 @@ public abstract class AbsBanner extends ViewPager {
             return;
         mData = data;
         mAdapter.notifyDataSetChanged();
-        if (!autoScroll) { //如果没有自动轮播,延迟一个轮播间隔启动自动轮播
+        if (!mAutoScroll) { //如果没有自动轮播,延迟一个轮播间隔启动自动轮播
             postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    autoScroll = true;
+                    mAutoScroll = true;
                     startAutoScroll();
                 }
-            }, scrollInterval);
+            }, mScrollInterval);
         }
     }
 
     public void setInterval(long interval) {
-        scrollInterval = interval;
+        mScrollInterval = interval;
     }
 
     private class BannerAdapter extends PagerAdapter {

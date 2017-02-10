@@ -38,7 +38,7 @@ public class ImageUtil{
     public static final int REQUEST_FROM_CAMERA=10001;
     public static final int REQUEST_FROM_CROP=10002;
     public static final String KEY_LAST_IMAGE="lastImage";
-    public static Uri mLastUri;
+    private static Uri mLastUri;
 
     private ImageUtil(){
         //不实例化

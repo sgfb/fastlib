@@ -11,8 +11,7 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonParseException;
+import com.fastlib.base.OldViewHolder;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -23,13 +22,13 @@ import java.util.Map;
  * Created by sgfb on 16/4/23.
  * Json键名对id自动绑定数据与视图
  */
-public class JsonBinder{
+public class JsonViewBinder {
     private Map<Class,ViewResolve> mResolves;
-    private Map<String,Integer> mIdWithName; //视图id值与视图名映射
+    private Map<String,Integer> mNameWithId; //视图id值与视图名映射
     private Context mContext;
     private View mRootView;
 
-    public JsonBinder(Context context){
+    public JsonViewBinder(Context context){
         this(context, null);
     }
 
@@ -37,14 +36,14 @@ public class JsonBinder{
      * 应在setContentView之后使用此构造
      * @param activity
      */
-    public JsonBinder(Activity activity){
+    public JsonViewBinder(Activity activity){
         this(activity,activity.findViewById(android.R.id.content));
     }
 
-    public JsonBinder(Context context, View convertView){
+    public JsonViewBinder(Context context, View convertView){
         mContext=context;
         mResolves=new HashMap<>();
-        mIdWithName =new HashMap<>();
+        mNameWithId =new HashMap<>();
         mRootView=convertView;
         TextViewResolve tvResolve=new TextViewResolve();
         CheckBoxResolve cbResolve=new CheckBoxResolve();
@@ -53,15 +52,15 @@ public class JsonBinder{
         mResolves.put(CheckBox.class,cbResolve);
         mResolves.put(AppCompatCheckBox.class, cbResolve);
         if(convertView!=null)
-            getAllChild(mIdWithName,convertView);
+            getAllChild(mNameWithId,convertView);
     }
 
     /**
      * 绑定json数据到视图,使用解析时的根视图
      * @param data
      */
-    public void fromMapData(Map<String,Object> data){
-        fromMapData(mRootView,data);
+    public void bindDataToViwe(Map<String,Object> data){
+        bindDataToViwe(mRootView,data);
     }
 
     /**
@@ -69,8 +68,12 @@ public class JsonBinder{
      * @param root
      * @param data
      */
-    public void fromMapData(View root,Map<String,Object> data){
-        fromMapData(root,data, mIdWithName);
+    public void bindDataToViwe(View root, Map<String,Object> data){
+        bindDataToViwe(root,data, mNameWithId);
+    }
+
+    public void bindDataToView(View v, JsonObject jo){
+
     }
 
     /**
@@ -79,7 +82,7 @@ public class JsonBinder{
      * @param data
      * @param views
      */
-    public void fromMapData(View root,Map<String,Object> data,Map<String,Integer> views){
+    public void bindDataToViwe(View root,Map<String,Object> data, Map<String,Integer> views){
         Iterator<String> iter=data.keySet().iterator();
         while(iter.hasNext()){
             String key=iter.next();
@@ -89,7 +92,24 @@ public class JsonBinder{
             View view=root.findViewById(id);
             ViewResolve vr=mResolves.get(view.getClass());
             Object obj=data.get(key);
-            view.setTag(obj);
+            if(vr!=null)
+                vr.resolve(view,obj);
+        }
+    }
+
+    /**
+     * 绑定到视图持有者中
+     * @param item
+     * @param holder
+     */
+    public void bindDataToView(JsonObject item, OldViewHolder holder){
+        Iterator<String> iter= mNameWithId.keySet().iterator();
+        while(iter.hasNext()){
+            String key=iter.next();
+            int value=mNameWithId.get(key);
+            Object obj=item.findValue(mContext,value);
+            View view=holder.getView(value);
+            ViewResolve vr=mResolves.get(view.getClass());
             if(vr!=null)
                 vr.resolve(view,obj);
         }

@@ -1,4 +1,4 @@
-package com.fastlib.utils;
+package com.fastlib.media;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
 
 /**
  * @https://my.oschina.net/daxia/blog/636074
+ * 将pcm源音频转为aac格式
  */
 public class AACAudioEncoder{
     private final static String TAG = "AACAudioEncoder";

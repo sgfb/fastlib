@@ -1,9 +1,8 @@
-package com.fastlib.utils;
+package com.fastlib.media;
 
 import android.content.Context;
 import android.media.MediaPlayer;
 import android.net.Uri;
-import android.support.annotation.NonNull;
 import android.util.Log;
 
 import java.io.IOException;

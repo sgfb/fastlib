@@ -1,5 +1,6 @@
 package com.fastlib.net;
 
+import android.content.res.Resources;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
@@ -43,10 +44,6 @@ public class NetQueue{
      * @param request
      */
     public void netRequest(Request request){
-        netRequest(null,request);
-    }
-
-    public void netRequest(ThreadPoolExecutor pool,Request request){
         if(mFactory!=null&&request.isUseFactory()){
             Map<String,String> map=request.getParams();
             if(map==null){
@@ -61,11 +58,12 @@ public class NetQueue{
             request.setUrl(mRootAddress + request.getUrl());
             request.setHadRootAddress(true);
         }
-        enqueue(request,pool);
+        enqueue(request);
     }
 
-    private void enqueue(Request request,@Nullable ThreadPoolExecutor pool){
-        NetProcessor processor=new NetProcessor(request,new NetProcessor.OnCompleteListener() {
+    private void enqueue(Request request){
+        ThreadPoolExecutor pool=request.getExecutor();
+        NetProcessor processor=new NetProcessor(request,new NetProcessor.OnCompleteListener(){
             @Override
             public void onComplete(NetProcessor processor1){
                 mRequestCount++;
@@ -74,12 +72,10 @@ public class NetQueue{
                 System.out.println(processor1);
             }
         },new Handler(Looper.getMainLooper()));
-        FutureTask<Integer> ft=new FutureTask<>(processor,0);
-        request.setFutureTask(ft);
         if(pool!=null)
-            pool.execute(ft);
+            pool.execute(processor);
         else
-            sRequestPool.execute(ft);
+            sRequestPool.execute(processor);
     }
 
     public void close(){

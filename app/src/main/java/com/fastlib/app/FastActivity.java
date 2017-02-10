@@ -13,37 +13,41 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 
-import com.fastlib.annotation.Bind;
 import com.fastlib.bean.PermissionRequest;
-import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.N;
+import com.fastlib.utils.ViewInject;
 
 import java.io.File;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by sgfb on 16/9/5.
  * Activity基本封装
  */
 public class FastActivity extends AppCompatActivity{
+    private boolean isGetingPhoto; //是否正在获取图像
     private Thread mMainThread;
     private Map<String,PermissionRequest> mPermissionMap=new HashMap<>();
     private PhotoResultListener mPhotoResultListener;
+    private List<Request> mRequests;
     protected ThreadPoolExecutor mThreadPool= (ThreadPoolExecutor) Executors.newFixedThreadPool(4);
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
+        mRequests=new ArrayList<>();
         mMainThread =Thread.currentThread();
         mThreadPool.execute(new Runnable(){
             @Override
@@ -58,7 +62,14 @@ public class FastActivity extends AppCompatActivity{
      * @param request
      */
     protected void net(Request request){
-        NetQueue.getInstance().netRequest(mThreadPool,request.setHost(this));
+        if(!mRequests.contains(request))
+            mRequests.add(request);
+        request.setHost(this).setExecutor(mThreadPool).start(false);
+    }
+
+    public void addRequest(Request request){
+        if(!mRequests.contains(request))
+            mRequests.add(request);
     }
 
     /**
@@ -77,6 +88,7 @@ public class FastActivity extends AppCompatActivity{
         requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE, new Runnable() {
             @Override
             public void run() {
+                isGetingPhoto=true;
                 mPhotoResultListener=photoResultListener;
                 ImageUtil.openAlbum(FastActivity.this);
             }
@@ -100,6 +112,7 @@ public class FastActivity extends AppCompatActivity{
                 requestPermission(Manifest.permission.CAMERA, new Runnable() {
                     @Override
                     public void run(){
+                        isGetingPhoto=true;
                         mPhotoResultListener=photoResultListener;
                         if(TextUtils.isEmpty(path))
                             ImageUtil.openCamera(FastActivity.this);
@@ -150,13 +163,16 @@ public class FastActivity extends AppCompatActivity{
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(resultCode!=Activity.RESULT_OK)
-            return;
-        Uri photoUri=ImageUtil.getImageFromActive(this,requestCode,resultCode,data);
-        if(photoUri!=null){
-            String photoPath=ImageUtil.getImagePath(this,photoUri);
-            if(mPhotoResultListener!=null)
-                mPhotoResultListener.onPhotoResult(photoPath);
+        if(isGetingPhoto){
+            isGetingPhoto=false;
+            if(resultCode!=Activity.RESULT_OK)
+                return;
+            Uri photoUri=ImageUtil.getImageFromActive(this,requestCode,resultCode,data);
+            if(photoUri!=null){
+                String photoPath=ImageUtil.getImagePath(this,photoUri);
+                if(mPhotoResultListener!=null)
+                    mPhotoResultListener.onPhotoResult(photoPath);
+            }
         }
     }
 
@@ -178,19 +194,19 @@ public class FastActivity extends AppCompatActivity{
     @Override
     public void setContentView(int layoutResID) {
         super.setContentView(layoutResID);
-        injectViewEvent();
+        ViewInject.inject(this,mThreadPool);
     }
 
     @Override
     public void setContentView(View view) {
         super.setContentView(view);
-        injectViewEvent();
+        ViewInject.inject(this,mThreadPool);
     }
 
     @Override
     public void setContentView(View view, ViewGroup.LayoutParams params) {
         super.setContentView(view, params);
-        injectViewEvent();
+        ViewInject.inject(this,mThreadPool);
     }
 
     @Override
@@ -198,6 +214,13 @@ public class FastActivity extends AppCompatActivity{
         super.onDestroy();
         EventObserver.getInstance().unsubscribe(this);
         mThreadPool.shutdownNow();
+        mThreadPool.purge();
+        for(Request request:mRequests)
+            request.clear();
+    }
+
+    public void startActivity(Class<? extends Activity> cla){
+        startActivity(new Intent(this,cla));
     }
 
     /**
@@ -205,117 +228,6 @@ public class FastActivity extends AppCompatActivity{
      */
     private void registerEvents(){
         EventObserver.getInstance().subscribe(this);
-    }
-
-    /**
-     * 运行一段代码如果有异常自行处理
-     * @param runOnWorkThread
-     * @param m
-     * @param objs
-     */
-    private boolean invokeWithoutError(boolean runOnWorkThread,final Method m,final Object... objs){
-        if(runOnWorkThread)
-            mThreadPool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        m.invoke(FastActivity.this,objs);
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    } catch (InvocationTargetException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-        else
-            try {
-                Object result=m.invoke(FastActivity.this,objs);
-                if(result instanceof Boolean)
-                    return (Boolean)result;
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-                return false;
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();
-                return false;
-            }
-        return false;
-    }
-
-    private void bindListener(final Method m, View v, final Bind vi){
-        switch(vi.bindType()){
-            case CLICK:
-                v.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(final View v){
-                        invokeWithoutError(vi.runOnWorkThread(),m,v);
-                    }
-                });
-                break;
-            case LONG_CLICK:
-                v.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v){
-                        return invokeWithoutError(vi.runOnWorkThread(),m,v);
-                    }
-                });
-                break;
-            case ITEM_CLICK:
-                ((AdapterView)v).setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                    @Override
-                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        invokeWithoutError(vi.runOnWorkThread(),m,parent,view,position,id);
-                    }
-                });
-                break;
-            case ITEM_LONG_CLICK:
-                ((AdapterView)v).setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-                    @Override
-                    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                        return invokeWithoutError(vi.runOnWorkThread(),m,parent,view,position,id);
-                    }
-                });
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void injectViewEvent(){
-        //绑定控件方法
-        Method[] methods=getClass().getDeclaredMethods();
-        if(methods!=null&&methods.length>0)
-            for(final Method m:methods){
-                Bind vi=m.getAnnotation(Bind.class);
-                if(vi!=null){
-                    int[] ids=vi.value();
-                    if(ids.length>0){
-                        for(int id:ids){
-                            View v=findViewById(id);
-                            if(v!=null)
-                                bindListener(m,v,vi);
-                        }
-                    }
-                }
-            }
-
-        //绑定视图到属性
-        Field[] fields=getClass().getDeclaredFields();
-        if(fields!=null&&fields.length>0)
-            for(Field field:fields){
-                Bind vi=field.getAnnotation(Bind.class);
-                if(vi!=null){
-                    int[] ids=vi.value();
-                    if(ids.length>0){
-                        try {
-                            field.setAccessible(true);
-                            field.set(FastActivity.this,findViewById(ids[0]));
-                        } catch (IllegalAccessException e) {
-                            System.out.println(e.getMessage());
-                        }
-                    }
-                }
-            }
     }
 
     /**

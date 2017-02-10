@@ -1,15 +1,11 @@
 package com.fastlib.net;
 
 import android.app.Activity;
-import android.app.Application;
-import android.os.Build;
-import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
-import android.view.TextureView;
 
 import com.fastlib.app.EventObserver;
 import com.fastlib.bean.EventDownloading;
@@ -17,7 +13,6 @@ import com.fastlib.bean.EventUploading;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -25,18 +20,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -45,7 +36,7 @@ import java.util.zip.GZIPOutputStream;
  * 网络请求的具体处理.在结束时会保存一些状态<br/>
  * 这个类可以上传和下载文件,支持中断,下载文件时每秒发送一次进度广播(EventDownloading)
  */
-public class NetProcessor implements Runnable {
+public class NetProcessor implements Runnable{
     private final String BOUNDARY = Long.toHexString(System.currentTimeMillis());
     private final String CRLF = "\r\n";
     private final String END = "--" + BOUNDARY + "--" + CRLF;
@@ -54,6 +45,7 @@ public class NetProcessor implements Runnable {
 
     public static long mDiffServerTime; //与服务器时间差
 
+    private boolean isSuccess=true;
     private long Tx, Rx;
     private byte[] mResponse;
     private Request mRequest;
@@ -61,7 +53,7 @@ public class NetProcessor implements Runnable {
     private OnCompleteListener mListener;
     private Executor mResponsePoster;
 
-    public NetProcessor(Request request, OnCompleteListener l, final Handler handler) {
+    public NetProcessor(Request request, OnCompleteListener l, final Handler handler){
         mRequest = request;
         mListener = l;
         mResponsePoster = new Executor() {
@@ -73,7 +65,15 @@ public class NetProcessor implements Runnable {
     }
 
     @Override
-    public void run() {
+    public void run(){
+        if(mRequest.getMock()!=null){
+            mResponse=mRequest.getMock().dataResponse();
+            mMessage="模拟数据";
+            toggleCallback();
+            if(mListener!=null)
+                mListener.onComplete(this);
+            return;
+        }
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             File downloadFile = null;
@@ -114,14 +114,14 @@ public class NetProcessor implements Runnable {
             }
             if (mRequest.getSendCookies() != null)
                 connection.setRequestProperty(mRequest.getSendCookies().first, mRequest.getSendCookies().second);
+            if(Thread.currentThread().isInterrupted()) //在连接前判断线程是否已关闭
+                return;
             connection.connect();
             if (isPost){
-                out=connection.getOutputStream();
-
+                out=mRequest.isSendGzip()?new GZIPOutputStream(connection.getOutputStream()):connection.getOutputStream();
                 if (isMulti)
                     multipart(mRequest.getParams(), mRequest.getFiles(), out);
                 else{
-                    out=new GZIPOutputStream(out);
                     StringBuilder sb = new StringBuilder();
                     loadParams(mRequest.getParams(), sb);
                     byte[] data = sb.toString().getBytes();
@@ -140,10 +140,10 @@ public class NetProcessor implements Runnable {
             int len;
             byte[] data = new byte[BUFF_LENGTH];
             //如果支持,修改下载的文件名
-            if (downloadFile != null) {
+            if (downloadFile != null){
                 OutputStream fileOut = new FileOutputStream(downloadFile, mRequest.getDownloadable().supportBreak());
                 String disposition = connection.getHeaderField("Content-Disposition");
-                if (!TextUtils.isEmpty(disposition) && disposition.length() > 9 && mRequest.getDownloadable().changeIfHadName()) {
+                if (!TextUtils.isEmpty(disposition) && disposition.length() > 9 && mRequest.getDownloadable().changeIfHadName()){
                     String filename = URLDecoder.decode(disposition.substring(disposition.indexOf("filename=") + 9), "UTF-8");
                     if (!TextUtils.isEmpty(filename))
                         downloadFile.renameTo(new File(downloadFile.getParent() + File.separator + filename));
@@ -151,21 +151,21 @@ public class NetProcessor implements Runnable {
                 int maxCount = connection.getContentLength();
                 int speed = 0;
                 long timer = System.currentTimeMillis();
-                while ((len = in.read(data)) != -1) {
+                while ((len = in.read(data)) != -1&&!Thread.currentThread().isInterrupted()){
                     fileOut.write(data, 0, len);
                     Rx += len;
                     speed += len;
                     if ((System.currentTimeMillis() - timer) > 1000) { //每秒发送一次广播
-                        EventObserver.getInstance().sendEvent(new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(), mRequest));
+                        EventObserver.getInstance().sendEvent(new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(),mRequest));
                         speed = 0;
                         timer = System.currentTimeMillis();
                     }
                 }
-                EventObserver.getInstance().sendEvent(new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(), mRequest)); //下载结束发一次广播
+                EventObserver.getInstance().sendEvent(new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(),mRequest)); //下载结束发一次广播
                 fileOut.close();
                 mResponse = downloadFile.getAbsolutePath().getBytes();
             } else {
-                while ((len = in.read(data)) != -1)
+                while((len = in.read(data))!=-1&&!Thread.currentThread().isInterrupted())
                     baos.write(data, 0, len);
                 Rx += baos.size();
                 mResponse = baos.toByteArray();
@@ -184,7 +184,8 @@ public class NetProcessor implements Runnable {
             connection.disconnect();
             mMessage=connection.getResponseMessage();
             toggleCallback();
-        } catch (IOException e) {
+        } catch (IOException e){
+            isSuccess=false;
             mMessage = e.toString();
             toggleCallback();
         } finally {
@@ -193,56 +194,57 @@ public class NetProcessor implements Runnable {
         }
     }
 
-    private void toggleCallback() {
+    private void toggleCallback(){
         final ExtraListener l = mRequest.getListener();
-        if (l != null) {
-            Object host = mRequest.getHost();
-            boolean hostAvailable = true; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为在安全环境
-            if (host instanceof Fragment) {
-                Fragment fragment = (Fragment) host;
-                if ((fragment.isRemoving() || fragment.isDetached()))
-                    hostAvailable = false;
-            } else if (host instanceof Activity) {
-                Activity activity = (Activity) host;
-                if (activity.isFinishing())
-                    hostAvailable = false;
-            }
-            if (hostAvailable) {
-                l.onRawData(mResponse);
-                Type realType = mRequest.getGenericType();
-                Gson gson = new Gson();
-                try {
-                    final Object responseObj;
-                    if (realType == null || realType == Object.class||realType==byte[].class)
-                        responseObj = mResponse;
-                    else if (realType == String.class){
-                        responseObj = new String(mResponse);
-                        l.onTranslateJson((String) responseObj);
-                    } else {
-                        String json = new String(mResponse);
-                        l.onTranslateJson(json);
-                        responseObj = gson.fromJson(json, realType);
-                    }
-                    if("OK".equals(mMessage)){
-                        mResponsePoster.execute(new Runnable(){
-                            @Override
-                            public void run() {
-                                l.onResponseListener(mRequest, responseObj);
-                            }
-                        });
-                    }
-                } catch (JsonParseException e) {
-                    System.out.println("解析时出现异常:" + e.getMessage());
-                    mMessage = e.getMessage();
+        if(l==null||Thread.currentThread().isInterrupted())
+            return;
+        Object host = mRequest.getHost();
+        boolean hostAvailable = true; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为在安全环境
+        if (host instanceof Fragment) {
+            Fragment fragment = (Fragment) host;
+            if ((fragment.isRemoving() || fragment.isDetached()))
+                hostAvailable = false;
+        } else if (host instanceof Activity){
+            Activity activity = (Activity) host;
+            if (activity.isFinishing())
+                hostAvailable = false;
+        }
+        if (hostAvailable){
+            l.onRawData(mResponse);
+            Type realType = mRequest.getGenericType();
+            Gson gson = new Gson();
+            try {
+                final Object responseObj;
+                if (realType == null || realType == Object.class||realType==byte[].class)
+                    responseObj = mResponse;
+                else if (realType == String.class){
+                    responseObj = new String(mResponse);
+                    l.onTranslateJson((String) responseObj);
+                }else{
+                    String json = new String(mResponse);
+                    l.onTranslateJson(json);
+                    responseObj = gson.fromJson(json, realType);
                 }
-                if (!"OK".equals(mMessage)){
-                    mResponsePoster.execute(new Runnable() {
+                if(isSuccess){
+                    mResponsePoster.execute(new Runnable(){
                         @Override
                         public void run() {
-                            l.onErrorListener(mRequest, mMessage);
+                            l.onResponseListener(mRequest, responseObj);
                         }
                     });
                 }
+            } catch (JsonParseException e){
+                System.out.println("解析时出现异常:" + e.getMessage());
+                mMessage = e.getMessage();
+                isSuccess=false;
+            }
+            if (!isSuccess){
+                mResponsePoster.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        l.onErrorListener(mRequest, mMessage);
+                    }
+                });
             }
         }
     }
@@ -264,7 +266,7 @@ public class NetProcessor implements Runnable {
         if (strParams != null && strParams.size() > 0) {
             Iterator<String> iter = strParams.keySet().iterator();
             StringBuilder sb = new StringBuilder();
-            while (iter.hasNext()) {
+            while (iter.hasNext()&&!Thread.currentThread().isInterrupted()){
                 String key = iter.next();
                 String value = strParams.get(key);
                 sb.append("--" + BOUNDARY).append(CRLF);
@@ -278,7 +280,7 @@ public class NetProcessor implements Runnable {
 
         if (fileParams != null && fileParams.size() > 0) {
             Iterator<String> iter = fileParams.keySet().iterator();
-            while (iter.hasNext()) {
+            while (iter.hasNext()&&!Thread.currentThread().isInterrupted()){
                 StringBuilder sb = new StringBuilder();
                 String key = iter.next();
                 File value = fileParams.get(key);
@@ -315,7 +317,7 @@ public class NetProcessor implements Runnable {
         long count = 0;
         int speed = 0;
 
-        while ((len = in.read(data)) != -1){
+        while ((len = in.read(data)) != -1&&!Thread.currentThread().isInterrupted()){
             outDelegate.write(data, 0, len);
             count += len;
             speed += len;

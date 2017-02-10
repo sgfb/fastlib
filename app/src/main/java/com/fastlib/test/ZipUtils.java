@@ -1,4 +1,4 @@
-package com.fastlib.utils;
+package com.fastlib.test;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;

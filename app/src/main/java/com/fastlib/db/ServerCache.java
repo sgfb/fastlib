@@ -1,8 +1,5 @@
 package com.fastlib.db;
 
-import android.content.Context;
-import android.support.annotation.Nullable;
-
 import com.fastlib.bean.RemoteCache;
 import com.fastlib.net.ExtraListener;
 import com.fastlib.net.NetQueue;
@@ -14,36 +11,48 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Created by sgfb on 16/12/29.
- * 缓存来自服务器的数据,获取时不用关系数据来自哪里
+ * 缓存来自服务器的数据,获取时不用关心数据来自哪里
  */
 public class ServerCache{
-    private long mCacheTimeLife =0; //缓存生存长度.默认没有生存时间
-    private Context mContext;
+    private long mCacheTimeLife =0; //缓存生存长度
     private RemoteCache mCache;
     private ThreadPoolExecutor mThreadPool;
     private Request mRequest;
-    private String mToDatabase;
+    private FastDatabase mDatabase;
     private ExtraListener mOldListener;
+    private String mCacheName;
 
-    public ServerCache(Request request,String cacheName){
-        this(request,cacheName,null,null);
+    /**
+     * 缓存管理构造
+     * @param request 网络请求
+     * @param cacheName 缓存名
+     * @param database 指定的数据库
+     */
+    public ServerCache(Request request,String cacheName,FastDatabase database){
+        this(request,cacheName,database,null);
     }
 
-    public ServerCache(Request request,String cacheName,@Nullable String toDatabase){
-        this(request,cacheName,toDatabase,null);
-    }
-
-    public ServerCache(Request request, String cacheName,@Nullable String toDatabase,ThreadPoolExecutor threadPool){
-        mCache=new RemoteCache();
+    /**
+     * 指定某线程池的缓存管理
+     * @param request 网络请求
+     * @param cacheName 缓存名
+     * @param database 指定的数据库
+     * @param threadPool 线程池
+     */
+    public ServerCache(Request request, String cacheName,FastDatabase database,ThreadPoolExecutor threadPool){
         mThreadPool=threadPool;
         mRequest=request;
-        mCache.cacheName=cacheName;
-        mToDatabase=toDatabase;
+        mDatabase =database;
+        mCacheName=cacheName;
         init();
     }
 
     private void init(){
-        getFastDatabase().addFilter(new And(FilterCondition.equal(mCache.cacheName))).get(RemoteCache.class); //尝试从数据库中获取一下缓存
+        mCache=mDatabase.addFilter(new And(FilterCondition.equal(mCacheName))).getFirst(RemoteCache.class); //尝试从数据库中获取一下缓存
+        if(mCache==null) {
+            mCache = new RemoteCache();
+            mCache.cacheName=mCacheName;
+        }
         mOldListener=mRequest.getListener();
         mRequest.setListener(new ExtraListener() {
             @Override
@@ -58,9 +67,9 @@ public class ServerCache{
                 if(mOldListener!=null)
                     mOldListener.onTranslateJson(json);
                 if(mThreadPool!=null)
-                    mThreadPool.execute(new Runnable() {
+                    mThreadPool.execute(new Runnable(){
                         @Override
-                        public void run() {
+                        public void run(){
                             saveCache(json);
                         }
                     });
@@ -69,7 +78,7 @@ public class ServerCache{
             }
 
             @Override
-            public void onResponseListener(Request r, Object result) {
+            public void onResponseListener(Request r, Object result){
                 if(mOldListener!=null)
                     mOldListener.onResponseListener(r,result);
             }
@@ -89,11 +98,7 @@ public class ServerCache{
     private void saveCache(String json){
         mCache.expiry=System.currentTimeMillis()+mCacheTimeLife;
         mCache.cache=json;
-        getFastDatabase().saveOrUpdate(mCache);
-    }
-
-    private FastDatabase getFastDatabase(){
-        return mToDatabase==null?new FastDatabase(mContext):new FastDatabase(mContext).toWhichDatabase(mToDatabase);
+        mDatabase.saveOrUpdate(mCache);
     }
 
     /**
@@ -102,7 +107,7 @@ public class ServerCache{
      */
     public void refresh(boolean force){
         if(force||mCache.expiry<System.currentTimeMillis())
-            NetQueue.getInstance().netRequest(mThreadPool,mRequest);
+            NetQueue.getInstance().netRequest(mRequest);
         else
             toggleCallback();
     }
@@ -134,5 +139,13 @@ public class ServerCache{
 
     public void setRequest(Request request) {
         mRequest = request;
+    }
+
+    public void setThreadPool(ThreadPoolExecutor threadPool) {
+        mThreadPool = threadPool;
+    }
+
+    public void setDatabase(FastDatabase database) {
+        mDatabase = database;
     }
 }

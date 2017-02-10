@@ -13,6 +13,7 @@ import java.util.Map;
 
 /**
  * Created by sgfb on 16/9/8.
+ * 安卓原生json解析封装.这个解析类不负责将json解析为具体类，而是转换为JsonObject和List<JsonObject><br/>
  */
 public class FastJson{
 

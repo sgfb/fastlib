@@ -29,14 +29,31 @@ public class SaveUtil{
     }
 
     /**
-     * 读取assets中的某文件
+     * 读取assets中的某文件.尽可能使用这个方法读取一些小的文件，并且将这个方法置于子线程中，以保持响应
      * @param am
      * @param path
      * @return 源数据
      * @throws IOException
      */
-    public static byte[] loadAssetsFileToString(AssetManager am,String path) throws IOException {
+    public static byte[] loadAssetsFile(AssetManager am, String path) throws IOException {
         InputStream in=am.open(path);
+        byte[] data=new byte[1024];
+        int len;
+        ByteArrayOutputStream baos=new ByteArrayOutputStream();
+        while((len=in.read(data))!=-1)
+            baos.write(data,0,len);
+        in.close();
+        return baos.toByteArray();
+    }
+
+    /**
+     * 读取文件内容.尽可能使用这个方法读取一些小的文件，并且将这个方法置于子线程中，以保持响应
+     * @param path
+     * @return
+     * @throws IOException
+     */
+    public static byte[] loadFile(String path)throws IOException{
+        InputStream in=new FileInputStream(path);
         byte[] data=new byte[1024];
         int len;
         ByteArrayOutputStream baos=new ByteArrayOutputStream();
@@ -211,7 +228,7 @@ public class SaveUtil{
     }
 
     /**
-     * 文件或文件夹占用容量
+     * 文件或文件夹占用容量.应将此方法置于工作线程中
      * @param file
      * @return
      */
@@ -240,7 +257,7 @@ public class SaveUtil{
     }
 
     /**
-     * 清理文件,如果是文件夹必须递归删除成空文件夹
+     * 清理文件,如果是文件夹必须递归删除成空文件夹.应将此方法置于工作线程中
      * @param file
      * @return
      */

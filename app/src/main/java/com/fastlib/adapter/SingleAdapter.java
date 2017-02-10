@@ -3,11 +3,11 @@ package com.fastlib.adapter;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import com.fastlib.app.FastActivity;
 import com.fastlib.base.OldViewHolder;
 import com.fastlib.base.Refreshable;
 import com.fastlib.base.AdapterViewState;
 import com.fastlib.net.Listener;
-import com.fastlib.net.NetQueue;
 import com.fastlib.net.Request;
 
 import android.content.Context;
@@ -17,21 +17,22 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
 /**
- * 绑定适配器，将视图与服务器中的数据捆绑
+ * 单类型绑定适配器,将视图与服务器中的数据捆绑
+ * @param <T> 数据类型
+ * @param <R> 返回类型
  */
-public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listener<R> {
-	public static final String TAG=BindingAdapter.class.getSimpleName();
+public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener<R>{
+	public static final String TAG=SingleAdapter.class.getSimpleName();
 
 	protected Context mContext;
-	protected List<N> mData;
+	protected List<T> mData;
 	private AdapterViewState mViewState;
 	protected Request mRequest;
-//	private RemoteCacheServer mRemoteCacheServer;
 	private Refreshable mRefreshLayout;
 	private ThreadPoolExecutor mThreadPool;
 	private int mItemLayoutId;
 	private int mPerCount; //每次读取条数，默认为1
-	protected boolean isRefresh,isMore,isLoading,isSaveCache;
+	protected boolean isRefresh,isMore,isLoading;
 
 	public abstract Request generateRequest();
 
@@ -41,14 +42,14 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 	 * @param data
 	 * @param holder
 	 */
-	public abstract void binding(int position,N data,OldViewHolder holder);
+	public abstract void binding(int position, T data, OldViewHolder holder);
 
 	/**
 	 * 返回的数据转换
 	 * @param result
 	 * @return
 	 */
-	public abstract List<N> translate(R result);
+	public abstract List<T> translate(R result);
 
 	/**
 	 * 请求更多数据时的请求
@@ -62,24 +63,26 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 	 */
 	public abstract void getRefreshDataRequest(Request request);
 
-	public BindingAdapter(Context context,@LayoutRes int resId){
-		this(context,resId,false);
+	public SingleAdapter(Context context, @LayoutRes int resId){
+		this(context,resId,true);
 	}
 
-	public BindingAdapter(Context context,@LayoutRes int resId,boolean saveCache){
+	public SingleAdapter(Context context, @LayoutRes int resId, boolean startNow){
 		mContext=context;
 		mRequest= generateRequest();
-		isSaveCache=saveCache;
 		mPerCount=1;
 		mItemLayoutId=resId;
-		isRefresh=false;
+		isRefresh=true;
 		isMore=true;
 		isLoading=false;
-		mRequest.setListener(this);
 		mRequest.setGenericName("translate,0");
-//		mRemoteCacheServer =new RemoteCacheServer(mRequest);
-		refresh();
+		mRequest.setListener(this);
+		if(mContext instanceof FastActivity)
+			((FastActivity)mContext).addRequest(mRequest);
+		if(startNow)
+		    refresh();
 	}
+
 
 	@Override
 	public int getCount() {
@@ -87,7 +90,7 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 	}
 
 	@Override
-	public N getItem(int position) {
+	public T getItem(int position) {
 		return mData.get(position);
 	}
 
@@ -114,10 +117,7 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 		if(mViewState!=null)
 			mViewState.onStateChanged(AdapterViewState.STATE_LOADING);
 		getMoreDataRequest(mRequest);
-//		if(isSaveCache)
-//			mRemoteCacheServer.loadMore(mRequest.getParams());
-//		else
-		    NetQueue.getInstance().netRequest(mThreadPool,mRequest);
+		mRequest.setExecutor(mThreadPool).start(false);
 	}
 
 	public void refresh(){
@@ -126,10 +126,7 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 		//刷新之后也许有更多数据？
 		isMore=true;
 		getRefreshDataRequest(mRequest);
-//		if(isSaveCache)
-//			mRemoteCacheServer.start();
-//		else
-			NetQueue.getInstance().netRequest(mThreadPool,mRequest);
+		mRequest.setExecutor(mThreadPool).start(true);
 	}
 
 	public void setViewStateListener(AdapterViewState state){
@@ -138,14 +135,6 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 
 	public void setLoadCount(int count){
 		mPerCount=count;
-	}
-
-	public boolean isSaveCache(){
-		return isSaveCache;
-	}
-
-	public void setIsSaveCache(boolean isSaveCache) {
-		this.isSaveCache = isSaveCache;
 	}
 
 	public void setRefreshLayout(Refreshable refreshLayout){
@@ -172,7 +161,7 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 	 * 如何对待新数据
 	 * @param list
 	 */
-	public void dataRefresh(List<N> list){
+	public void dataRefresh(List<T> list){
 		if(isRefresh)
 			mData = list;
 		else
@@ -183,7 +172,7 @@ public abstract class BindingAdapter<N,R> extends BaseAdapter implements Listene
 	public void onResponseListener(Request request,R result){
 		if(mRefreshLayout!=null)
 			mRefreshLayout.setRefreshStatus(false);
-		List<N> list=translate(result);
+		List<T> list=translate(result);
 
 		isLoading=false;
 		if(list==null||list.size()<=0){

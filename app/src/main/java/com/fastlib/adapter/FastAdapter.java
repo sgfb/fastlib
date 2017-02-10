@@ -26,10 +26,12 @@ public abstract class FastAdapter<T> extends BaseAdapter{
         this(context,itemId,new ArrayList<T>());
     }
 
-    public FastAdapter(Context context,int itemId,@NonNull List<T> data){
+    public FastAdapter(Context context,int itemId,List<T> data){
         mContext=context;
         mItemId=itemId;
         mData=data;
+        if(mData==null)
+            mData=new ArrayList<>();
     }
 
     @Override
@@ -52,6 +54,11 @@ public abstract class FastAdapter<T> extends BaseAdapter{
         OldViewHolder holder=OldViewHolder.get(mContext,convertView,parent,mItemId);
         binding(position,mData.get(position),holder);
         return holder.getConvertView();
+    }
+
+    public void setData(List<T> list){
+        mData=list;
+        notifyDataSetChanged();
     }
 
     public void addData(T data){

@@ -1,10 +1,13 @@
 package com.fastlib.utils;
 
-import android.graphics.Color;
+import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
+
+import com.fastlib.R;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,7 +29,13 @@ public class Utils{
         //no instance
     }
 
-    public int safeToString(String value,int defValue){
+    /**
+     * 安全转换字符串为整型
+     * @param value
+     * @param defValue
+     * @return 转换失败返回默认值
+     */
+    public static int safeToString(String value,int defValue){
         try{
             return Integer.parseInt(value);
         }catch (NumberFormatException e){
@@ -34,7 +43,13 @@ public class Utils{
         }
     }
 
-    public long safeToString(String value,long defValue){
+    /**
+     * 安全转换字符串为长整型
+     * @param value
+     * @param defValue
+     * @return 转换失败返回默认值
+     */
+    public static long safeToString(String value,long defValue){
         try{
             return Long.parseLong(value);
         }catch (NumberFormatException e){
@@ -42,7 +57,13 @@ public class Utils{
         }
     }
 
-    public float safeToString(String value,float defValue){
+    /**
+     * 安全转换字符串为单精浮点型
+     * @param value
+     * @param defValue
+     * @return 转换失败返回默认值
+     */
+    public static float safeToString(String value,float defValue){
         try{
             return Float.parseFloat(value);
         }catch (NumberFormatException e){
@@ -50,12 +71,43 @@ public class Utils{
         }
     }
 
-    public double safeToString(String value,double defValue){
+    /**
+     * 安全转换字符串为双精浮点型
+     * @param value
+     * @param defValue
+     * @return 转换失败返回默认值
+     */
+    public static double safeToString(String value,double defValue){
         try{
             return Double.parseDouble(value);
         }catch (NumberFormatException e){
             return defValue;
         }
+    }
+
+    /**
+     * 使用资源库中颜色使Drawable染色
+     * @param src
+     * @param color
+     * @return
+     */
+    public static Drawable tintDrawable(Drawable src,int color){
+        return tintDrawable(src,color,true);
+    }
+
+    /**
+     * Drawable染色
+     * @param src
+     * @param color
+     * @param fromResource 是否来自资源库中
+     * @return
+     */
+    public static Drawable tintDrawable(Drawable src,int color,boolean fromResource){
+        Drawable wrapDrawable= DrawableCompat.wrap(src);
+        if(fromResource)
+            color= Resources.getSystem().getColor(color);
+        DrawableCompat.setTint(src,color);
+        return wrapDrawable;
     }
 
     /**
@@ -129,9 +181,9 @@ public class Utils{
         return m.matches();
     }
 
-    public static SpannableStringBuilder getTextSomeOtherColor(int start,int end,String text,Color color){
+    public static SpannableStringBuilder getTextSomeOtherColor(int start,int end,String text,int color){
         SpannableStringBuilder ssb=new SpannableStringBuilder(text);
-        ForegroundColorSpan foregroundColor=new ForegroundColorSpan(Color.RED);
+        ForegroundColorSpan foregroundColor=new ForegroundColorSpan(color);
         ssb.setSpan(foregroundColor,start,end,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return ssb;
     }
