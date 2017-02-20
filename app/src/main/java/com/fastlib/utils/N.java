@@ -33,6 +33,10 @@ public class N
 		showToastLong(context, message);
 	}
 
+	public static void showLong(Context context,CharSequence message){
+		showToastLong(context,message);
+	}
+
 	/**
 	 * 短时间显示Toast
 	 *

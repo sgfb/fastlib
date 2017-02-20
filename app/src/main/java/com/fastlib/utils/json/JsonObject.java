@@ -13,13 +13,13 @@ import java.util.Map;
 
 /**
  * Created by sgfb on 16/11/13.
- * json转换时留存的最小单元
+ * json转换时留存的最小单元.json值默认保存为string，使用的时候进行转换，基本类型尝试遍历类型返回，引用类型使用额外方法getValue(Type type)和getValue(Class<?> cla)
  */
 @SuppressWarnings("unchecked")
 public final class JsonObject{
     private String mJsonRaw; //本单元的原始json字符串，可以进行二次json解析
     private String mKey; //json名
-    private Object mValue; //json值
+    private Object mValue; //json值.可能是List<JsonObject>,Map<String,JsonObject>,基本类型字符串
 
     public JsonObject(String raw,String key,Object value){
         mJsonRaw=raw;
@@ -28,31 +28,14 @@ public final class JsonObject{
     }
 
     /**
-     * 根据键名返回值,将会逐层往下找,直到第一个或null返回
+     * 根据键名返回值,仅搜索第一层
      * @param key
      * @param <T>
-     * @throws ClassCastException
      * @return
+     * @throws ClassCastException
      */
     public <T> T findValue(String key)throws ClassCastException{
-        if(TextUtils.equals(mKey,key))
-            return getValue();
-        else{
-            if(mValue instanceof Map){
-                Map<String,JsonObject> joMap= (Map<String, JsonObject>) mValue;
-                JsonObject jo=joMap.get(key);
-                if(jo!=null)
-                    return jo.findValue(key);
-                else{
-                    Iterator<String> iter=joMap.keySet().iterator();
-                    while(iter.hasNext()){
-                        T t=joMap.get(iter.next()).findValue(key);
-                        return t;
-                    }
-                }
-            }
-        }
-        throw new ClassCastException();
+        return findValue(key,false);
     }
 
     /**
@@ -64,7 +47,36 @@ public final class JsonObject{
      * @return
      */
     public <T> T findValue(Context context, @IdRes int id) throws ClassCastException{
-        return findValue(context.getResources().getResourceEntryName(id));
+        return findValue(context.getResources().getResourceEntryName(id),true);
+    }
+
+    /**
+     * 根据键名返回值
+     * @param key
+     * @param deep 是否逐层寻找
+     * @param <T>
+     * @return
+     * @throws ClassCastException
+     */
+    public <T> T findValue(String key,boolean deep)throws ClassCastException{
+        if(TextUtils.equals(mKey,key))
+            return getValue();
+        else{
+            if(mValue instanceof Map){
+                Map<String,JsonObject> joMap= (Map<String, JsonObject>) mValue;
+                JsonObject jo=joMap.get(key);
+                if(jo!=null)
+                    return jo.findValue(key);
+                else{
+                    if(deep){
+                        Iterator<String> iter = joMap.keySet().iterator();
+                        while (iter.hasNext())
+                            return joMap.get(iter.next()).findValue(key);
+                    }
+                }
+            }
+        }
+        throw new ClassCastException();
     }
 
     /**

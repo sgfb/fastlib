@@ -26,6 +26,8 @@ import android.support.v8.renderscript.RenderScript;
 import android.support.v8.renderscript.ScriptIntrinsicBlur;
 import android.view.View;
 
+import com.fastlib.app.GlobalConfig;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -65,9 +67,11 @@ public class ImageUtil{
     public static File getThumbImageFile(boolean deleteEither,boolean resultSmaller,int limit,int quality,String path,String parent)throws IOException{
         File f=new File(path);
         if(f.exists())
-            System.out.println(f.length());
+            if(GlobalConfig.SHOW_LOG)
+                System.out.println(f.length());
         else
-            System.out.println("file not exists");
+            if(GlobalConfig.SHOW_LOG)
+                System.out.println("file not exists");
         File smallerFile,bigerFile;
         Bitmap bitmap=getThumbBitmap(path,limit);
         File file=getTempFile(new File(parent));
@@ -496,6 +500,7 @@ public class ImageUtil{
                 e.printStackTrace();
             }
         else
-            System.out.println("保存view到文件中失败");
+            if(GlobalConfig.SHOW_LOG)
+                System.out.println("保存view到文件中失败");
     }
 }

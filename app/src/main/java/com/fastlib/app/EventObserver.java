@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class EventObserver {
     public static final String TAG=EventObserver.class.getSimpleName();
-    public static boolean DEBUG=true;
 
     private static EventObserver mOwer;
     private Map<String,LocalReceiver> mLocalObserver;   //订阅事件名->订阅广播
@@ -64,7 +63,7 @@ public class EventObserver {
         List<Method> eventMethods=findEventMethods(subscriber);
 
         if(eventMethods==null||eventMethods.isEmpty()){
-            if(DEBUG)
+            if(GlobalConfig.SHOW_LOG)
                 Log.d(TAG,"订阅者"+subscriberName+"没有广播接受方法,请检查是否添加了Event注解和广播方法参数");
             return;
         }
@@ -83,7 +82,7 @@ public class EventObserver {
                 eventNames.add(eventName);
             mLocalObserverMap.put(subscriber.getClass().getCanonicalName(),eventNames);
             receiver.mSubscribes.put(subscriber,m);
-            if(DEBUG)
+            if(GlobalConfig.SHOW_LOG)
                 Log.d(TAG,"订阅者"+subscriberName+"订阅事件"+eventName);
         }
     }
@@ -168,7 +167,7 @@ public class EventObserver {
         }
         if(events.size()==0)
             mLocalObserverMap.remove(subscribeName);
-        if(DEBUG)
+        if(GlobalConfig.SHOW_LOG)
             Log.d(TAG, "订阅者" + subscribeName + "移除事件"+eventName);
     }
 
@@ -178,7 +177,7 @@ public class EventObserver {
      */
     public void sendEvent(Object event){
         if(event==null){
-            if(DEBUG)
+            if(GlobalConfig.SHOW_LOG)
                 Log.d(TAG,"无法发送null事件");
             return;
         }
@@ -188,7 +187,7 @@ public class EventObserver {
         EntityWrapper entity=new EntityWrapper(event);
         intent.putExtra("entity",entity);
         lbm.sendBroadcast(intent);
-        if(DEBUG)
+        if(GlobalConfig.SHOW_LOG)
             Log.d(TAG,"广播事件"+name);
     }
 
@@ -267,7 +266,7 @@ public class EventObserver {
      * 应用退出时应该调用这个方法清理所有数据
      */
     public void clear(){
-        if(DEBUG)
+        if(GlobalConfig.SHOW_LOG)
             Log.d(TAG,"清理所有数据");
         clearReceiver();
         mLocalObserver.clear();

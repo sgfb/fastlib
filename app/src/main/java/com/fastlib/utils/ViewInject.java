@@ -6,7 +6,8 @@ import android.view.View;
 import android.widget.AdapterView;
 
 import com.fastlib.annotation.Bind;
-import com.fastlib.app.FastActivity;
+import com.fastlib.annotation.LocalData;
+import com.fastlib.app.GlobalConfig;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -55,7 +56,7 @@ public class ViewInject{
         if(runOnWorkThread&&mThreadPool!=null)
             mThreadPool.execute(new Runnable() {
                 @Override
-                public void run() {
+                public void run(){
                     try {
                         m.invoke(getReceiver(),objs);
                     } catch (IllegalAccessException e) {
@@ -70,10 +71,12 @@ public class ViewInject{
                 Object result=m.invoke(getReceiver(),objs);
                 if(result instanceof Boolean)
                     return (Boolean)result;
-            } catch (IllegalAccessException e) {
+            } catch (IllegalAccessException e){
+                if(GlobalConfig.SHOW_LOG)
                 System.out.println("toggle error:"+e.getCause());
                 return false;
             } catch (InvocationTargetException e){
+                if(GlobalConfig.SHOW_LOG)
                 System.out.println("toggle error:"+e.getCause());
                 return false;
             }
@@ -133,8 +136,10 @@ public class ViewInject{
         Method[] methods=getReceiver().getClass().getDeclaredMethods();
         if(methods!=null&&methods.length>0)
             for(final Method m:methods){
+                m.setAccessible(true);
                 Bind vi=m.getAnnotation(Bind.class);
-                if(vi!=null){
+                LocalData ld=m.getAnnotation(LocalData.class);
+                if(vi!=null&&ld==null){
                     int[] ids=vi.value();
                     if(ids.length>0){
                         for(int id:ids){
@@ -158,6 +163,7 @@ public class ViewInject{
                             field.setAccessible(true);
                             field.set(getReceiver(),findViewById(ids[0]));
                         } catch (IllegalAccessException e) {
+                            if(GlobalConfig.SHOW_LOG)
                             System.out.println(e.getMessage());
                         }
                     }

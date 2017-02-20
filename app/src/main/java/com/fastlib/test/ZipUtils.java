@@ -2,6 +2,7 @@ package com.fastlib.test;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -12,6 +13,8 @@ import java.io.StringReader;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 import java.util.zip.CheckedOutputStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -109,5 +112,37 @@ public class ZipUtils {
 			e.printStackTrace();
 		}
 		return "error";
+	}
+
+	/**
+	 * 字符串压缩
+	 * @param raw
+	 * @return
+	 * @throws IOException
+     */
+	public static byte[] compressStr(String raw) throws IOException {
+		ByteArrayOutputStream baos=new ByteArrayOutputStream();
+		GZIPOutputStream out=new GZIPOutputStream(baos);
+		out.write(raw.getBytes());
+		out.close();
+		return baos.toByteArray();
+	}
+
+	/**
+	 * 解压压缩数据成字符串
+	 * @param compressData
+	 * @return
+	 * @throws IOException
+     */
+	public static String uncompressStr(byte[] compressData) throws IOException {
+		ByteArrayInputStream bais=new ByteArrayInputStream(compressData);
+		ByteArrayOutputStream baos=new ByteArrayOutputStream();
+		GZIPInputStream in=new GZIPInputStream(bais);
+		byte[] data=new byte[4096];
+		int len;
+		while((len=in.read(data))!=-1&&!Thread.currentThread().isInterrupted())
+			baos.write(data,0,len);
+		in.close();
+		return new String(baos.toByteArray());
 	}
 }

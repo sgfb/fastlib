@@ -3,10 +3,13 @@ package com.fastlib.net;
 import android.content.res.Resources;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
+
+import com.fastlib.app.GlobalConfig;
 
 import java.util.HashMap;
 import java.util.List;
@@ -69,7 +72,8 @@ public class NetQueue{
                 mRequestCount++;
                 Tx+=processor1.getTx();
                 Rx+=processor1.getRx();
-                System.out.println(processor1);
+                if(GlobalConfig.SHOW_LOG)
+                    System.out.println(processor1);
             }
         },new Handler(Looper.getMainLooper()));
         if(pool!=null)

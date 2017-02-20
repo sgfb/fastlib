@@ -135,7 +135,6 @@ public abstract class SingleAdapterForRecycler<T,R,H extends RecyclerView.ViewHo
         if(mRefreshLayout!=null)
             mRefreshLayout.setRefreshStatus(false);
         isLoading=false;
-        System.out.println("BindingAdapter error:"+error);
     }
 
     public ThreadPoolExecutor getThreadPool() {

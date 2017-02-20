@@ -2,7 +2,6 @@ package com.fastlib.net;
 
 import android.app.Activity;
 import android.content.Context;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
@@ -18,7 +17,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -43,11 +41,10 @@ public class Request {
     private Downloadable mDownloadable;
     private List<Pair<String, String>> mHeadExtra; //额外头部信息
     private Map<String, String> mParams;
-    private Map<String, File> mFiles;
+    private List<Pair<String,File>> mFiles;
     private RequestType mType = RequestType.DEFAULT;
     private Object mTag; //额外信息
     private String[] mCookies; //留存的cookies
-    private FutureTask<Integer> mFutureTask;
     //加入activity或者fragment可以提升安全性
     private Activity mActivity;
     private Fragment mFragment;
@@ -94,7 +91,7 @@ public class Request {
         mUrl = url;
         useFactory = true;
         mParams = new HashMap<>();
-        mFiles = new HashMap<>();
+        mFiles = new ArrayList<>();
         mHeadExtra = new ArrayList<>();
     }
 
@@ -118,7 +115,6 @@ public class Request {
         mType = RequestType.DEFAULT;
         mTag = null;
         mCookies = null;
-        mFutureTask = null;
         mActivity = null;
         mFragment = null;
         mListener = null;
@@ -206,22 +202,19 @@ public class Request {
      */
     public Request put(String key, File file) {
         if (mFiles == null)
-            mFiles = new HashMap<>();
-        mFiles.put(key, file);
+            mFiles = new ArrayList<>();
+        mFiles.add(new Pair<>(key,file));
         return this;
     }
 
     /**
-     * 发送多文件
-     *
+     * 发送文件列表
      * @param fileParams
      * @return
      */
-    public Request putFile(Map<String, File> fileParams) {
-        if (mFiles == null)
-            mFiles = fileParams;
-        else
-            mFiles.putAll(fileParams);
+    public Request putFile(List<Pair<String,File>> fileParams) {
+        if (mFiles == null) mFiles = fileParams;
+        else mFiles.addAll(fileParams);
         return this;
     }
 
@@ -313,18 +306,15 @@ public class Request {
     }
 
     /**
-     * 发送文件
-     *
+     * 发送文件列表
      * @param files
      */
-    public void setFiles(Map<String, File> files) {
-        if (files == null)
-            mFiles.clear();
-        else
-            mFiles = files;
+    public void setFiles(List<Pair<String,File>> files) {
+        if (files == null) mFiles.clear();
+        else mFiles = files;
     }
 
-    public Map<String, File> getFiles() {
+    public List<Pair<String,File>> getFiles() {
         return mFiles;
     }
 
@@ -383,13 +373,8 @@ public class Request {
     /**
      * 取消网络请求
      */
-    public void cancel() {
-        if (mFutureTask == null || mFutureTask.isDone() || mFutureTask.isCancelled()) {
-            System.out.println("网络请求未开始");
-            return;
-        }
-        mFutureTask.cancel(true);
-        if (mListener != null)
+    public void cancel(){
+        if(mListener != null)
             mListener.onErrorListener(this, "取消请求 " + mUrl);
     }
 
@@ -480,14 +465,6 @@ public class Request {
     public Request setHost(Fragment fragment) {
         mFragment = fragment;
         return this;
-    }
-
-    public FutureTask<Integer> getFutureTask() {
-        return mFutureTask;
-    }
-
-    public void setFutureTask(FutureTask<Integer> futureTask) {
-        mFutureTask = futureTask;
     }
 
     public String[] getCookies() {

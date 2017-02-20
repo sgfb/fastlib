@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fastlib.annotation.Database;
+import com.fastlib.app.GlobalConfig;
 import com.fastlib.bean.DatabaseTable;
 import com.fastlib.net.NetQueue;
 import com.fastlib.utils.Reflect;
@@ -23,16 +24,14 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
-import android.support.v4.util.Pair;
 import android.text.TextUtils;
 import android.util.Log;
 
 /**
  * 封装一些与数据库交互的基本操作
- *
  * @author sgfb
  */
-public class FastDatabase {
+public class FastDatabase{
     public final String TAG = FastDatabase.class.getSimpleName();
     public static final String DEFAULT_DATABASE_NAME = "default";
 
@@ -41,14 +40,13 @@ public class FastDatabase {
     private Context mContext;
     private RuntimeAttribute mAttribute;
 
-    public FastDatabase(Context context) {
+    public FastDatabase(Context context){
         mContext = context.getApplicationContext();
         mAttribute = new RuntimeAttribute();
     }
 
     /**
      * 返回公共数据库
-     *
      * @param context
      * @return
      */
@@ -154,7 +152,7 @@ public class FastDatabase {
         String[] args = selectionArgs.isEmpty() ? null : selectionArgs.toArray(new String[]{});
         cursor = database.rawQuery(complete, args);
         if (cursor == null) {
-            if (sConfig.isOutInformation)
+            if (GlobalConfig.SHOW_LOG)
                 Log.w(TAG, "请求的数据不存在数据库");
             database.close();
             return null;
@@ -222,7 +220,7 @@ public class FastDatabase {
                 list.add(obj);
                 cursor.moveToNext();
             } catch (Exception e) {
-                if (sConfig.isOutInformation)
+                if (GlobalConfig.SHOW_LOG)
                     Log.w(TAG, "数据库在取数据时发生异常:" + e.toString());
                 database.close();
                 return null;
@@ -363,12 +361,12 @@ public class FastDatabase {
         tableName = obj.getClass().getCanonicalName();
         //如果表不存在或者表中没有这条数据，则返回false
         if (!tableExists(tableName)) {
-            if (sConfig.isOutInformation)
+            if (GlobalConfig.SHOW_LOG)
                 Log.d(TAG, "更新数据失败，表不存在");
             return false;
         }
         if (!tableHadData(tableName)) {
-            if (sConfig.isOutInformation)
+            if (GlobalConfig.SHOW_LOG)
                 Log.d(TAG, "更新数据失败，表中不含如何数据");
             return false;
         }
@@ -378,7 +376,7 @@ public class FastDatabase {
         Cursor cursor = database.rawQuery("select *from '" + tableName + "'" + filter, ss = args.toArray(new String[]{}));
         cursor.moveToFirst();
         if (cursor.isAfterLast()) {
-            if (sConfig.isOutInformation)
+            if (GlobalConfig.SHOW_LOG)
                 Log.d(TAG, "更新数据失败,没有找到要更新的数据");
             cursor.close();
             database.close();
@@ -462,10 +460,10 @@ public class FastDatabase {
             database.beginTransaction();
             database.update("'" + tableName + "'", cv, filter, ss);
             database.setTransactionSuccessful();
-            if (sConfig.isOutInformation)
+            if (GlobalConfig.SHOW_LOG)
                 Log.d(TAG, (TextUtils.isEmpty(mAttribute.getWhichDatabase()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabase()) + "<--u-" + count + "- " + tableName);
         } catch (SQLiteException e) {
-            if (sConfig.isOutInformation)
+            if (GlobalConfig.SHOW_LOG)
                 Log.d(TAG, "更新数据失败，异常：" + e.toString());
             return false;
         } finally {
@@ -575,7 +573,7 @@ public class FastDatabase {
                     }
                 }
                 db.insert("'" + tableName + "'", null, cv);
-                if (sConfig.isOutInformation)
+                if (GlobalConfig.SHOW_LOG)
                     Log.d(TAG, (TextUtils.isEmpty(mAttribute.getWhichDatabase()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabase()) + "<----" + tableName);
             }
             db.setTransactionSuccessful();
@@ -622,8 +620,9 @@ public class FastDatabase {
                     field = obj.getClass().getDeclaredField(table.keyFieldName);
                     field.setAccessible(true);
                     Object keyValue = field.get(obj);
-                    if (Reflect.isInteger(field.getType().getSimpleName())) {
-                        if (((int) keyValue) > 0) {
+                    if (field.getType()==int.class||field.getType()==long.class){
+                        long lKeyValue=field.getType()==int.class?(int)keyValue:(long)keyValue;
+                        if (lKeyValue > 0) {
                             mAttribute.setFilterCommand(new And(FilterCondition.equal(keyValue.toString())));
                             List<?> data = get(obj.getClass());
                             mAttribute.setFilterCommand(null);
@@ -642,11 +641,11 @@ public class FastDatabase {
                         }
                     }
                 } catch (NoSuchFieldException e) {
-                    if (sConfig.isOutInformation)
+                    if (GlobalConfig.SHOW_LOG)
                         Log.w(TAG, "数据库saveOrUpdate时出现异常:" + e.toString());
                     return false;
                 } catch (IllegalAccessException e) {
-                    if (sConfig.isOutInformation)
+                    if (GlobalConfig.SHOW_LOG)
                         Log.w(TAG, "数据库saveOrUpdate时出现异常:" + e.toString());
                     return false;
                 }
@@ -723,9 +722,9 @@ public class FastDatabase {
         SQLiteDatabase db = mContext.openOrCreateDatabase(database, Context.MODE_PRIVATE, null);
         if (tableExists(table)) {
             db.execSQL("drop table '" + table + "'");
-            if (sConfig.isOutInformation)
+            if (GlobalConfig.SHOW_LOG)
                 Log.d(TAG, "删除表" + table);
-        } else if (sConfig.isOutInformation)
+        } else if (GlobalConfig.SHOW_LOG)
             Log.d(TAG, "表" + table + "不存在");
     }
 
@@ -917,15 +916,15 @@ public class FastDatabase {
             @Override
             public void onUpgrade(SQLiteDatabase db, int oldVersion,
                                   int newVersion) {
-                if (sConfig.isOutInformation)
+                if (GlobalConfig.SHOW_LOG)
                     Log.d(TAG, "发现数据库版本需要升级，开始自动升级");
                 if (mCustomUpdate != null) {
-                    if (sConfig.isOutInformation)
+                    if (GlobalConfig.SHOW_LOG)
                         Log.d(TAG, "使用自定义升级方案");
                     mCustomUpdate.update(db, oldVersion, newVersion);
                 } else
                     updateDatabase(db);
-                if (sConfig.isOutInformation)
+                if (GlobalConfig.SHOW_LOG)
                     Log.d(TAG, "数据库升级完毕");
             }
         };
@@ -983,7 +982,7 @@ public class FastDatabase {
             cla = Class.forName(tableName);
         } catch (ClassNotFoundException e) {
             db.execSQL("drop table '" + tableName + "'");
-            if (sConfig.isOutInformation)
+            if (GlobalConfig.SHOW_LOG)
                 Log.d(TAG, "删除表" + tableName);
             return;
         }
@@ -1084,7 +1083,7 @@ public class FastDatabase {
         }
         if (needRebuildTable || newColumn.size() > 0)
             alterTable(db, cla, convertDatas, newColumn, needRebuildTable);
-        else if (sConfig.isOutInformation)
+        else if (GlobalConfig.SHOW_LOG)
             Log.d(TAG, "表 " + tableName + " 不需要修改");
     }
 
@@ -1109,7 +1108,7 @@ public class FastDatabase {
                     String type = newColumn.get(column);
                     db.execSQL("alter table '" + tableName + "' add " + column + " " + type);
                 }
-                if (sConfig.isOutInformation)
+                if (GlobalConfig.SHOW_LOG)
                     Log.d(TAG, "表" + tableName + "增加" + Integer.toString(newColumn.size()) + "列");
             }
         } else {
@@ -1133,7 +1132,7 @@ public class FastDatabase {
                 db.execSQL("drop table '" + tableName + "'");
                 db.execSQL(generateCreateTableSql(cla));
             }
-            if (sConfig.isOutInformation)
+            if (GlobalConfig.SHOW_LOG)
                 Log.d(TAG, "表" + tableName + "被调整");
         }
     }
@@ -1304,7 +1303,6 @@ public class FastDatabase {
      * 数据库配置
      */
     public static class DatabaseConfig {
-        private boolean isOutInformation;
         private int mVersion;
         private String mCurrentDatabase;
         private String mPrefix;
@@ -1316,13 +1314,8 @@ public class FastDatabase {
          * 数据库名＝default.db
          */
         private DatabaseConfig() {
-            isOutInformation = true;
             mVersion = 1;
             mCurrentDatabase = DEFAULT_DATABASE_NAME + ".db";
-        }
-
-        public void setOutInfomation(boolean isOut) {
-            isOutInformation = isOut;
         }
 
         /**
@@ -1336,10 +1329,6 @@ public class FastDatabase {
 
         public String getDatabaseName() {
             return mCurrentDatabase;
-        }
-
-        public boolean getIsOutInformation() {
-            return isOutInformation;
         }
 
         public void setVersion(int version) {

@@ -8,6 +8,7 @@ import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.app.EventObserver;
+import com.fastlib.app.GlobalConfig;
 import com.fastlib.bean.EventDownloading;
 import com.fastlib.bean.EventUploading;
 import com.google.gson.Gson;
@@ -234,7 +235,8 @@ public class NetProcessor implements Runnable{
                     });
                 }
             } catch (JsonParseException e){
-                System.out.println("解析时出现异常:" + e.getMessage());
+                if(GlobalConfig.SHOW_LOG)
+                    System.out.println("解析时出现异常:" + e.getMessage());
                 mMessage = e.getMessage();
                 isSuccess=false;
             }
@@ -262,7 +264,7 @@ public class NetProcessor implements Runnable{
         sb.deleteCharAt(sb.length() - 1);
     }
 
-    private void multipart(Map<String, String> strParams, Map<String, File> fileParams, OutputStream out) throws IOException {
+    private void multipart(Map<String, String> strParams,List<Pair<String,File>> fileParams, OutputStream out) throws IOException {
         if (strParams != null && strParams.size() > 0) {
             Iterator<String> iter = strParams.keySet().iterator();
             StringBuilder sb = new StringBuilder();
@@ -279,19 +281,18 @@ public class NetProcessor implements Runnable{
         }
 
         if (fileParams != null && fileParams.size() > 0) {
-            Iterator<String> iter = fileParams.keySet().iterator();
+            Iterator<Pair<String,File>> iter = fileParams.iterator();
             while (iter.hasNext()&&!Thread.currentThread().isInterrupted()){
                 StringBuilder sb = new StringBuilder();
-                String key = iter.next();
-                File value = fileParams.get(key);
-                if (value != null && value.exists() && value.isFile()) {
+                Pair<String,File> pair = iter.next();
+                if (pair.second != null && pair.second.exists() && pair.second.isFile()) {
                     sb.append("--" + BOUNDARY).append(CRLF);
-                    sb.append("Content-Disposition:form-data; name=\"" + key + "\";filename=\"" + value.getName() + "\"").append(CRLF);
-                    sb.append("Content-type: " + URLConnection.guessContentTypeFromName(value.getName())).append(CRLF);
+                    sb.append("Content-Disposition:form-data; name=\"" + pair.first + "\";filename=\"" + pair.second.getName() + "\"").append(CRLF);
+                    sb.append("Content-type: " + URLConnection.guessContentTypeFromName(pair.second.getName())).append(CRLF);
                     sb.append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
                     out.write(sb.toString().getBytes());
                     Tx += sb.toString().getBytes().length;
-                    copyFileToStream(value, out);
+                    copyFileToStream(pair.second,out);
                     out.write(CRLF.getBytes());
                 }
             }

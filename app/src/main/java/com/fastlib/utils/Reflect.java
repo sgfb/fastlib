@@ -14,11 +14,13 @@ import java.util.Objects;
 
 /**
  * 使反射变得更简单容易
- * 
  * @author Sgfb
- *
  */
 public class Reflect{
+
+	public static void dataInject(Object obj,Field field){
+
+	}
 	
 	/**
 	 * 使用方法:reflectString(对象,"对象.子对象.孙对象...")

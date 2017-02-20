@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,6 +29,15 @@ public class Utils{
 
     private Utils(){
         //no instance
+    }
+
+    public static <T> List<T> listOf(T... values){
+        List<T> list=new ArrayList<>();
+        if(values==null)
+            return list;
+        for(int i=0;i<values.length;i++)
+            list.add(values[i]);
+        return list;
     }
 
     /**
@@ -86,27 +97,14 @@ public class Utils{
     }
 
     /**
-     * 使用资源库中颜色使Drawable染色
+     * Drawable染色
      * @param src
      * @param color
      * @return
      */
     public static Drawable tintDrawable(Drawable src,int color){
-        return tintDrawable(src,color,true);
-    }
-
-    /**
-     * Drawable染色
-     * @param src
-     * @param color
-     * @param fromResource 是否来自资源库中
-     * @return
-     */
-    public static Drawable tintDrawable(Drawable src,int color,boolean fromResource){
-        Drawable wrapDrawable= DrawableCompat.wrap(src);
-        if(fromResource)
-            color= Resources.getSystem().getColor(color);
-        DrawableCompat.setTint(src,color);
+        Drawable wrapDrawable= DrawableCompat.wrap(src.mutate());
+        DrawableCompat.setTint(wrapDrawable,color);
         return wrapDrawable;
     }
 

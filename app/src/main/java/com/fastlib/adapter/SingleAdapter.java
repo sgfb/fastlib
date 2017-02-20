@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import com.fastlib.app.FastActivity;
+import com.fastlib.app.GlobalConfig;
 import com.fastlib.base.OldViewHolder;
 import com.fastlib.base.Refreshable;
 import com.fastlib.base.AdapterViewState;
@@ -195,6 +196,5 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 		if(mRefreshLayout!=null)
 			mRefreshLayout.setRefreshStatus(false);
 		isLoading=false;
-		System.out.println("BindingAdapter error:"+error);
 	}
 }

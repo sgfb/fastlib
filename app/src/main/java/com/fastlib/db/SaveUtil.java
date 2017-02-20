@@ -3,19 +3,16 @@ package com.fastlib.db;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
-import android.graphics.Color;
 import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Objects;
 
 /**
  * Created by sgfb on 16/4/23.
@@ -40,7 +37,7 @@ public class SaveUtil{
         byte[] data=new byte[1024];
         int len;
         ByteArrayOutputStream baos=new ByteArrayOutputStream();
-        while((len=in.read(data))!=-1)
+        while((len=in.read(data))!=-1&&!Thread.currentThread().isInterrupted())
             baos.write(data,0,len);
         in.close();
         return baos.toByteArray();
@@ -57,7 +54,7 @@ public class SaveUtil{
         byte[] data=new byte[1024];
         int len;
         ByteArrayOutputStream baos=new ByteArrayOutputStream();
-        while((len=in.read(data))!=-1)
+        while((len=in.read(data))!=-1&&!Thread.currentThread().isInterrupted())
             baos.write(data,0,len);
         in.close();
         return baos.toByteArray();
@@ -234,6 +231,8 @@ public class SaveUtil{
      */
     public static long fileSize(File file){
         long count=0;
+        if(Thread.currentThread().isInterrupted())
+            return 0;
         if(file.isFile())
             count=file.length();
         else{
@@ -262,6 +261,8 @@ public class SaveUtil{
      * @return
      */
     public static boolean clearFile(File file){
+        if(Thread.currentThread().isInterrupted())
+            return false;
         if(file.isFile())
             return file.delete();
         else{

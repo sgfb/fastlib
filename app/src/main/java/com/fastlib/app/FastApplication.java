@@ -1,13 +1,18 @@
 package com.fastlib.app;
 
 import android.app.Application;
-import android.support.annotation.CallSuper;
+import android.os.Environment;
 
 import com.fastlib.bean.NetFlow;
+import com.fastlib.bean.UploadExceptionBean;
 import com.fastlib.db.FastDatabase;
+import com.fastlib.db.SaveUtil;
 import com.fastlib.net.NetQueue;
+import com.fastlib.test.UploadUncaughtException;
 import com.fastlib.utils.TimeUtil;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Date;
 
 /**
@@ -20,6 +25,22 @@ public class FastApplication extends Application{
     public void onCreate() {
         super.onCreate();
         EventObserver.build(this);
+//        new UploadUncaughtException(this,Thread.currentThread());
+//        uploadLastException();
+    }
+
+    private void uploadLastException(){
+        UploadExceptionBean bean= null;
+        try {
+            bean = (UploadExceptionBean) SaveUtil.getFromFile(new File(Environment.getExternalStorageDirectory().getAbsolutePath()+File.separator+"track.txt"));
+            if(bean!=null) {
+                UploadUncaughtException.uploadException(bean);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
