@@ -53,7 +53,7 @@ public class EventObserver {
     }
 
     /**
-     * 订阅注册者所有有Event注解的本地事件.这个方法将会遍历订阅者所有方法效率略低于subscribe(Object,Class)
+     * 订阅注册者所有有Event注解的本地事件.这个方法将会遍历订阅者所有方法
      * @param subscriber 订阅者
      */
     public void subscribe(Object subscriber){

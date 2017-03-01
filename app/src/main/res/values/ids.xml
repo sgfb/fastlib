@@ -9,4 +9,7 @@
     <!--AbsActivityPreviewImage必需-->
     <item type="id" name="viewPager"/>
     <item type="id" name="indicator"/>
+
+    <!--网络图像加载用id-->
+    <item type="id" name="urlImage"/>
 </resources>

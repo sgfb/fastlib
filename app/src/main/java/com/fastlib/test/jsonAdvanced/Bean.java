@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.test.jsonAdvanced;
 
 import com.fastlib.annotation.Database;
 

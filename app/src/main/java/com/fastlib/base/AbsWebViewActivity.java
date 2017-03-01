@@ -1,8 +1,6 @@
 package com.fastlib.base;
 
-import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
@@ -11,11 +9,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 
-import com.fastlib.R;
-
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-
 
 /**
  * Created by sgfb on 16/9/29.

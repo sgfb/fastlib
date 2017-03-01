@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.test.jsonAdvanced;
 
 import android.content.Context;
 import android.support.annotation.LayoutRes;

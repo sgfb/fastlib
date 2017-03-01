@@ -15,7 +15,6 @@ import android.widget.TextView;
  * 通用View持有者
  */
 public class OldViewHolder {
-
 	private SparseArray<View> mViews;
 	private View mConvertView;
 	private int mLayoutId;
@@ -29,7 +28,6 @@ public class OldViewHolder {
 
 	/**
 	 * 获取ViewHolder实例
-	 * 
 	 * @param context
 	 * @param convertView
 	 * @param parent
@@ -47,7 +45,6 @@ public class OldViewHolder {
 
 	/**
 	 * 获取根View
-	 * 
 	 * @return
 	 */
 	public View getConvertView() {
@@ -56,7 +53,6 @@ public class OldViewHolder {
 
 	/**
 	 * 获取子View
-	 * 
 	 * @param viewId
 	 * @return
 	 */
@@ -72,7 +68,6 @@ public class OldViewHolder {
 
 	/**
 	 * 绑定指定ID的文本信息
-	 * 
 	 * @param viewId
 	 * @param str
 	 */

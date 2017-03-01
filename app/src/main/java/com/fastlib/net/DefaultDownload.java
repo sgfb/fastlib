@@ -20,12 +20,13 @@ public class DefaultDownload implements Downloadable {
     }
 
     public DefaultDownload(File target,boolean supportBreak){
-        this(target,false,true);
+        this(target,supportBreak,true);
     }
 
     public DefaultDownload(File target,boolean supportBreak,boolean changeIfHadName){
         mTargetFile=target;
         mSupportBreak=supportBreak;
+        mChangeIfHadName=changeIfHadName;
         if(!mTargetFile.exists())
             try {
                 mTargetFile.createNewFile();

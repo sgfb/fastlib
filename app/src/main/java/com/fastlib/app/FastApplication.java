@@ -19,7 +19,6 @@ import java.util.Date;
  * 全局环境配置
  */
 public class FastApplication extends Application{
-    public static final String NAME_SHAREPREFERENCES="fastlib";
 
     @Override
     public void onCreate() {

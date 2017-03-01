@@ -504,9 +504,9 @@ public class FastDatabase{
                 cv.clear();
                 for (Field field : fields) {
                     field.setAccessible(true);
-                    String type = field.getType().getSimpleName();
                     Database fieldInject = field.getAnnotation(Database.class);
                     String columnName;
+                    Class<?> type=field.getType();
 
                     if (fieldInject != null && fieldInject.ignore())
                         continue;
@@ -524,51 +524,44 @@ public class FastDatabase{
                             continue;
                         if (columnName.contains("$"))
                             continue;
-                        switch (type) {
-                            case "boolean":
-                                cv.put(columnName, field.getBoolean(obj));
-                                break;
-                            case "short":
-                                cv.put(columnName, field.getShort(obj));
-                                break;
-                            case "int":
-                                cv.put(columnName, field.getInt(obj));
-                                break;
-                            case "long":
-                                cv.put(columnName, field.getLong(obj));
-                                break;
-                            case "float":
-                                cv.put(columnName, field.getFloat(obj));
-                                break;
-                            case "double":
-                                cv.put(columnName, field.getDouble(obj));
-                                break;
-                            case "char":
-                                char c = field.getChar(obj);
-                                if (c == 0)
-                                    cv.putNull(columnName);
-                                else
-                                    cv.put(columnName, String.valueOf(c));
-                                break;
-                            case "String":
-                                String s = (String) field.get(obj);
-                                if (s == null)
-                                    cv.putNull(columnName);
-                                else
-                                    cv.put(columnName, s);
-                                break;
-                            default:
-                                Object pre = field.get(obj);
-                                Gson gson = new Gson();
-                                String json = gson.toJson(pre);
-
-                                if (pre == null)
-                                    cv.putNull(columnName);
-                                else
-                                    cv.put(columnName, json);
-                                break;
+                        if(type==boolean.class)
+                            cv.put(columnName,field.getBoolean(obj));
+                        else if(type==int.class)
+                            cv.put(columnName,field.getInt(obj));
+                        else if(type==long.class)
+                            cv.put(columnName,field.getLong(obj));
+                        else if(type==float.class)
+                            cv.put(columnName,field.getFloat(obj));
+                        else if(type==double.class)
+                            cv.put(columnName,field.getDouble(obj));
+                        else if(type==char.class){
+                            char c = field.getChar(obj);
+                            if (c == 0)
+                                cv.putNull(columnName);
+                            else
+                                cv.put(columnName, String.valueOf(c));
                         }
-                    } catch (IllegalAccessException | IllegalArgumentException e) {
+                        else if(type==short.class)
+                            cv.put(columnName,field.getShort(obj));
+                        else if(type==String.class)
+                            cv.put(columnName,(String)field.get(obj));
+                        else if(type==byte.class)
+                            cv.put(columnName,field.getByte(obj));
+                        else if(type==byte[].class)
+                            cv.put(columnName,(byte[])field.get(obj));
+                        else{
+                            Object pre = field.get(obj);
+                            Gson gson = new Gson();
+                            String json = gson.toJson(pre);
+
+                            if (pre == null)
+                                cv.putNull(columnName);
+                            else
+                                cv.put(columnName, json);
+                        }
+                    } catch (IllegalAccessException | IllegalArgumentException e){
+                        if(GlobalConfig.SHOW_LOG)
+                            Log.d(TAG,"更新数据失败:"+e.getMessage());
                         return false;
                     }
                 }
@@ -577,7 +570,9 @@ public class FastDatabase{
                     Log.d(TAG, (TextUtils.isEmpty(mAttribute.getWhichDatabase()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabase()) + "<----" + tableName);
             }
             db.setTransactionSuccessful();
-        } catch (SQLiteException e) {
+        } catch (SQLiteException e){
+            if(GlobalConfig.SHOW_LOG)
+                Log.d(TAG,"更新数据失败:"+e.getMessage());
             return false;
         } finally {
             db.endTransaction();
@@ -834,7 +829,6 @@ public class FastDatabase{
 
     /**
      * 生成创建表sql语句
-     *
      * @param cla
      * @return
      */
@@ -859,9 +853,9 @@ public class FastDatabase{
                     .append(" " + column.type);
             if (column.isPrimaryKey)
                 sb.append(" primary key");
-            if (column.autoincrement) {
+            if (column.autoincrement){
                 if (!column.type.equals("integer"))
-                    throw new RuntimeException("自动增长只能用于int型数据");
+                    throw new RuntimeException("自动增长只能用于整型数据");
                 sb.append(" autoincrement");
             }
             sb.append(",");
