@@ -1,12 +1,16 @@
 package com.fastlib.utils;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.os.Build;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.view.View;
 import android.widget.AdapterView;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.LocalData;
+import com.fastlib.annotation.TransitionAnimation;
 import com.fastlib.app.GlobalConfig;
 
 import java.lang.reflect.Field;
@@ -20,30 +24,24 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class ViewInject{
     private ThreadPoolExecutor mThreadPool;
-    private Activity mActivity;
-    private Fragment mFragment;
+    private Object mHost; //host仅为Activity或Fragment
+    private View mRoot;
 
-    private ViewInject( Activity activity, Fragment fragment,ThreadPoolExecutor threadPool){
+    private ViewInject(Object host, @NonNull View root, ThreadPoolExecutor threadPool){
+        if(!(host instanceof Activity)&&!(host instanceof Fragment))
+            throw new IllegalArgumentException("host 必须是Activity或者Fragment");
         mThreadPool = threadPool;
-        mActivity = activity;
-        mFragment = fragment;
+        mHost=host;
+        mRoot=root;
         injectViewEvent();
     }
 
-    public static void inject(Activity activity){
-        ViewInject vi=new ViewInject(activity,null,null);
+    public static void inject(Object host,@NonNull View root){
+        inject(host,root,null);
     }
 
-    public static void inject(Fragment fragment){
-        ViewInject vi=new ViewInject(null,fragment,null);
-    }
-
-    public static void inject(Activity activity,ThreadPoolExecutor threadPool){
-        ViewInject vi=new ViewInject(activity,null,threadPool);
-    }
-
-    public static void inject(Fragment fragment,ThreadPoolExecutor threadPool){
-        ViewInject vi=new ViewInject(null,fragment,threadPool);
+    public static void inject(Object host,@NonNull View root,ThreadPoolExecutor threadPool){
+        new ViewInject(host,root,threadPool);
     }
 
     /**
@@ -58,7 +56,7 @@ public class ViewInject{
                 @Override
                 public void run(){
                     try {
-                        m.invoke(getReceiver(),objs);
+                        m.invoke(mHost,objs);
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
                     } catch (InvocationTargetException e) {
@@ -68,7 +66,7 @@ public class ViewInject{
             });
         else
             try {
-                Object result=m.invoke(getReceiver(),objs);
+                Object result=m.invoke(mHost,objs);
                 if(result instanceof Boolean)
                     return (Boolean)result;
             } catch (IllegalAccessException e){
@@ -133,7 +131,7 @@ public class ViewInject{
      */
     private void injectViewEvent(){
         //绑定控件方法
-        Method[] methods=getReceiver().getClass().getDeclaredMethods();
+        Method[] methods=mHost.getClass().getDeclaredMethods();
         if(methods!=null&&methods.length>0)
             for(final Method m:methods){
                 m.setAccessible(true);
@@ -143,7 +141,7 @@ public class ViewInject{
                     int[] ids=vi.value();
                     if(ids.length>0){
                         for(int id:ids){
-                            View v=findViewById(id);
+                            View v=mRoot.findViewById(id);
                             if(v!=null)
                                 bindListener(m,v,vi);
                         }
@@ -152,16 +150,18 @@ public class ViewInject{
             }
 
         //绑定视图到属性
-        Field[] fields=getReceiver().getClass().getDeclaredFields();
+        Field[] fields=mHost.getClass().getDeclaredFields();
         if(fields!=null&&fields.length>0)
             for(Field field:fields){
                 Bind vi=field.getAnnotation(Bind.class);
                 if(vi!=null){
                     int[] ids=vi.value();
                     if(ids.length>0){
-                        try {
+                        try{
+                            View view=mRoot.findViewById(ids[0]);
                             field.setAccessible(true);
-                            field.set(getReceiver(),findViewById(ids[0]));
+                            field.set(mHost,view);
+                            checkTransitionAnimationInject(view,field);
                         } catch (IllegalAccessException e) {
                             if(GlobalConfig.SHOW_LOG)
                             System.out.println(e.getMessage());
@@ -171,18 +171,32 @@ public class ViewInject{
             }
     }
 
-    private View findViewById(int id){
-        if(mActivity!=null)
-            return mActivity.findViewById(id);
-        if(mFragment.getView()!=null)
-            return mFragment.getView().findViewById(id);
-        return null;
+    /**
+     * 检查是否有元素分享动画注解，如果有将分享名注入
+     */
+    @TargetApi(21)
+    private void checkTransitionAnimationInject(View view, Field field){
+        if(Build.VERSION.SDK_INT<Build.VERSION_CODES.LOLLIPOP) //小于5.0不检查
+            return;
+        if(view==null){
+            if(GlobalConfig.SHOW_LOG)
+                System.out.println("视图为空，不可使用共享动画名注入");
+            return;
+        }
+        TransitionAnimation ta=field.getAnnotation(TransitionAnimation.class);
+        if(ta!=null)
+            view.setTransitionName(getHostParams(ta.value()));
     }
 
-    private Object getReceiver(){
-        if(mActivity!=null)
-            return mActivity;
+    /**
+     * 获取宿主字符串参数，Activity为Intent.getString,Fragment为Bundle.getString
+     * @param key
+     * @return
+     */
+    private String getHostParams(String key){
+        if(mHost instanceof Activity)
+            return ((Activity)mHost).getIntent().getStringExtra(key);
         else
-            return mFragment;
+            return ((Fragment)mHost).getArguments().getString(key);
     }
 }

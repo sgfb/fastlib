@@ -148,18 +148,32 @@ public class Utils{
     /**
      * sha1文件检验
      * @param filePath
+     * @param type 文件校验类型
      * @return
      */
-    public static byte[] getSha1(String filePath){
+    public static String getFileVerify(String filePath,FileVerifyType type){
+        String typeStr="SHA-1";
+        switch (type){
+            case SHA_1:typeStr="SHA-1";break;
+            case MD5:typeStr="MD5";break;
+        }
         try {
             FileInputStream in=new FileInputStream(new File(filePath));
-            MessageDigest md= MessageDigest.getInstance("SHA-1");
-            byte[] data=new byte[1024*1024*10];
+            MessageDigest md= MessageDigest.getInstance(typeStr);
+            byte[] data=new byte[8192];
             int len;
             while((len=in.read(data))!=-1)
                 md.update(data,0,len);
+            data=md.digest();
             in.close();
-            return md.digest();
+            StringBuilder  sb= new StringBuilder();
+            for (int i = 0; i < data.length; i++) {
+                if (Integer.toHexString(0xFF & data[i]).length() == 1)
+                    sb.append("0").append(Integer.toHexString(0xFF & data[i]));
+                else
+                    sb.append(Integer.toHexString(0xFF & data[i]));
+            }
+            return sb.toString();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
@@ -179,6 +193,14 @@ public class Utils{
         return m.matches();
     }
 
+    /**
+     * 字符串部分字染色
+     * @param start
+     * @param end
+     * @param text
+     * @param color
+     * @return
+     */
     public static SpannableStringBuilder getTextSomeOtherColor(int start,int end,String text,int color){
         SpannableStringBuilder ssb=new SpannableStringBuilder(text);
         ForegroundColorSpan foregroundColor=new ForegroundColorSpan(color);
@@ -219,5 +241,13 @@ public class Utils{
         for (int i=0;i<end-start;i++)
             bytes[i]=data[start+i];
         return bytesToInt(bytes);
+    }
+
+    /**
+     * 文件校验类型
+     */
+    public enum FileVerifyType{
+        SHA_1,
+        MD5,
     }
 }

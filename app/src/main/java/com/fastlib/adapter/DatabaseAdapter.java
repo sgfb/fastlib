@@ -8,7 +8,7 @@ import android.widget.BaseAdapter;
 
 import com.fastlib.base.OldViewHolder;
 import com.fastlib.base.Refreshable;
-import com.fastlib.db.DatabaseListListener;
+import com.fastlib.db.DatabaseListGetCallback;
 import com.fastlib.db.FastDatabase;
 import com.fastlib.db.FilterCommand;
 
@@ -18,7 +18,7 @@ import java.util.List;
  * Created by sgfb on 17/1/12.
  * 关联FastDatabase适配数据
  */
-public abstract class DatabaseAdapter<T> extends BaseAdapter implements DatabaseListListener<T>{
+public abstract class DatabaseAdapter<T> extends BaseAdapter implements DatabaseListGetCallback<T> {
     protected boolean isAsc,isRefresh,isMore;
     protected int mCurrentIndex=0,mPerCount=10; //当前位置索引和每次读取列表长度
     protected int mLayoutId;

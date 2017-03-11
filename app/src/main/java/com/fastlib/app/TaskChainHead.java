@@ -1,6 +1,8 @@
 package com.fastlib.app;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.os.Build;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -38,7 +40,7 @@ public class TaskChainHead<T>{
      * @param taskChain
      */
     public static void processTaskChain(final Activity activity, final ThreadPoolExecutor threadPool, final Thread hostThread, final TaskChain taskChain){
-        if(taskChain==null) return;
+        if(taskChain==null||activity.isFinishing()||isActivityDestroy(activity)) return;
         if(taskChain.mOnWitchThread==TaskChain.TYPE_THREAD_ON_MAIN){
             if(hostThread==Thread.currentThread()){
                 taskChain.mAction.run();
@@ -80,5 +82,11 @@ public class TaskChainHead<T>{
                 }
             }
         }
+    }
+
+    private static boolean isActivityDestroy(Activity activity){
+        if(Build.VERSION.SDK_INT<17)
+            return false;
+        return activity.isDestroyed();
     }
 }

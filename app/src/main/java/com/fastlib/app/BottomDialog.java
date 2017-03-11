@@ -20,22 +20,24 @@ import com.fastlib.R;
  * Created by sgfb on 16/9/20.
  * 底部dialog，带动画
  */
-public class BottomDialog extends DialogFragment{
+public abstract class BottomDialog extends DialogFragment{
+    public static final String ARG_LAYOUT_ID="layoutId"; //必传的布局id
 
-    public static BottomDialog getInstance(@LayoutRes int layoutId){
-        BottomDialog dialog=new BottomDialog();
-        Bundle bundle=new Bundle();
-        bundle.putInt("id",layoutId);
-        dialog.setArguments(bundle);
-        return dialog;
-    }
+    /**
+     * 绑定视图
+     * @param v
+     */
+    protected abstract void bindView(View v);
 
     @NonNull
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState){
-        AlertDialog.Builder builder=new AlertDialog.Builder(getContext()).setView(getArguments().getInt("id"));
+        View view=LayoutInflater.from(getContext()).inflate(getArguments().getInt(ARG_LAYOUT_ID),null);
+        AlertDialog.Builder builder=new AlertDialog.Builder(getContext()).setView(view);
         Dialog dialog=builder.create();
         Window window = dialog.getWindow();
+
+        bindView(view);
         window.setLayout(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.WRAP_CONTENT);
         window.setBackgroundDrawableResource(android.R.color.transparent);
         window.setGravity(Gravity.BOTTOM);

@@ -6,13 +6,14 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.fastlib.R;
 import com.fastlib.annotation.ContentView;
+import com.fastlib.annotation.TransitionAnimation;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.LocalDataInject;
@@ -37,10 +38,11 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 6.6.0权限获取辅助(mPermissionHelper)
  */
 public abstract class FastActivity extends AppCompatActivity{
-    protected ThreadPoolExecutor mThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(4);
+    protected ThreadPoolExecutor mThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(3);
     protected PermissionHelper mPermissionHelper;
 
     private boolean isGatingPhoto; //是否正在获取图像
+    private boolean isHadTransitionAnimation=false;
     private volatile int mPreparedTaskRemain=2; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
     private Thread mMainThread;
     private LocalDataInject mLocalDataInject;
@@ -61,7 +63,19 @@ public abstract class FastActivity extends AppCompatActivity{
                 EventObserver.getInstance().subscribe(FastActivity.this);
             }
         });
+        checkTransitionInject();
         checkContentViewInject();
+    }
+
+    /**
+     * 查看是否有共享元素动画
+     */
+    private void checkTransitionInject(){
+        TransitionAnimation ta=getClass().getAnnotation(TransitionAnimation.class);
+        if(ta!=null){
+            supportPostponeEnterTransition(); //暂停共享元素动画
+            isHadTransitionAnimation=true;
+        }
     }
 
     /**
@@ -215,7 +229,7 @@ public abstract class FastActivity extends AppCompatActivity{
         mThreadPool.execute(new Runnable() {
             @Override
             public void run() {
-                ViewInject.inject(FastActivity.this,mThreadPool);
+                ViewInject.inject(FastActivity.this,findViewById(android.R.id.content),mThreadPool);
                 prepareTask();
             }
         });
@@ -239,6 +253,8 @@ public abstract class FastActivity extends AppCompatActivity{
                 @Override
                 public void run() {
                     alreadyPrepared();
+                    if(isHadTransitionAnimation)
+                        supportStartPostponedEnterTransition();
                 }
             });
     }

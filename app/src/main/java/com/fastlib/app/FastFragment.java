@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.fastlib.annotation.ContentView;
+import com.fastlib.annotation.TransitionAnimation;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.LocalDataInject;
@@ -41,6 +42,7 @@ public abstract class FastFragment extends Fragment{
     protected PermissionHelper mPermissionHelper;
 
     private boolean isGatingPhoto; //是否正在获取图像
+    private boolean isHadTransitionAnimation=false;
     private volatile int mPreparedTaskRemain=2; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
     private List<Request> mRequests=new ArrayList<>();
     private LocalDataInject mLocalDataInject;
@@ -53,7 +55,7 @@ public abstract class FastFragment extends Fragment{
         super.onCreate(savedInstanceState);
         mLocalDataInject=new LocalDataInject(this);
         mPermissionHelper=new PermissionHelper(getActivity());
-        mThreadPool=(ThreadPoolExecutor) Executors.newFixedThreadPool(4);
+        mThreadPool=(ThreadPoolExecutor) Executors.newFixedThreadPool(3);
         mThreadPool.execute(new Runnable(){
             @Override
             public void run(){
@@ -65,23 +67,38 @@ public abstract class FastFragment extends Fragment{
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState){
+        checkTransitionAnimationInject();
         ContentView cv=getClass().getAnnotation(ContentView.class);
-        if(cv!=null)
-            return inflater.inflate(cv.value(),null);
+        if(cv!=null){
+            View root=inflater.inflate(cv.value(),null);
+            ViewInject.inject(FastFragment.this,root,mThreadPool);
+            prepareTask();
+            return root;
+        }
         return super.onCreateView(inflater, container, savedInstanceState);
+    }
+
+    /**
+     * 检查是否有共享元素动画
+     */
+    private void checkTransitionAnimationInject(){
+        TransitionAnimation ta=getClass().getAnnotation(TransitionAnimation.class);
+        if(ta!=null){
+
+        }
     }
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mThreadPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                ViewInject.inject(FastFragment.this,mThreadPool);
-                prepareTask();
-
-            }
-        });
+//        mThreadPool.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                ViewInject.inject(FastFragment.this,mThreadPool);
+//                prepareTask();
+//
+//            }
+//        });
         mThreadPool.execute(new Runnable(){
             @Override
             public void run() {
