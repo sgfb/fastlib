@@ -52,7 +52,7 @@ public abstract class PreviewImageFragment extends Fragment{
         Bundle arg=getArguments();
         int[] location=arg.getIntArray(KEY_LOCATION);
         int[] size=arg.getIntArray(KEY_SIZE);
-        Point screenSize= ScreenUtils.getScreenSize(getContext());
+        Point screenSize= ScreenUtils.getScreenSize();
 
         //初始化位置和尺寸
         if(size==null||size.length<2)

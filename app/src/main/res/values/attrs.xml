@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <declare-styleable name="InputLayout">
-        <attr name="input_title" format="string"/>
-        <attr name="input_hit" format="string"/>
-        <attr name="input_content" format="string"/>
-    </declare-styleable>
-
     <!--圆角视图-->
     <declare-styleable name="RoundImageView">
         <attr name="border" format="boolean"/>

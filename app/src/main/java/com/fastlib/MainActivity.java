@@ -1,36 +1,30 @@
 package com.fastlib;
 
-
-import android.os.Bundle;
 import android.view.View;
 
-import com.fastlib.adapter.BindingJsonAdapter;
-import com.fastlib.base.JsonActivity;
-import com.fastlib.net.Request;
+import com.fastlib.annotation.Bind;
+import com.fastlib.annotation.ContentView;
+
+import com.fastlib.app.FastActivity;
 
 /**
- * Created by sgfb on 16/5/10.
+ * Created by sgfb on 16/12/29.
  */
-public class MainActivity extends JsonActivity{
+@ContentView(R.layout.activity_main)
+public class MainActivity extends FastActivity{
 
-    @Override
-    public void onCreate(Bundle savedInstanceState){
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    @Bind(R.id.bt)
+    private void commit(View v){
+
+    }
+
+    @Bind(R.id.bt2)
+    private void commit2(View v){
+
     }
 
     @Override
-    public BindingJsonAdapter generateAdapter(){
-        return null;
-    }
+    protected void alreadyPrepared(){
 
-    @Override
-    public Request generateContentRequest(){
-        return null;
-    }
-
-    @Override
-    public void inflaterContent(View contentView){
-        System.out.println("修改jsonAdapter支持多接口多类型，同步修改JsonActivity");
     }
 }

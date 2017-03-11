@@ -1,6 +1,8 @@
 package com.fastlib.base;
 
 import android.content.Context;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
@@ -11,12 +13,8 @@ import android.widget.TextView;
 
 /**
  * 通用View持有者
- * 
- * @author Administrator
- * 
  */
 public class OldViewHolder {
-
 	private SparseArray<View> mViews;
 	private View mConvertView;
 	private int mLayoutId;
@@ -30,7 +28,6 @@ public class OldViewHolder {
 
 	/**
 	 * 获取ViewHolder实例
-	 * 
 	 * @param context
 	 * @param convertView
 	 * @param parent
@@ -48,7 +45,6 @@ public class OldViewHolder {
 
 	/**
 	 * 获取根View
-	 * 
 	 * @return
 	 */
 	public View getConvertView() {
@@ -57,7 +53,6 @@ public class OldViewHolder {
 
 	/**
 	 * 获取子View
-	 * 
 	 * @param viewId
 	 * @return
 	 */
@@ -73,13 +68,17 @@ public class OldViewHolder {
 
 	/**
 	 * 绑定指定ID的文本信息
-	 * 
 	 * @param viewId
 	 * @param str
 	 */
 	public void setText(int viewId, String str) {
 		TextView textView = getView(viewId);
 		textView.setText(str);
+	}
+
+	public void setText(int viewId,SpannableStringBuilder ss){
+		TextView textView = getView(viewId);
+		textView.setText(ss);
 	}
 
 	/**

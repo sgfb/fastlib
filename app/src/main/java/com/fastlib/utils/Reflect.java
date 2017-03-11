@@ -14,11 +14,13 @@ import java.util.Objects;
 
 /**
  * 使反射变得更简单容易
- * 
  * @author Sgfb
- *
  */
 public class Reflect{
+
+	public static void dataInject(Object obj,Field field){
+
+	}
 	
 	/**
 	 * 使用方法:reflectString(对象,"对象.子对象.孙对象...")
@@ -153,18 +155,6 @@ public class Reflect{
 				fields.add(fs[i]);
 		}
 		return fields.toArray(new Field[0]);
-	}
-
-	/**
-	 * 获取泛型(没有进行安全检查)
-	 * @param cla
-	 * @param index
-	 * @return
-	 */
-	public static Type getGenericity(Class<?> cla,int index){
-		Type genType=cla.getGenericSuperclass();
-		Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
-		return params[index];
 	}
 
 	/**

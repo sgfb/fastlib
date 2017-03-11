@@ -1,204 +1,261 @@
 package com.fastlib.app;
 
+import android.Manifest;
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.fastlib.annotation.Bind;
-import com.fastlib.annotation.Event;
-import com.fastlib.net.Listener;
-import com.fastlib.net.NetQueue;
+import com.fastlib.R;
+import com.fastlib.annotation.ContentView;
+import com.fastlib.annotation.TransitionAnimation;
 import com.fastlib.net.Request;
+import com.fastlib.utils.ImageUtil;
+import com.fastlib.utils.LocalDataInject;
+import com.fastlib.utils.N;
+import com.fastlib.utils.PermissionHelper;
+import com.fastlib.utils.ViewInject;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Created by sgfb on 16/9/5.
+ * Activity基本封装.
+ * 1.ContentView注解，Bind视图注解.
+ * 2.全局事件注册和解注册(EventObserver)
+ * 3.线程池及顺序任务列辅助方法(mThreadPool和startTasks(TaskChain))
+ * 4.本地数据辅助（LocalData）
+ * 5.相机相册调取（openAlbum(PhotoResultListener)和openCamera(PhotoResultListener))
+ * 6.6.0权限获取辅助(mPermissionHelper)
  */
-public class FastActivity extends AppCompatActivity{
-    private Map<String,Request> mRequests; //这个activity中的所有网络请求
-    private ActivityRefreshListener mRefreshListener;
-    private boolean mMutexRunning=false; //互斥网络请求是否运行中
+public abstract class FastActivity extends AppCompatActivity{
+    protected ThreadPoolExecutor mThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(3);
+    protected PermissionHelper mPermissionHelper;
+
+    private boolean isGatingPhoto; //是否正在获取图像
+    private boolean isHadTransitionAnimation=false;
+    private volatile int mPreparedTaskRemain=2; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
+    private Thread mMainThread;
+    private LocalDataInject mLocalDataInject;
+    private PhotoResultListener mPhotoResultListener;
+    private List<Request> mRequests = new ArrayList<>();
+
+    protected abstract void alreadyPrepared(); //所有初始化任务结束
 
     @Override
-    protected void onCreate(Bundle savedInstanceState){
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mRequests=new HashMap<>();
-        registerEvents();
+        mMainThread = Thread.currentThread();
+        mPermissionHelper=new PermissionHelper(this);
+        mLocalDataInject=new LocalDataInject(this);
+        mThreadPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                EventObserver.getInstance().subscribe(FastActivity.this);
+            }
+        });
+        checkTransitionInject();
+        checkContentViewInject();
+    }
+
+    /**
+     * 查看是否有共享元素动画
+     */
+    private void checkTransitionInject(){
+        TransitionAnimation ta=getClass().getAnnotation(TransitionAnimation.class);
+        if(ta!=null){
+            supportPostponeEnterTransition(); //暂停共享元素动画
+            isHadTransitionAnimation=true;
+        }
+    }
+
+    /**
+     * ContentView注入，如果存在的话
+     */
+    private void checkContentViewInject(){
+        ContentView cv=getClass().getAnnotation(ContentView.class);
+        if(cv!=null)
+            setContentView(cv.value());
+    }
+
+    /**
+     * 启动网络请求
+     *
+     * @param request
+     */
+    protected void net(Request request) {
+        if (!mRequests.contains(request))
+            mRequests.add(request);
+        request.setHost(this).setExecutor(mThreadPool).start(false);
+    }
+
+    public void addRequest(Request request) {
+        if (!mRequests.contains(request))
+            mRequests.add(request);
+    }
+
+    /**
+     * 启动一个任务链
+     * @param tc
+     */
+    public void startTasks(TaskChain tc){
+        TaskChainHead.processTaskChain(this, mThreadPool, mMainThread,tc.getFirst());
+    }
+
+    /**
+     * 开启获取相册照片
+     * @param photoResultListener
+     */
+    protected void openAlbum(final PhotoResultListener photoResultListener) {
+        mPermissionHelper.requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE, new Runnable() {
+            @Override
+            public void run() {
+                isGatingPhoto = true;
+                mPhotoResultListener = photoResultListener;
+                ImageUtil.openAlbum(FastActivity.this);
+            }
+        }, new Runnable() {
+            @Override
+            public void run() {
+                N.showShort(FastActivity.this, "请开启读存储卡权限");
+            }
+        });
+    }
+
+    /**
+     * 开启相机获取照片并且指定存储位置
+     * @param photoResultListener
+     * @param path 指定路径,这个路径的文件不能已被创建
+     */
+    protected void openCamera(final PhotoResultListener photoResultListener, final String path) {
+        mPermissionHelper.requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, new Runnable() {
+            @Override
+            public void run() {
+                mPermissionHelper.requestPermission(Manifest.permission.CAMERA, new Runnable() {
+                    @Override
+                    public void run() {
+                        isGatingPhoto = true;
+                        mPhotoResultListener = photoResultListener;
+                        if (TextUtils.isEmpty(path))
+                            ImageUtil.openCamera(FastActivity.this);
+                        else
+                            ImageUtil.openCamera(FastActivity.this,Uri.fromFile(new File(path)));
+                    }
+                }, new Runnable() {
+                    @Override
+                    public void run() {
+                        N.showShort(FastActivity.this, "请开启使用照相机权限");
+                    }
+                });
+            }
+        }, new Runnable() {
+            @Override
+            public void run() {
+                N.showShort(FastActivity.this, "请开启写存储卡权限");
+            }
+        });
+    }
+
+    /**
+     * 开启相机获取照片
+     * @param photoResultListener
+     */
+    protected void openCamera(PhotoResultListener photoResultListener) {
+        openCamera(photoResultListener, null);
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        mLocalDataInject.injectChildBack(data);
+        if (isGatingPhoto) {
+            isGatingPhoto = false;
+            if (resultCode != Activity.RESULT_OK)
+                return;
+            Uri photoUri = ImageUtil.getImageFromActive(this, requestCode, resultCode, data);
+            if (photoUri != null) {
+                String photoPath = ImageUtil.getImagePath(this, photoUri);
+                if (mPhotoResultListener != null)
+                    mPhotoResultListener.onPhotoResult(photoPath);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        mPermissionHelper.permissioResult(requestCode,permissions,grantResults);
     }
 
     @Override
     public void setContentView(int layoutResID) {
         super.setContentView(layoutResID);
-        injectViewEvent();
+        setContentViewAfter();
     }
 
     @Override
     public void setContentView(View view) {
         super.setContentView(view);
-        injectViewEvent();
+        setContentViewAfter();
     }
 
     @Override
     public void setContentView(View view, ViewGroup.LayoutParams params) {
         super.setContentView(view, params);
-        injectViewEvent();
+        setContentViewAfter();
     }
 
     @Override
-    protected void onDestroy(){
+    protected void onDestroy() {
         super.onDestroy();
         EventObserver.getInstance().unsubscribe(this);
-        if(mRequests!=null){
-            Iterator<String> iter=mRequests.keySet().iterator();
-            while(iter.hasNext()){
-                String key=iter.next();
-                Request r=mRequests.get(key);
-                if(r.getType()== Request.RequestType.DEFAULT)
-                    r.cancel();
+        mThreadPool.shutdownNow();
+        mThreadPool.purge();
+        for (Request request : mRequests)
+            request.clear();
+    }
+
+    private void setContentViewAfter(){
+        mThreadPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                ViewInject.inject(FastActivity.this,findViewById(android.R.id.content),mThreadPool);
+                prepareTask();
             }
-        }
-    }
-
-    /**
-     * 注册方法中的广播事件,如果有
-     */
-    private void registerEvents(){
-        Method[] methods=getClass().getDeclaredMethods();
-        if(methods!=null&&methods.length>0)
-            for(Method m:methods){
-                Event em=m.getAnnotation(Event.class);
-                if(em!=null){ //如果EventMethod注解非空，说明这个是一个广播方法
-                    Class<?>[] clas=m.getParameterTypes();
-                    if(clas==null||clas.length!=1) //如果形参空或长度不为1跳过(这也许不是一个标准的广播方法)
-                        continue;
-                    EventObserver.getInstance().subscribe(this,clas[0]);
-                }
+        });
+        mThreadPool.execute(new Runnable() {
+            @Override
+            public void run(){
+                mLocalDataInject.localDataInject();
+                prepareTask();
             }
+        });
     }
 
-    private void injectViewEvent(){
-        Method[] methods=getClass().getDeclaredMethods();
-        if(methods!=null&&methods.length>0)
-        for(final Method m:methods){
-            Bind vi=m.getAnnotation(Bind.class);
-            if(vi!=null){
-                int[] ids=vi.value();
-                if(ids!=null&&ids.length>0){
-                    for(int id:ids){
-                        View v=findViewById(id);
-                        if(v!=null)
-                            v.setOnClickListener(new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    try {
-                                        m.invoke(FastActivity.this,v);
-                                    } catch (IllegalAccessException e){
 
-                                    } catch (InvocationTargetException e){
-
-                                    }
-                                }
-                            });
-                    }
-                }
-            }
-        }
-        Field[] fields=getClass().getDeclaredFields();
-
-        if(fields!=null&&fields.length>0)
-            for(Field field:fields){
-                Bind vi=field.getAnnotation(Bind.class);
-                if(vi!=null){
-                    int[] ids=vi.value();
-                    if(ids!=null&&ids.length>0){
-                        try {
-                            field.setAccessible(true);
-                            field.set(FastActivity.this,findViewById(ids[0]));
-                        } catch (IllegalAccessException e) {
-                            System.out.println(e.getMessage());
-                        }
-                    }
-                }
-            }
+    public void startActivity(Class<? extends Activity> cla) {
+        startActivity(new Intent(this, cla));
     }
 
-    public void refresh(){
-        if(mRefreshListener!=null)
-            mRefreshListener.refresh();
-        if(mRequests!=null){
-            Iterator<String> iter=mRequests.keySet().iterator();
-            while(iter.hasNext()){
-                String key=iter.next();
-                Request request=mRequests.get(key);
-                NetQueue.getInstance().netRequest(request);
-            }
-        }
-    }
-
-    public void addRequest(Request request){
-        mRequests.put(request.getUrl(),request);
-    }
-
-    /**
-     * 将请求存储到列表中并且发起请求
-     * @param r
-     */
-    public void net(Request r){
-        if(mMutexRunning)
-            return;
-        if(mRequests.get(r.getUrl())==null)
-            mRequests.put(r.getUrl(),r);
-        NetQueue.getInstance().netRequest(r);
-    }
-
-    /**
-     * 启动一个互斥网络请求，当这个请求开始时当前模块不接受其他网络请求，也不会存起来
-     * @param view
-     * @param request
-     */
-    public void startMutexRequest(@Nullable final View view, Request request){
-        mMutexRunning=true;
-        if(view!=null)
-            view.setEnabled(false);
-        //如果activity被销毁Listener不会回调，当前的需求可以使用Listener回调
-        final Listener listener=request.getListener();
-        if(listener!=null){
-            request.setListener(new Listener() {
+    private synchronized void prepareTask(){
+        if(--mPreparedTaskRemain<=0)
+            runOnUiThread(new Runnable() {
                 @Override
-                public void onResponseListener(Request r, String result){
-                    if(view!=null)
-                        view.setEnabled(true);
-                    mMutexRunning=false;
-                    listener.onResponseListener(r,result);
-                }
-
-                @Override
-                public void onErrorListener(Request r, String error){
-                    if(view!=null)
-                        view.setEnabled(true);
-                    mMutexRunning=false;
-                    listener.onErrorListener(r,error);
+                public void run() {
+                    alreadyPrepared();
+                    if(isHadTransitionAnimation)
+                        supportStartPostponedEnterTransition();
                 }
             });
-        }
-    }
-
-    public void setRefreshListener(ActivityRefreshListener l){
-        mRefreshListener=l;
-    }
-
-    /**
-     * activity整个模块的网络请求刷新回调
-     */
-    public interface ActivityRefreshListener{
-        void refresh();
     }
 }

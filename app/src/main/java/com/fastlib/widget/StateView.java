@@ -3,9 +3,11 @@ package com.fastlib.widget;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import com.fastlib.app.GlobalConfig;
 import com.fastlib.base.AdapterViewState;
 
 import java.util.HashMap;
@@ -18,7 +20,7 @@ import java.util.Map;
 public class StateView extends FrameLayout implements AdapterViewState{
     public static final String TAG=StateView.class.getSimpleName();
 
-    private Map<Integer,View> mViews;
+    private SparseArray<View> mViews=new SparseArray<>();
     private View mCurrentView;
 
     public StateView(Context context){
@@ -27,13 +29,13 @@ public class StateView extends FrameLayout implements AdapterViewState{
 
     public StateView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        mViews=new HashMap<>();
     }
 
     @Override
     public void onStateChanged(int state){
         View v=mViews.get(state);
         if(v==null){
+            if(GlobalConfig.SHOW_LOG)
             Log.d(TAG,"StateView改变成一个非预期的状态");
             return;
         }

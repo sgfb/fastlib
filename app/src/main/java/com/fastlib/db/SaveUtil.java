@@ -2,26 +2,80 @@ package com.fastlib.db;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Objects;
 
 /**
  * Created by sgfb on 16/4/23.
  */
 public class SaveUtil{
     public static final String TAG=SaveUtil.class.getSimpleName();
+    public static String sSpName="default"; //存入SharedPreferences时的默认名
 
     private SaveUtil(){
         //can't instance
+    }
+
+    /**
+     * 读取assets中的某文件.尽可能使用这个方法读取一些小的文件，并且将这个方法置于子线程中，以保持响应
+     * @param am
+     * @param path
+     * @return 源数据
+     * @throws IOException
+     */
+    public static byte[] loadAssetsFile(AssetManager am, String path) throws IOException {
+        InputStream in=am.open(path);
+        byte[] data=new byte[1024];
+        int len;
+        ByteArrayOutputStream baos=new ByteArrayOutputStream();
+        while((len=in.read(data))!=-1&&!Thread.currentThread().isInterrupted())
+            baos.write(data,0,len);
+        in.close();
+        return baos.toByteArray();
+    }
+
+    /**
+     * 读取文件内容.尽可能使用这个方法读取一些小的文件，并且将这个方法置于子线程中，以保持响应
+     * @param path
+     * @return
+     * @throws IOException
+     */
+    public static byte[] loadFile(String path)throws IOException{
+        InputStream in=new FileInputStream(path);
+        byte[] data=new byte[1024];
+        int len;
+        ByteArrayOutputStream baos=new ByteArrayOutputStream();
+        while((len=in.read(data))!=-1&&!Thread.currentThread().isInterrupted())
+            baos.write(data,0,len);
+        in.close();
+        return baos.toByteArray();
+    }
+
+    /**
+     * 创建临时文件夹中的分类文件夹
+     * @param context 上下文
+     * @param type 取Environment中文件夹类型
+     * @return
+     */
+    public static File getExternalTempFolder(Context context,String type){
+        File root=context.getExternalCacheDir();
+        File folder=new File(root,type);
+        if(!folder.exists())
+            folder.mkdir();
+        return folder;
+    }
+
+    public static void saveToSp(Context context,String key,Object obj){
+        saveToSp(context,sSpName,key,obj);
     }
 
     /**
@@ -54,6 +108,16 @@ public class SaveUtil{
     /**
      * 从SharedPreferences中取出数据
      * @param context
+     * @param key
+     * @return
+     */
+    public static Object getFromSp(Context context,String key){
+        return getFromSp(context,sSpName,key);
+    }
+
+    /**
+     * 指定sp文件名从SharedPreferences中取出数据
+     * @param context
      * @param name
      * @param key
      * @return
@@ -63,8 +127,27 @@ public class SaveUtil{
         return sp.getAll().get(key);
     }
 
-    public static Object getFromSp(Context context,String name,String key,String def){
-        Object obj=getFromSp(context,name,key,def);
+    /**
+     * 从SharedPreferences中取出数据,如果不存在某数据返回默认数据
+     * @param context
+     * @param key
+     * @param def
+     * @return
+     */
+    public static Object getFromSp(Context context,String key,Object def){
+        return getFromSp(context,sSpName,key,def);
+    }
+
+    /**
+     * 指定sp文件名从SharedPreferences中取出数据,如果不存在某数据返回默认数据
+     * @param context
+     * @param name
+     * @param key
+     * @param def
+     * @return
+     */
+    public static Object getFromSp(Context context,String name,String key,Object def){
+        Object obj=getFromSp(context,name,key);
         if(obj==null)
             obj=def;
         return obj;
@@ -116,22 +199,40 @@ public class SaveUtil{
     }
 
     /**
-     * 计算缓存占用容量
+     * 计算缓存占用容量(内部加外部)
      * @param context
      * @return
      */
     public static long cacheSize(Context context){
-        File directory=context.getCacheDir();
-        return fileSize(directory);
+        return cacheSize(context,null);
     }
 
     /**
-     * 文件或文件夹占用容量
+     * 计算缓存占用容量(内部加外部加额外文件夹列表)
+     * @param context
+     * @param cacheFolders
+     * @return
+     */
+    public static long cacheSize(Context context,File[] cacheFolders){
+        File internalDir=context.getCacheDir();
+        File externalDir=context.getExternalCacheDir();
+        long len=fileSize(internalDir)+fileSize(externalDir);
+        if(cacheFolders!=null){
+            for(File f:cacheFolders)
+                len+=fileSize(f);
+        }
+        return len;
+    }
+
+    /**
+     * 文件或文件夹占用容量.应将此方法置于工作线程中
      * @param file
      * @return
      */
     public static long fileSize(File file){
         long count=0;
+        if(Thread.currentThread().isInterrupted())
+            return 0;
         if(file.isFile())
             count=file.length();
         else{
@@ -143,21 +244,25 @@ public class SaveUtil{
     }
 
     /**
-     * 清理内部缓存<br/>
+     * 清理缓存(内部加外部)<br/>
      * 如果缓存放在其他位置,请使用clearFile(File file)
      * @param context
      */
     public static void clearCache(Context context){
-        File directory=context.getCacheDir();
-        clearFile(directory);
+        File internalDir=context.getCacheDir();
+        File externalDir=context.getExternalCacheDir();
+        clearFile(internalDir);
+        clearFile(externalDir);
     }
 
     /**
-     * 清理文件,如果是文件夹必须递归删除成空文件夹
+     * 清理文件,如果是文件夹必须递归删除成空文件夹.应将此方法置于工作线程中
      * @param file
      * @return
      */
     public static boolean clearFile(File file){
+        if(Thread.currentThread().isInterrupted())
+            return false;
         if(file.isFile())
             return file.delete();
         else{

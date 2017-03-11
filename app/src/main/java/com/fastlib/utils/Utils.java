@@ -1,11 +1,22 @@
 package com.fastlib.utils;
 
+import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
+import android.support.v4.graphics.drawable.DrawableCompat;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+
+import com.fastlib.R;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,6 +29,83 @@ public class Utils{
 
     private Utils(){
         //no instance
+    }
+
+    public static <T> List<T> listOf(T... values){
+        List<T> list=new ArrayList<>();
+        if(values==null)
+            return list;
+        for(int i=0;i<values.length;i++)
+            list.add(values[i]);
+        return list;
+    }
+
+    /**
+     * 安全转换字符串为整型
+     * @param value
+     * @param defValue
+     * @return 转换失败返回默认值
+     */
+    public static int safeToString(String value,int defValue){
+        try{
+            return Integer.parseInt(value);
+        }catch (NumberFormatException e){
+            return defValue;
+        }
+    }
+
+    /**
+     * 安全转换字符串为长整型
+     * @param value
+     * @param defValue
+     * @return 转换失败返回默认值
+     */
+    public static long safeToString(String value,long defValue){
+        try{
+            return Long.parseLong(value);
+        }catch (NumberFormatException e){
+            return defValue;
+        }
+    }
+
+    /**
+     * 安全转换字符串为单精浮点型
+     * @param value
+     * @param defValue
+     * @return 转换失败返回默认值
+     */
+    public static float safeToString(String value,float defValue){
+        try{
+            return Float.parseFloat(value);
+        }catch (NumberFormatException e){
+            return defValue;
+        }
+    }
+
+    /**
+     * 安全转换字符串为双精浮点型
+     * @param value
+     * @param defValue
+     * @return 转换失败返回默认值
+     */
+    public static double safeToString(String value,double defValue){
+        try{
+            return Double.parseDouble(value);
+        }catch (NumberFormatException e){
+            return defValue;
+        }
+    }
+
+    /**
+     * Drawable染色
+     * @param src
+     * @param color
+     * @return
+     */
+    public static Drawable tintDrawable(Drawable src,int color){
+        Drawable wrapDrawable= DrawableCompat.wrap(src.mutate());
+        DrawableCompat.setTint(wrapDrawable,color);
+        return wrapDrawable;
     }
 
     /**
@@ -60,18 +148,32 @@ public class Utils{
     /**
      * sha1文件检验
      * @param filePath
+     * @param type 文件校验类型
      * @return
      */
-    public static byte[] getSha1(String filePath){
+    public static String getFileVerify(String filePath,FileVerifyType type){
+        String typeStr="SHA-1";
+        switch (type){
+            case SHA_1:typeStr="SHA-1";break;
+            case MD5:typeStr="MD5";break;
+        }
         try {
             FileInputStream in=new FileInputStream(new File(filePath));
-            MessageDigest md= MessageDigest.getInstance("SHA-1");
-            byte[] data=new byte[1024*1024*10];
+            MessageDigest md= MessageDigest.getInstance(typeStr);
+            byte[] data=new byte[8192];
             int len;
             while((len=in.read(data))!=-1)
                 md.update(data,0,len);
+            data=md.digest();
             in.close();
-            return md.digest();
+            StringBuilder  sb= new StringBuilder();
+            for (int i = 0; i < data.length; i++) {
+                if (Integer.toHexString(0xFF & data[i]).length() == 1)
+                    sb.append("0").append(Integer.toHexString(0xFF & data[i]));
+                else
+                    sb.append(Integer.toHexString(0xFF & data[i]));
+            }
+            return sb.toString();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
@@ -89,6 +191,21 @@ public class Utils{
         Pattern p = Pattern.compile("^[1][3-8]\\d{9}$");
         Matcher m = p.matcher(phone);
         return m.matches();
+    }
+
+    /**
+     * 字符串部分字染色
+     * @param start
+     * @param end
+     * @param text
+     * @param color
+     * @return
+     */
+    public static SpannableStringBuilder getTextSomeOtherColor(int start,int end,String text,int color){
+        SpannableStringBuilder ssb=new SpannableStringBuilder(text);
+        ForegroundColorSpan foregroundColor=new ForegroundColorSpan(color);
+        ssb.setSpan(foregroundColor,start,end,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return ssb;
     }
 
     /**
@@ -124,5 +241,13 @@ public class Utils{
         for (int i=0;i<end-start;i++)
             bytes[i]=data[start+i];
         return bytesToInt(bytes);
+    }
+
+    /**
+     * 文件校验类型
+     */
+    public enum FileVerifyType{
+        SHA_1,
+        MD5,
     }
 }

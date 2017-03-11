@@ -5,6 +5,5 @@ package com.fastlib.base;
  * 可被延迟加载
  */
 public interface Delayable{
-
     void startLoad();
 }

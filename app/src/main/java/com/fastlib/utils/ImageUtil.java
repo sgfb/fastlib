@@ -2,6 +2,7 @@ package com.fastlib.utils;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -25,11 +26,14 @@ import android.support.v8.renderscript.RenderScript;
 import android.support.v8.renderscript.ScriptIntrinsicBlur;
 import android.view.View;
 
+import com.fastlib.app.GlobalConfig;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.annotation.Target;
 
 public class ImageUtil{
     public static final String TAG=ImageUtil.class.getSimpleName();
@@ -37,6 +41,7 @@ public class ImageUtil{
     public static final int REQUEST_FROM_CAMERA=10001;
     public static final int REQUEST_FROM_CROP=10002;
     public static final String KEY_LAST_IMAGE="lastImage";
+    private static Uri mLastUri;
 
     private ImageUtil(){
         //不实例化
@@ -44,22 +49,31 @@ public class ImageUtil{
 
     private static void saveLastImage(Context context,Uri uri){
         SharedPreferences.Editor edit=context.getSharedPreferences(TAG,Context.MODE_PRIVATE).edit();
+        mLastUri=uri;
         edit.putString(KEY_LAST_IMAGE, uri.toString());
-        edit.commit();
+        edit.apply();
     }
 
     /**
-     * 生成缩略图
-     * @param path
-     * @param limit
+     * 图像缩略
+     * @param deleteEither 是否删除占空间大的图像
+     * @param resultSmaller 是否返回占更小的图像
+     * @param limit 限制最大宽高
+     * @param quality 图像质量
+     * @param path 源图像路径
+     * @param parent 压缩图像存储父路径
      * @return
+     * @throws IOException
      */
-    public static File getThumbImageFile(String path,String parent,int limit,int quality) throws IOException{
+    public static File getThumbImageFile(boolean deleteEither,boolean resultSmaller,int limit,int quality,String path,String parent)throws IOException{
         File f=new File(path);
         if(f.exists())
-            System.out.println(f.length());
+            if(GlobalConfig.SHOW_LOG)
+                System.out.println(f.length());
         else
-            System.out.println("file not exists");
+            if(GlobalConfig.SHOW_LOG)
+                System.out.println("file not exists");
+        File smallerFile,bigerFile;
         Bitmap bitmap=getThumbBitmap(path,limit);
         File file=getTempFile(new File(parent));
         FileOutputStream fos =new FileOutputStream(file);
@@ -68,7 +82,29 @@ public class ImageUtil{
         byte[] bytes = stream.toByteArray();
         fos.write(bytes);
         fos.close();
+        if(f.length()<file.length()){
+            smallerFile=f;
+            bigerFile=file;
+        }
+        else{
+            smallerFile=file;
+            bigerFile=f;
+        }
+        if(deleteEither)
+            bigerFile.delete();
+        if(resultSmaller)
+            return smallerFile;
         return file;
+    }
+
+    /**
+     * 生成缩略图
+     * @param path
+     * @param limit
+     * @return
+     */
+    public static File getThumbImageFile(int limit,int quality,String path,String parent)throws IOException{
+        return getThumbImageFile(false,false,limit,quality,path,parent);
     }
 
     /**
@@ -99,7 +135,7 @@ public class ImageUtil{
             options.inSampleSize = max / limit+1;
         if(!highQuality)
             options.inPreferredConfig= Bitmap.Config.ARGB_4444;
-        return BitmapFactory.decodeFile(path, options);
+        return BitmapFactory.decodeFile(path,options);
     }
 
     /**
@@ -173,29 +209,52 @@ public class ImageUtil{
             fragment.startActivityForResult(intent,REQUEST_FROM_ALBUM);
     }
 
+    /**
+     * 开启相机，不指定生成照片位置，默认为存储卡根部
+     * @param fragment
+     */
     public static void openCamera(Fragment fragment){
-        openCamera(null, fragment, Uri.fromFile(getTempFile(null)));
+        openCamera(fragment, Uri.fromFile(getTempFile(null)));
     }
 
+    /**
+     * 开启相机，不指定生成照片位置，默认为存储卡根部
+     * @param activity
+     */
     public static void openCamera(Activity activity){
-        openCamera(activity, null, Uri.fromFile(getTempFile(null))); //默认写在存储卡内
+        openCamera(activity, Uri.fromFile(getTempFile(null))); //默认写在存储卡内
+    }
+
+    public static void openCamera(Activity activity,Uri outPut){
+        openCamera(activity,null,outPut);
+    }
+
+    public static void openCamera(Fragment fragment,Uri outPut){
+        openCamera(null,fragment,outPut);
     }
 
     /**
      * 指定照片存储位置启动相机
      * @param activity
-     * @param output
+     * @param outPut
      */
-    public static void openCamera(Activity activity,Fragment fragment,Uri output){
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        intent.putExtra(MediaStore.EXTRA_OUTPUT,output);
-        if(activity!=null){
-            saveLastImage(activity,output);
-            activity.startActivityForResult(intent, REQUEST_FROM_CAMERA);
+    private static void openCamera(Activity activity,Fragment fragment,Uri outPut){
+        Intent intent=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        //如果version大于22,包装uri
+        if(Build.VERSION.SDK_INT>Build.VERSION_CODES.LOLLIPOP_MR1){
+            ContentValues cv=new ContentValues(1);
+            Context context=activity==null?fragment.getContext():activity;
+            cv.put(MediaStore.Images.Media.DATA,outPut.getPath());
+            outPut=context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,cv);
         }
-        else {
-            saveLastImage(fragment.getContext(),output);
-            fragment.startActivityForResult(intent, REQUEST_FROM_CAMERA);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT,outPut);
+        if(activity==null){
+            saveLastImage(fragment.getContext(),outPut);
+            fragment.startActivityForResult(intent,REQUEST_FROM_CAMERA);
+        }
+        else{
+            saveLastImage(activity,outPut);
+            activity.startActivityForResult(intent,REQUEST_FROM_CAMERA);
         }
     }
 
@@ -206,7 +265,7 @@ public class ImageUtil{
      * @param crop
      */
     public static void startActionCrop(Activity activity,Uri data,int crop){
-        startActionCrop(activity, data, crop, Uri.fromFile(getTempFile(null)));
+        startActionCrop(activity, data, crop,Uri.fromFile(getTempFile(null)));
     }
 
     /**
@@ -217,17 +276,17 @@ public class ImageUtil{
      * @param outPut
      */
     public static void startActionCrop(Activity activity, Uri data, int crop, Uri outPut){
-        Intent intent = new Intent("com.android.camera.action.CROP",null);
+        Intent intent = new Intent("com.android.camera.action.CROP");
         saveLastImage(activity,outPut);
         intent.setDataAndType(data, "image/*");
         intent.putExtra(MediaStore.EXTRA_OUTPUT,outPut);
-        intent.putExtra("circleCrop", true);
+        intent.putExtra("circleCrop",false);
         intent.putExtra("crop", "true");
         intent.putExtra("aspectX", 1);// 裁剪框比例
         intent.putExtra("aspectY", 1);
         intent.putExtra("outputX", crop);// 输出图片大小
         intent.putExtra("outputY", crop);
-        intent.putExtra("scale", true);// 去黑边
+        intent.putExtra("scale", true);
         intent.putExtra("scaleUpIfNeeded", true);// 去黑边
         activity.startActivityForResult(intent,REQUEST_FROM_CROP);
     }
@@ -263,12 +322,11 @@ public class ImageUtil{
     public static Uri getImageFromActive(Context context,int requestCode, int resultCode, Intent data){
         if(resultCode!=Activity.RESULT_OK)
             return null;
-
         switch (requestCode){
+            case REQUEST_FROM_CROP:
             case REQUEST_FROM_CAMERA:
                 SharedPreferences sp=context.getSharedPreferences(TAG,Context.MODE_PRIVATE);
-                Uri uri=Uri.parse(sp.getString(KEY_LAST_IMAGE,""));
-                return uri;
+                return mLastUri==null?Uri.parse(sp.getString(KEY_LAST_IMAGE,"")):mLastUri;
             case REQUEST_FROM_ALBUM:
                 return data.getData();
             default:
@@ -311,7 +369,7 @@ public class ImageUtil{
             return ImagePath;
         }
 
-        return uri.toString();
+        return uri.getPath();
     }
 
     /**
@@ -345,6 +403,13 @@ public class ImageUtil{
                     cursor.close();
             }
             return null;
+        }else if(uri.toString().startsWith("content://")){
+            Cursor cursor=context.getContentResolver().query(uri,new String[]{MediaStore.Images.Media.DATA},null,null,null);
+            int indexColumn=cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+            String path=cursor.getString(indexColumn);
+            cursor.close();
+            return path;
         }
         else{
             String scheme=uri.getScheme();
@@ -436,6 +501,7 @@ public class ImageUtil{
                 e.printStackTrace();
             }
         else
-            System.out.println("保存view到文件中失败");
+            if(GlobalConfig.SHOW_LOG)
+                System.out.println("保存view到文件中失败");
     }
 }

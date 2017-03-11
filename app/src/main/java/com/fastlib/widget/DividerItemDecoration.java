@@ -108,4 +108,12 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration{
     public void setDividerWidth(int width){
         mDividerWidth=width;
     }
+
+    public Drawable getDivider() {
+        return mDivider;
+    }
+
+    public void setDivider(Drawable divider) {
+        mDivider = divider;
+    }
 }

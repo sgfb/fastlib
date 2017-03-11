@@ -1,6 +1,5 @@
 package com.fastlib.widget;
 
-import android.animation.LayoutTransition;
 import android.content.Context;
 import android.support.annotation.LayoutRes;
 import android.util.AttributeSet;
@@ -9,7 +8,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.fastlib.utils.DensityUtils;
@@ -69,7 +67,7 @@ public class AutofitGridView extends LinearLayout implements View.OnClickListene
         if(getChildCount()>0){
             LinearLayout ll=(LinearLayout)getChildAt(getChildCount()-1);
             int width = (int) (tv.getText().toString().length()*tv.getTextSize())+DensityUtils.dp2px(ll.getContext(),15);
-            int screenWidth=ScreenUtils.getScreenWidth(getContext());
+            int screenWidth=ScreenUtils.getScreenWidth();
             int textRight=getSelfRight(ll)+width+mPaddingAndMargin;
             System.out.println(screenWidth+"?"+textRight);
             if (screenWidth<textRight){

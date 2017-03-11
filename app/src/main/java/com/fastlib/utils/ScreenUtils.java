@@ -2,6 +2,7 @@ package com.fastlib.utils;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -34,38 +35,29 @@ public class ScreenUtils {
 	}
 
 	/**
-	 * 获得屏幕高度
-	 * 
-	 * @param context
-	 * @return
+	 * 获得屏幕宽度
+	 * @return 屏幕宽度
 	 */
-	public static int getScreenWidth(Context context) {
-		WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-		DisplayMetrics outMetrics = new DisplayMetrics();
-		wm.getDefaultDisplay().getMetrics(outMetrics);
+	public static int getScreenWidth(){
+		DisplayMetrics outMetrics = Resources.getSystem().getDisplayMetrics();
 		return outMetrics.widthPixels;
 	}
 
 	/**
-	 * 获得屏幕宽度
-	 * 
-	 * @param context
-	 * @return
+	 * 获得屏幕高度
+	 * @return 屏幕高度
 	 */
-	public static int getScreenHeight(Context context) {
-		WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-		DisplayMetrics outMetrics = new DisplayMetrics();
-		wm.getDefaultDisplay().getMetrics(outMetrics);
+	public static int getScreenHeight() {
+		DisplayMetrics outMetrics =Resources.getSystem().getDisplayMetrics();
 		return outMetrics.heightPixels;
 	}
 
 	/**
 	 * 获取屏幕尺寸
-	 * @param context
-	 * @return
+	 * @return 屏幕宽高
 	 */
-	public static Point getScreenSize(Context context){
-		return new Point(getScreenWidth(context),getScreenHeight(context));
+	public static Point getScreenSize(){
+		return new Point(getScreenWidth(),getScreenHeight());
 	}
 
 	/**
@@ -99,8 +91,8 @@ public class ScreenUtils {
 		view.setDrawingCacheEnabled(true);
 		view.buildDrawingCache();
 		Bitmap bmp = view.getDrawingCache();
-		int width = getScreenWidth(activity);
-		int height = getScreenHeight(activity);
+		int width = getScreenWidth();
+		int height = getScreenHeight();
 		Bitmap bp = null;
 		bp = Bitmap.createBitmap(bmp, 0, 0, width, height);
 		view.destroyDrawingCache();
@@ -123,8 +115,8 @@ public class ScreenUtils {
 		activity.getWindow().getDecorView().getWindowVisibleDisplayFrame(frame);
 		int statusBarHeight = frame.top;
 
-		int width = getScreenWidth(activity);
-		int height = getScreenHeight(activity);
+		int width = getScreenWidth();
+		int height = getScreenHeight();
 		Bitmap bp = null;
 		bp = Bitmap.createBitmap(bmp, 0, statusBarHeight, width, height - statusBarHeight);
 		view.destroyDrawingCache();

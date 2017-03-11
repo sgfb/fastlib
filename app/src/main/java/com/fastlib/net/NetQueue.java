@@ -1,19 +1,22 @@
 package com.fastlib.net;
 
+import android.content.res.Resources;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
-import com.fastlib.db.FastDatabase;
+import com.fastlib.app.GlobalConfig;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by sgfb on 16/9/1.
@@ -24,15 +27,12 @@ public class NetQueue{
     private static NetQueue mOwer;
     public int mRequestCount=0;
     public long Tx,Rx;
-    private ThreadPoolExecutor mRequestPool;
-    private BlockingQueue<Runnable> mRequestQueue;
+    public static ThreadPoolExecutor sRequestPool =(ThreadPoolExecutor) Executors.newFixedThreadPool(10); //公共网络请求池
     private DataFactory mFactory;
     private Config mConfig;
     private String mRootAddress;
 
     private NetQueue(){
-        mRequestQueue=new ArrayBlockingQueue<>(30);
-        mRequestPool=new ThreadPoolExecutor(8,30,30,TimeUnit.SECONDS,mRequestQueue);
         mConfig=new Config();
     }
 
@@ -53,36 +53,37 @@ public class NetQueue{
                 map=new HashMap<>();
                 request.setParams(map);
             }
-            map.putAll(mFactory.extraData());
+            if(mFactory.extraData()!=null)
+                for(Pair<String,String> pair:mFactory.extraData())
+                    map.put(pair.first,pair.second);
         }
         if(!TextUtils.isEmpty(mRootAddress)&&!request.isHadRootAddress()){
             request.setUrl(mRootAddress + request.getUrl());
             request.setHadRootAddress(true);
         }
-        if(request.getType()== Request.RequestType.MUSTSEND)
-            FastDatabase.getDefaultInstance().saveOrUpdate(request);
         enqueue(request);
     }
 
     private void enqueue(Request request){
-
-        NetProcessor processor=new NetProcessor(request,new NetProcessor.OnCompleteListener() {
+        ThreadPoolExecutor pool=request.getExecutor();
+        NetProcessor processor=new NetProcessor(request,new NetProcessor.OnCompleteListener(){
             @Override
             public void onComplete(NetProcessor processor1){
-                Request request1=processor1.getRequest();
-                if(request1.getType()== Request.RequestType.MUSTSEND)
-                    FastDatabase.getDefaultInstance().delete(request1);
                 mRequestCount++;
                 Tx+=processor1.getTx();
                 Rx+=processor1.getRx();
-                System.out.println(processor1);
+                if(GlobalConfig.SHOW_LOG)
+                    System.out.println(processor1);
             }
         },new Handler(Looper.getMainLooper()));
-        mRequestPool.execute(processor);
+        if(pool!=null)
+            pool.execute(processor);
+        else
+            sRequestPool.execute(processor);
     }
 
     public void close(){
-        mRequestPool.shutdownNow();
+        sRequestPool.shutdownNow();
         mOwer=null;
     }
 
@@ -112,32 +113,14 @@ public class NetQueue{
 
     public static class Config implements Cloneable{
         private boolean isTrackTraffic;
-        private boolean useStatus;
-        private int maxTask;
         private List<String> mTrustHost; //信任站点，当前仅用于过滤保存时间
 
         public void setTrackTraffic(boolean track){
             isTrackTraffic=track;
         }
 
-        public void setMaxTask(int max){
-            maxTask=max;
-        }
-
-        public void setUseStatus(boolean use){
-            useStatus=use;
-        }
-
-        public boolean isUseStatus(){
-            return useStatus;
-        }
-
         public boolean isTrackTraffic(){
             return isTrackTraffic;
-        }
-
-        public int getMaxTask(){
-            return maxTask;
         }
 
         public List<String> getTrustHost() {
@@ -159,6 +142,6 @@ public class NetQueue{
     }
 
     public interface DataFactory{
-        Map<String,String> extraData();
+        List<Pair<String,String>> extraData();
     }
 }
