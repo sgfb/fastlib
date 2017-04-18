@@ -76,15 +76,19 @@ public class NetProcessor implements Runnable{
             return;
         }
         try {
+            boolean isMulti = false, isPost =mRequest.getMethod().equals("POST");
+            long existsLength;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             File downloadFile = null;
             InputStream in;
             OutputStream out;
-            URL url = new URL(mRequest.getUrl());
+            URL url = new URL(isPost?mRequest.getUrl():splicingGetUrl());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            boolean isMulti = false, isPost = false;
-            long existsLength;
 
+            if(isPost&&(mRequest.getFiles() != null && mRequest.getFiles().size() > 0)){
+                isMulti = true;
+                connection.setChunkedStreamingMode(CHUNK_LENGTH);
+            }
             //添加额外信息到头部
             if (mRequest.getHeadExtra() != null) {
                 for (Pair<String, String> pair : mRequest.getHeadExtra())
@@ -96,13 +100,8 @@ public class NetProcessor implements Runnable{
                 existsLength = downloadFile.length();
                 if (existsLength > 0 && mRequest.getDownloadable().supportBreak()) //如果支持中断并且文件已部分存在,跳过部分流
                     connection.addRequestProperty("Range", "bytes=" + Long.toString(existsLength) + "-");
-            }
-            if (mRequest.getMethod().equals("POST")) {
-                isPost = true;
-                if (mRequest.getFiles() != null && mRequest.getFiles().size() > 0) {
-                    isMulti = true;
-                    connection.setChunkedStreamingMode(CHUNK_LENGTH);
-                }
+                if(!TextUtils.isEmpty(mRequest.getDownloadable().expireTime())) //添加资源是否过期判断
+                    connection.addRequestProperty("If-Modified-Since",mRequest.getDownloadable().expireTime());
             }
             connection.setRequestMethod(mRequest.getMethod());
             connection.setDoInput(true);
@@ -141,8 +140,8 @@ public class NetProcessor implements Runnable{
             int len;
             byte[] data = new byte[BUFF_LENGTH];
             //如果支持,修改下载的文件名
-            if (downloadFile != null){
-                OutputStream fileOut = new FileOutputStream(downloadFile, mRequest.getDownloadable().supportBreak());
+            if (canWriteToFile(connection)){
+                OutputStream fileOut = new FileOutputStream(downloadFile,mRequest.getDownloadable().supportBreak());
                 String disposition = connection.getHeaderField("Content-Disposition");
                 if (!TextUtils.isEmpty(disposition) && disposition.length() > 9 && mRequest.getDownloadable().changeIfHadName()){
                     String filename = URLDecoder.decode(disposition.substring(disposition.indexOf("filename=") + 9), "UTF-8");
@@ -153,7 +152,7 @@ public class NetProcessor implements Runnable{
                 int speed = 0;
                 long timer = System.currentTimeMillis();
                 while ((len = in.read(data)) != -1&&!Thread.currentThread().isInterrupted()){
-                    fileOut.write(data, 0, len);
+                    fileOut.write(data,0,len);
                     Rx += len;
                     speed += len;
                     if ((System.currentTimeMillis() - timer) > 1000) { //每秒发送一次广播
@@ -183,6 +182,7 @@ public class NetProcessor implements Runnable{
                 }
             }
             connection.disconnect();
+            mRequest.setLastModified(connection.getHeaderField("Last-Modified"));
             mMessage=connection.getResponseMessage();
             toggleCallback();
         } catch (IOException e){
@@ -195,6 +195,22 @@ public class NetProcessor implements Runnable{
         }
     }
 
+    /**
+     * 如果文件大小为0，并且不为Gzip流，不输出到文件中
+     * @param connection
+     * @return
+     */
+    private boolean canWriteToFile(HttpURLConnection connection){
+        return mRequest.getDownloadable()!=null
+                &&((!TextUtils.isEmpty(connection.getHeaderField("Content-Length"))
+                &&connection.getHeaderFieldInt("Content-Length",0)>0)
+                ||mRequest.isReceiveGzip());
+    }
+
+
+    /**
+     * 触发回调，必定触发的回调，除非遇到致命错误
+     */
     private void toggleCallback(){
         final ExtraListener l = mRequest.getListener();
         if(l==null||Thread.currentThread().isInterrupted())
@@ -219,18 +235,18 @@ public class NetProcessor implements Runnable{
                 if (realType == null || realType == Object.class||realType==byte[].class)
                     responseObj = mResponse;
                 else if (realType == String.class){
-                    responseObj = new String(mResponse);
+                    responseObj = mResponse==null?"":new String(mResponse);
                     l.onTranslateJson((String) responseObj);
                 }else{
-                    String json = new String(mResponse);
+                    String json=mResponse==null?"":new String(mResponse);
                     l.onTranslateJson(json);
-                    responseObj = gson.fromJson(json, realType);
+                    responseObj=mResponse==null?null:gson.fromJson(json, realType);
                 }
                 if(isSuccess){
                     mResponsePoster.execute(new Runnable(){
                         @Override
                         public void run() {
-                            l.onResponseListener(mRequest, responseObj);
+                            l.onResponseListener(mRequest,responseObj);
                         }
                     });
                 }
@@ -249,6 +265,25 @@ public class NetProcessor implements Runnable{
                 });
             }
         }
+    }
+
+    /**
+     * 拼接get方法的url
+     * @return
+     */
+    private String splicingGetUrl(){
+        StringBuilder sb=new StringBuilder(mRequest.getUrl());
+        Iterator<String> keyIter=mRequest.getParams().keySet().iterator();
+
+        if(keyIter.hasNext()){
+            String key=keyIter.next();
+            sb.append("?").append(key).append("=").append(mRequest.getParams().get(key));
+        }
+        while(keyIter.hasNext()){
+            String key=keyIter.next();
+            sb.append("&").append(key).append("=").append(mRequest.getParams().get(key));
+        }
+        return sb.toString();
     }
 
     private void loadParams(Map<String, String> params, StringBuilder sb) {

@@ -5,6 +5,7 @@ import android.graphics.drawable.Drawable;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 
 import com.fastlib.R;
@@ -188,6 +189,7 @@ public class Utils{
      * @return
      */
     public static boolean isPhoneNumber(String phone){
+        if(TextUtils.isEmpty(phone)) return false;
         Pattern p = Pattern.compile("^[1][3-8]\\d{9}$");
         Matcher m = p.matcher(phone);
         return m.matches();

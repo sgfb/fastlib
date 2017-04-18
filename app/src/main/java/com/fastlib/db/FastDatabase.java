@@ -1,5 +1,7 @@
 package com.fastlib.db;
 
+import java.io.File;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,7 +29,8 @@ import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 /**
- * 封装一些与数据库交互的基本操作
+ * 封装一些与数据库交互的基本操作。非orm数据库。
+ * 在调用次数少或者响应要求不高的的场景可以直接调用增删改，否则应该使用xxxAsync，获取回调数据使用
  * @author sgfb
  */
 public class FastDatabase{
@@ -50,8 +53,18 @@ public class FastDatabase{
      * @return
      */
     public static FastDatabase getDefaultInstance(Context context) {
-        FastDatabase database = new FastDatabase(context);
-        database.toWhichDatabase(getDefaultDatabaseName());
+        return getInstance(context,DEFAULT_DATABASE_NAME);
+    }
+
+    /**
+     * 返回指定数据库(仅单次有效并未转换数据库)
+     * @param context
+     * @param dbName
+     * @return
+     */
+    public static FastDatabase getInstance(Context context,String dbName){
+        FastDatabase database=new FastDatabase(context);
+        database.toWhichDatabase(dbName);
         return database;
     }
 
@@ -165,7 +178,7 @@ public class FastDatabase{
         List<T> list = new ArrayList<>();
 
         //调整表名,特殊内部嵌套类
-        tableName = tableName.replace("$", ".");
+//        tableName = tableName.replace("$", ".");
         filters = getFilters(key, mAttribute.getFilterCommand(), selectionArgs);
         //排序条件
         if (!TextUtils.isEmpty(mAttribute.getOrderBy()))
@@ -187,10 +200,13 @@ public class FastDatabase{
         }
         cursor.moveToFirst();
         Gson gson = new Gson();
-        while (!cursor.isAfterLast()) {
+        while (!cursor.isAfterLast()){
             try {
-                T obj = cla.newInstance();
+                Object[] constructorParams=mAttribute.getConstructorParams();
+                T obj =(constructorParams==null||constructorParams.length<=0)?cla.newInstance():null;
                 Field[] fields = cla.getDeclaredFields();
+                Map<String,Object> params=new HashMap<>();
+
                 for (Field field : fields) {
                     Database inject = field.getAnnotation(Database.class);
                     field.setAccessible(true);
@@ -213,37 +229,85 @@ public class FastDatabase{
 
                     switch (type) {
                         case "int":
-                            field.setInt(obj, cursor.getInt(columnIndex));
+                            if(obj!=null) field.setInt(obj, cursor.getInt(columnIndex));
+                           else params.put(field.getName(),cursor.getInt(columnIndex));
                             break;
                         case "long":
-                            field.setLong(obj, cursor.getLong(columnIndex));
+                            if(obj!=null) field.setLong(obj, cursor.getLong(columnIndex));
+                            else params.put(field.getName(),cursor.getLong(columnIndex));
                             break;
                         case "short":
-                            field.setShort(obj, cursor.getShort(columnIndex));
+                            if(obj!=null) field.setShort(obj, cursor.getShort(columnIndex));
+                            else params.put(field.getName(),cursor.getShort(columnIndex));
                             break;
                         case "boolean":
                             int value = cursor.getInt(columnIndex);
-                            field.setBoolean(obj, value > 0);
+                            if(obj!=null) field.setBoolean(obj, value > 0);
+                            else params.put(field.getName(),value>0);
                             break;
                         case "float":
-                            field.setFloat(obj, cursor.getFloat(columnIndex));
+                            if(obj!=null) field.setFloat(obj, cursor.getFloat(columnIndex));
+                            else params.put(field.getName(),cursor.getFloat(columnIndex));
                             break;
                         case "double":
-                            field.setDouble(obj, cursor.getDouble(columnIndex));
+                            if(obj!=null) field.setDouble(obj, cursor.getDouble(columnIndex));
+                            else params.put(field.getName(),cursor.getDouble(columnIndex));
                             break;
                         case "String":
-                            field.set(obj, cursor.getString(columnIndex));
+                            if(obj!=null) field.set(obj, cursor.getString(columnIndex));
+                            else params.put(field.getName(),cursor.getString(columnIndex));
                             break;
                         default:
                             String json = cursor.getString(columnIndex);
                             try {
                                 Object preObj = gson.fromJson(json, field.getType());
-                                field.set(obj, preObj);
+                                if(obj!=null) field.set(obj, preObj);
+                                else params.put(field.getName(),preObj);
                             } catch (RuntimeException e) {
                                 continue;
                             }
                             break;
                     }
+                }
+                //如果是使用非空构造实例化对象的话，整理一下构造参数，实例化并且将参数注入
+                if(constructorParams!=null&&constructorParams.length>0){
+                    for(int i=0;i<constructorParams.length;i++){
+                        Object raw=constructorParams[i];
+                        if(raw instanceof DataFromDatabase)
+                            constructorParams[i]=params.remove(((DataFromDatabase)raw).getField());
+                    }
+                    Class<?> clas[]=new Class[constructorParams.length];
+                    for(int i=0;i<constructorParams.length;i++)
+                        clas[i]=constructorParams[i].getClass();
+                    Constructor<?>[] constructors=cla.getDeclaredConstructors();
+
+                    //遍历构造函数，等长且除Object类型之外元素一致的情况下，保持Object一致
+                    for(int i=0;i<constructors.length;i++){
+                        Class<?>[] formalParams=constructors[i].getParameterTypes();
+                        if(clas.length!=formalParams.length)
+                            continue;
+                        for(int j=0;j<formalParams.length;j++){
+                            if(formalParams[j]!=Object.class&&!Reflect.equalBasicOrBasicObj(formalParams[j],clas[j]))
+                                continue;
+                            if(formalParams[j]==Object.class)
+                                clas[j]=Object.class;
+                            else
+                                clas[j]=formalParams[j];
+                        }
+                    }
+                    Constructor<T> constructor=cla.getDeclaredConstructor(clas);
+                    obj=constructor.newInstance(constructorParams);
+                    //参数注入.这一块有优化可能
+                    Iterator<String> fieldNameIter=params.keySet().iterator();
+
+                    while(fieldNameIter.hasNext()){
+                        String fieldName=fieldNameIter.next();
+                        Field field=cla.getDeclaredField(fieldName);
+
+                        field.setAccessible(true);
+                        field.set(obj,params.get(fieldName));
+                    }
+
                 }
                 list.add(obj);
                 cursor.moveToNext();
@@ -322,7 +386,7 @@ public class FastDatabase{
      * @return
      */
     public boolean delete(Class<?> cla) {
-        String tableName = cla.getName();
+        String tableName = cla.getCanonicalName();
         if (!tableExists(tableName)){
             System.out.println("数据库 " + sConfig.getDatabaseName() + "中不存在表 " + tableName);
             return false;
@@ -334,7 +398,7 @@ public class FastDatabase{
         List<String> selectionArgs = new ArrayList<>();
         int count; //查到对应行的总数
 
-        tableName = tableName.replace("$", ".");
+//        tableName = tableName.replace("$", ".");
         filters = getFilters(key, mAttribute.getFilterCommand(), selectionArgs);
         database = prepare(null);
         String complete = "select *from '" + tableName + "' " + filters + " limit " + mAttribute.getStart() + "," + mAttribute.getEnd() + " ";
@@ -521,7 +585,7 @@ public class FastDatabase{
         SQLiteDatabase db = prepare(null);
         ContentValues cv = new ContentValues();
         Field[] fields = availableObj.getClass().getDeclaredFields();
-        String tableName = availableObj.getClass().getName();
+        String tableName = availableObj.getClass().getCanonicalName();
 
         try {
             db.beginTransaction();
@@ -811,7 +875,6 @@ public class FastDatabase{
 
     /**
      * 仅单次保存数据到指定数据库而不转换数据库
-     *
      * @param databaseName
      * @return
      */
@@ -822,7 +885,6 @@ public class FastDatabase{
 
     /**
      * 增加过滤条件
-     *
      * @param command
      * @return
      */
@@ -831,13 +893,26 @@ public class FastDatabase{
         return this;
     }
 
+    /**
+     * 非空构造给予参数。数据来自数据库使用DataFromDatabase
+     * @param params
+     * @return
+     */
+    public FastDatabase setConstructorParams(Object[] params){
+        mAttribute.setConstructorParams(params);
+        return this;
+    }
+
+    /**
+     * 自定义升级方法。不推荐使用，我们应该相信自动化，如果有需要实现高级功能的应修改自动化升级而不是使用自定义升级
+     * @param custom
+     */
     public void setCustomUpdate(CustomUpdate custom) {
         mCustomUpdate = custom;
     }
 
     /**
      * 获取主键名
-     *
      * @param cla
      * @return
      */
@@ -895,8 +970,11 @@ public class FastDatabase{
     private DatabaseTable loadAttribute(Class<?> cla) {
         DatabaseTable dt = new DatabaseTable();
         Field[] fields = cla.getDeclaredFields();
-        dt.tableName = cla.getName();
+        dt.tableName = cla.getCanonicalName();
 
+        //如果是内嵌类，将$替换成点
+//        if(dt.tableName.contains("$"))
+            dt.tableName=dt.tableName.replace("$",".");
         for (Field f : fields) {
             Database fieldInject = f.getAnnotation(Database.class);
             DatabaseTable.DatabaseColumn column = new DatabaseTable.DatabaseColumn();
@@ -931,20 +1009,24 @@ public class FastDatabase{
 
             @Override
             public void onCreate(SQLiteDatabase db) {
-
+                if(GlobalConfig.SHOW_LOG)
+                    System.out.println("创建数据库:"+db.getPath().substring(db.getPath().lastIndexOf(File.separator)+1));
             }
 
             @Override
             public void onUpgrade(SQLiteDatabase db, int oldVersion,
                                   int newVersion) {
                 if (GlobalConfig.SHOW_LOG)
-                    System.out.println("发现数据库版本需要升级，开始自动升级");
+                    System.out.println("发现数据库版本需要升级，开始升级");
                 if (mCustomUpdate != null) {
                     if (GlobalConfig.SHOW_LOG)
                         System.out.println("使用自定义升级方案");
                     mCustomUpdate.update(db, oldVersion, newVersion);
-                } else
+                } else{
+                    if(GlobalConfig.SHOW_LOG)
+                        System.out.println("使用自动升级方案");
                     updateDatabase(db);
+                }
                 if (GlobalConfig.SHOW_LOG)
                     System.out.println("数据库升级完毕");
             }
@@ -1245,7 +1327,6 @@ public class FastDatabase{
 
     /**
      * 获取没有注解Ignore的所有字段
-     *
      * @param cla
      * @return 没有注解Ignore的所有字段
      */

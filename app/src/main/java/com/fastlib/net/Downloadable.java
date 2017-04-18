@@ -24,4 +24,10 @@ public interface Downloadable{
      * @return 是否支持
      */
     boolean changeIfHadName();
+
+    /**
+     * 标识文件过期与没过期是否下载的判断
+     * @return 如果为空则不判断过期直接下载，否则过期才下载
+     */
+    String expireTime();
 }

@@ -25,6 +25,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -38,7 +39,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 6.6.0权限获取辅助(mPermissionHelper)
  */
 public abstract class FastActivity extends AppCompatActivity{
-    protected ThreadPoolExecutor mThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(3);
+    protected ThreadPoolExecutor mThreadPool;
     protected PermissionHelper mPermissionHelper;
 
     private boolean isGatingPhoto; //是否正在获取图像
@@ -52,11 +53,12 @@ public abstract class FastActivity extends AppCompatActivity{
     protected abstract void alreadyPrepared(); //所有初始化任务结束
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         mMainThread = Thread.currentThread();
         mPermissionHelper=new PermissionHelper(this);
         mLocalDataInject=new LocalDataInject(this);
+        mThreadPool=generateThreadPool();
         mThreadPool.execute(new Runnable() {
             @Override
             public void run() {
@@ -65,6 +67,14 @@ public abstract class FastActivity extends AppCompatActivity{
         });
         checkTransitionInject();
         checkContentViewInject();
+    }
+
+    /**
+     * 后期绑定mThreadPool增加灵活性
+     * @return
+     */
+    protected ThreadPoolExecutor generateThreadPool(){
+        return (ThreadPoolExecutor) Executors.newFixedThreadPool(3);
     }
 
     /**
@@ -221,8 +231,12 @@ public abstract class FastActivity extends AppCompatActivity{
         EventObserver.getInstance().unsubscribe(this);
         mThreadPool.shutdownNow();
         mThreadPool.purge();
-        for (Request request : mRequests)
+        for (Request request : mRequests) {
             request.clear();
+            request=null;
+        }
+        mRequests.clear();
+        mRequests=null;
     }
 
     private void setContentViewAfter(){
@@ -249,7 +263,7 @@ public abstract class FastActivity extends AppCompatActivity{
 
     private synchronized void prepareTask(){
         if(--mPreparedTaskRemain<=0)
-            runOnUiThread(new Runnable() {
+            runOnUiThread(new Runnable(){
                 @Override
                 public void run() {
                     alreadyPrepared();

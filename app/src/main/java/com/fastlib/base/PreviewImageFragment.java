@@ -25,6 +25,7 @@ import java.util.List;
  * Created by sgfb on 16/3/18.
  * 预览图片Fragment.加载图像方式由使用者定义
  */
+@Deprecated
 public abstract class PreviewImageFragment extends Fragment{
     //缩放图片的位置
     public static final String KEY_LOCATION="LOCATION";

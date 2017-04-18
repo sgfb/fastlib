@@ -1,8 +1,5 @@
 package com.fastlib.db;
 
-import android.support.v4.util.Pair;
-
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -14,10 +11,11 @@ public final class RuntimeAttribute{
     private int mSaveMax; //最大保存数,如果超出了这个值删除历史直到符合这个值
     private int mStart,mSize; //合起来就是limit
     private String mOrderBy;
-    private String mWhichDatabase; //仅本次操作,保存数据到指定数据库.如果这个数据库不存在,这条语句将被丢弃不会抛出异常
+    private String mWhichDatabase; //仅本次操作,保存数据到指定数据库.如果这个数据库不存在,尝试创建数据库，如果异常这条语句将被丢弃不会抛出异常
     private String[] mSelectColumn;
-    private String[] mUnselectColumn;//如果这个字段为空取再判断selectColumn，如果selectColumn也是空，取所有列。如果这个字段不为空将不使用selectColumn字段
+    private String[] mUnselectColumn; //如果这个字段为空取再判断selectColumn，如果selectColumn也是空，取所有列。如果这个字段不为空将不使用selectColumn字段
     private FilterCommand mFilterCommand;
+    private Object[] mConstructorParams; //使用自定义构造对象时定义.如果元素为DataFromDatabase尝试从数据库中对应域获取值并且替换
 
     public RuntimeAttribute(){
         defaultAttribute();
@@ -75,12 +73,12 @@ public final class RuntimeAttribute{
     }
 
     /**
-     * 单次对某个数据库进行读写
+     * 单次对某个数据库进行读写,这个数据库名会附加上前缀和.db后缀
      * @param toWhichDatabase
      * @return
      */
     public RuntimeAttribute setToWhichDatabase(String toWhichDatabase){
-        mWhichDatabase=toWhichDatabase;
+        mWhichDatabase=FastDatabase.getConfig().getPrefix()+toWhichDatabase+".db";
         return this;
     }
 
@@ -142,5 +140,14 @@ public final class RuntimeAttribute{
 
     public void setFilterCommand(FilterCommand filterCommand) {
         mFilterCommand = filterCommand;
+    }
+
+    public Object[] getConstructorParams() {
+        return mConstructorParams;
+    }
+
+    public RuntimeAttribute setConstructorParams(Object[] constructorParams) {
+        mConstructorParams = constructorParams;
+        return this;
     }
 }

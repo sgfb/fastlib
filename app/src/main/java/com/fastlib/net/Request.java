@@ -9,10 +9,13 @@ import android.text.TextUtils;
 
 import com.fastlib.db.FastDatabase;
 import com.fastlib.db.ServerCache;
+import com.google.gson.Gson;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,15 +23,17 @@ import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
+ * @author sgfb
  * 请求体<br/>
  * 每个任务都是不同的，（NetQueue）会根据属性来配置请求，调整请求开始完成或失败后不同的事件
  */
 public class Request {
     private static final Object sLock = new Object();
-    private static final int MAX_POOL_SIZE = 30; //池中最大保存数
+    private static final int MAX_POOL_SIZE = 20; //池中最大保存数
     private static Request sPool;
     private static int sPoolSize = 0;
 
+    private boolean isReplaceChinese; //是否替换中文url,默认为true
     private boolean isSaveCookies; //是否留存Cookies
     private boolean hadRootAddress; //是否已加入根地址
     private boolean useFactory; //是否使用预设值
@@ -40,11 +45,12 @@ public class Request {
     private Pair<String, String> mSendCookies;
     private Downloadable mDownloadable;
     private List<Pair<String, String>> mHeadExtra; //额外头部信息
-    private Map<String, String> mParams;
     private List<Pair<String,File>> mFiles;
+    private Map<String, String> mParams;
     private RequestType mType = RequestType.DEFAULT;
     private Object mTag; //额外信息
     private String[] mCookies; //留存的cookies
+    private String mLastModified; //资源最后修改时间
     //加入activity或者fragment可以提升安全性
     private Activity mActivity;
     private Fragment mFragment;
@@ -64,8 +70,8 @@ public class Request {
     }
 
     public static Request obtain(String method, String url) {
-        synchronized (sLock) {
-            if (sPool != null) {
+        synchronized (sLock){
+            if (sPool != null){
                 Request r = sPool;
                 sPool = r.mNext;
                 r.mNext = null;
@@ -86,9 +92,18 @@ public class Request {
         this("POST", url);
     }
 
+    /**
+     * 使用模拟数据来初始化请求
+     * @param mock
+     */
+    public Request(MockProcess mock){
+        mMock=mock;
+    }
+
     public Request(String method, String url) {
         this.method = method.toUpperCase();
-        mUrl = url;
+        mUrl = isReplaceChinese?transferSpaceAndChinese(url):url;
+        isReplaceChinese=true;
         useFactory = true;
         mParams = new HashMap<>();
         mFiles = new ArrayList<>();
@@ -99,6 +114,7 @@ public class Request {
      * 清理这个请求以便重复使用
      */
     public void clear() {
+        isReplaceChinese=true;
         isSaveCookies = false;
         hadRootAddress = false;
         useFactory = false;
@@ -162,8 +178,7 @@ public class Request {
     }
 
     /**
-     * 简易地添加请求参数
-     *
+     * 添加字符串请求参数
      * @param key
      * @param value
      */
@@ -174,13 +189,58 @@ public class Request {
         return this;
     }
 
+    /**
+     * 添加短整型请求参数
+     * @param key
+     * @param value
+     * @return
+     */
+    public Request put(String key,short value){
+        return put(key,String.valueOf(value));
+    }
+
+    /**
+     * 添加整型请求参数
+     * @param key
+     * @param value
+     * @return
+     */
     public Request put(String key, int value) {
         return put(key, Integer.toString(value));
     }
 
     /**
+     * 添加单精浮点请求参数
+     * @param key
+     * @param value
+     * @return
+     */
+    public Request put(String key,float value){
+        return put(key,String.valueOf(value));
+    }
+
+    /**
+     * 添加双精浮点请求参数
+     * @param key
+     * @param value
+     * @return
+     */
+    public Request put(String key,double value){
+        return put(key,String.valueOf(value));
+    }
+
+    /**
+     * 添加json对象
+     * @param key
+     * @param jsonObj
+     * @return
+     */
+    public Request put(String key,Object jsonObj){
+        return put(key,new Gson().toJson(jsonObj));
+    }
+
+    /**
      * 简易地添加请求参数
-     *
      * @param params
      * @return
      */
@@ -380,7 +440,6 @@ public class Request {
 
     /**
      * 开启缓存时间,这个方法需要在设置回调后使用
-     *
      * @param context   上下文
      * @param cacheName 缓存名（唯一缓存名）
      */
@@ -390,7 +449,6 @@ public class Request {
 
     /**
      * 开启缓存时间,这个方法需要在设置回调后使用,如果这个请求有指定运行线程池则指定缓存器也使用这个线程池
-     *
      * @param context    上下文
      * @param cacheName  缓存名（唯一缓存名）
      * @param toDatabase 保持到指定数据库
@@ -402,6 +460,30 @@ public class Request {
         else
             mCacheManager = new ServerCache(this, cacheName, database, mExecutor);
         mCacheManager.setCacheTimeLife(liveTime);
+    }
+
+    /**
+     * 空格和汉字替换成unicode
+     * @param str
+     * @return
+     */
+    private String transferSpaceAndChinese(String str){
+        if(TextUtils.isEmpty(str))
+            return "";
+        StringBuilder sb=new StringBuilder(str);
+
+        for(int i=0;i<sb.length();i++){
+            char c=sb.charAt(i);
+            if(c>='\u4e00'&&c<='\u9fa5'){
+                try {
+                    sb.deleteCharAt(i);
+                    sb.insert(i,URLEncoder.encode(String.valueOf(c),"UTF-8").toCharArray());
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return sb.toString().replace(" ","%20"); //最后空格置换
     }
 
     public ExtraListener getListener() {
@@ -539,6 +621,12 @@ public class Request {
         isSendGzip = sendGzip;
     }
 
+    public void addHeadExtra(String key,String value){
+        if(mHeadExtra==null)
+            mHeadExtra=new ArrayList<>();
+        mHeadExtra.add(Pair.create(key,value));
+    }
+
     public List<Pair<String, String>> getHeadExtra() {
         return mHeadExtra;
     }
@@ -564,8 +652,17 @@ public class Request {
         return mMock;
     }
 
-    public void setMock(MockProcess mock) {
+    public Request setMock(MockProcess mock) {
         mMock = mock;
+        return this;
+    }
+
+    public String getLastModified(){
+        return mLastModified;
+    }
+
+    public void setLastModified(String lastModified) {
+        mLastModified = lastModified;
     }
 
     public Object getHost() {

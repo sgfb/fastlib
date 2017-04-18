@@ -1,10 +1,11 @@
 package com.fastlib.net;
 
-import android.content.Context;
 import android.content.res.AssetManager;
+import android.text.TextUtils;
 
 import com.fastlib.db.SaveUtil;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -12,23 +13,29 @@ import java.io.IOException;
  * 一个简单的模拟数据返回
  */
 public class DefaultMockProcessor implements MockProcess{
-    private String mDataPath;
+    private String mJsonData;
+    private File mDataFile;
     private AssetManager mAssetManager;
 
-    public DefaultMockProcessor(String path){
-        this(path,null);
+    public DefaultMockProcessor(String json){
+        mJsonData=json;
     }
 
-    public DefaultMockProcessor(String path,AssetManager am){
-        mDataPath=path;
+    public DefaultMockProcessor(File file){
+        this(file,null);
+    }
+
+    public DefaultMockProcessor(File path,AssetManager am){
+        mDataFile=path;
         mAssetManager=am;
     }
 
     @Override
     public byte[] dataResponse(){
         try{
-            if(mAssetManager!=null) return SaveUtil.loadAssetsFile(mAssetManager,mDataPath);
-            else SaveUtil.loadFile(mDataPath);
+            if(!TextUtils.isEmpty(mJsonData)) return mJsonData.getBytes();
+            else if(mAssetManager!=null) return SaveUtil.loadAssetsFile(mAssetManager,mDataFile.getAbsolutePath());
+            else SaveUtil.loadFile(mDataFile.getAbsolutePath());
         }catch (IOException e){
             e.printStackTrace();
         }

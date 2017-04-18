@@ -1,11 +1,8 @@
 package com.fastlib.net;
 
-import android.content.res.Resources;
 import android.os.Handler;
 import android.os.Looper;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
@@ -15,7 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -64,6 +60,10 @@ public class NetQueue{
         enqueue(request);
     }
 
+    /**
+     * 网络请求内部入队列处理
+     * @param request
+     */
     private void enqueue(Request request){
         ThreadPoolExecutor pool=request.getExecutor();
         NetProcessor processor=new NetProcessor(request,new NetProcessor.OnCompleteListener(){
@@ -76,10 +76,8 @@ public class NetQueue{
                     System.out.println(processor1);
             }
         },new Handler(Looper.getMainLooper()));
-        if(pool!=null)
-            pool.execute(processor);
-        else
-            sRequestPool.execute(processor);
+        if(pool!=null) pool.execute(processor);
+        else sRequestPool.execute(processor);
     }
 
     public void close(){

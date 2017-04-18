@@ -10,12 +10,13 @@ import java.io.Serializable;
  * Created by sgfb on 17/2/16.
  * 上传异常数据实体类
  */
-public class UploadExceptionBean implements Serializable{
-    @Database(keyPrimary = true,autoincrement = true)
-    public long id;
+public class UploadExceptionBean{
     private int systemVersion=Build.VERSION.SDK_INT; //android版本
-    public int appVersion; //app版本
     private String phoneModel= Build.MODEL; //手机具体型号
+
+    public int appVersion; //app版本
+    public int totalMemory; //系统内存总量，单位MB
+    public int useMemory; //已使用内存，单位MB
     public String message; //奔溃原因
     public String causePosition; //异常发生点
     public String netStatus; //网络状态

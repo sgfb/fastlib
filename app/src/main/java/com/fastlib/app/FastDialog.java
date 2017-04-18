@@ -26,6 +26,7 @@ import java.util.List;
 public class FastDialog extends DialogFragment{
     public static final String ARG_TYPE="type";
     public static final String ARG_MESSAGE="message";
+    public static final String ARG_TITLE="title";
     public static final String ARG_DISPLAY_CANCEL="displayCancel";
     public static final String ARG_LIST="list";
     public static final String TYPE_MESSAGE="typeMessage";
@@ -57,6 +58,11 @@ public class FastDialog extends DialogFragment{
         return showListDialog(items.toArray(new String[]{}));
     }
 
+    public FastDialog setTitle(String title){
+        getArguments().putString(ARG_TITLE,title);
+        return this;
+    }
+
     public void show(FragmentManager fm,DialogInterface.OnClickListener l){
         listener=l;
         show(fm,"dialog");
@@ -71,6 +77,7 @@ public class FastDialog extends DialogFragment{
             s=ARG_MESSAGE;
         if(s.equals(TYPE_MESSAGE)){
             AlertDialog.Builder builder=new AlertDialog.Builder(getContext())
+                    .setTitle(getArguments().getString(ARG_TITLE))
                     .setMessage(getArguments().getString(ARG_MESSAGE))
                     .setPositiveButton("确定",listener);
             if(getArguments().getBoolean(ARG_DISPLAY_CANCEL))

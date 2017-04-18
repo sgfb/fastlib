@@ -21,10 +21,23 @@ public class TaskChainHead<T>{
         return new TaskChainHead<T>(data);
     }
 
+    /**
+     * 安排下个任务,默认子线程中
+     * @param action
+     * @param <R1>
+     * @return
+     */
     public <R1> TaskChain<T,R1> next(TaskAction<T,R1> action){
-        return next(action,TaskChain.TYPE_THREAD_ON_MAIN);
+        return next(action,TaskChain.TYPE_THREAD_ON_WORK);
     }
 
+    /**
+     * 安排下个任务,指定线程位置
+     * @param action
+     * @param onWhichThread
+     * @param <R1>
+     * @return
+     */
     public <R1> TaskChain<T,R1> next(TaskAction<T,R1> action, int onWhichThread){
         TaskChain<T,R1> mFirstTask =new TaskChain<>(action,onWhichThread);
         mFirstTask.setData(mData);

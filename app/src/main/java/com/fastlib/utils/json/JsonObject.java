@@ -120,4 +120,12 @@ public final class JsonObject{
             return null;
         }
     }
+
+    /**
+     * 获取键
+     * @return
+     */
+    public String getKey(){
+        return mKey;
+    }
 }

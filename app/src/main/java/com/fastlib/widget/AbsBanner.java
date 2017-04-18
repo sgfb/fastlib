@@ -15,14 +15,14 @@ import java.util.List;
  * Created by sgfb on 16/3/23.
  * 通用轮播.指示器需要额外加装
  */
-public abstract class AbsBanner extends ViewPager {
+public abstract class AbsBanner<T> extends ViewPager{
 
     private BannerAdapter mAdapter;
-    private List<Object> mData;
+    private List<T> mData;
     private boolean mAutoScroll = false; //初始化设置false才能自动轮播
     private long mScrollInterval = 5000; //轮播间隔时间
 
-    protected abstract HandlePage getHandleImageWithEvent();
+    protected abstract HandlePage<T> getHandleImageWithEvent();
 
     protected abstract int getItemLayoutId();
 
@@ -66,7 +66,7 @@ public abstract class AbsBanner extends ViewPager {
         }
     }
 
-    public void setData(List<Object> data) {
+    public void setData(List<T> data) {
         if (data == null || data.size() == 0)
             return;
         mData = data;
@@ -86,8 +86,8 @@ public abstract class AbsBanner extends ViewPager {
         mScrollInterval = interval;
     }
 
-    private class BannerAdapter extends PagerAdapter {
-        private HandlePage mImageWithEvent;
+    private class BannerAdapter extends PagerAdapter{
+        private HandlePage<T> mImageWithEvent;
 
         @Override
         public int getCount() {
@@ -115,7 +115,7 @@ public abstract class AbsBanner extends ViewPager {
         }
     }
 
-    public interface HandlePage{
-        void handle(View v, Object element);
+    public interface HandlePage<T>{
+        void handle(View v,T element);
     }
 }

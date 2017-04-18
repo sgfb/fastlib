@@ -23,9 +23,7 @@ import android.os.Environment;
 
 /**
  * zip压缩工具
- * 
  * @author Bao
- *
  */
 public class ZipUtils {
 	

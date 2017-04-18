@@ -12,6 +12,7 @@ import com.fastlib.utils.DensityUtils;
 
 /**
  * Created by sgfb on 17/1/29.
+ * cpu监控服务.需要权限SYSTEM_ALERT_WINDOW
  */
 public class CpuRateMonitorService extends Service{
     CpuMonitor monitor;

@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 
 /**
  * Created by sgfb on 16/4/23.
@@ -154,6 +155,18 @@ public class SaveUtil{
     }
 
     /**
+     * 简单存储字符串到指定文件中
+     * @param file
+     * @param str
+     * @throws IOException
+     */
+    public static void saveToFile(File file,String str,boolean append)throws IOException{
+        OutputStream out=new FileOutputStream(file,append);
+        out.write(str.getBytes());
+        out.close();
+    }
+
+    /**
      * 存储数据到指定文件
      * @param file
      * @param obj
@@ -231,7 +244,7 @@ public class SaveUtil{
      */
     public static long fileSize(File file){
         long count=0;
-        if(Thread.currentThread().isInterrupted())
+        if(file==null||!file.exists()||Thread.currentThread().isInterrupted())
             return 0;
         if(file.isFile())
             count=file.length();

@@ -92,7 +92,7 @@ public class Reflect{
 		else if(obj instanceof Short)
 			return Short.toString((short)obj);
 		else
-		    return null;
+		    return obj.toString();
 	}
 
 	public static boolean isInteger(String type){
@@ -175,5 +175,29 @@ public class Reflect{
 				return false;
 			}
 		return true;
+	}
+
+	/**
+	 * 对比是否同一类型，基本对象与基本类型是同一类型
+	 * @param obj1
+	 * @param obj2
+	 * @return
+     */
+	public static boolean equalBasicOrBasicObj(Class<?> obj1, Class<?> obj2){
+		if(obj1==byte.class||obj1==Byte.class)
+			return obj2==byte.class||obj2==Byte.class;
+		if(obj1==char.class||obj1==Character.class)
+			return obj2==char.class||obj2==Character.class;
+		if(obj1==short.class||obj1==Short.class)
+			return obj2==short.class||obj2==Short.class;
+		if(obj1==int.class||obj1==Integer.class)
+			return obj2==int.class||obj2==Integer.class;
+		if(obj1==long.class||obj1==Long.class)
+			return obj2==long.class||obj2==Long.class;
+		if(obj1==float.class||obj1==Float.class)
+			return obj2==float.class||obj2==Float.class;
+		if(obj1==double.class||obj1==Double.class)
+			return obj2==double.class||obj2==Double.class;
+		return obj1==obj2;
 	}
 }

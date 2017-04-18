@@ -11,6 +11,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.fastlib.app.GlobalConfig;
+
 /**
  * 通用View持有者
  */
@@ -100,5 +102,39 @@ public class OldViewHolder {
 		TextView textView=getView(viewId);
 		String temp= TextUtils.isEmpty(textView.getText().toString())?"":textView.getText().toString();
 		textView.setText(str+temp);
+	}
+
+	/**
+	 * 给某个id视图设置监听
+	 * @param viewId
+	 * @param listener
+     */
+	public void setOnClickListener(int viewId, View.OnClickListener listener){
+		getView(viewId).setOnClickListener(listener); //如果奔溃，就让它奔溃
+	}
+
+	/**
+	 * 给这条布局设置点击监听
+	 * @param listener
+     */
+	public void setOnClickListener(View.OnClickListener listener){
+		mConvertView.setOnClickListener(listener);
+	}
+
+	/**
+	 * 给某个id视图设置长点击监听
+	 * @param viewId
+	 * @param listener
+     */
+	public void setOnLongClickListener(int viewId, View.OnLongClickListener listener){
+		getView(viewId).setOnLongClickListener(listener);
+	}
+
+	/**
+	 * 给这条布局设置长点击监听
+	 * @param listener
+     */
+	public void setOnLongClickListener(View.OnLongClickListener listener){
+		mConvertView.setOnLongClickListener(listener);
 	}
 }

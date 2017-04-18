@@ -40,7 +40,7 @@ public class PercentIndicator extends View{
         mHeight= DensityUtils.dp2px(getContext(),5);
         mPaint=new Paint();
         mSelectColor=Color.RED;
-        mOtherColor=getResources().getColor(R.color.Grey_400);
+        mOtherColor=getResources().getColor(R.color.grey_400);
     }
 
     public void setItemCount(int count){
