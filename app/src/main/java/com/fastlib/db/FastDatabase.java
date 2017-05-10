@@ -13,7 +13,7 @@ import java.util.Map;
 import com.fastlib.annotation.Database;
 import com.fastlib.app.GlobalConfig;
 import com.fastlib.bean.DatabaseTable;
-import com.fastlib.net.NetQueue;
+import com.fastlib.net.NetManager;
 import com.fastlib.utils.Reflect;
 import com.google.gson.Gson;
 
@@ -35,8 +35,8 @@ import android.text.TextUtils;
  */
 public class FastDatabase{
     public final String TAG = FastDatabase.class.getSimpleName();
-    public static final String DEFAULT_DATABASE_NAME = "default";
 
+    private static final String DEFAULT_DATABASE_NAME = "default";
     private static DatabaseConfig sConfig=new DatabaseConfig();
     private CustomUpdate mCustomUpdate;
     private Context mContext;
@@ -49,8 +49,8 @@ public class FastDatabase{
 
     /**
      * 返回公共数据库
-     * @param context
-     * @return
+     * @param context 上下文
+     * @return 数据库
      */
     public static FastDatabase getDefaultInstance(Context context) {
         return getInstance(context,DEFAULT_DATABASE_NAME);
@@ -58,9 +58,9 @@ public class FastDatabase{
 
     /**
      * 返回指定数据库(仅单次有效并未转换数据库)
-     * @param context
-     * @param dbName
-     * @return
+     * @param context 上下文
+     * @param dbName 数据库名（将会主动添加.db后辍）
+     * @return 数据库
      */
     public static FastDatabase getInstance(Context context,String dbName){
         FastDatabase database=new FastDatabase(context);
@@ -70,11 +70,11 @@ public class FastDatabase{
 
     /**
      * 异步删除数据库中数据
-     * @param cla
-     * @param callback
+     * @param cla 对象类
+     * @param callback 结束后回调
      */
     public void deleteAsync(final Class<?> cla, final DatabaseNoDataResultCallback callback){
-        NetQueue.sRequestPool.execute(new Runnable() {
+        NetManager.sRequestPool.execute(new Runnable() {
             @Override
             public void run() {
                 if(callback!=null)
@@ -85,11 +85,11 @@ public class FastDatabase{
 
     /**
      * 异步存或修改数据
-     * @param obj
-     * @param callback
+     * @param obj 对象类
+     * @param callback 结束后回调
      */
     public void saveOrUpdateAsync(final Object obj, final DatabaseNoDataResultCallback callback){
-        NetQueue.sRequestPool.execute(new Runnable() {
+        NetManager.sRequestPool.execute(new Runnable() {
             @Override
             public void run(){
                 if(callback!=null)
@@ -100,12 +100,12 @@ public class FastDatabase{
 
     /**
      * 异步获取数据库请求第一条纪录
-     * @param cla
-     * @param listener
-     * @param <T>
+     * @param cla 对象类
+     * @param listener 监听回调
+     * @param <T> 任意泛型
      */
     public <T> void getFirstAsync(final Class<T> cla, final DatabaseGetCallback<T> listener) {
-        NetQueue.sRequestPool.execute(new Runnable() {
+        NetManager.sRequestPool.execute(new Runnable() {
             @Override
             public void run(){
                 Handler handle=new Handler(Looper.getMainLooper());
@@ -122,9 +122,9 @@ public class FastDatabase{
 
     /**
      * 获取数据库请求第一条记录
-     * @param cla
-     * @param <T>
-     * @return
+     * @param cla 对象类
+     * @param <T> 任意泛型
+     * @return 不为空则返回表中首个数据，否则返回null
      */
     public <T> T getFirst(Class<T> cla) {
         List<T> all = limit(0, 1).get(cla);
@@ -135,12 +135,12 @@ public class FastDatabase{
 
     /**
      * 异步获取数据库记录
-     * @param cla
-     * @param listener
-     * @param <T>
+     * @param cla 对象类
+     * @param listener 监听回调
+     * @param <T> 任意泛型
      */
     public <T> void getAsync(final Class<T> cla,final DatabaseListGetCallback<T> listener){
-        NetQueue.sRequestPool.execute(new Runnable(){
+        NetManager.sRequestPool.execute(new Runnable(){
             @Override
             public void run(){
                 Handler handler=new Handler(Looper.getMainLooper());
@@ -157,9 +157,8 @@ public class FastDatabase{
 
     /**
      * 获取表中数据
-     *
-     * @param cla
-     * @return
+     * @param cla 对象类
+     * @return 根据过滤条件返回的数据（如果没有过滤条件返回指定表的所有数据）
      */
     public <T> List<T> get(Class<T> cla) {
         String tableName = cla.getCanonicalName();
@@ -282,32 +281,29 @@ public class FastDatabase{
                     Constructor<?>[] constructors=cla.getDeclaredConstructors();
 
                     //遍历构造函数，等长且除Object类型之外元素一致的情况下，保持Object一致
-                    for(int i=0;i<constructors.length;i++){
-                        Class<?>[] formalParams=constructors[i].getParameterTypes();
-                        if(clas.length!=formalParams.length)
+                    for (Constructor<?> constructor1 : constructors) {
+                        Class<?>[] formalParams = constructor1.getParameterTypes();
+                        if (clas.length != formalParams.length)
                             continue;
-                        for(int j=0;j<formalParams.length;j++){
-                            if(formalParams[j]!=Object.class&&!Reflect.equalBasicOrBasicObj(formalParams[j],clas[j]))
+                        for (int j = 0; j < formalParams.length; j++) {
+                            if (formalParams[j] != Object.class && !Reflect.equalBasicOrBasicObj(formalParams[j], clas[j]))
                                 continue;
-                            if(formalParams[j]==Object.class)
-                                clas[j]=Object.class;
+                            if (formalParams[j] == Object.class)
+                                clas[j] = Object.class;
                             else
-                                clas[j]=formalParams[j];
+                                clas[j] = formalParams[j];
                         }
                     }
                     Constructor<T> constructor=cla.getDeclaredConstructor(clas);
                     obj=constructor.newInstance(constructorParams);
                     //参数注入.这一块有优化可能
-                    Iterator<String> fieldNameIter=params.keySet().iterator();
 
-                    while(fieldNameIter.hasNext()){
-                        String fieldName=fieldNameIter.next();
-                        Field field=cla.getDeclaredField(fieldName);
+                    for (String fieldName : params.keySet()){
+                        Field field = cla.getDeclaredField(fieldName);
 
                         field.setAccessible(true);
                         field.set(obj,params.get(fieldName));
                     }
-
                 }
                 list.add(obj);
                 cursor.moveToNext();
@@ -325,10 +321,10 @@ public class FastDatabase{
 
     /**
      * 删除对象(obj对象必需有主键)
-     * @param obj
-     * @return
+     * @param obj 有主键的对象
+     * @return 成功删除返回true，否则fase
      */
-    public boolean delete(Object obj) {
+    public boolean delete(Object obj){
         Field[] fields = obj.getClass().getDeclaredFields();
         Field primaryField = null;
         String columnValue;
@@ -376,14 +372,14 @@ public class FastDatabase{
             System.out.println("错误的使用了delete(Object obj),obj没有注解主键");
             return false;
         }
-        mAttribute.setFilterCommand(new And(FilterCondition.equal(columnValue)));
+        mAttribute.setFilterCommand(And.condition(Condition.equal(columnValue)));
         return delete(obj.getClass());
     }
 
     /**
      * 删除数据
-     * @param cla
-     * @return
+     * @param cla 对象类
+     * @return 成功删除返回true，否则为false
      */
     public boolean delete(Class<?> cla) {
         String tableName = cla.getCanonicalName();
@@ -566,11 +562,10 @@ public class FastDatabase{
 
     /**
      * 保存对象到数据库
-     *
      * @param array
      * @return
      */
-    private boolean save(Object[] array) {
+    private boolean save(Object[] array){
         if (array == null || array.length <= 0)
             return false; //没什么对象可存应该返回false的吗？
         Object availableObj = null;
@@ -602,10 +597,17 @@ public class FastDatabase{
                     if (fieldInject != null && fieldInject.ignore())
                         continue;
                     try {
-                        if (fieldInject != null && fieldInject.keyPrimary() && fieldInject.autoincrement()) {
-                            int keyValue = field.getInt(obj);
-                            if (keyValue <= 0)
-                                continue;
+                        if (fieldInject != null && fieldInject.keyPrimary() && fieldInject.autoincrement()){
+                            if(field.getType()==int.class||field.getType()==Integer.class) {
+                                int keyValue = field.getInt(obj);
+                                if(keyValue<=0)
+                                    continue;
+                            }
+                            else if(field.getType()==long.class||field.getType()==Long.class){
+                                long keyValue=field.getLong(obj);
+                                if(keyValue<=0)
+                                    continue;
+                            }
                         }
                         if (fieldInject != null && !TextUtils.isEmpty(fieldInject.columnName()))
                             columnName = fieldInject.columnName();
@@ -673,8 +675,7 @@ public class FastDatabase{
     }
 
     /**
-     * 判断再集中后存储
-     *
+     * 根据主键或过滤条件更新已存在的数据（如果主键存在不使用过滤条件）或存储不存在的数据
      * @param objs
      * @return
      */
@@ -686,7 +687,8 @@ public class FastDatabase{
 
         if (objs == null || objs.length <= 0)
             return false;
-        for (Object object : objs) {
+        //取第一个非null的对象
+        for (Object object : objs){
             if (object != null) {
                 obj = object;
                 break;
@@ -697,33 +699,29 @@ public class FastDatabase{
             return false;
         DatabaseTable table = loadAttribute(obj.getClass());
         tableName = table.tableName;
-        //如果表存在并且有主键，尝试获取这个对象，如果不是null(如果是整型且值不为0)则尝试更新
-        if (tableExists(tableName)) {
+        //如果表存在并且有主键，尝试获取这个对象
+        if (tableExists(tableName)){
             DatabaseTable.DatabaseColumn keyColumn = table.keyColumn;
-            if (keyColumn != null) {
+            if (keyColumn != null){
                 Field field;
                 try {
                     field = obj.getClass().getDeclaredField(table.keyFieldName);
                     field.setAccessible(true);
                     Object keyValue = field.get(obj);
                     if (field.getType()==int.class||field.getType()==long.class){
-                        long lKeyValue=field.getType()==int.class?(int)keyValue:(long)keyValue;
-                        if (lKeyValue > 0) {
-                            mAttribute.setFilterCommand(new And(FilterCondition.equal(keyValue.toString())));
-                            List<?> data = get(obj.getClass());
-                            mAttribute.setFilterCommand(null);
-                            if (data != null && data.size() > 0) {
+                        long numKeyValue=field.getType()==int.class?(int)keyValue:(long)keyValue;
+                        if (numKeyValue > 0){
+                            Object oldData=FastDatabase.getInstance(mContext,mAttribute.getWhichDatabase()).setFilter(And.condition(Condition.equal(keyValue.toString()))).getFirst(obj.getClass());
+                            if (oldData != null){
                                 isUpdate = true;
-                                success = addFilter(new And(FilterCondition.equal(Reflect.objToStr(keyValue)))).update(obj);
+                                success = setFilter(And.condition(Condition.equal(Reflect.objToStr(keyValue)))).update(obj);
                             }
                         }
                     } else {
-                        mAttribute.setFilterCommand(new And(FilterCondition.equal(keyValue.toString())));
-                        List<?> data = get(obj.getClass());
-                        mAttribute.setFilterCommand(null);
-                        if (data != null && data.size() > 0) {
+                        Object oldData=FastDatabase.getInstance(mContext,mAttribute.getWhichDatabase()).getFirst(obj.getClass());
+                        if (oldData != null) {
                             isUpdate = true;
-                            success = addFilter(new And(FilterCondition.equal(Reflect.objToStr(keyValue)))).update(obj);
+                            success = setFilter(And.condition(Condition.equal(Reflect.objToStr(keyValue)))).update(obj);
                         }
                     }
                 } catch (NoSuchFieldException e) {
@@ -736,9 +734,18 @@ public class FastDatabase{
                     return false;
                 }
             }
+            else{  //如果主键不存在，查询是否有过滤条件，如果这个有并且这个条件能查询到数据，则修改首个数据的值
+                if(mAttribute.getFilterCommand()!=null){
+                    List<?> oldData=get(obj.getClass());
+                    if(oldData!=null&&!oldData.isEmpty()){
+                        isUpdate=true;
+                        success=update(obj);
+                    }
+                }
+            }
         }
 
-        if (!isUpdate) {
+        if (!isUpdate){
             final String sql = generateCreateTableSql(obj.getClass());
             SQLiteDatabase db = prepare(sql);
             db.close();
@@ -748,15 +755,15 @@ public class FastDatabase{
     }
 
     /**
-     * 保存或修改对象.对没有指定主键的对象只有保存没有更新.支持传入数组，列表和映射
+     * 保存或修改对象.支持传入数组，列表和映射
      * @param obj
      * @return
      */
-    public boolean saveOrUpdate(Object obj) {
+    public boolean saveOrUpdate(Object obj){
         if (obj == null)
             return false;
         Object[] objs;
-        if (obj instanceof Collection) {
+        if (obj instanceof Collection){
             Collection collection = (Collection) obj;
             objs = collection.toArray();
         } else if (obj instanceof Map) {
@@ -864,7 +871,6 @@ public class FastDatabase{
 
     /**
      * 不要某些列字段
-     *
      * @param columns
      * @return current database
      */
@@ -884,12 +890,22 @@ public class FastDatabase{
     }
 
     /**
+     * 设置过滤条件
+     * @param command
+     * @return
+     */
+    public FastDatabase setFilter(FilterCommand command) {
+        mAttribute.setFilterCommand(command);
+        return this;
+    }
+
+    /**
      * 增加过滤条件
      * @param command
      * @return
      */
-    public FastDatabase addFilter(FilterCommand command) {
-        mAttribute.setFilterCommand(command);
+    public FastDatabase addFilter(FilterCommand command){
+        mAttribute.addFilterCommand(command);
         return this;
     }
 
@@ -1280,13 +1296,13 @@ public class FastDatabase{
         if (filterCommand == null)
             return command.toString();
         command.append(" where ").append(filterCommand.getFilterCondition().getExpression(key));
-        if (filterCommand.getFilterCondition().getType() != FilterCondition.TYPE_NOT_NULL && filterCommand.getFilterCondition().getType() != FilterCondition.TYPE_NULL)
+        if (filterCommand.getFilterCondition().getType() != Condition.TYPE_NOT_NULL && filterCommand.getFilterCondition().getType() != Condition.TYPE_NULL)
             args.add(filterCommand.getFilterCondition().getValue());
         filterCommand = filterCommand.getNext();
         while (filterCommand != null) {
             command.append(" ").append(filterCommand.getType() == FilterCommand.TYPE_AND ? "and" : "or").append(" ");
             command.append(filterCommand.getFilterCondition().getExpression(key));
-            if (filterCommand.getFilterCondition().getType() != FilterCondition.TYPE_NOT_NULL && filterCommand.getFilterCondition().getType() != FilterCondition.TYPE_NULL)
+            if (filterCommand.getFilterCondition().getType() != Condition.TYPE_NOT_NULL && filterCommand.getFilterCondition().getType() != Condition.TYPE_NULL)
                 args.add(filterCommand.getFilterCondition().getValue());
             filterCommand = filterCommand.getNext();
         }
@@ -1394,7 +1410,7 @@ public class FastDatabase{
     }
 
     public static String getDefaultDatabaseName() {
-        return sConfig.getPrefix() + DEFAULT_DATABASE_NAME + ".db";
+        return DEFAULT_DATABASE_NAME;
     }
 
     public static DatabaseConfig getConfig() {
@@ -1417,7 +1433,7 @@ public class FastDatabase{
          */
         private DatabaseConfig() {
             mVersion = 1;
-            mCurrentDatabase = DEFAULT_DATABASE_NAME + ".db";
+            mCurrentDatabase = getDefaultDatabaseName() + ".db";
         }
 
         /**
@@ -1441,16 +1457,6 @@ public class FastDatabase{
 
         public int getVersion() {
             return mVersion;
-        }
-
-        public String getPrefix() {
-            if (mPrefix == null)
-                return "";
-            return mPrefix;
-        }
-
-        public void setPrefix(String prefix) {
-            mPrefix = prefix;
         }
     }
 }

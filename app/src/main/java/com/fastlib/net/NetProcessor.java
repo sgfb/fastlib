@@ -28,7 +28,6 @@ import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -172,7 +171,7 @@ public class NetProcessor implements Runnable{
             }
             baos.close();
             in.close();
-            List<String> trustHost = NetQueue.getInstance().getConfig().getTrustHost(); //调整信任服务器时间差
+            List<String> trustHost = NetManager.getInstance().getConfig().getTrustHost(); //调整信任服务器时间差
             if (trustHost != null) {
                 for (String host : trustHost) {
                     if (url.getHost().equals(host)) {
@@ -207,12 +206,12 @@ public class NetProcessor implements Runnable{
                 ||mRequest.isReceiveGzip());
     }
 
-
     /**
      * 触发回调，必定触发的回调，除非遇到致命错误
      */
     private void toggleCallback(){
-        final ExtraListener l = mRequest.getListener();
+        final Listener gloablListener=NetManager.getInstance().getGlobalListener();
+        final Listener l = mRequest.getListener();
         if(l==null||Thread.currentThread().isInterrupted())
             return;
         Object host = mRequest.getHost();
@@ -227,7 +226,9 @@ public class NetProcessor implements Runnable{
                 hostAvailable = false;
         }
         if (hostAvailable){
-            l.onRawData(mResponse);
+            if(gloablListener!=null)
+                l.onRawData(mRequest,mResponse);
+            l.onRawData(mRequest,mResponse);
             Type realType = mRequest.getGenericType();
             Gson gson = new Gson();
             try {
@@ -236,16 +237,22 @@ public class NetProcessor implements Runnable{
                     responseObj = mResponse;
                 else if (realType == String.class){
                     responseObj = mResponse==null?"":new String(mResponse);
-                    l.onTranslateJson((String) responseObj);
+                    if(gloablListener!=null)
+                        gloablListener.onTranslateJson(mRequest,(String)responseObj);
+                    l.onTranslateJson(mRequest,(String) responseObj);
                 }else{
                     String json=mResponse==null?"":new String(mResponse);
-                    l.onTranslateJson(json);
+                    if(gloablListener!=null)
+                        gloablListener.onTranslateJson(mRequest,json);
+                    l.onTranslateJson(mRequest,json);
                     responseObj=mResponse==null?null:gson.fromJson(json, realType);
                 }
                 if(isSuccess){
                     mResponsePoster.execute(new Runnable(){
                         @Override
-                        public void run() {
+                        public void run(){
+                            if(gloablListener!=null)
+                                l.onResponseListener(mRequest,responseObj);
                             l.onResponseListener(mRequest,responseObj);
                         }
                     });
@@ -257,9 +264,11 @@ public class NetProcessor implements Runnable{
                 isSuccess=false;
             }
             if (!isSuccess){
-                mResponsePoster.execute(new Runnable() {
+                mResponsePoster.execute(new Runnable(){
                     @Override
-                    public void run() {
+                    public void run(){
+                        if(gloablListener!=null)
+                            gloablListener.onErrorListener(mRequest,mMessage);
                         l.onErrorListener(mRequest, mMessage);
                     }
                 });
@@ -273,43 +282,53 @@ public class NetProcessor implements Runnable{
      */
     private String splicingGetUrl(){
         StringBuilder sb=new StringBuilder(mRequest.getUrl());
-        Iterator<String> keyIter=mRequest.getParams().keySet().iterator();
+        Iterator<Pair<String,String>> iter=mRequest.getParams().iterator();
 
-        if(keyIter.hasNext()){
-            String key=keyIter.next();
-            sb.append("?").append(key).append("=").append(mRequest.getParams().get(key));
+        if(iter.hasNext()){
+            Pair<String,String> pair=iter.next();
+            sb.append("?").append(pair.first).append("=").append(pair.second);
         }
-        while(keyIter.hasNext()){
-            String key=keyIter.next();
-            sb.append("&").append(key).append("=").append(mRequest.getParams().get(key));
+        while(iter.hasNext()){
+            Pair<String,String> pair=iter.next();
+            sb.append("?").append(pair.first).append("=").append(pair.second);
         }
         return sb.toString();
     }
 
-    private void loadParams(Map<String, String> params, StringBuilder sb) {
+    /**
+     * 拼接字符串参数
+     * @param params
+     * @param sb
+     */
+    private void loadParams(List<Pair<String,String>> params, StringBuilder sb) {
         if (params == null || params.size() <= 0)
             return;
-        Iterator<String> iter = params.keySet().iterator();
+        Iterator<Pair<String,String>> iter = params.iterator();
 
         while (iter.hasNext()) {
-            String key = iter.next();
-            String value = params.get(key);
-            sb.append(key).append("=").append(value).append("&");
+            Pair<String,String> pair=iter.next();
+            sb.append(pair.first).append("=").append(pair.second).append("&");
         }
         sb.deleteCharAt(sb.length() - 1);
     }
 
-    private void multipart(Map<String, String> strParams,List<Pair<String,File>> fileParams, OutputStream out) throws IOException {
+    /**
+     * 混合数据发送
+     * @param strParams
+     * @param fileParams
+     * @param out
+     * @throws IOException
+     */
+    private void multipart(List<Pair<String,String>> strParams,List<Pair<String,File>> fileParams, OutputStream out) throws IOException {
         if (strParams != null && strParams.size() > 0) {
-            Iterator<String> iter = strParams.keySet().iterator();
+            Iterator<Pair<String,String>> iter = strParams.iterator();
             StringBuilder sb = new StringBuilder();
             while (iter.hasNext()&&!Thread.currentThread().isInterrupted()){
-                String key = iter.next();
-                String value = strParams.get(key);
+                Pair<String,String> pair=iter.next();
                 sb.append("--" + BOUNDARY).append(CRLF);
-                sb.append("Content-Disposition:form-data; name=\"" + key + "\"").append(CRLF);
+                sb.append("Content-Disposition:form-data; name=\"" + pair.first + "\"").append(CRLF);
                 sb.append("Content-Type:text/plain charset=utf-8").append(CRLF + CRLF);
-                sb.append(value).append(CRLF);
+                sb.append(pair.second).append(CRLF);
                 Tx += sb.toString().getBytes().length;
                 out.write(sb.toString().getBytes());
             }

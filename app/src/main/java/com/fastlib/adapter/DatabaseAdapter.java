@@ -19,16 +19,16 @@ import java.util.List;
  * 关联FastDatabase适配数据
  */
 public abstract class DatabaseAdapter<T> extends BaseAdapter implements DatabaseListGetCallback<T> {
-    protected boolean isAsc,isRefresh,isMore;
+    protected boolean isRefresh,isMore;
     protected int mCurrentIndex=0,mPerCount=10; //当前位置索引和每次读取列表长度
     protected int mLayoutId;
     protected List<T> mData;
     protected Class<T> mCla;
     protected Context mContext;
-    protected FilterCommand mFilterCommand; //过滤条件
     protected Refreshable mRefreshable;
 
     protected abstract void binding(int position,T data,OldViewHolder holder);
+    protected abstract FastDatabase generateDB(boolean isRefresh);  //更新数据是获取数据库实例
 
     /**
      * 使用上下文和类，布局id构造
@@ -37,7 +37,7 @@ public abstract class DatabaseAdapter<T> extends BaseAdapter implements Database
      * @param layoutId 布局id
      */
     public DatabaseAdapter(Context context, Class<T> cla, @LayoutRes int layoutId){
-    	this(context,cla,layoutId,true,true);
+    	this(context,cla,layoutId,true);
     }
 
     /**
@@ -45,13 +45,11 @@ public abstract class DatabaseAdapter<T> extends BaseAdapter implements Database
      * @param context 上下文
      * @param cla 数据类
      * @param layoutId 布局id
-     * @param asc 排序
      * @param startNow 立即刷新
      */
-    public DatabaseAdapter(Context context,Class<T> cla,@LayoutRes int layoutId,boolean asc,boolean startNow){
+    public DatabaseAdapter(Context context,Class<T> cla,@LayoutRes int layoutId,boolean startNow){
         mContext=context;
         mCla=cla;
-        isAsc=asc;
         mLayoutId=layoutId;
         if(startNow)
             refresh();
@@ -85,20 +83,14 @@ public abstract class DatabaseAdapter<T> extends BaseAdapter implements Database
     	isRefresh=true;
     	isMore=true;
         mCurrentIndex=0;
-        FastDatabase.getDefaultInstance(mContext)
-                .addFilter(mFilterCommand)
-                .limit(mCurrentIndex,mPerCount)
-                .orderBy(isAsc)
+        generateDB(true).limit(mCurrentIndex,mPerCount)
                 .getAsync(mCla,this);
     }
 
     protected void loadMore(){
     	isRefresh=false;
         mCurrentIndex+=mPerCount;
-        FastDatabase.getDefaultInstance(mContext)
-                .addFilter(mFilterCommand)
-                .limit(mCurrentIndex,mCurrentIndex+mPerCount)
-                .orderBy(isAsc)
+        generateDB(false).limit(mCurrentIndex,mPerCount)
                 .getAsync(mCla,this);
     }
 
@@ -115,22 +107,6 @@ public abstract class DatabaseAdapter<T> extends BaseAdapter implements Database
         else
             mData.addAll(result);
         notifyDataSetChanged();
-    }
-
-    public FilterCommand getFilterCommand(){
-        return mFilterCommand;
-    }
-
-    public void setFilterCommand(FilterCommand filterCommand){
-        mFilterCommand = filterCommand;
-    }
-
-    public boolean isAsc() {
-        return isAsc;
-    }
-
-    public void setAsc(boolean asc) {
-        isAsc = asc;
     }
 
     public int getPerCount() {

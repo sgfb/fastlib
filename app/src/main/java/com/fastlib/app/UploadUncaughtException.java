@@ -107,6 +107,16 @@ public abstract class UploadUncaughtException implements Thread.UncaughtExceptio
             request.setListener(new Listener<String>(){
 
                 @Override
+                public void onRawData(Request r, byte[] data) {
+
+                }
+
+                @Override
+                public void onTranslateJson(Request r, String json) {
+
+                }
+
+                @Override
                 public void onResponseListener(Request r, String result){
                     logFile.delete();
                     if(listener!=null)

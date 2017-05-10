@@ -5,12 +5,10 @@ import android.content.Context;
 import com.fastlib.bean.NetFlow;
 import com.fastlib.db.And;
 import com.fastlib.db.FastDatabase;
-import com.fastlib.db.FilterCommand;
-import com.fastlib.db.FilterCondition;
-import com.fastlib.net.NetQueue;
+import com.fastlib.db.Condition;
+import com.fastlib.net.NetManager;
 import com.fastlib.utils.TimeUtil;
 
-import java.io.File;
 import java.util.Date;
 
 /**
@@ -23,12 +21,12 @@ public class Plus{
      */
     public static void saveNetFlow(Context context){
         NetFlow netFlow =new NetFlow();
-        netFlow.requestCount=NetQueue.getInstance().mRequestCount;
-        netFlow.receiveByte=NetQueue.getInstance().Rx;
-        netFlow.takeByte=NetQueue.getInstance().Tx;
+        netFlow.requestCount= NetManager.getInstance().mRequestCount;
+        netFlow.receiveByte= NetManager.getInstance().Rx;
+        netFlow.takeByte= NetManager.getInstance().Tx;
         netFlow.time= TimeUtil.dateToString(new Date(System.currentTimeMillis()),"yyyy-MM-dd");
 
-        NetFlow existsHistory=FastDatabase.getDefaultInstance(context).addFilter(new And(FilterCondition.equal(netFlow.time))).getFirst(NetFlow.class);
+        NetFlow existsHistory=FastDatabase.getDefaultInstance(context).setFilter(And.condition(Condition.equal(netFlow.time))).getFirst(NetFlow.class);
         if(existsHistory!=null){
             netFlow.requestCount+=existsHistory.requestCount;
             netFlow.receiveByte+=existsHistory.receiveByte;

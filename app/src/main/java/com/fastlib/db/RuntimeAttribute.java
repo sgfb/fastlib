@@ -1,7 +1,5 @@
 package com.fastlib.db;
 
-import java.util.List;
-
 /**
  * Created by sgfb on 16/3/21.
  * 数据库运行时一些参数
@@ -78,7 +76,7 @@ public final class RuntimeAttribute{
      * @return
      */
     public RuntimeAttribute setToWhichDatabase(String toWhichDatabase){
-        mWhichDatabase=FastDatabase.getConfig().getPrefix()+toWhichDatabase+".db";
+        mWhichDatabase=toWhichDatabase+".db";
         return this;
     }
 
@@ -140,6 +138,13 @@ public final class RuntimeAttribute{
 
     public void setFilterCommand(FilterCommand filterCommand) {
         mFilterCommand = filterCommand;
+    }
+
+    public void addFilterCommand(FilterCommand filterCommand){
+        if(mFilterCommand==null)
+            mFilterCommand=filterCommand;
+        else
+            mFilterCommand.concat(filterCommand);
     }
 
     public Object[] getConstructorParams() {

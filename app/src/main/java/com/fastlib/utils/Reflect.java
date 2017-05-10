@@ -17,14 +17,9 @@ import java.util.Objects;
  * @author Sgfb
  */
 public class Reflect{
-
-	public static void dataInject(Object obj,Field field){
-
-	}
 	
 	/**
 	 * 使用方法:reflectString(对象,"对象.子对象.孙对象...")
-	 * 
 	 * @param obj
 	 * @param fieldName
 	 * @return 反射回字符串

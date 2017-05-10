@@ -10,7 +10,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.fastlib.annotation.Event;
-import com.fastlib.net.NetQueue;
+import com.fastlib.net.NetManager;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
@@ -21,10 +21,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by sgfb on 16/9/1.
@@ -64,7 +60,7 @@ public class EventObserver {
 
         if(eventMethods==null||eventMethods.isEmpty()){
             if(GlobalConfig.SHOW_LOG)
-                Log.d(TAG,"订阅者"+subscriberName+"没有广播接受方法,请检查是否添加了Event注解和广播方法参数");
+                Log.d(TAG,"订阅者"+subscriberName+"没有广播接收方法,请检查是否添加了Event注解和广播方法参数");
             return;
         }
         if(eventNames==null)
@@ -221,7 +217,7 @@ public class EventObserver {
                     if(anno.value()) //是否在主线程调用,如果不是进入线程池
                         m.invoke(subscribe,wrapper.obj);
                     else
-                        NetQueue.sRequestPool.execute(new Runnable() {
+                        NetManager.sRequestPool.execute(new Runnable() {
                             @Override
                             public void run() {
                                 try {

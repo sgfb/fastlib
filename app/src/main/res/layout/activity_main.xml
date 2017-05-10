@@ -20,8 +20,22 @@
             android:text="bt2"/>
     </LinearLayout>
 
-    <ListView
-        android:id="@+id/list"
+    <LinearLayout
+        android:id="@+id/ll"
+        android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="50dp">
+
+        <Button
+            android:id="@+id/bt3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="bt3"/>
+
+        <Button
+            android:id="@+id/bt4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="bt4"/>
+    </LinearLayout>
 </LinearLayout>

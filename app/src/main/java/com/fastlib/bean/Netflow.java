@@ -4,7 +4,7 @@ import com.fastlib.annotation.Database;
 
 /**
  * Created by sgfb on 16/10/11.
- * 流量纪录
+ * 流量记录
  */
 public class NetFlow {
     public int requestCount;

@@ -7,7 +7,7 @@ import java.util.Map;
  * 对象类转换为数据库表信息
  * Created by sgfb on 16/2/15.
  */
-public class DatabaseTable {
+public class DatabaseTable{
     public String tableName;
     public String keyFieldName;
     public DatabaseColumn keyColumn;

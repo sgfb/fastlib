@@ -17,9 +17,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -46,7 +44,7 @@ public class Request {
     private Downloadable mDownloadable;
     private List<Pair<String, String>> mHeadExtra; //额外头部信息
     private List<Pair<String,File>> mFiles;
-    private Map<String, String> mParams;
+    private List<Pair<String,String>> mParams;
     private RequestType mType = RequestType.DEFAULT;
     private Object mTag; //额外信息
     private String[] mCookies; //留存的cookies
@@ -54,7 +52,7 @@ public class Request {
     //加入activity或者fragment可以提升安全性
     private Activity mActivity;
     private Fragment mFragment;
-    private ExtraListener mListener;
+    private Listener mListener;
     private Type mGenericType; //根据Listener生成的返回类类型存根
     private ServerCache mCacheManager; //缓存这个请求的数据管理
     private ThreadPoolExecutor mExecutor; //运行在指定线程池中,如果未指定默认在公共的线程池中
@@ -105,7 +103,7 @@ public class Request {
         mUrl = isReplaceChinese?transferSpaceAndChinese(url):url;
         isReplaceChinese=true;
         useFactory = true;
-        mParams = new HashMap<>();
+        mParams = new ArrayList<>();
         mFiles = new ArrayList<>();
         mHeadExtra = new ArrayList<>();
     }
@@ -163,7 +161,7 @@ public class Request {
         if (mCacheManager != null)
             mCacheManager.refresh(forceRefresh);
         else
-            NetQueue.getInstance().netRequest(this);
+            NetManager.getInstance().netRequest(this);
         return this;
     }
 
@@ -178,19 +176,123 @@ public class Request {
     }
 
     /**
+     * 查找第一个某个键位置
+     * @param key
+     * @return
+     */
+    private int paramsIndexOf(String key){
+        if(mParams!=null){
+            for(int i=0;i<mParams.size();i++)
+                if(TextUtils.equals(mParams.get(i).first,key))
+                    return i;
+        }
+        return -1;
+    }
+
+    /**
+     * 增加一组数据到某个键中
+     * @param key
+     * @param list
+     * @param <T>
+     * @return
+     */
+    public <T> Request addAll(String key,List<T> list){
+        if(list!=null&&!list.isEmpty())
+            for(T t:list)
+                add(key,t);
+        return this;
+    }
+
+    /**
      * 添加字符串请求参数
+     * @param key
+     * @param value
+     * @return
+     */
+    public Request add(String key,String value){
+        if(mParams==null)
+            mParams=new ArrayList<>();
+        mParams.add(Pair.create(key,value));
+        return this;
+    }
+
+    /**
+     * 添加整数
+     * @param key
+     * @param value
+     * @return
+     */
+    public Request add(String key,int value){
+        return  add(key,Integer.toString(value));
+    }
+
+    /**
+     * 添加单精浮点数
+     * @param key
+     * @param value
+     * @return
+     */
+    public Request add(String key,float value){
+        return add(key,Float.toString(value));
+    }
+
+    /**
+     * 添加长整形数
+     * @param key
+     * @param value
+     * @return
+     */
+    public Request add(String key,long value){
+        return add(key,Long.toString(value));
+    }
+
+    /**
+     * 添加双精浮点数
+     * @param key
+     * @param value
+     * @return
+     */
+    public Request add(String key,double value){
+        return add(key,Double.toHexString(value));
+    }
+
+    /**
+     * 添加短整型对象
+     * @param key
+     * @param value
+     * @return
+     */
+    public Request add(String key,short value){
+        return add(key,Short.toString(value));
+    }
+
+    /**
+     * 添加Json对象
+     * @param key
+     * @param obj
+     * @return
+     */
+    public Request add(String key,Object obj){
+        return add(key,new Gson().toJson(obj));
+    }
+
+    /**
+     * 添加字符串请求参数,如果存在则覆盖第一个
      * @param key
      * @param value
      */
     public Request put(String key, String value) {
         if (mParams == null)
-            mParams = new HashMap<>();
-        mParams.put(key, value);
+            mParams = new ArrayList<>();
+        int index=paramsIndexOf(key);
+        if(index!=-1)
+            mParams.remove(index);
+        mParams.add(Pair.create(key,value));
         return this;
     }
 
     /**
-     * 添加短整型请求参数
+     * 添加短整型请求参数,如果存在,覆盖第一个
      * @param key
      * @param value
      * @return
@@ -200,7 +302,7 @@ public class Request {
     }
 
     /**
-     * 添加整型请求参数
+     * 添加整型请求参数,如果存在,覆盖第一个
      * @param key
      * @param value
      * @return
@@ -210,7 +312,7 @@ public class Request {
     }
 
     /**
-     * 添加单精浮点请求参数
+     * 添加单精浮点请求参数,如果存在,覆盖第一个
      * @param key
      * @param value
      * @return
@@ -220,7 +322,7 @@ public class Request {
     }
 
     /**
-     * 添加双精浮点请求参数
+     * 添加双精浮点请求参数,如果存在,覆盖第一个
      * @param key
      * @param value
      * @return
@@ -230,7 +332,7 @@ public class Request {
     }
 
     /**
-     * 添加json对象
+     * 添加json对象,如果存在,覆盖第一个
      * @param key
      * @param jsonObj
      * @return
@@ -244,18 +346,17 @@ public class Request {
      * @param params
      * @return
      */
-    public Request put(Map<String, String> params) {
+    public Request put(List<Pair<String,String>> params) {
         if (mParams == null)
             mParams = params;
         else
-            mParams.putAll(params);
+            mParams.addAll(params);
         return this;
     }
 
 
     /**
      * 发送文件
-     *
      * @param key
      * @param file
      * @return
@@ -280,54 +381,57 @@ public class Request {
 
     /**
      * 参数递增
-     *
      * @param key
      * @param count
      */
-    public void increment(String key, int count) {
-        if (!checkNumberParams(key))
+    public void increment(String key, int count){
+        int index;
+        if ((index=checkNumberParams(key))==-1)
             return;
-        String value = mParams.get(key);
-        mParams.put(key, Integer.toString(Integer.parseInt(value) + count));
-
+        Pair<String,String> pair=mParams.get(index);
+        int value=Integer.parseInt(pair.second);
+        mParams.remove(pair);
+        mParams.add(0,Pair.create(key,Integer.toString(value+count)));
     }
 
     /**
      * 参数递减
-     *
      * @param key
      * @param count
      */
-    public void decrease(String key, int count) {
-        if (!checkNumberParams(key))
+    public void decrease(String key, int count){
+        int index;
+        if ((index=checkNumberParams(key))==-1)
             return;
-        String value = mParams.get(key);
-        mParams.put(key, Integer.toString(Integer.parseInt(value) - count));
+        Pair<String,String> pair=mParams.get(index);
+        int value=Integer.parseInt(pair.second);
+        mParams.remove(pair);
+        mParams.add(0,Pair.create(key,Integer.toString(value-count)));
     }
 
     /**
      * 检查是否是数字参数
-     *
      * @param key
      * @return
      */
-    private boolean checkNumberParams(String key) {
+    private int checkNumberParams(String key){
+        int index=-1;
         if (mParams == null) {
-            mParams = new HashMap<>();
-            mParams.put(key, "0");
-            return false;
+            mParams = new ArrayList<>();
+            mParams.add(Pair.create(key,"0"));
+            return index;
         }
-        if (!mParams.containsKey(key)) {
-            mParams.put(key, "0");
-            return false;
+        if ((index=paramsIndexOf(key))==-1) {
+            mParams.add(Pair.create(key,"0"));
+            return index;
         }
         try {
-            Integer.parseInt(mParams.get(key));
-            return true;
-        } catch (NumberFormatException e) {
-            mParams.put(key, "0");
-            return false;
+            Integer.parseInt(mParams.get(index).second);
+            return index;
+        } catch (NumberFormatException e){
+            //转换异常不处理
         }
+        return index;
     }
 
     /**
@@ -349,16 +453,15 @@ public class Request {
         }
     }
 
-    public Map<String, String> getParams() {
+    public List<Pair<String,String>> getParams(){
         return mParams;
     }
 
     /**
      * 发送参数
-     *
      * @param params
      */
-    public void setParams(Map<String, String> params) {
+    public void setParams(List<Pair<String,String>> params) {
         if (params == null)
             mParams.clear();
         else
@@ -402,31 +505,7 @@ public class Request {
                 break;
             }
         }
-        if (l instanceof ExtraListener)
-            mListener = (ExtraListener) l;
-        else {
-            mListener = new ExtraListener() {
-                @Override
-                public void onRawData(byte[] data) {
-                    //do noting
-                }
-
-                @Override
-                public void onTranslateJson(String json) {
-                    //do noting
-                }
-
-                @Override
-                public void onResponseListener(Request r, Object result) {
-                    l.onResponseListener(r, result);
-                }
-
-                @Override
-                public void onErrorListener(Request r, String error) {
-                    l.onErrorListener(r, error);
-                }
-            };
-        }
+        mListener=l;
         return this;
     }
 
@@ -486,7 +565,7 @@ public class Request {
         return sb.toString().replace(" ","%20"); //最后空格置换
     }
 
-    public ExtraListener getListener() {
+    public Listener getListener() {
         return mListener;
     }
 

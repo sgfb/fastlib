@@ -6,8 +6,12 @@ package com.fastlib.db;
  */
 public class Or extends FilterCommand{
 
-    public Or(FilterCondition condition) {
+    private Or(Condition condition) {
         super(condition);
+    }
+
+    public static Or condition(Condition condition){
+        return new Or(condition);
     }
 
     @Override

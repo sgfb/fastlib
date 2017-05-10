@@ -16,7 +16,6 @@ import java.util.List;
  * 通用轮播.指示器需要额外加装
  */
 public abstract class AbsBanner<T> extends ViewPager{
-
     private BannerAdapter mAdapter;
     private List<T> mData;
     private boolean mAutoScroll = false; //初始化设置false才能自动轮播

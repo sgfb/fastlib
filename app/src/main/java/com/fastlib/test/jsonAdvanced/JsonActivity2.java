@@ -48,7 +48,7 @@ public abstract class JsonActivity2 extends JsonActivity{
         }
     }
 
-    public class NormalJsonAdapter extends JsonAdapter {
+    public class NormalJsonAdapter extends JsonAdapter{
 
         public NormalJsonAdapter(Context context, @LayoutRes int layoutId) {
             super(context,layoutId,false);
@@ -84,6 +84,16 @@ public abstract class JsonActivity2 extends JsonActivity{
 
         public void setRequst(Request request){
             mRequest=request;
+        }
+
+        @Override
+        public void onRawData(Request r, byte[] data) {
+
+        }
+
+        @Override
+        public void onTranslateJson(Request r, String json) {
+
         }
     }
 }

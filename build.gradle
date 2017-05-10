@@ -13,7 +13,7 @@ buildscript {
 }
 
 allprojects {
-    repositories {
+    repositories{
         jcenter()
 //        maven {
 //            url = "http://shenhf.cn:8081/content/repositories/android/"

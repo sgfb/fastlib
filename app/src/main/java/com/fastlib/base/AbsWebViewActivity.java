@@ -2,6 +2,7 @@ package com.fastlib.base;
 
 import android.annotation.TargetApi;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
@@ -37,9 +38,9 @@ public abstract class AbsWebViewActivity extends AppCompatActivity {
     public static final String ARG_TITLE = "title";
     public static final String ARG_DATA = "data"; //本地html数据
 
-    private WebView mWebView;
-    private ProgressBar mProgress;
-    private String mUrl;
+    protected WebView mWebView;
+    protected ProgressBar mProgress;
+    protected String mUrl;
 
     public abstract void webTitle(String title);
 
@@ -51,7 +52,6 @@ public abstract class AbsWebViewActivity extends AppCompatActivity {
         String title = getIntent().getStringExtra(ARG_TITLE);
 
         webTitle(title);
-        mWebView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
         mWebView.getSettings().setJavaScriptEnabled(true);
         mWebView.setWebViewClient(new WebClient());
         mWebView.setWebChromeClient(new ChromeClient());
@@ -68,7 +68,7 @@ public abstract class AbsWebViewActivity extends AppCompatActivity {
         return super.onKeyDown(keyCode, event);
     }
 
-    class ChromeClient extends WebChromeClient {
+    protected class ChromeClient extends WebChromeClient {
 
         @Override
         public void onProgressChanged(WebView view, int newProgress) {
@@ -85,7 +85,7 @@ public abstract class AbsWebViewActivity extends AppCompatActivity {
         }
     }
 
-    class WebClient extends WebViewClient {
+    protected class WebClient extends WebViewClient{
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url){
@@ -96,6 +96,18 @@ public abstract class AbsWebViewActivity extends AppCompatActivity {
                 return true;
             }
             return false;
+        }
+
+        @Override
+        public void onPageStarted(WebView view, String url, Bitmap favicon){
+            System.out.println("page start:"+url);
+            super.onPageStarted(view, url, favicon);
+        }
+
+        @Override
+        public void onPageFinished(WebView view, String url){
+            System.out.println("page end:"+url);
+            super.onPageFinished(view, url);
         }
     }
 }

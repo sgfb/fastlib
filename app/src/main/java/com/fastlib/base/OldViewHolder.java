@@ -137,4 +137,8 @@ public class OldViewHolder {
 	public void setOnLongClickListener(View.OnLongClickListener listener){
 		mConvertView.setOnLongClickListener(listener);
 	}
+
+	public void setVisibility(int viewId,int visibility){
+		getView(viewId).setVisibility(visibility);
+	}
 }

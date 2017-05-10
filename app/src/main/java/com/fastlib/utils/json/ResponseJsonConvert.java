@@ -24,10 +24,19 @@ public class ResponseJsonConvert{
     private File mSaveFolder; //存储转换好的实体类的文件夹，如果不存在会尝试创建
     private String mPackageName;
     private String mEntityBody; //相对于模版类的实体块
+    private String mUrl;
+    private String mData;
     private List<Request> mRequests;
 
     public ResponseJsonConvert(List<Request> requests) {
         mRequests = requests;
+        mPackageName="com.bean";
+        mSaveFolder= Environment.getExternalStorageDirectory();
+    }
+
+    public ResponseJsonConvert(String fileName,String data){
+        mUrl =fileName;
+        mData=data;
         mPackageName="com.bean";
         mSaveFolder= Environment.getExternalStorageDirectory();
     }
@@ -48,13 +57,27 @@ public class ResponseJsonConvert{
     }
 
     /**
+     * 拼接文件名
+     * @param uri
+     * @return
+     */
+    private String joinFileName(Uri uri){
+        List<String> segment=uri.getPathSegments();
+        if(segment==null||segment.isEmpty()) return "empty";
+        StringBuilder sb=new StringBuilder();
+        for(String s:segment)
+            sb.append(s.substring(0,1).toUpperCase()+s.substring(1));
+        return sb.toString()+".java";
+    }
+
+    /**
      * 准备生成Json实体。生成文件，写包名，将实体写入文件等等
      * @param url
      * @param entity
      */
     private void prepareGenerateJsonEntity(String url, JsonObject entity){
         Uri uri=Uri.parse(url);
-        String fileName=uri.getLastPathSegment()+".java";
+        String fileName=joinFileName(uri);
         File file=new File(mSaveFolder,fileName.substring(0,1).toUpperCase()+fileName.substring(1));
         StringBuilder sb=new StringBuilder();
 
@@ -261,34 +284,53 @@ public class ResponseJsonConvert{
      * 开始调用接口,生成json实体类
      */
     public void start(){
-        for(Request request:mRequests){
-            request.setListener(new Listener<String>(){
+        if(mData!=null){
+            try {
+                prepareGenerateJsonEntity(mUrl,FastJson.fromJson(mData));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else{
+            for(Request request:mRequests){
+                request.setListener(new Listener<String>(){
 
-                @Override
-                public void onResponseListener(Request r, String result){
-                    try {
-                        JsonObject jo=FastJson.fromJson(result);
-                        Object entity;
+                    @Override
+                    public void onRawData(Request r, byte[] data){
 
-                        if(!TextUtils.isEmpty(mEntityBody)) entity=jo.findValue(mEntityBody);
-                        else entity=jo.getValue();
-                        if(entity!=null){
-                            if(!mSaveFolder.exists())
-                                mSaveFolder.mkdirs();
-                            prepareGenerateJsonEntity(r.getUrl(),jo);
-                        }
-                    } catch (IOException e) {
-                        System.out.println("实体类生成失败:"+e);
                     }
-                    r.clear();
-                }
 
-                @Override
-                public void onErrorListener(Request r, String error) {
-                    System.out.println("实体类生成失败:"+error);
-                }
-            });
-            request.start();
+                    @Override
+                    public void onTranslateJson(Request r, String json) {
+
+                    }
+
+                    @Override
+                    public void onResponseListener(Request r, String result){
+                        try {
+                            JsonObject jo=FastJson.fromJson(result);
+                            Object entity;
+
+                            if(!TextUtils.isEmpty(mEntityBody)) entity=jo.findValue(mEntityBody);
+                            else entity=jo.getValue();
+                            if(entity!=null){
+                                if(!mSaveFolder.exists())
+                                    mSaveFolder.mkdirs();
+                                prepareGenerateJsonEntity(r.getUrl(),jo);
+                            }
+                        } catch (IOException e) {
+                            System.out.println("实体类生成失败:"+e);
+                        }
+                        r.clear();
+                    }
+
+                    @Override
+                    public void onErrorListener(Request r, String error) {
+                        System.out.println("实体类生成失败:"+error);
+                    }
+                });
+                request.start();
+            }
         }
     }
 }

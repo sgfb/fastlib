@@ -89,6 +89,16 @@ public class UrlImageRuntime{
         request.setListener(new Listener<String>(){
 
             @Override
+            public void onRawData(Request r, byte[] data) {
+
+            }
+
+            @Override
+            public void onTranslateJson(Request r, String json) {
+
+            }
+
+            @Override
             public void onResponseListener(Request r, String result){
                 mImage.isDownloading=false;
                 checkOverMemory();

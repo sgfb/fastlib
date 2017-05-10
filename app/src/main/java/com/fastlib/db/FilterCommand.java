@@ -7,18 +7,18 @@ package com.fastlib.db;
 public abstract class FilterCommand{
     public final static int TYPE_AND=1;
     public final static int TYPE_OR=2;
-    protected FilterCondition mCondition;
+    protected Condition mCondition;
     protected FilterCommand mNext=null;
     protected FilterCommand mLast=null;
 
     public abstract int getType();
 
-    public FilterCommand(FilterCondition condition){
+    public FilterCommand(Condition condition){
         mCondition=condition;
     }
 
-    public FilterCommand and(FilterCondition condition){
-        FilterCommand fc=new And(condition);
+    public FilterCommand and(Condition condition){
+        FilterCommand fc=And.condition(condition);
         if(mNext==null){
             mNext=fc;
             mLast=fc;
@@ -30,8 +30,8 @@ public abstract class FilterCommand{
         return this;
     }
 
-    public FilterCommand or(FilterCondition condition){
-        FilterCommand fc=new Or(condition);
+    public FilterCommand or(Condition condition){
+        FilterCommand fc=Or.condition(condition);
         if(mNext==null){
             mNext=fc;
             mLast=fc;
@@ -43,7 +43,19 @@ public abstract class FilterCommand{
         return this;
     }
 
-    public FilterCondition getFilterCondition(){
+    public FilterCommand concat(FilterCommand filterCommand){
+        if(mNext==null){
+            mNext=filterCommand;
+            mLast=filterCommand;
+        }
+        else{
+            mLast.mNext=filterCommand;
+            mLast=filterCommand;
+        }
+        return this;
+    }
+
+    public Condition getFilterCondition(){
         return mCondition;
     }
 

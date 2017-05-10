@@ -15,11 +15,10 @@ import android.widget.AdapterView;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.LocalData;
-import com.fastlib.app.FastActivity;
 import com.fastlib.app.GlobalConfig;
 import com.fastlib.db.And;
 import com.fastlib.db.FastDatabase;
-import com.fastlib.db.FilterCondition;
+import com.fastlib.db.Condition;
 import com.fastlib.db.SaveUtil;
 import com.google.gson.Gson;
 
@@ -283,7 +282,7 @@ public class LocalDataInject{
      */
     private Object loadLocalDataFromDatabase(int position, LocalData ld, Class<?> paramsType){
         Context host=mActivity==null?mFragment.getActivity():mActivity;
-        return FastDatabase.getDefaultInstance(host).addFilter(new And(FilterCondition.equal(ld.value()[position]))).getFirst(paramsType);
+        return FastDatabase.getDefaultInstance(host).setFilter(And.condition(Condition.equal(ld.value()[position]))).getFirst(paramsType);
     }
 
     /**
@@ -392,7 +391,7 @@ public class LocalDataInject{
     private void loadLocalDataFromDatabase(Field field, LocalData lr) throws IllegalAccessException{
         Context host=mActivity==null?mFragment.getActivity():mActivity;
         Class<?> type = field.getType();
-        Object obj = FastDatabase.getDefaultInstance(host).addFilter(new And(FilterCondition.equal(lr.value()[0]))).getFirst(type);
+        Object obj = FastDatabase.getDefaultInstance(host).setFilter(And.condition(Condition.equal(lr.value()[0]))).getFirst(type);
         field.set(host,obj);
     }
 

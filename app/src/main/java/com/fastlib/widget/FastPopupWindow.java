@@ -4,12 +4,10 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
-import android.renderscript.Float2;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
@@ -19,7 +17,6 @@ import java.util.List;
 
 /**
  * Created by sgfb on 16/2/24.
- *
  * 一个简化的PopupWindow,支持多个Anchor
  */
 public class FastPopupWindow{

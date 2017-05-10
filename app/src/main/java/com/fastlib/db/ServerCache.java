@@ -1,8 +1,8 @@
 package com.fastlib.db;
 
 import com.fastlib.bean.RemoteCache;
-import com.fastlib.net.ExtraListener;
-import com.fastlib.net.NetQueue;
+import com.fastlib.net.Listener;
+import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.google.gson.Gson;
 
@@ -19,7 +19,7 @@ public class ServerCache{
     private ThreadPoolExecutor mThreadPool;
     private Request mRequest;
     private FastDatabase mDatabase;
-    private ExtraListener mOldListener;
+    private Listener mOldListener;
     private String mCacheName;
 
     /**
@@ -48,24 +48,25 @@ public class ServerCache{
     }
 
     private void init(){
-        mCache=mDatabase.addFilter(new And(FilterCondition.equal(mCacheName))).getFirst(RemoteCache.class); //尝试从数据库中获取一下缓存
+        mCache=mDatabase.setFilter(And.condition(Condition.equal(mCacheName))).getFirst(RemoteCache.class); //尝试从数据库中获取一下缓存
         if(mCache==null) {
             mCache = new RemoteCache();
             mCache.cacheName=mCacheName;
         }
         mOldListener=mRequest.getListener();
-        mRequest.setListener(new ExtraListener() {
+        mRequest.setListener(new Listener() {
+
             @Override
-            public void onRawData(byte[] data){
+            public void onRawData(Request r, byte[] data) {
                 if(mOldListener!=null)
-                    mOldListener.onRawData(data);
+                    mOldListener.onRawData(r,data);
                 //暂时不保存来自服务器的二进制数据
             }
 
             @Override
-            public void onTranslateJson(final String json) {
+            public void onTranslateJson(final Request r, final String json) {
                 if(mOldListener!=null)
-                    mOldListener.onTranslateJson(json);
+                    mOldListener.onTranslateJson(r,json);
                 if(mThreadPool!=null)
                     mThreadPool.execute(new Runnable(){
                         @Override
@@ -107,7 +108,7 @@ public class ServerCache{
      */
     public void refresh(boolean force){
         if(force||mCache.expiry<System.currentTimeMillis())
-            NetQueue.getInstance().netRequest(mRequest);
+            NetManager.getInstance().netRequest(mRequest);
         else
             toggleCallback();
     }
@@ -117,7 +118,7 @@ public class ServerCache{
      */
     private void toggleCallback(){
         Gson gson=new Gson();
-        mOldListener.onTranslateJson(mCache.cache);
+        mOldListener.onTranslateJson(mRequest,mCache.cache);
         Type type=mRequest.getGenericType();
         if(type==String.class)
             mOldListener.onResponseListener(mRequest,mCache.cache);

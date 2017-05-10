@@ -6,8 +6,12 @@ package com.fastlib.db;
  */
 public class And extends FilterCommand{
 
-    public And(FilterCondition condition){
+    private And(Condition condition){
         super(condition);
+    }
+
+    public static And condition(Condition condition){
+        return new And(condition);
     }
 
     @Override
