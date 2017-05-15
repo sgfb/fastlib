@@ -17,7 +17,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -150,7 +152,7 @@ public class Request {
             return false;
         Request another = (Request) o;
         //如果url和上传的参数，文件都相同那么认为这个网络请求是同一个
-        return another == this || (another.getUrl().equals(mUrl) && another.getParams().equals(mParams) && another.getFiles().equals(mFiles));
+        return another == this || (another.getUrl().equals(mUrl) && another.getParamsRaw().equals(mParams) && another.getFiles().equals(mFiles));
     }
 
     public Request start() {
@@ -453,7 +455,15 @@ public class Request {
         }
     }
 
-    public List<Pair<String,String>> getParams(){
+    public Map<String,String> getParams(){
+        Map<String,String> map=new HashMap<>();
+        if(mParams==null) return map;
+        for(Pair<String,String> pair:mParams)
+            map.put(pair.first,pair.second);
+        return map;
+    }
+
+    public List<Pair<String,String>> getParamsRaw(){
         return mParams;
     }
 
@@ -462,7 +472,7 @@ public class Request {
      * @param params
      */
     public void setParams(List<Pair<String,String>> params) {
-        if (params == null)
+        if (params == null&&mParams!=null)
             mParams.clear();
         else
             mParams = params;
@@ -700,10 +710,22 @@ public class Request {
         isSendGzip = sendGzip;
     }
 
-    public void addHeadExtra(String key,String value){
+    public void putHeadExtra(String key, String value){
         if(mHeadExtra==null)
             mHeadExtra=new ArrayList<>();
-        mHeadExtra.add(Pair.create(key,value));
+        Pair<String,String> pair=Pair.create(key,value);
+
+        if(!mHeadExtra.contains(pair))
+            mHeadExtra.add(pair);
+    }
+
+    public void removeHeadExtra(String key){
+        if(mHeadExtra==null) return;
+        for(Pair<String,String> pair:mHeadExtra)
+            if(pair.first.equals(key)){
+                mHeadExtra.remove(pair);
+                break;
+            }
     }
 
     public List<Pair<String, String>> getHeadExtra() {

@@ -31,7 +31,7 @@ public class DefaultMockProcessor implements MockProcess{
     }
 
     @Override
-    public byte[] dataResponse(){
+    public byte[] dataResponse(Request request){
         try{
             if(!TextUtils.isEmpty(mJsonData)) return mJsonData.getBytes();
             else if(mAssetManager!=null) return SaveUtil.loadAssetsFile(mAssetManager,mDataFile.getAbsolutePath());

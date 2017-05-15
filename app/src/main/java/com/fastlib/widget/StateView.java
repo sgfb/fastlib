@@ -7,11 +7,8 @@ import android.util.SparseArray;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import com.fastlib.app.GlobalConfig;
+import com.fastlib.app.Fastlib;
 import com.fastlib.base.AdapterViewState;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by sgfb on 16/4/21.
@@ -35,7 +32,7 @@ public class StateView extends FrameLayout implements AdapterViewState{
     public void onStateChanged(int state){
         View v=mViews.get(state);
         if(v==null){
-            if(GlobalConfig.SHOW_LOG)
+            if(Fastlib.isShowLog())
             Log.d(TAG,"StateView改变成一个非预期的状态");
             return;
         }

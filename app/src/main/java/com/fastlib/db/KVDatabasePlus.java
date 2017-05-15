@@ -4,7 +4,7 @@ import android.content.Context;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
-import com.fastlib.app.GlobalConfig;
+import com.fastlib.app.Fastlib;
 import com.fastlib.net.NetManager;
 
 import java.util.ArrayList;
@@ -184,7 +184,7 @@ public class KVDatabasePlus extends KVDatabase{
                         setStr(Pair.create(key,Double.toHexString(doubleValue+1)));
                         return true;
                     }catch (NumberFormatException e1) {
-                        if (GlobalConfig.SHOW_LOG)
+                        if (Fastlib.isShowLog())
                             e1.printStackTrace();
                     }
                 }
@@ -208,7 +208,7 @@ public class KVDatabasePlus extends KVDatabase{
                     setStr(Pair.create(key,Double.toString(doubleValue-1)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(GlobalConfig.SHOW_LOG)
+                    if(Fastlib.isShowLog())
                         e1.printStackTrace();
                 }
             }
@@ -231,7 +231,7 @@ public class KVDatabasePlus extends KVDatabase{
                     setStr(Pair.create(key, Double.toString(doubleValue+incrementCount)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(GlobalConfig.SHOW_LOG)
+                    if(Fastlib.isShowLog())
                         e1.printStackTrace();
                 }
             }
@@ -254,7 +254,7 @@ public class KVDatabasePlus extends KVDatabase{
                     setStr(Pair.create(key,Double.toString(doubleValue-decrementCount)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(GlobalConfig.SHOW_LOG)
+                    if(Fastlib.isShowLog())
                         e1.printStackTrace();
                 }
             }
@@ -277,7 +277,7 @@ public class KVDatabasePlus extends KVDatabase{
                     setStr(Pair.create(key,Double.toString(doubleValue+incrementCount)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(GlobalConfig.SHOW_LOG)
+                    if(Fastlib.isShowLog())
                         e1.printStackTrace();
                 }
             }
@@ -300,7 +300,7 @@ public class KVDatabasePlus extends KVDatabase{
                     setStr(Pair.create(key,Double.toString(doubleValue-decrementCount)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(GlobalConfig.SHOW_LOG)
+                    if(Fastlib.isShowLog())
                         e1.printStackTrace();
                 }
             }

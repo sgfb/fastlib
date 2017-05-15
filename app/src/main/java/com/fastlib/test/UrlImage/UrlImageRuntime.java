@@ -7,7 +7,7 @@ import android.widget.ImageView;
 
 import com.fastlib.R;
 import com.fastlib.app.FastActivity;
-import com.fastlib.app.GlobalConfig;
+import com.fastlib.app.Fastlib;
 import com.fastlib.app.TaskAction;
 import com.fastlib.app.TaskChain;
 import com.fastlib.app.TaskChainHead;
@@ -108,7 +108,7 @@ public class UrlImageRuntime{
             @Override
             public void onErrorListener(Request r, String error){
                 mImage.isDownloading=false;
-                if(GlobalConfig.SHOW_LOG)
+                if(Fastlib.isShowLog())
                     System.out.println("下载图像异常:"+error);
             }
         });

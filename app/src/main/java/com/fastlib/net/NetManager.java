@@ -6,9 +6,10 @@ import android.support.annotation.NonNull;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
-import com.fastlib.app.GlobalConfig;
+import com.fastlib.app.Fastlib;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -23,8 +24,8 @@ public class NetManager{
     public int mRequestCount=0;
     public long Tx,Rx;
     public static ThreadPoolExecutor sRequestPool =(ThreadPoolExecutor) Executors.newFixedThreadPool(10); //公共网络请求池
-    private DataFactory mFactory;
     private Config mConfig;
+    private NetGlobalData mGlobalData;
     private String mRootAddress;
     private Listener mGlobalListener; //一个全局的事件回调监听，所有网络回调给具体回调之前做一次回调
 
@@ -43,14 +44,44 @@ public class NetManager{
      * @param request
      */
     public void netRequest(Request request){
-        if(mFactory!=null&&request.isUseFactory()){
-            List<Pair<String,String>> params=request.getParams();
-            if(params==null){
-                params=new ArrayList<>();
-                request.setParams(params);
+        if(mGlobalData!=null&&request.isUseFactory()){
+            if(mGlobalData.mParams!=null&&mGlobalData.mParams.length>0){
+                List<Pair<String,String>> params=request.getParamsRaw();
+                if(params==null){
+                    params=new ArrayList<>();
+                    Collections.addAll(params,mGlobalData.mParams);
+                    request.setParams(params);
+                }
+                else
+                    for(Pair<String,String> pair:mGlobalData.mParams)
+                        if(!params.contains(pair))
+                            params.add(pair);
             }
-            if(mFactory.extraData()!=null)
-                params.addAll(mFactory.extraData());
+            if(mGlobalData.mHeads!=null&&mGlobalData.mHeads.length>0){
+                List<Pair<String,String>> heads=request.getHeadExtra();
+                if(heads==null){
+                    heads=new ArrayList<>();
+                    Collections.addAll(heads,mGlobalData.mHeads);
+                    request.setHeadExtra(heads);
+                }
+                else{
+                    for(Pair<String,String> pair:mGlobalData.mHeads)
+                        if(!heads.contains(pair))
+                            heads.add(pair);
+                }
+            }
+            if(mGlobalData.mCookies!=null&&mGlobalData.mCookies.length>0){
+                String[] cookies=request.getCookies();
+                if(cookies==null)
+                    request.setCookies(mGlobalData.mCookies);
+                else{
+                    List<String> cookieList=new ArrayList<>();
+                    Collections.addAll(cookieList,cookies);
+                    for(String newCookie:mGlobalData.mCookies)
+                        if(!cookieList.contains(newCookie))
+                            cookieList.add(newCookie);
+                }
+            }
         }
         if(!TextUtils.isEmpty(mRootAddress)&&!request.isHadRootAddress()){
             request.setUrl(mRootAddress + request.getUrl());
@@ -71,7 +102,7 @@ public class NetManager{
                 mRequestCount++;
                 Tx+=processor1.getTx();
                 Rx+=processor1.getRx();
-                if(GlobalConfig.SHOW_LOG)
+                if(Fastlib.isShowLog())
                     System.out.println(processor1);
             }
         },new Handler(Looper.getMainLooper()));
@@ -84,12 +115,50 @@ public class NetManager{
         mOwer=null;
     }
 
-    public DataFactory getFactory(){
-        return mFactory;
+    /**
+     * 获取网络全局参数
+     * @return 网络全局参数
+     */
+    public NetGlobalData getGlobalData() {
+        return mGlobalData;
     }
 
-    public void setFactory(DataFactory factory){
-        mFactory=factory;
+    /**
+     * 设置网络全局参数
+     * @param globalData 网络全局参数
+     */
+    public void setGlobalData(NetGlobalData globalData) {
+        mGlobalData = globalData;
+    }
+
+    /**
+     * 设置网络全局头部
+     * @param heads 网络全局头部
+     */
+    public void setGlobalHead(Pair<String,String>... heads){
+        if(mGlobalData==null)
+            mGlobalData=new NetGlobalData();
+        mGlobalData.mHeads=heads;
+    }
+
+    /**
+     * 设置网络全局参数
+     * @param params 网络全局参数
+     */
+    public void setGlobalParams(Pair<String,String>... params){
+        if(mGlobalData==null)
+            mGlobalData=new NetGlobalData();
+        mGlobalData.mParams=params;
+    }
+
+    /**
+     * 设置网络全局Cookies
+     * @param cookies 网络全局Cookies
+     */
+    public void setGlobalCookies(String[] cookies){
+        if(mGlobalData==null)
+            mGlobalData=new NetGlobalData();
+        mGlobalData.mCookies=cookies;
     }
 
     public void setConfig(@NonNull Config config){

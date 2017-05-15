@@ -7,7 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.fastlib.app.FastActivity;
-import com.fastlib.app.GlobalConfig;
+import com.fastlib.app.Fastlib;
 import com.fastlib.net.Listener;
 import com.fastlib.net.Request;
 import com.fastlib.utils.json.FastJson;
@@ -86,7 +86,7 @@ public abstract class JsonActivity extends FastActivity implements Listener<Stri
 
     @Override
     public void onErrorListener(Request r, String error){
-        if(GlobalConfig.SHOW_LOG)
+        if(Fastlib.isShowLog())
             Log.d(TAG,"request "+r+" error "+error);
     }
 }

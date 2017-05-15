@@ -11,7 +11,7 @@ import android.widget.AdapterView;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.LocalData;
 import com.fastlib.annotation.TransitionAnimation;
-import com.fastlib.app.GlobalConfig;
+import com.fastlib.app.Fastlib;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -45,7 +45,7 @@ public class ViewInject{
     }
 
     /**
-     * 运行一段代码如果有异常自行处理
+     * 绑定视图事件到方法上，运行一段代码如果有异常自行处理
      * @param runOnWorkThread
      * @param m
      * @param objs
@@ -56,26 +56,60 @@ public class ViewInject{
                 @Override
                 public void run(){
                     try {
-                        m.invoke(mHost,objs);
+                        m.invoke(mHost);  //先尝试绑定无参方法
+                    } catch (InvocationTargetException e){
+                        try {
+                            m.invoke(mHost,objs);
+                        } catch (IllegalAccessException|IllegalArgumentException e1) {
+                            if(Fastlib.isShowLog())
+                                System.out.println("toggle error:"+e.getCause());
+                        } catch (InvocationTargetException e1) {
+                            if(Fastlib.isShowLog())
+                                System.out.println("toggle error:"+e.getCause());
+                        }
                     } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    } catch (InvocationTargetException e) {
-                        e.printStackTrace();
+                        try {
+                            m.invoke(mHost,objs);
+                        } catch (IllegalAccessException|IllegalArgumentException e1) {
+                            if(Fastlib.isShowLog())
+                                System.out.println("toggle error:"+e.getCause());
+                        } catch (InvocationTargetException e1) {
+                            if(Fastlib.isShowLog())
+                                System.out.println("toggle error:"+e.getCause());
+                        }
                     }
                 }
             });
         else
             try {
-                Object result=m.invoke(mHost,objs);
+                Object result=m.invoke(mHost);  //先尝试绑定无参方法
                 if(result instanceof Boolean)
-                    return (Boolean)result;
-            } catch (IllegalAccessException e){
-                if(GlobalConfig.SHOW_LOG)
-                System.out.println("toggle error:"+e.getCause());
+                    return (boolean)result;
+            } catch (IllegalAccessException|IllegalArgumentException e){
+                try {
+                    Object result = m.invoke(mHost,objs);
+                    if(result instanceof Boolean)
+                        return (Boolean)result;
+                } catch (IllegalAccessException|IllegalArgumentException e1) {
+                    if(Fastlib.isShowLog())
+                        System.out.println("toggle error:"+e.getCause());
+                } catch (InvocationTargetException e1) {
+                    if(Fastlib.isShowLog())
+                        System.out.println("toggle error:"+e.getCause());
+                }
                 return false;
             } catch (InvocationTargetException e){
-                if(GlobalConfig.SHOW_LOG)
-                System.out.println("toggle error:"+e.getCause());
+                try {
+                    Object result = m.invoke(mHost,objs);
+                    if(result instanceof Boolean)
+                        return (Boolean)result;
+                } catch (IllegalAccessException|IllegalArgumentException e1) {
+                    if(Fastlib.isShowLog())
+                        System.out.println("toggle error:"+e.getCause());
+                } catch (InvocationTargetException e1) {
+                    if(Fastlib.isShowLog())
+                        System.out.println("toggle error:"+e.getCause());
+                }
                 return false;
             }
         return false;
@@ -163,8 +197,23 @@ public class ViewInject{
                             field.set(mHost,view);
                             checkTransitionAnimationInject(view,field);
                         } catch (IllegalAccessException e) {
-                            if(GlobalConfig.SHOW_LOG)
+                            if(Fastlib.isShowLog())
                             System.out.println(e.getMessage());
+                        }
+                    }
+                    else{
+                        //如果视图id是空的，尝试根据属性名绑定对应视图
+                        String name=field.getName();
+                        int viewId;
+                        try{
+                            if((viewId=mRoot.getResources().getIdentifier(name,"id",mRoot.getContext().getPackageName()))!=0){
+                                View view=mRoot.findViewById(viewId);
+                                field.setAccessible(true);
+                                field.set(mHost,view);
+                            }
+                        }catch(IllegalAccessException e){
+                            if(Fastlib.isShowLog())
+                                System.out.println(e.getMessage());
                         }
                     }
                 }
@@ -179,7 +228,7 @@ public class ViewInject{
         if(Build.VERSION.SDK_INT<Build.VERSION_CODES.LOLLIPOP) //小于5.0不检查
             return;
         if(view==null){
-            if(GlobalConfig.SHOW_LOG)
+            if(Fastlib.isShowLog())
                 System.out.println("视图为空，不可使用共享动画名注入");
             return;
         }

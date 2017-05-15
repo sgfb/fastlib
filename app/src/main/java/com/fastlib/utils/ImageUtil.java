@@ -26,14 +26,13 @@ import android.support.v8.renderscript.RenderScript;
 import android.support.v8.renderscript.ScriptIntrinsicBlur;
 import android.view.View;
 
-import com.fastlib.app.GlobalConfig;
+import com.fastlib.app.Fastlib;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.annotation.Target;
 
 public class ImageUtil{
     public static final String TAG=ImageUtil.class.getSimpleName();
@@ -68,10 +67,10 @@ public class ImageUtil{
     public static File getThumbImageFile(boolean deleteEither,boolean resultSmaller,int limit,int quality,String path,String parent)throws IOException{
         File f=new File(path);
         if(f.exists())
-            if(GlobalConfig.SHOW_LOG)
+            if(Fastlib.isShowLog())
                 System.out.println(f.length());
         else
-            if(GlobalConfig.SHOW_LOG)
+            if(Fastlib.isShowLog())
                 System.out.println("file not exists");
         File smallerFile,bigerFile;
         Bitmap bitmap=getThumbBitmap(path,limit);
@@ -501,7 +500,7 @@ public class ImageUtil{
                 e.printStackTrace();
             }
         else
-            if(GlobalConfig.SHOW_LOG)
+            if(Fastlib.isShowLog())
                 System.out.println("保存view到文件中失败");
     }
 }

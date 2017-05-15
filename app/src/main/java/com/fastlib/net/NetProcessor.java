@@ -8,7 +8,7 @@ import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.app.EventObserver;
-import com.fastlib.app.GlobalConfig;
+import com.fastlib.app.Fastlib;
 import com.fastlib.bean.EventDownloading;
 import com.fastlib.bean.EventUploading;
 import com.google.gson.Gson;
@@ -67,7 +67,7 @@ public class NetProcessor implements Runnable{
     @Override
     public void run(){
         if(mRequest.getMock()!=null){
-            mResponse=mRequest.getMock().dataResponse();
+            mResponse=mRequest.getMock().dataResponse(mRequest);
             mMessage="模拟数据";
             toggleCallback();
             if(mListener!=null)
@@ -119,10 +119,10 @@ public class NetProcessor implements Runnable{
             if (isPost){
                 out=mRequest.isSendGzip()?new GZIPOutputStream(connection.getOutputStream()):connection.getOutputStream();
                 if (isMulti)
-                    multipart(mRequest.getParams(), mRequest.getFiles(), out);
+                    multipart(mRequest.getParamsRaw(), mRequest.getFiles(), out);
                 else{
                     StringBuilder sb = new StringBuilder();
-                    loadParams(mRequest.getParams(), sb);
+                    loadParams(mRequest.getParamsRaw(), sb);
                     byte[] data = sb.toString().getBytes();
                     Tx += data.length;
                     out.write(data);
@@ -258,7 +258,7 @@ public class NetProcessor implements Runnable{
                     });
                 }
             } catch (JsonParseException e){
-                if(GlobalConfig.SHOW_LOG)
+                if(Fastlib.isShowLog())
                     System.out.println("解析时出现异常:" + e.getMessage());
                 mMessage = e.getMessage();
                 isSuccess=false;
@@ -282,7 +282,7 @@ public class NetProcessor implements Runnable{
      */
     private String splicingGetUrl(){
         StringBuilder sb=new StringBuilder(mRequest.getUrl());
-        Iterator<Pair<String,String>> iter=mRequest.getParams().iterator();
+        Iterator<Pair<String,String>> iter=mRequest.getParamsRaw().iterator();
 
         if(iter.hasNext()){
             Pair<String,String> pair=iter.next();

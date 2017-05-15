@@ -5,5 +5,5 @@ package com.fastlib.net;
  * 规定如何返回模拟数据
  */
 public interface MockProcess{
-    byte[] dataResponse();
+    byte[] dataResponse(Request request);
 }
