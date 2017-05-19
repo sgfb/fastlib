@@ -210,6 +210,14 @@ public abstract class FastFragment extends Fragment{
         TaskChainHead.processTaskChain(getActivity(),mThreadPool,Thread.currentThread(),tc.getFirst());
     }
 
+    /**
+     * 启动Activity
+     * @param cla
+     */
+    protected void startActivity(Class<? extends Activity> cla){
+        startActivity(new Intent(getContext(),cla));
+    }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();

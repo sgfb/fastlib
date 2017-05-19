@@ -26,11 +26,11 @@ public class OldViewHolder {
 
 	/**
 	 * 获取ViewHolder实例
-	 * @param context
-	 * @param convertView
-	 * @param parent
-	 * @param layoutId
-	 * @return
+	 * @param context 上下文
+	 * @param convertView 根view
+	 * @param parent 父view
+	 * @param layoutId 布局id
+	 * @return View持有者
 	 */
 	public static OldViewHolder get(Context context, View convertView, ViewGroup parent, int layoutId) {
 		if (convertView == null)
@@ -43,7 +43,7 @@ public class OldViewHolder {
 
 	/**
 	 * 获取根View
-	 * @return
+	 * @return 根view
 	 */
 	public View getConvertView() {
 		return mConvertView;
@@ -51,8 +51,8 @@ public class OldViewHolder {
 
 	/**
 	 * 获取子View
-	 * @param viewId
-	 * @return
+	 * @param viewId 指定view的id
+	 * @return 指定的子view
 	 */
 	@SuppressWarnings("unchecked")
 	public <V extends View> V getView(int viewId) {
@@ -66,8 +66,8 @@ public class OldViewHolder {
 
 	/**
 	 * 绑定指定ID的文本信息
-	 * @param viewId
-	 * @param str
+	 * @param viewId 指定view的id
+	 * @param str 字符串
 	 */
 	public void setText(int viewId, String str) {
 		TextView textView = getView(viewId);
@@ -81,8 +81,8 @@ public class OldViewHolder {
 
 	/**
 	 * 设置文本到到指定textview后面
-	 * @param viewId
-	 * @param str
+	 * @param viewId 指定view的id
+	 * @param str 字符串
      */
 	public void appendText(int viewId,String str){
 		TextView textView=getView(viewId);
@@ -91,8 +91,8 @@ public class OldViewHolder {
 
 	/**
 	 * 设置文本到到指定textview前面
-	 * @param viewId
-	 * @param str
+	 * @param viewId 指定view的id
+	 * @param str 字符串
 	 */
 	public void insertFront(int viewId,String str){
 		TextView textView=getView(viewId);
@@ -102,8 +102,8 @@ public class OldViewHolder {
 
 	/**
 	 * 给某个id视图设置监听
-	 * @param viewId
-	 * @param listener
+	 * @param viewId 指定view的id
+	 * @param listener 监听回调
      */
 	public void setOnClickListener(int viewId, View.OnClickListener listener){
 		getView(viewId).setOnClickListener(listener); //如果奔溃，就让它奔溃
@@ -111,7 +111,7 @@ public class OldViewHolder {
 
 	/**
 	 * 给这条布局设置点击监听
-	 * @param listener
+	 * @param listener 监听回调
      */
 	public void setOnClickListener(View.OnClickListener listener){
 		mConvertView.setOnClickListener(listener);
@@ -119,8 +119,8 @@ public class OldViewHolder {
 
 	/**
 	 * 给某个id视图设置长点击监听
-	 * @param viewId
-	 * @param listener
+	 * @param viewId 指定view的id
+	 * @param listener 监听回调
      */
 	public void setOnLongClickListener(int viewId, View.OnLongClickListener listener){
 		getView(viewId).setOnLongClickListener(listener);
@@ -128,12 +128,17 @@ public class OldViewHolder {
 
 	/**
 	 * 给这条布局设置长点击监听
-	 * @param listener
+	 * @param listener 监听回调
      */
 	public void setOnLongClickListener(View.OnLongClickListener listener){
 		mConvertView.setOnLongClickListener(listener);
 	}
 
+	/**
+	 * 指定某view的可见性
+	 * @param viewId 指定view的id
+	 * @param visibility 可见性
+     */
 	public void setVisibility(int viewId,int visibility){
 		getView(viewId).setVisibility(visibility);
 	}

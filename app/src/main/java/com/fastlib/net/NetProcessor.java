@@ -121,11 +121,19 @@ public class NetProcessor implements Runnable{
                 if (isMulti)
                     multipart(mRequest.getParamsRaw(), mRequest.getFiles(), out);
                 else{
-                    StringBuilder sb = new StringBuilder();
-                    loadParams(mRequest.getParamsRaw(), sb);
-                    byte[] data = sb.toString().getBytes();
-                    Tx += data.length;
-                    out.write(data);
+                    //如果原始字节流存在，发送原始字节流，否则发送标准参数
+                    byte[] rawBytes=mRequest.getByteStream();
+                    if(rawBytes!=null&&rawBytes.length>0){
+                        Tx+=rawBytes.length;
+                        out.write(rawBytes);
+                    }
+                    else{
+                        StringBuilder sb = new StringBuilder();
+                        loadParams(mRequest.getParamsRaw(), sb);
+                        byte[] data = sb.toString().getBytes();
+                        Tx += data.length;
+                        out.write(data);
+                    }
                 }
                 out.close();
             }
@@ -258,9 +266,7 @@ public class NetProcessor implements Runnable{
                     });
                 }
             } catch (JsonParseException e){
-                if(Fastlib.isShowLog())
-                    System.out.println("解析时出现异常:" + e.getMessage());
-                mMessage = e.getMessage();
+                mMessage ="解析时出现异常:"+e.getMessage();
                 isSuccess=false;
             }
             if (!isSuccess){

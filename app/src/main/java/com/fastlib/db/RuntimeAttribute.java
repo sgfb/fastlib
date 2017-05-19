@@ -71,12 +71,12 @@ public final class RuntimeAttribute{
     }
 
     /**
-     * 单次对某个数据库进行读写,这个数据库名会附加上前缀和.db后缀
+     * 单次对某个数据库进行读写
      * @param toWhichDatabase
      * @return
      */
     public RuntimeAttribute setToWhichDatabase(String toWhichDatabase){
-        mWhichDatabase=toWhichDatabase+".db";
+        mWhichDatabase=toWhichDatabase;
         return this;
     }
 
@@ -120,7 +120,19 @@ public final class RuntimeAttribute{
         return mOrderBy;
     }
 
-    public String getWhichDatabase() {
+    /**
+     * 获取当前操作数据库名，加上.db后缀
+     * @return 当前操作数据库名
+     */
+    public String getWhichDatabaseComplete() {
+        return mWhichDatabase+".db";
+    }
+
+    /**
+     * 获取当前操作数据库名
+     * @return
+     */
+    public String getWhichDatabase(){
         return mWhichDatabase;
     }
 

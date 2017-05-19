@@ -39,6 +39,7 @@ public class Request {
     private boolean useFactory; //是否使用预设值
     private boolean isSendGzip; //指定这次请求发送时是否压缩成gzip流
     private boolean isReceiveGzip; //指定这次请求是否使用gzip解码
+    private byte[] mByteStream; //原始字节流，如果这个值存在就不会发送mParams参数了
     private String method;
     private String mUrl;
     private String mGenericName;
@@ -115,9 +116,9 @@ public class Request {
      */
     public void clear() {
         isReplaceChinese=true;
+        useFactory = true;
         isSaveCookies = false;
         hadRootAddress = false;
-        useFactory = false;
         isSendGzip = false;
         isReceiveGzip = false;
         method = null;
@@ -311,6 +312,16 @@ public class Request {
      */
     public Request put(String key, int value) {
         return put(key, Integer.toString(value));
+    }
+
+    /**
+     * 添加长整型请求参数,如果存在,覆盖第一个
+     * @param key
+     * @param value
+     * @return
+     */
+    public Request put(String key,long value){
+        return put(key,Long.toString(value));
     }
 
     /**
@@ -575,6 +586,15 @@ public class Request {
         return sb.toString().replace(" ","%20"); //最后空格置换
     }
 
+    public byte[] getByteStream() {
+        return mByteStream;
+    }
+
+    public Request setByteStream(byte[] byteStream) {
+        mByteStream = byteStream;
+        return this;
+    }
+
     public Listener getListener() {
         return mListener;
     }
@@ -728,12 +748,22 @@ public class Request {
             }
     }
 
+    public Request addHead(String key,String value){
+        if(mHeadExtra==null)
+            mHeadExtra=new ArrayList<>();
+        Pair<String,String> pair=Pair.create(key,value);
+        if(!mHeadExtra.contains(pair))
+            mHeadExtra.add(pair);
+        return this;
+    }
+
     public List<Pair<String, String>> getHeadExtra() {
         return mHeadExtra;
     }
 
-    public void setHeadExtra(List<Pair<String, String>> headExtra) {
+    public Request setHeadExtra(List<Pair<String, String>> headExtra) {
         mHeadExtra = headExtra;
+        return this;
     }
 
     public ServerCache getCacheManager() {

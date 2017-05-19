@@ -95,6 +95,8 @@ public abstract class FastActivity extends AppCompatActivity{
         ContentView cv=getClass().getAnnotation(ContentView.class);
         if(cv!=null)
             setContentView(cv.value());
+        else
+            setContentViewAfter(); //如果没有设置ContentView,手动调用一下准备任务
     }
 
     /**
@@ -239,6 +241,9 @@ public abstract class FastActivity extends AppCompatActivity{
         mRequests=null;
     }
 
+    /**
+     * 在设置布局时做几个必要动作
+     */
     private void setContentViewAfter(){
         mThreadPool.execute(new Runnable() {
             @Override

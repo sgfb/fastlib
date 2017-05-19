@@ -418,7 +418,7 @@ public class FastDatabase{
                 database.execSQL(deleteCommand);
                 database.setTransactionSuccessful();
                 if(Fastlib.isShowLog())
-                    System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabase()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabase()) + "--d--" + Integer.toString(count) + "->" + tableName);
+                    System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabaseComplete()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabaseComplete()) + "--d--" + Integer.toString(count) + "->" + tableName);
             } catch (SQLiteException e) {
                 return false;
             } finally {
@@ -548,7 +548,7 @@ public class FastDatabase{
             database.update("'" + tableName + "'", cv, filter, ss);
             database.setTransactionSuccessful();
             if (Fastlib.isShowLog())
-                System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabase()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabase()) + "<--u-" + count + "- " + tableName);
+                System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabaseComplete()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabaseComplete()) + "<--u-" + count + "- " + tableName);
         } catch (SQLiteException e) {
             if (Fastlib.isShowLog())
                 System.out.println("更新数据失败，异常：" + e.toString());
@@ -661,7 +661,7 @@ public class FastDatabase{
                 db.insert("'" + tableName + "'", null, cv);
             }
             if (Fastlib.isShowLog())
-                System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabase()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabase()) + "<--"+array.length+"--" + tableName);
+                System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabaseComplete()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabaseComplete()) + "<--"+array.length+"--" + tableName);
             db.setTransactionSuccessful();
         } catch (SQLiteException e){
             if(Fastlib.isShowLog())
@@ -721,7 +721,6 @@ public class FastDatabase{
                         Object oldData=FastDatabase.getInstance(mContext,mAttribute.getWhichDatabase()).getFirst(obj.getClass());
                         if (oldData != null) {
                             isUpdate = true;
-                            success = setFilter(And.condition(Condition.equal(Reflect.objToStr(keyValue)))).update(obj);
                         }
                     }
                 } catch (NoSuchFieldException e) {
@@ -1021,7 +1020,7 @@ public class FastDatabase{
 
     private SQLiteDatabase prepare(final String sql) throws SQLiteException {
         SQLiteDatabase database;
-        final String databaseName = TextUtils.isEmpty(mAttribute.getWhichDatabase()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabase();
+        final String databaseName = TextUtils.isEmpty(mAttribute.getWhichDatabaseComplete()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabaseComplete();
         SQLiteOpenHelper helper = new SQLiteOpenHelper(mContext, databaseName, null, sConfig.getVersion()) {
 
             @Override

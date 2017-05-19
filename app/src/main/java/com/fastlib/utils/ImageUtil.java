@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 public class ImageUtil{
     public static final String TAG=ImageUtil.class.getSimpleName();
@@ -474,14 +475,20 @@ public class ImageUtil{
     }
 
     /**
-     * 保存view截图到文件中
-     * @param v
-     * @param f
+     * 保存view截图到文件中,保存格式为png
+     * @param v 要保存的视图
+     * @param f 目标文件，可以是不存在的
      */
     public static void saveViewToFile(View v,File f){
         saveViewToFile(v,f,1);
     }
 
+    /**
+     * 保存view截图到文件中，保存格式为png
+     * @param v 要保存的视图
+     * @param f 目标文件，可以是不存在的
+     * @param scale 缩放级别(1原图，0.5缩放一半，2放大一倍等等)
+     */
     public static void saveViewToFile(View v,File f,float scale){
         v.setDrawingCacheEnabled(true);
         v.buildDrawingCache();
@@ -494,9 +501,13 @@ public class ImageUtil{
         Bitmap bitmap=v.getDrawingCache();
         if(bitmap!=null)
             try {
-                bitmap=Bitmap.createScaledBitmap(bitmap,(int)(bitmap.getWidth()*scale),(int)(bitmap.getHeight()*scale),true);
-                bitmap.compress(Bitmap.CompressFormat.PNG,100,new FileOutputStream(f));
-            } catch (FileNotFoundException e) {
+                Bitmap scaledBitmap=Bitmap.createScaledBitmap(bitmap,(int)(bitmap.getWidth()*scale),(int)(bitmap.getHeight()*scale),true);
+                OutputStream out=new FileOutputStream(f);
+                scaledBitmap.compress(Bitmap.CompressFormat.PNG,100,out);
+                bitmap.recycle();
+                scaledBitmap.recycle();
+                out.close();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         else
