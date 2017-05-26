@@ -4,7 +4,7 @@ package com.fastlib.net;
  * Created by sgfb on 16/12/28.
  * 网络回调监听
  */
-public interface Listener<T>{
+public interface Listener<T,T2,T3>{
 
     /**
      * 原始字节数据回调
@@ -19,11 +19,13 @@ public interface Listener<T>{
     void onTranslateJson(Request r,String json);
 
     /**
-     * 数据原型回调
+     * 数据原型回调,会进行实体转换猜想，最多3种
      * @param r 网络请求
      * @param result 返回的实体
+     * @param result2 可能的返回实体2
+     * @param result3 可能的返回实体3
      */
-    void onResponseListener(Request r,T result);
+    void onResponseListener(Request r,T result,T2 result2,T3 result3);
 
     /**
      * 错误回调

@@ -42,7 +42,7 @@ public class Request {
     private byte[] mByteStream; //原始字节流，如果这个值存在就不会发送mParams参数了
     private String method;
     private String mUrl;
-    private String mGenericName;
+//    private String mGenericName;
     private Pair<String, String> mSendCookies;
     private Downloadable mDownloadable;
     private List<Pair<String, String>> mHeadExtra; //额外头部信息
@@ -56,7 +56,7 @@ public class Request {
     private Activity mActivity;
     private Fragment mFragment;
     private Listener mListener;
-    private Type mGenericType; //根据Listener生成的返回类类型存根
+    private Type[] mGenericType; //根据Listener生成的返回类类型存根
     private ServerCache mCacheManager; //缓存这个请求的数据管理
     private ThreadPoolExecutor mExecutor; //运行在指定线程池中,如果未指定默认在公共的线程池中
     private Request mNext;
@@ -123,7 +123,7 @@ public class Request {
         isReceiveGzip = false;
         method = null;
         mUrl = null;
-        mGenericName = null;
+//        mGenericName = null;
         mSendCookies = null;
         mDownloadable = null;
         mHeadExtra.clear();
@@ -491,7 +491,7 @@ public class Request {
 
     /**
      * 发送文件列表
-     * @param files
+     * @param files 字符串键文件值对
      */
     public void setFiles(List<Pair<String,File>> files) {
         if (files == null) mFiles.clear();
@@ -506,27 +506,42 @@ public class Request {
         this.mUrl = mUrl;
     }
 
-    public Request setListener(final Listener l) {
-        //泛型解析,如果是Object返回原始字节流,String返回字符,其它类型就尝试gson解析
-        StringBuilder genericName = new StringBuilder(TextUtils.isEmpty(mGenericName) ? "onResponseListener,1" : mGenericName);
-        int typeIndex = getTypeIndex(genericName);
-        if (typeIndex == -1) {
-            genericName = new StringBuilder("onResponseListener");
-            typeIndex = 1;
-        }
+    /**
+     * 设置网络回调监听
+     * @param l 监听器
+     * @return 网络请求本身
+     */
+    public Request setListener(final Listener l){
+        mListener=l;
+        if(mGenericType!=null&&mGenericType.length>0) //如果指定了实体类型，不自动解析实体类型
+            return this;
+        mGenericType=new Type[3];
+        //泛型解析,如果是Object和byte[]就返回原始字节流,String返回字符,其它类型就尝试使用gson解析
         Method[] ms = l.getClass().getDeclaredMethods();
         List<Method> duplicate = new ArrayList<>();
         for (Method m : ms) {
-            if (genericName.toString().equals(m.getName()))
+            if ("onResponseListener".equals(m.getName()))
                 duplicate.add(m);
         }
-        for (Method m : duplicate) {
-            if (m.getGenericParameterTypes()[typeIndex] != Object.class) {
-                mGenericType = m.getGenericParameterTypes()[typeIndex];
-                break;
+        for (Method m : duplicate){
+            boolean someoneIsNotObject=false;
+            Type[] types=m.getGenericParameterTypes();
+            if(types!=null){
+                if (types.length>1&&types[1] != Object.class){
+                    mGenericType[0] = types[1];
+                    someoneIsNotObject=true;
+                }
+                if(types.length>2&&types[2]!=Object.class){
+                    mGenericType[1]=types[2];
+                    someoneIsNotObject=true;
+                }
+                if(types.length>3&&types[3]!=Object.class){
+                    mGenericType[2]=types[3];
+                    someoneIsNotObject=true;
+                }
             }
+            if(someoneIsNotObject) break;
         }
-        mListener=l;
         return this;
     }
 
@@ -682,13 +697,13 @@ public class Request {
         mType = type;
     }
 
-    public String getGenericName() {
-        return mGenericName;
-    }
-
-    public void setGenericName(String genericName) {
-        mGenericName = genericName;
-    }
+//    public String getGenericName() {
+//        return mGenericName;
+//    }
+//
+//    public void setGenericName(String genericName) {
+//        mGenericName = genericName;
+//    }
 
     public Pair<String, String> getSendCookies() {
         return mSendCookies;
@@ -706,11 +721,11 @@ public class Request {
         mSendCookies = sendCookies;
     }
 
-    public void setGenericType(Type type) {
+    public void setGenericType(Type[] type) {
         mGenericType = type;
     }
 
-    public Type getGenericType() {
+    public Type[] getGenericType() {
         return mGenericType;
     }
 

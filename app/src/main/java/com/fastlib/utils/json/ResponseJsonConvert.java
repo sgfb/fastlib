@@ -293,7 +293,7 @@ public class ResponseJsonConvert{
         }
         else{
             for(Request request:mRequests){
-                request.setListener(new Listener<String>(){
+                request.setListener(new Listener<String,Object,Object>(){
 
                     @Override
                     public void onRawData(Request r, byte[] data){
@@ -306,7 +306,7 @@ public class ResponseJsonConvert{
                     }
 
                     @Override
-                    public void onResponseListener(Request r, String result){
+                    public void onResponseListener(Request r, String result,Object none1,Object none2){
                         try {
                             JsonObject jo=FastJson.fromJson(result);
                             Object entity;

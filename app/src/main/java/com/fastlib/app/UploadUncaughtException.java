@@ -104,7 +104,7 @@ public abstract class UploadUncaughtException implements Thread.UncaughtExceptio
             Pair<String,String> param=generateErrorParams(logFile);
 
             request.put(param.first,param.second);
-            request.setListener(new Listener<String>(){
+            request.setListener(new Listener<String,Object,Object>(){
 
                 @Override
                 public void onRawData(Request r, byte[] data) {
@@ -117,10 +117,10 @@ public abstract class UploadUncaughtException implements Thread.UncaughtExceptio
                 }
 
                 @Override
-                public void onResponseListener(Request r, String result){
+                public void onResponseListener(Request r, String result,Object none1,Object none2){
                     logFile.delete();
                     if(listener!=null)
-                        listener.onResponseListener(r,null);
+                        listener.onResponseListener(r,null,null,null);
                     r.clear();
                 }
 

@@ -17,13 +17,14 @@ import com.fastlib.utils.json.JsonViewBinder;
 import com.fastlib.utils.json.JsonObject;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.List;
 
 /**
  * Created by sgfb on 17/1/9.
  * json键名对视图id映射绑定
  */
-public abstract class JsonAdapter extends BaseAdapter implements Listener<String>{
+public abstract class JsonAdapter extends BaseAdapter implements Listener<String,Object,Object>{
     public static final String TAG=JsonAdapter.class.getSimpleName();
 
     private boolean isRefresh,isLoading,isMore;
@@ -46,7 +47,7 @@ public abstract class JsonAdapter extends BaseAdapter implements Listener<String
         mRequest=generateRequest();
         if(mRequest!=null){
             mRequest.setListener(this);
-            mRequest.setGenericType(String.class);
+            mRequest.setGenericType(new Type[]{String.class});
         }
         if(startNow)
             refresh();
@@ -108,7 +109,7 @@ public abstract class JsonAdapter extends BaseAdapter implements Listener<String
     }
 
     @Override
-    public void onResponseListener(Request r,String result){
+    public void onResponseListener(Request r,String result,Object object,Object object2){
         isLoading=false;
         if(mRefreshable!=null)
             mRefreshable.setRefreshStatus(false);

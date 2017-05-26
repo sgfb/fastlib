@@ -19,6 +19,6 @@
         android:textColor="@android:color/white"
         android:padding="3dp"
         android:gravity="center"
-        android:singleLine="true"
+        android:maxLines="1"
         android:visibility="gone"/>
 </FrameLayout>

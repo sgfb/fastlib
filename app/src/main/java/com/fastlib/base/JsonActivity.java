@@ -15,12 +15,13 @@ import com.fastlib.utils.json.JsonObject;
 import com.fastlib.utils.json.JsonViewBinder;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 
 /**
  * Created by sgfb on 16/9/21.
  * 绑定来自服务器的json数据填充
  */
-public abstract class JsonActivity extends FastActivity implements Listener<String>{
+public abstract class JsonActivity extends FastActivity implements Listener<String,Object,Object>{
     public static final String TAG=JsonActivity.class.getSimpleName();
 
     private SparseArray<Request> mIdRequestMap; //视图id对网络请求映射
@@ -36,7 +37,7 @@ public abstract class JsonActivity extends FastActivity implements Listener<Stri
         mIdViewMap=new SparseArray<>();
         mIdRequestMap=generateRequest();
         for(int i=0;i<mIdRequestMap.size();i++)
-            mIdRequestMap.get(mIdRequestMap.keyAt(i)).setListener(this).setGenericType(String.class);
+            mIdRequestMap.get(mIdRequestMap.keyAt(i)).setListener(this).setGenericType(new Type[]{String.class});
     }
 
     @Override
@@ -62,7 +63,7 @@ public abstract class JsonActivity extends FastActivity implements Listener<Stri
     }
 
     @Override
-    public void onResponseListener(Request r, String result){
+    public void onResponseListener(Request r, String result,Object none1,Object none2){
         int key=mIdRequestMap.keyAt(mIdRequestMap.indexOfValue(r));
         View v=getView(key);
         try {

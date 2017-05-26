@@ -8,6 +8,8 @@ import com.fastlib.base.Refreshable;
 import com.fastlib.net.Listener;
 import com.fastlib.net.Request;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -17,7 +19,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @param <R> 返回类型
  * @Param <H> 视图持有者
  */
-public abstract class SingleAdapterForRecycler<T,R,H extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<H>  implements Listener<R>{
+public abstract class SingleAdapterForRecycler<T,R,H extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<H>  implements Listener<R,Object,Object>{
     private boolean isRefresh,isLoading,isMore;
     private List<T> mData;
     private Refreshable mRefreshLayout;
@@ -66,12 +68,20 @@ public abstract class SingleAdapterForRecycler<T,R,H extends RecyclerView.ViewHo
         isRefresh=true;
         isMore=true;
         isLoading=false;
-        mRequest.setGenericName("translate,0");
+        mRequest.setGenericType(new Type[]{getResponseType()});
         mRequest.setListener(this);
         if(mContext instanceof FastActivity)
             ((FastActivity)mContext).addRequest(mRequest);
         if(startNow)
             refresh();
+    }
+
+    private Type getResponseType(){
+        Method[] methods=getClass().getDeclaredMethods();
+        for(Method m:methods)
+            if(m.getName().equals("translate"))
+                return m.getTypeParameters()[0];
+        return null;
     }
 
     /**
@@ -106,7 +116,7 @@ public abstract class SingleAdapterForRecycler<T,R,H extends RecyclerView.ViewHo
     }
 
     @Override
-    public void onResponseListener(Request r,R result) {
+    public void onResponseListener(Request r,R result,Object none1,Object none2){
         if(mRefreshLayout!=null)
             mRefreshLayout.setRefreshStatus(false);
         List<T> list=translate(result);

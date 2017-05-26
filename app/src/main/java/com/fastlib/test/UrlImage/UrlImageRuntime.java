@@ -86,7 +86,7 @@ public class UrlImageRuntime{
         mImage.isDownloading=true;
         Request request=new Request("get",mImage.mUrl);
         request.setDownloadable(new DefaultDownload(fImage));
-        request.setListener(new Listener<String>(){
+        request.setListener(new Listener<String,Object,Object>(){
 
             @Override
             public void onRawData(Request r, byte[] data) {
@@ -99,7 +99,7 @@ public class UrlImageRuntime{
             }
 
             @Override
-            public void onResponseListener(Request r, String result){
+            public void onResponseListener(Request r, String result,Object none1,Object none2){
                 mImage.isDownloading=false;
                 checkOverMemory();
                 into(imageView);

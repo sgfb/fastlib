@@ -8,7 +8,6 @@ import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.app.EventObserver;
-import com.fastlib.app.Fastlib;
 import com.fastlib.bean.EventDownloading;
 import com.fastlib.bean.EventUploading;
 import com.google.gson.Gson;
@@ -237,13 +236,14 @@ public class NetProcessor implements Runnable{
             if(gloablListener!=null)
                 l.onRawData(mRequest,mResponse);
             l.onRawData(mRequest,mResponse);
-            Type realType = mRequest.getGenericType();
-            Gson gson = new Gson();
+            Type[] realType = mRequest.getGenericType();
+            int realTypeIndex=1;
+
             try {
                 final Object responseObj;
-                if (realType == null || realType == Object.class||realType==byte[].class)
+                if (entityIsRawType(realType))
                     responseObj = mResponse;
-                else if (realType == String.class){
+                else if (entityIsStringType(realType)){
                     responseObj = mResponse==null?"":new String(mResponse);
                     if(gloablListener!=null)
                         gloablListener.onTranslateJson(mRequest,(String)responseObj);
@@ -253,15 +253,30 @@ public class NetProcessor implements Runnable{
                     if(gloablListener!=null)
                         gloablListener.onTranslateJson(mRequest,json);
                     l.onTranslateJson(mRequest,json);
-                    responseObj=mResponse==null?null:gson.fromJson(json, realType);
+                    Pair<Integer,Object> pair=mResponse==null?null:guessJsonEntity(json,realType);
+                    if(pair!=null){
+                        realTypeIndex=pair.first;
+                        responseObj=pair.second;
+                    }
+                    else
+                        responseObj=null;
                 }
+                final int fRealTypeIndex=realTypeIndex;
                 if(isSuccess){
                     mResponsePoster.execute(new Runnable(){
                         @Override
                         public void run(){
-                            if(gloablListener!=null)
-                                l.onResponseListener(mRequest,responseObj);
-                            l.onResponseListener(mRequest,responseObj);
+                            switch (fRealTypeIndex){
+                                case 1:l.onResponseListener(mRequest,responseObj,null,null);
+                                    if(gloablListener!=null) gloablListener.onResponseListener(mRequest,responseObj,null,null);
+                                    break;
+                                case 2:l.onResponseListener(mRequest,null,responseObj,null);
+                                    if(gloablListener!=null) gloablListener.onResponseListener(mRequest,null,responseObj,null);
+                                    break;
+                                case 3:l.onResponseListener(mRequest,null,null,responseObj);
+                                    if(gloablListener!=null) gloablListener.onResponseListener(mRequest,null,null,responseObj);
+                                    break;
+                            }
                         }
                     });
                 }
@@ -278,6 +293,56 @@ public class NetProcessor implements Runnable{
                         l.onErrorListener(mRequest, mMessage);
                     }
                 });
+            }
+        }
+    }
+
+    /**
+     * 实体类型是否源类型
+     * @param types 实体类型组
+     * @return 如果是源类型返回true，否则false
+     */
+    private boolean entityIsRawType(Type[] types){
+        if(types==null||types.length==0) return true;
+        for(Type type:types)
+            if(type!=null&&type!=Object.class&&type!=byte[].class)
+                return false;
+        return true;
+    }
+
+    /**
+     * 实体类型是否字符串类型
+     * @param types 实体类型组
+     * @return 如果是字符串类型返回true，否则false
+     */
+    private boolean entityIsStringType(Type[] types){
+        boolean hadStrType=false;
+        boolean hadOtherType=false; //有除Object和String之外的类型
+        for(Type type:types)
+            if(type==String.class)
+                hadStrType=true;
+            else if(type!=null&&type!=Object.class)
+                hadOtherType=true;
+        return hadStrType&&!hadOtherType;
+    }
+
+    /**
+     * json实体猜想
+     * @param json json字符串
+     * @return 猜想成功返回成功参数的索引值和实体，否则为null
+     */
+    private Pair<Integer,Object> guessJsonEntity(String json,Type[] types)throws JsonParseException{
+        Gson gson=new Gson();
+
+        try{
+            return Pair.create(1,gson.fromJson(json,types[0])); //第一次猜想
+        }catch (JsonParseException e){
+            try{
+                if(types.length>1&&types[1]!=null) return Pair.create(2,gson.fromJson(json,types[1])); //如果存在，进行第二次猜想
+                throw e;
+            }catch (JsonParseException e1){
+                if(types.length>2&&types[2]!=null) return Pair.create(3,gson.fromJson(json,types[2])); //如果存在，进行第三次猜想
+                throw e;
             }
         }
     }

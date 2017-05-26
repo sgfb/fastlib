@@ -54,7 +54,7 @@ public class ServerCache{
             mCache.cacheName=mCacheName;
         }
         mOldListener=mRequest.getListener();
-        mRequest.setListener(new Listener() {
+        mRequest.setListener(new Listener(){
 
             @Override
             public void onRawData(Request r, byte[] data) {
@@ -79,9 +79,9 @@ public class ServerCache{
             }
 
             @Override
-            public void onResponseListener(Request r, Object result){
+            public void onResponseListener(Request r, Object result,Object result2,Object result3){
                 if(mOldListener!=null)
-                    mOldListener.onResponseListener(r,result);
+                    mOldListener.onResponseListener(r,result,result2,result3);
             }
 
             @Override
@@ -119,11 +119,32 @@ public class ServerCache{
     private void toggleCallback(){
         Gson gson=new Gson();
         mOldListener.onTranslateJson(mRequest,mCache.cache);
-        Type type=mRequest.getGenericType();
-        if(type==String.class)
-            mOldListener.onResponseListener(mRequest,mCache.cache);
-        else if(type!=null&&type!=Object.class)
-            mOldListener.onResponseListener(mRequest,gson.fromJson(mCache.cache,type));
+        Type[] type=mRequest.getGenericType();
+        Type realType=entityType(type);
+        if(isStrType(type))
+            mOldListener.onResponseListener(mRequest,mCache.cache,null,null);
+        else if(realType!=null)
+            mOldListener.onResponseListener(mRequest,gson.fromJson(mCache.cache,realType),null,null);
+    }
+
+    private Type entityType(Type[] types){
+        if(types==null||types.length==0) return null;
+        for(Type type:types)
+            if(type!=Object.class&&type!=byte[].class&&type!=String.class)
+                return type;
+        return null;
+    }
+
+    private boolean isStrType(Type[] types){
+        if(types==null||types.length==0) return false;
+        boolean hadStrType=false;
+        boolean hadOtherType=false;
+        for(Type type:types)
+            if(type==String.class)
+                hadStrType=true;
+            else if(type!=Object.class&&type!=byte[].class)
+                hadOtherType=true;
+        return hadStrType&&!hadOtherType;
     }
 
     public long getCacheTimeLife() {

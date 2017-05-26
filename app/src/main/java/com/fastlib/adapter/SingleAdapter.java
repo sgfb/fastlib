@@ -1,5 +1,7 @@
 package com.fastlib.adapter;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -21,7 +23,7 @@ import android.widget.BaseAdapter;
  * @param <T> 数据类型
  * @param <R> 返回类型
  */
-public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener<R>{
+public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener<R,Object,Object>{
 	public static final String TAG=SingleAdapter.class.getSimpleName();
 
 	protected Context mContext;
@@ -75,7 +77,7 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 		isRefresh=true;
 		isMore=true;
 		isLoading=false;
-		mRequest.setGenericName("translate,0");
+		mRequest.setGenericType(new Type[]{getResponseType()});
 		mRequest.setListener(this);
 		if(mContext instanceof FastActivity)
 			((FastActivity)mContext).addRequest(mRequest);
@@ -83,6 +85,16 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 		    refresh();
 	}
 
+	private Type getResponseType(){
+		Method[] methods=getClass().getDeclaredMethods();
+		for(Method m:methods)
+		    if(m.getName().equals("translate")){
+				Type type=m.getGenericParameterTypes()[0];
+				if(type!=Object.class)
+					return type;
+			}
+		return null;
+	}
 
 	@Override
 	public int getCount() {
@@ -169,7 +181,7 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 	}
 
 	@Override
-	public void onResponseListener(Request request,R result){
+	public void onResponseListener(Request request,R result,Object none1,Object none2){
 		if(mRefreshLayout!=null)
 			mRefreshLayout.setRefreshStatus(false);
 		List<T> list=translate(result);
@@ -195,5 +207,15 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 		if(mRefreshLayout!=null)
 			mRefreshLayout.setRefreshStatus(false);
 		isLoading=false;
+	}
+
+	@Override
+	public void onRawData(Request r, byte[] data){
+		//被适配
+	}
+
+	@Override
+	public void onTranslateJson(Request r, String json) {
+		//被适配
 	}
 }
