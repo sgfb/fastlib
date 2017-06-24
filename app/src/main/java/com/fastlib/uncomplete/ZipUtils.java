@@ -1,4 +1,4 @@
-package com.fastlib.test;
+package com.fastlib.uncomplete;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -8,8 +8,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 import java.util.zip.CheckedOutputStream;
@@ -18,8 +16,6 @@ import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-
-import android.os.Environment;
 
 /**
  * zip压缩工具

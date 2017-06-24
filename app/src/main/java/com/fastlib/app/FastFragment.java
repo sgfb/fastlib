@@ -234,6 +234,27 @@ public abstract class FastFragment extends Fragment{
             request.clear();
     }
 
+    /**
+     * 从宿主Activity中移除自身
+     */
+    protected void finish(){
+        getFragmentManager()
+                .beginTransaction()
+                .remove(this)
+                .commit();
+    }
+
+    /**
+     * 从宿主Activity中移除自身并且加入指定Fragment
+     * @param fragment 替换自身位置的新Fragment
+     */
+    protected void replce(Fragment fragment){
+        getFragmentManager()
+                .beginTransaction()
+                .replace(getId(),fragment)
+                .commit();
+    }
+
     private synchronized void prepareTask(){
         if(--mPreparedTaskRemain<=0)
             getActivity().runOnUiThread(new Runnable() {

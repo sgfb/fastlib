@@ -34,7 +34,7 @@ public abstract class AbsPreviewImageActivity extends FastActivity implements Vi
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        int layoutId=getIntent().getIntExtra(ARG_LAYOUT_ID,R.layout.activity_preview_image); //使用自定义或者默认布局
+        int layoutId=getIntent().getIntExtra(ARG_LAYOUT_ID,R.layout.act_preview_image); //使用自定义或者默认布局
         setContentView(layoutId);
 
         mViewPager=(ViewPager)findViewById(R.id.viewPager);

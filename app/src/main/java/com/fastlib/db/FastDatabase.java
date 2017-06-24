@@ -42,7 +42,7 @@ public class FastDatabase{
     private Context mContext;
     private RuntimeAttribute mAttribute;
 
-    public FastDatabase(Context context){
+    private FastDatabase(Context context){
         mContext = context.getApplicationContext();
         mAttribute = new RuntimeAttribute();
     }
@@ -92,8 +92,15 @@ public class FastDatabase{
         NetManager.sRequestPool.execute(new Runnable() {
             @Override
             public void run(){
+            	Handler handle=new Handler(Looper.getMainLooper());
+                final boolean success=saveOrUpdate(obj);
                 if(callback!=null)
-                    callback.onResult(saveOrUpdate(obj));
+                    handle.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            callback.onResult(success);
+                        }
+                    });
             }
         });
     }
@@ -562,12 +569,12 @@ public class FastDatabase{
 
     /**
      * 保存对象到数据库
-     * @param array
-     * @return
+     * @param array 对象组
+     * @return 如果存储成功返回true，否则为false
      */
     private boolean save(Object[] array){
         if (array == null || array.length <= 0)
-            return false; //没什么对象可存应该返回false的吗？
+            return false; //没什么对象可存应该返回false吗？
         Object availableObj = null;
 
         for (Object obj : array) //取首个非null对象
@@ -581,6 +588,7 @@ public class FastDatabase{
         ContentValues cv = new ContentValues();
         Field[] fields = availableObj.getClass().getDeclaredFields();
         String tableName = availableObj.getClass().getCanonicalName();
+        Field autoIncreKeyField=null; //自动增长的主键值
 
         try {
             db.beginTransaction();
@@ -588,7 +596,7 @@ public class FastDatabase{
                 if (obj == null) //跳过null对象
                     continue;
                 cv.clear();
-                for (Field field : fields) {
+                for (Field field : fields){
                     field.setAccessible(true);
                     Database fieldInject = field.getAnnotation(Database.class);
                     String columnName;
@@ -600,13 +608,17 @@ public class FastDatabase{
                         if (fieldInject != null && fieldInject.keyPrimary() && fieldInject.autoincrement()){
                             if(field.getType()==int.class||field.getType()==Integer.class) {
                                 int keyValue = field.getInt(obj);
-                                if(keyValue<=0)
+                                if(keyValue<=0){
+                                    autoIncreKeyField=field;
                                     continue;
+                                }
                             }
                             else if(field.getType()==long.class||field.getType()==Long.class){
                                 long keyValue=field.getLong(obj);
-                                if(keyValue<=0)
+                                if(keyValue<=0){
+                                    autoIncreKeyField=field;
                                     continue;
+                                }
                             }
                         }
                         if (fieldInject != null && !TextUtils.isEmpty(fieldInject.columnName()))
@@ -658,7 +670,20 @@ public class FastDatabase{
                         return false;
                     }
                 }
-                db.insert("'" + tableName + "'", null, cv);
+                //对自动增长的主键
+                long rowId=db.insert("'" + tableName + "'", null, cv);
+                if(rowId!=-1&&autoIncreKeyField!=null){
+                    try{
+                        if(autoIncreKeyField.getType()==int.class||autoIncreKeyField.getType()==Integer.class)
+                            autoIncreKeyField.setInt(obj,(int)rowId);
+                        else if(autoIncreKeyField.getType()==long.class||autoIncreKeyField.getType()==Long.class)
+                            autoIncreKeyField.setLong(obj,rowId);
+                    }catch (IllegalAccessException e){
+                        if(Fastlib.isShowLog())
+                            System.out.println("更新数据失败:"+e.getMessage());
+                        return false;
+                    }
+                }
             }
             if (Fastlib.isShowLog())
                 System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabaseComplete()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabaseComplete()) + "<--"+array.length+"--" + tableName);
@@ -723,7 +748,7 @@ public class FastDatabase{
                             isUpdate = true;
                         }
                     }
-                } catch (NoSuchFieldException e) {
+                } catch (NoSuchFieldException e){
                     if (Fastlib.isShowLog())
                         System.out.println("数据库saveOrUpdate时出现异常:" + e.toString());
                     return false;

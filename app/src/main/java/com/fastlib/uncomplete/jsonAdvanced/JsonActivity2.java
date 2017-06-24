@@ -1,4 +1,4 @@
-package com.fastlib.test.jsonAdvanced;
+package com.fastlib.uncomplete.jsonAdvanced;
 
 import android.content.Context;
 import android.support.annotation.LayoutRes;

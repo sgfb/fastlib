@@ -28,7 +28,39 @@ public final class Condition {
     }
 
     public static Condition biger(String value){
-        return new Condition(TYPE_BIGER,value);
+        return biger(null,value);
+    }
+
+    public static Condition biger(int value){
+        return biger(Integer.toString(value));
+    }
+
+    public static Condition biger(long value){
+        return biger(Long.toString(value));
+    }
+
+    public static Condition biger(float value){
+        return biger(Float.toString(value));
+    }
+
+    public static Condition biger(double value){
+        return biger(Double.toString(value));
+    }
+
+    public static Condition biger(String field,int value){
+        return biger(field,Integer.toString(value));
+    }
+
+    public static Condition biger(String field,long value){
+        return biger(field,Long.toString(value));
+    }
+
+    public static Condition biger(String field,float value){
+        return biger(field,Float.toString(value));
+    }
+
+    public static Condition biger(String field,double value){
+        return biger(field,Double.toString(value));
     }
 
     public static Condition biger(String field, String value){
@@ -36,11 +68,43 @@ public final class Condition {
     }
 
     public static Condition smaller(String value){
-        return new Condition(TYPE_SMALLER,value);
+        return smaller(null,value);
+    }
+
+    public static Condition smaller(int value){
+        return smaller(Integer.toString(value));
+    }
+
+    public static Condition smaller(long value){
+        return smaller(Long.toString(value));
+    }
+
+    public static Condition smaller(float value){
+        return smaller(Float.toString(value));
+    }
+
+    public static Condition smaller(double value){
+        return smaller(Double.toString(value));
     }
 
     public static Condition smaller(String field, String value){
         return new Condition(TYPE_SMALLER,field,value);
+    }
+
+    public static Condition smaller(String field,int value){
+        return smaller(field,Integer.toString(value));
+    }
+
+    public static Condition smaller(String field,long value){
+        return smaller(field,Long.toString(value));
+    }
+
+    public static Condition smaller(String field,float value){
+        return smaller(field,Float.toString(value));
+    }
+
+    public static Condition smaller(String field,double value){
+        return smaller(field,Double.toString(value));
     }
 
     public static Condition emptyVaue(){
@@ -60,11 +124,43 @@ public final class Condition {
     }
 
     public static Condition equal(String value){
-        return new Condition(TYPE_EQUAL,value);
+        return equal(null,value);
+    }
+
+    public static Condition equal(int value){
+        return equal(Integer.toString(value));
+    }
+
+    public static Condition equal(long value){
+        return equal(Long.toString(value));
+    }
+
+    public static Condition equal(float value){
+        return equal(Float.toString(value));
+    }
+
+    public static Condition equal(double value){
+        return equal(Double.toString(value));
     }
 
     public static Condition equal(String field, String value){
         return new Condition(TYPE_EQUAL,field,value);
+    }
+
+    public static Condition equal(String field,int value){
+        return equal(field,Integer.toString(value));
+    }
+
+    public static Condition equal(String field,long value){
+        return equal(field,Long.toString(value));
+    }
+
+    public static Condition equal(String field,float value){
+        return equal(field,Float.toString(value));
+    }
+
+    public static Condition equal(String field,double value){
+        return equal(field,Double.toString(value));
     }
 
     public static Condition unequal(String value){
@@ -73,6 +169,22 @@ public final class Condition {
 
     public static Condition unequal(String field, String value){
         return new Condition(TYPE_UNEQUAL,field,value);
+    }
+
+    public static Condition unequal(String field,int value){
+        return unequal(field,Integer.toString(value));
+    }
+
+    public static Condition unequal(String field,long value){
+        return unequal(field,Long.toString(value));
+    }
+
+    public static Condition unequal(String field,float value){
+        return unequal(field,Float.toString(value));
+    }
+
+    public static Condition unequal(String field,double value){
+        return unequal(field,Double.toString(value));
     }
 
     public int getType() {

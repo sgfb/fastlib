@@ -58,7 +58,7 @@ public class NetManager{
                             params.add(pair);
             }
             if(mGlobalData.mHeads!=null&&mGlobalData.mHeads.length>0){
-                List<Pair<String,String>> heads=request.getHeadExtra();
+                List<Pair<String,String>> heads=request.getSendHeadExtra();
                 if(heads==null){
                     heads=new ArrayList<>();
                     Collections.addAll(heads,mGlobalData.mHeads);
@@ -70,16 +70,14 @@ public class NetManager{
                             heads.add(pair);
                 }
             }
-            if(mGlobalData.mCookies!=null&&mGlobalData.mCookies.length>0){
-                String[] cookies=request.getCookies();
+            if(mGlobalData.mCookies!=null&&!mGlobalData.mCookies.isEmpty()){
+                List<Pair<String, String>> cookies=request.getSendCookies();
                 if(cookies==null)
-                    request.setCookies(mGlobalData.mCookies);
+                    request.setSendCookies(mGlobalData.mCookies);
                 else{
-                    List<String> cookieList=new ArrayList<>();
-                    Collections.addAll(cookieList,cookies);
-                    for(String newCookie:mGlobalData.mCookies)
-                        if(!cookieList.contains(newCookie))
-                            cookieList.add(newCookie);
+                    for(Pair<String,String> newCookie:mGlobalData.mCookies)
+                        if(!cookies.contains(newCookie))
+                            cookies.add(newCookie);
                 }
             }
         }
@@ -155,7 +153,7 @@ public class NetManager{
      * 设置网络全局Cookies
      * @param cookies 网络全局Cookies
      */
-    public void setGlobalCookies(String[] cookies){
+    public void setGlobalCookies(List<Pair<String,String>> cookies){
         if(mGlobalData==null)
             mGlobalData=new NetGlobalData();
         mGlobalData.mCookies=cookies;

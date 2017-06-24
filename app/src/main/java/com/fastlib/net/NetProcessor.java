@@ -20,13 +20,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -76,6 +81,7 @@ public class NetProcessor implements Runnable{
         try {
             boolean isMulti = false, isPost =mRequest.getMethod().equals("POST");
             long existsLength;
+            long connectionTimer=System.currentTimeMillis();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             File downloadFile = null;
             InputStream in;
@@ -88,8 +94,8 @@ public class NetProcessor implements Runnable{
                 connection.setChunkedStreamingMode(CHUNK_LENGTH);
             }
             //添加额外信息到头部
-            if (mRequest.getHeadExtra() != null) {
-                for (Pair<String, String> pair : mRequest.getHeadExtra())
+            if (mRequest.getSendHeadExtra() != null) {
+                for (Pair<String, String> pair : mRequest.getSendHeadExtra())
                     connection.addRequestProperty(pair.first, pair.second);
             }
             //检测是否可保存为文件
@@ -111,7 +117,7 @@ public class NetProcessor implements Runnable{
                 }
             }
             if (mRequest.getSendCookies() != null)
-                connection.setRequestProperty(mRequest.getSendCookies().first, mRequest.getSendCookies().second);
+                connection.setRequestProperty("Cookie",generateSendCookies());
             if(Thread.currentThread().isInterrupted()) //在连接前判断线程是否已关闭
                 return;
             connection.connect();
@@ -138,11 +144,9 @@ public class NetProcessor implements Runnable{
             }
 
             in=mRequest.isReceiveGzip()?new GZIPInputStream(connection.getInputStream()):connection.getInputStream();
-            if (mRequest.isSaveCookies()) {
-                String cookies = connection.getHeaderField("Set-Cookie");
-                if (!TextUtils.isEmpty(cookies))
-                    mRequest.setCookies(cookies.split(";"));
-            }
+//            String cookies = connection.getHeaderField("Set-Cookie");
+//            if (!TextUtils.isEmpty(cookies))
+//                mRequest.setReceiveCookies(cookies.split(";"));
             int len;
             byte[] data = new byte[BUFF_LENGTH];
             //如果支持,修改下载的文件名
@@ -190,6 +194,8 @@ public class NetProcessor implements Runnable{
             connection.disconnect();
             mRequest.setLastModified(connection.getHeaderField("Last-Modified"));
             mMessage=connection.getResponseMessage();
+            saveExtraToRequest(connection);
+            saveResponseStatus(connection.getResponseCode(),System.currentTimeMillis()-connectionTimer,connection.getResponseMessage());
             toggleCallback();
         } catch (IOException e){
             isSuccess=false;
@@ -199,6 +205,58 @@ public class NetProcessor implements Runnable{
             if (mListener != null)
                 mListener.onComplete(this);
         }
+    }
+
+    /**
+     * 从Request中取出并组合要发送的Cookie
+     * @return 组合好的Cookies
+     */
+    private String generateSendCookies(){
+        List<Pair<String,String>> cookies=mRequest.getSendCookies();
+        StringBuilder sb=new StringBuilder();
+        if(cookies!=null&&!cookies.isEmpty())
+            for(Pair<String,String> cookie:cookies){
+                sb.append(cookie.first)
+                        .append("=")
+                        .append(cookie.second)
+                        .append(";");
+            }
+        return sb.toString();
+    }
+
+    /**
+     * 保存一些诸如Header和Cookies的数据到Request中
+     * @param connection
+     */
+    private void saveExtraToRequest(HttpURLConnection connection){
+        Map<String,List<String>> map=new HashMap<>();
+
+        for(Map.Entry<String,List<String>> entry:connection.getHeaderFields().entrySet())
+            map.put(entry.getKey(),entry.getValue());
+        mRequest.setReceiveHeader(map);
+        List<String> cookies=mRequest.getReceiveHeader().remove("Set-Cookie");
+        if(cookies!=null&&!cookies.isEmpty()){
+            Pair<String,String>[] cookieArray=new Pair[cookies.size()];
+            for(int i=0;i<cookies.size();i++){
+                String cookie=cookies.get(i);
+                cookieArray[i]=Pair.create(cookie.substring(0,cookie.indexOf('=')),cookie.substring(cookie.indexOf('=')+1,cookie.indexOf(';')));
+            }
+            mRequest.setReceiveCookies(cookieArray);
+        }
+    }
+
+    /**
+     * 保存返回状态值
+     * @param code
+     * @param time
+     * @param message
+     */
+    private void saveResponseStatus(int code,long time,String message){
+        ResponseStatus rs=new ResponseStatus();
+        rs.code=code;
+        rs.message=message;
+        rs.time=time;
+        mRequest.setResponseStatus(rs);
     }
 
     /**
@@ -238,6 +296,7 @@ public class NetProcessor implements Runnable{
             l.onRawData(mRequest,mResponse);
             Type[] realType = mRequest.getGenericType();
             int realTypeIndex=1;
+            String json=null;
 
             try {
                 final Object responseObj;
@@ -249,7 +308,7 @@ public class NetProcessor implements Runnable{
                         gloablListener.onTranslateJson(mRequest,(String)responseObj);
                     l.onTranslateJson(mRequest,(String) responseObj);
                 }else{
-                    String json=mResponse==null?"":new String(mResponse);
+                    json=mResponse==null?"":new String(mResponse);
                     if(gloablListener!=null)
                         gloablListener.onTranslateJson(mRequest,json);
                     l.onTranslateJson(mRequest,json);
@@ -281,7 +340,7 @@ public class NetProcessor implements Runnable{
                     });
                 }
             } catch (JsonParseException e){
-                mMessage ="解析时出现异常:"+e.getMessage();
+                mMessage ="请求:"+mRequest+"\n解析时出现异常:"+e.getMessage()+"\njson字符串:"+json;
                 isSuccess=false;
             }
             if (!isSuccess){
@@ -361,9 +420,9 @@ public class NetProcessor implements Runnable{
         }
         while(iter.hasNext()){
             Pair<String,String> pair=iter.next();
-            sb.append("?").append(pair.first).append("=").append(pair.second);
+            sb.append("&").append(pair.first).append("=").append(pair.second);
         }
-        return sb.toString();
+        return mRequest.isReplaceChinese()?transferSpaceAndChinese(sb.toString()):sb.toString();
     }
 
     /**
@@ -456,6 +515,30 @@ public class NetProcessor implements Runnable{
         }
         if(mRequest.isSendGzip())
             ((GZIPOutputStream)outDelegate).finish();
+    }
+
+    /**
+     * 空格和汉字替换成unicode
+     * @param str
+     * @return
+     */
+    private String transferSpaceAndChinese(String str){
+        if(TextUtils.isEmpty(str))
+            return "";
+        StringBuilder sb=new StringBuilder(str);
+
+        for(int i=0;i<sb.length();i++){
+            char c=sb.charAt(i);
+            if(c>='\u4e00'&&c<='\u9fa5'){
+                try {
+                    sb.deleteCharAt(i);
+                    sb.insert(i, URLEncoder.encode(String.valueOf(c),"UTF-8").toCharArray());
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return sb.toString().replace(" ","%20"); //最后空格置换
     }
 
     @Override

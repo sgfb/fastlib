@@ -11,7 +11,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Created by sgfb on 16/12/29.
- * 缓存来自服务器的数据,获取时不用关心数据来自哪里
+ * 缓存来自服务器的数据
  */
 public class ServerCache{
     private long mCacheTimeLife =0; //缓存生存长度
@@ -57,25 +57,24 @@ public class ServerCache{
         mRequest.setListener(new Listener(){
 
             @Override
-            public void onRawData(Request r, byte[] data) {
+            public void onRawData(Request r, final byte[] data) {
                 if(mOldListener!=null)
                     mOldListener.onRawData(r,data);
-                //暂时不保存来自服务器的二进制数据
+                if(mThreadPool!=null)
+                    mThreadPool.execute(new Runnable(){
+                        @Override
+                        public void run(){
+                            saveCache(new String(data));
+                        }
+                    });
+                else
+                    saveCache(new String(data));
             }
 
             @Override
             public void onTranslateJson(final Request r, final String json) {
                 if(mOldListener!=null)
                     mOldListener.onTranslateJson(r,json);
-                if(mThreadPool!=null)
-                    mThreadPool.execute(new Runnable(){
-                        @Override
-                        public void run(){
-                            saveCache(json);
-                        }
-                    });
-                else
-                    saveCache(json);
             }
 
             @Override

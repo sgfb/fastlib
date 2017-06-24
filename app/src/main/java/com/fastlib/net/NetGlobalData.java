@@ -11,5 +11,5 @@ import java.util.List;
 public class NetGlobalData{
     public Pair<String,String>[] mHeads;
     public Pair<String,String>[] mParams;
-    public String[] mCookies;
+    public List<Pair<String, String>> mCookies;
 }

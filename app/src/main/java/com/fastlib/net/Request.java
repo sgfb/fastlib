@@ -34,7 +34,6 @@ public class Request {
     private static int sPoolSize = 0;
 
     private boolean isReplaceChinese; //是否替换中文url,默认为true
-    private boolean isSaveCookies; //是否留存Cookies
     private boolean hadRootAddress; //是否已加入根地址
     private boolean useFactory; //是否使用预设值
     private boolean isSendGzip; //指定这次请求发送时是否压缩成gzip流
@@ -43,14 +42,15 @@ public class Request {
     private String method;
     private String mUrl;
 //    private String mGenericName;
-    private Pair<String, String> mSendCookies;
+    private List<Pair<String, String>> mSendCookies;
     private Downloadable mDownloadable;
-    private List<Pair<String, String>> mHeadExtra; //额外头部信息
+    private Map<String,List<String>> mReceiveHeader;
+    private List<Pair<String, String>> mSendHeadExtra; //额外发送的头部信息
     private List<Pair<String,File>> mFiles;
     private List<Pair<String,String>> mParams;
     private RequestType mType = RequestType.DEFAULT;
     private Object mTag; //额外信息
-    private String[] mCookies; //留存的cookies
+    private Pair<String,String>[] mReceiveCookies; //留存的cookies
     private String mLastModified; //资源最后修改时间
     //加入activity或者fragment可以提升安全性
     private Activity mActivity;
@@ -61,6 +61,7 @@ public class Request {
     private ThreadPoolExecutor mExecutor; //运行在指定线程池中,如果未指定默认在公共的线程池中
     private Request mNext;
     private MockProcess mMock; //模拟数据
+    private ResponseStatus mResponseStatus;
 
     public static Request obtain() {
         return obtain("");
@@ -108,7 +109,7 @@ public class Request {
         useFactory = true;
         mParams = new ArrayList<>();
         mFiles = new ArrayList<>();
-        mHeadExtra = new ArrayList<>();
+        mSendHeadExtra = new ArrayList<>();
     }
 
     /**
@@ -117,7 +118,6 @@ public class Request {
     public void clear() {
         isReplaceChinese=true;
         useFactory = true;
-        isSaveCookies = false;
         hadRootAddress = false;
         isSendGzip = false;
         isReceiveGzip = false;
@@ -126,18 +126,20 @@ public class Request {
 //        mGenericName = null;
         mSendCookies = null;
         mDownloadable = null;
-        mHeadExtra.clear();
+        mSendHeadExtra.clear();
         mParams.clear();
         mFiles.clear();
         mType = RequestType.DEFAULT;
         mTag = null;
-        mCookies = null;
+        mReceiveCookies = null;
         mActivity = null;
         mFragment = null;
         mListener = null;
         mGenericType = null;
         mCacheManager = null;
         mExecutor = null;
+        mMock=null;
+        mResponseStatus=null;
         synchronized (sLock) {
             if (sPoolSize < MAX_POOL_SIZE) {
                 mNext = sPool;
@@ -558,8 +560,9 @@ public class Request {
      * @param context   上下文
      * @param cacheName 缓存名（唯一缓存名）
      */
-    public void setCachetime(Context context, String cacheName, long liveTime) {
+    public Request setCacheTime(Context context, String cacheName, long liveTime) {
         setCacheTime(context, cacheName, liveTime, null);
+        return this;
     }
 
     /**
@@ -568,13 +571,14 @@ public class Request {
      * @param cacheName  缓存名（唯一缓存名）
      * @param toDatabase 保持到指定数据库
      */
-    public void setCacheTime(Context context, String cacheName, long liveTime, @Nullable String toDatabase) {
-        FastDatabase database = TextUtils.isEmpty(toDatabase) ? new FastDatabase(context) : new FastDatabase(context).toWhichDatabase(toDatabase);
+    public Request setCacheTime(Context context, String cacheName, long liveTime, @Nullable String toDatabase) {
+        FastDatabase database = TextUtils.isEmpty(toDatabase) ? FastDatabase.getDefaultInstance(context) : FastDatabase.getInstance(context,toDatabase);
         if (mExecutor == null)
             mCacheManager = new ServerCache(this, cacheName, database);
         else
             mCacheManager = new ServerCache(this, cacheName, database, mExecutor);
         mCacheManager.setCacheTimeLife(liveTime);
+        return this;
     }
 
     /**
@@ -673,12 +677,12 @@ public class Request {
         return this;
     }
 
-    public String[] getCookies() {
-        return mCookies;
+    public Pair<String,String>[] getReceiveCookies() {
+        return mReceiveCookies;
     }
 
-    public void setCookies(String[] cookies) {
-        mCookies = cookies;
+    public void setReceiveCookies(Pair<String,String>[] receiveCookies) {
+        mReceiveCookies = receiveCookies;
     }
 
     public Object getTag() {
@@ -697,27 +701,11 @@ public class Request {
         mType = type;
     }
 
-//    public String getGenericName() {
-//        return mGenericName;
-//    }
-//
-//    public void setGenericName(String genericName) {
-//        mGenericName = genericName;
-//    }
-
-    public Pair<String, String> getSendCookies() {
+    public List<Pair<String, String>> getSendCookies() {
         return mSendCookies;
     }
 
-    public boolean isSaveCookies() {
-        return isSaveCookies;
-    }
-
-    public void setSaveCookies(boolean saveCookies) {
-        isSaveCookies = saveCookies;
-    }
-
-    public void setSendCookies(Pair<String, String> sendCookies) {
+    public void setSendCookies(List<Pair<String, String>> sendCookies) {
         mSendCookies = sendCookies;
     }
 
@@ -746,38 +734,38 @@ public class Request {
     }
 
     public void putHeadExtra(String key, String value){
-        if(mHeadExtra==null)
-            mHeadExtra=new ArrayList<>();
+        if(mSendHeadExtra ==null)
+            mSendHeadExtra =new ArrayList<>();
         Pair<String,String> pair=Pair.create(key,value);
 
-        if(!mHeadExtra.contains(pair))
-            mHeadExtra.add(pair);
+        if(!mSendHeadExtra.contains(pair))
+            mSendHeadExtra.add(pair);
     }
 
     public void removeHeadExtra(String key){
-        if(mHeadExtra==null) return;
-        for(Pair<String,String> pair:mHeadExtra)
+        if(mSendHeadExtra ==null) return;
+        for(Pair<String,String> pair: mSendHeadExtra)
             if(pair.first.equals(key)){
-                mHeadExtra.remove(pair);
+                mSendHeadExtra.remove(pair);
                 break;
             }
     }
 
     public Request addHead(String key,String value){
-        if(mHeadExtra==null)
-            mHeadExtra=new ArrayList<>();
+        if(mSendHeadExtra ==null)
+            mSendHeadExtra =new ArrayList<>();
         Pair<String,String> pair=Pair.create(key,value);
-        if(!mHeadExtra.contains(pair))
-            mHeadExtra.add(pair);
+        if(!mSendHeadExtra.contains(pair))
+            mSendHeadExtra.add(pair);
         return this;
     }
 
-    public List<Pair<String, String>> getHeadExtra() {
-        return mHeadExtra;
+    public List<Pair<String, String>> getSendHeadExtra() {
+        return mSendHeadExtra;
     }
 
     public Request setHeadExtra(List<Pair<String, String>> headExtra) {
-        mHeadExtra = headExtra;
+        mSendHeadExtra = headExtra;
         return this;
     }
 
@@ -817,6 +805,30 @@ public class Request {
         if (mActivity != null)
             return mActivity;
         return null;
+    }
+
+    public ResponseStatus getResponseStatus() {
+        return mResponseStatus;
+    }
+
+    public void setResponseStatus(ResponseStatus responseStatus) {
+        mResponseStatus = responseStatus;
+    }
+
+    public Map<String, List<String>> getReceiveHeader() {
+        return mReceiveHeader;
+    }
+
+    public void setReceiveHeader(Map<String, List<String>> receiveHeader) {
+        mReceiveHeader = receiveHeader;
+    }
+
+    public boolean isReplaceChinese() {
+        return isReplaceChinese;
+    }
+
+    public void setReplaceChinese(boolean replaceChinese) {
+        isReplaceChinese = replaceChinese;
     }
 
     @Override

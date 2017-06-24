@@ -60,22 +60,30 @@ public class ViewInject{
                     } catch (InvocationTargetException e){
                         try {
                             m.invoke(mHost,objs);
-                        } catch (IllegalAccessException|IllegalArgumentException e1) {
-                            if(Fastlib.isShowLog())
-                                System.out.println("toggle error:"+e.getCause());
-                        } catch (InvocationTargetException e1) {
-                            if(Fastlib.isShowLog())
-                                System.out.println("toggle error:"+e.getCause());
+                        } catch (IllegalAccessException|IllegalArgumentException e1){
+                            if(Fastlib.isShowLog()){
+                                System.out.println("toggle exception");
+                                e1.printStackTrace();
+                            }
+                        } catch (InvocationTargetException e2) {
+                            if(Fastlib.isShowLog()){
+                                System.out.println("toggle exception");
+                                e2.printStackTrace();
+                            }
                         }
                     } catch (IllegalAccessException e) {
                         try {
                             m.invoke(mHost,objs);
                         } catch (IllegalAccessException|IllegalArgumentException e1) {
-                            if(Fastlib.isShowLog())
-                                System.out.println("toggle error:"+e.getCause());
-                        } catch (InvocationTargetException e1) {
-                            if(Fastlib.isShowLog())
-                                System.out.println("toggle error:"+e.getCause());
+                            if(Fastlib.isShowLog()){
+                                System.out.println("toggle exception");
+                                e1.printStackTrace();
+                            }
+                        } catch (InvocationTargetException e2) {
+                            if(Fastlib.isShowLog()){
+                                System.out.println("toggle exception");
+                                e2.printStackTrace();
+                            }
                         }
                     }
                 }
@@ -91,24 +99,21 @@ public class ViewInject{
                     if(result instanceof Boolean)
                         return (Boolean)result;
                 } catch (IllegalAccessException|IllegalArgumentException e1) {
-                    if(Fastlib.isShowLog())
-                        System.out.println("toggle error:"+e.getCause());
-                } catch (InvocationTargetException e1) {
-                    if(Fastlib.isShowLog())
-                        System.out.println("toggle error:"+e.getCause());
+                    if(Fastlib.isShowLog()){
+                        System.out.println("toggle exception");
+                        e1.printStackTrace();
+                    }
+                } catch (InvocationTargetException e2){
+                    if(Fastlib.isShowLog()){
+                        System.out.println("toggle exception");
+                        e2.printStackTrace();
+                    }
                 }
                 return false;
             } catch (InvocationTargetException e){
-                try {
-                    Object result = m.invoke(mHost,objs);
-                    if(result instanceof Boolean)
-                        return (Boolean)result;
-                } catch (IllegalAccessException|IllegalArgumentException e1) {
-                    if(Fastlib.isShowLog())
-                        System.out.println("toggle error:"+e.getCause());
-                } catch (InvocationTargetException e1) {
-                    if(Fastlib.isShowLog())
-                        System.out.println("toggle error:"+e.getCause());
+                if(Fastlib.isShowLog()){
+                    System.out.println("toggle exception");
+                    e.printStackTrace();
                 }
                 return false;
             }
