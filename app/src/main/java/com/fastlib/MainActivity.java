@@ -75,7 +75,7 @@ public class MainActivity extends FastActivity{
 
     @Bind(R.id.bt2)
     private void commit2(){
-
+//        https://developer.android.com/guide/topics/connectivity/bluetooth.html#FindingDevices
     }
 
     @Bind(R.id.bt3)
