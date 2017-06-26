@@ -12,5 +12,4 @@ import java.util.Map;
 public class Bean {
     public int id;
     public String content;
-    public String url;
 }
