@@ -56,26 +56,64 @@ public abstract class FastAdapter<T> extends BaseAdapter{
         return holder.getConvertView();
     }
 
+    /**
+     * 设置数据到适配器
+     * @param list
+     */
     public void setData(List<T> list){
         mData=list;
         notifyDataSetChanged();
     }
 
+    /**
+     * 增加数据到适配器
+     * @param data
+     */
     public void addData(T data){
         mData.add(data);
         notifyDataSetChanged();
     }
 
+    /**
+     * 增加一组数据到适配器
+     * @param data
+     */
     public void addData(List<T> data){
         mData.addAll(data);
         notifyDataSetChanged();
     }
 
+    /**
+     * 如果已存在，不加入到适配器，否则加入
+     * @param data
+     */
+    public void addIfNotExist(T data){
+        if(!mData.contains(data))
+            addData(data);
+    }
+
+    /**
+     * 如果已存在，不加入到适配器，否则加入
+     * @param data
+     */
+    public void addIfNotExist(List<T> data){
+        for(T t:data)
+            addIfNotExist(t);
+    }
+
+    /**
+     * 从适配器中移除某对象
+     * @param data
+     */
     public void remove(T data){
         mData.remove(data);
         notifyDataSetChanged();
     }
 
+    /**
+     * 从适配器中移除某个位置的对象
+     * @param position
+     */
     public void remove(int position){
         mData.remove(position);
         notifyDataSetChanged();
