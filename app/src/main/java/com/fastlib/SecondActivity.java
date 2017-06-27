@@ -4,7 +4,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.NetworkInfo;
+import android.hardware.Camera;
+import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pGroup;
@@ -12,17 +13,17 @@ import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.EventObserver;
 import com.fastlib.app.FastActivity;
+import com.fastlib.utils.N;
 
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -30,11 +31,10 @@ import java.util.List;
  * Created by sgfb on 17/6/26.
  */
 @ContentView(R.layout.act_main_2)
-public class SecondActivity extends FastActivity implements WifiP2pManager.PeerListListener{
+public class SecondActivity extends FastActivity implements WifiP2pManager.PeerListListener,AdapterView.OnItemClickListener, WifiP2pManager.GroupInfoListener {
     @Bind(R.id.list)
     ListView mList;
     WifiP2PDisplayAdapter mAdapter;
-    boolean isWifiP2PEnable=false;
     WifiP2pManager.Channel mChannel;
     WifiP2pManager mP2pManger;
     BroadcastReceiver mWifiP2PReceiver=new BroadcastReceiver() {
@@ -42,50 +42,30 @@ public class SecondActivity extends FastActivity implements WifiP2pManager.PeerL
         public void onReceive(Context context, Intent intent){
             String action=intent.getAction();
             if(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)){ //Wifi环境变更广播
-                WifiP2pInfo p2pInfo=intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_INFO);
-                NetworkInfo netInfo=intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
-                System.out.println("WifiP2PInfo:"+p2pInfo);
-                System.out.println("network info:"+netInfo);
-                if(Build.VERSION.SDK_INT>=18){
-                    WifiP2pGroup p2pGroup=intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_GROUP);
-                    System.out.println("wifi p2p group:"+p2pGroup);
+                WifiP2pInfo info=intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_INFO);
+                if(info!=null&&info.isGroupOwner){
+                    Intent intent1=new Intent(SecondActivity.this,DetailActivity.class);
+                    intent1.putExtra(DetailActivity.ARG_BOOL_SERVER,true);
+                    startActivity(intent1);
                 }
-            }
-            else if(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)){ //指示Wifi p2p的状态
-                int wifiP2PStatus=intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE,-1);
-                isWifiP2PEnable=wifiP2PStatus==WifiP2pManager.WIFI_P2P_STATE_ENABLED;
-                System.out.println("wifi p2p 状态变更:"+wifiP2PStatus);
+                else{
+                    Intent intent1=new Intent(SecondActivity.this,DetailActivity.class);
+                    intent1.putExtra(DetailActivity.ARG_BOOL_SERVER,false);
+                    intent1.putExtra(DetailActivity.ARG_STR_HOST_NAME,info.groupOwnerAddress.getHostAddress());
+                    startActivity(intent1);
+                }
             }
             else if(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)){
                 mP2pManger.requestPeers(mChannel,SecondActivity.this);
-                if(Build.VERSION.SDK_INT>=18){
-                    WifiP2pDeviceList dl=intent.getParcelableExtra(WifiP2pManager.EXTRA_P2P_DEVICE_LIST);
-                    if(dl.getDeviceList().isEmpty()) System.out.println("wifi 直连列表为空");
-                    else{
-                        Collection<WifiP2pDevice> collection=dl.getDeviceList();
-                        List<WifiP2pDevice> list=new ArrayList<>();
-                        for(WifiP2pDevice device:collection)
-                            list.add(device);
-                        mAdapter.setData(list);
-                    }
-                }
-                else
-                    System.out.println("wifi 直连列表变更，但是系统版本过低，无法靠广播读取");
-            }
-            else if(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)){ //本机P2P设置变更
-                System.out.println("本机P2P设置变更");
             }
         }
     };
 
     @Bind(R.id.startServer)
     private void startServer(){
-        try {
-            ServerSocket ss=new ServerSocket(2888);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Intent intent=new Intent(this,DetailActivity.class);
+        intent.putExtra(DetailActivity.ARG_BOOL_SERVER,true);
+        startActivity(intent);
     }
 
     @Bind(R.id.bt1)
@@ -121,13 +101,15 @@ public class SecondActivity extends FastActivity implements WifiP2pManager.PeerL
     @Override
     protected void alreadyPrepared(){
         mList.setAdapter(mAdapter=new WifiP2PDisplayAdapter(this));
+        mList.setOnItemClickListener(this);
         mP2pManger= (WifiP2pManager) getSystemService(WIFI_P2P_SERVICE);
         mChannel=mP2pManger.initialize(this,getMainLooper(),null);
         IntentFilter filter=new IntentFilter(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
-        filter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
+
         filter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
-        filter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
         registerReceiver(mWifiP2PReceiver,filter);
+        mP2pManger.requestPeers(mChannel,this);
+        mP2pManger.requestGroupInfo(mChannel,this);
     }
 
     @Override
@@ -144,6 +126,36 @@ public class SecondActivity extends FastActivity implements WifiP2pManager.PeerL
 
     @Override
     public void onPeersAvailable(WifiP2pDeviceList peers){
-        System.out.println(peers);
+        if(peers.getDeviceList().isEmpty()) N.showShort(this,"wifi 直连列表为空");
+        else{
+            Collection<WifiP2pDevice> collection=peers.getDeviceList();
+            List<WifiP2pDevice> list=new ArrayList<>();
+            for(WifiP2pDevice device:collection)
+                list.add(device);
+            mAdapter.setData(list);
+        }
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id){
+        final WifiP2pDevice device=mAdapter.getItem(position);
+        WifiP2pConfig config=new WifiP2pConfig();
+        config.deviceAddress=device.deviceAddress;
+        mP2pManger.connect(mChannel, config, new WifiP2pManager.ActionListener() {
+            @Override
+            public void onSuccess() {
+                System.out.println("连接"+device.deviceName+"成功");
+            }
+
+            @Override
+            public void onFailure(int reason) {
+                System.out.println("连接"+device.deviceName+"失败:"+reason);
+            }
+        });
+    }
+
+    @Override
+    public void onGroupInfoAvailable(WifiP2pGroup group){
+
     }
 }
