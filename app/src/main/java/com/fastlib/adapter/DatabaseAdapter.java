@@ -19,7 +19,7 @@ import java.util.List;
  * 关联FastDatabase适配数据
  */
 public abstract class DatabaseAdapter<T> extends BaseAdapter implements DatabaseListGetCallback<T> {
-    protected boolean isRefresh,isMore;
+    protected boolean isRefresh,isMore,isLoading;
     protected int mCurrentIndex=0,mPerCount=10; //当前位置索引和每次读取列表长度
     protected int mLayoutId;
     protected List<T> mData;
@@ -72,7 +72,7 @@ public abstract class DatabaseAdapter<T> extends BaseAdapter implements Database
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent){
-        if(position>=getCount()-1)
+        if(!isLoading&&isMore&&position>=getCount()-1)
             loadMore();
         OldViewHolder holder=OldViewHolder.get(mContext,convertView,parent,mLayoutId);
         binding(position,getItem(position),holder);
@@ -88,6 +88,7 @@ public abstract class DatabaseAdapter<T> extends BaseAdapter implements Database
     }
 
     protected void loadMore(){
+        isLoading=true;
     	isRefresh=false;
         mCurrentIndex+=mPerCount;
         generateDB(false).limit(mCurrentIndex,mPerCount)
@@ -96,16 +97,16 @@ public abstract class DatabaseAdapter<T> extends BaseAdapter implements Database
 
     @Override
     public void onResult(List<T> result){
+        isLoading=false;
         if(mRefreshable!=null)
-            mRefreshable.setRefreshStatus(false);
-        if(result==null||result.isEmpty()){
+            mRefreshable.setRefreshing(false);
+        if(result==null||result.isEmpty())
             isMore = false;
-            return;
-        }
         if(isRefresh)
             mData=result;
         else
-            mData.addAll(result);
+            if(result!=null)
+                mData.addAll(result);
         notifyDataSetChanged();
     }
 

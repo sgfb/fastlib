@@ -45,7 +45,7 @@ public class NetProcessor implements Runnable{
     private final String CRLF = "\r\n";
     private final String END = "--" + BOUNDARY + "--" + CRLF;
     private final int BUFF_LENGTH = 4096;
-    private final int CHUNK_LENGTH = 4096;
+//    private final int CHUNK_LENGTH = 4096;
 
     public static long mDiffServerTime; //与服务器时间差
 
@@ -91,7 +91,7 @@ public class NetProcessor implements Runnable{
 
             if(isPost&&(mRequest.getFiles() != null && mRequest.getFiles().size() > 0)){
                 isMulti = true;
-                connection.setChunkedStreamingMode(CHUNK_LENGTH);
+//                connection.setChunkedStreamingMode(CHUNK_LENGTH);
             }
             //添加额外信息到头部
             if (mRequest.getSendHeadExtra() != null) {
@@ -142,11 +142,7 @@ public class NetProcessor implements Runnable{
                 }
                 out.close();
             }
-
             in=mRequest.isReceiveGzip()?new GZIPInputStream(connection.getInputStream()):connection.getInputStream();
-//            String cookies = connection.getHeaderField("Set-Cookie");
-//            if (!TextUtils.isEmpty(cookies))
-//                mRequest.setReceiveCookies(cookies.split(";"));
             int len;
             byte[] data = new byte[BUFF_LENGTH];
             //如果支持,修改下载的文件名
@@ -198,6 +194,7 @@ public class NetProcessor implements Runnable{
             saveResponseStatus(connection.getResponseCode(),System.currentTimeMillis()-connectionTimer,connection.getResponseMessage());
             toggleCallback();
         } catch (IOException e){
+            e.printStackTrace();
             isSuccess=false;
             mMessage = e.toString();
             toggleCallback();
@@ -455,10 +452,10 @@ public class NetProcessor implements Runnable{
             StringBuilder sb = new StringBuilder();
             while (iter.hasNext()&&!Thread.currentThread().isInterrupted()){
                 Pair<String,String> pair=iter.next();
-                sb.append("--" + BOUNDARY).append(CRLF);
-                sb.append("Content-Disposition:form-data; name=\"" + pair.first + "\"").append(CRLF);
-                sb.append("Content-Type:text/plain charset=utf-8").append(CRLF + CRLF);
-                sb.append(pair.second).append(CRLF);
+                sb.append("--").append(BOUNDARY).append(CRLF)
+                  .append("Content-Disposition:form-data; name=\"" + pair.first + "\"").append(CRLF)
+                  .append("Content-Type:text/plain charset=utf-8").append(CRLF + CRLF)
+                  .append(pair.second).append(CRLF);
                 Tx += sb.toString().getBytes().length;
                 out.write(sb.toString().getBytes());
             }
@@ -470,10 +467,10 @@ public class NetProcessor implements Runnable{
                 StringBuilder sb = new StringBuilder();
                 Pair<String,File> pair = iter.next();
                 if (pair.second != null && pair.second.exists() && pair.second.isFile()) {
-                    sb.append("--" + BOUNDARY).append(CRLF);
-                    sb.append("Content-Disposition:form-data; name=\"" + pair.first + "\";filename=\"" + pair.second.getName() + "\"").append(CRLF);
-                    sb.append("Content-type: " + URLConnection.guessContentTypeFromName(pair.second.getName())).append(CRLF);
-                    sb.append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
+                    sb.append("--" + BOUNDARY).append(CRLF)
+                            .append("Content-Disposition:form-data; name=\"" + pair.first + "\";filename=\"" + pair.second.getName() + "\"").append(CRLF)
+                            .append("Content-type: " + URLConnection.guessContentTypeFromName(pair.second.getName())).append(CRLF)
+                            .append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
                     out.write(sb.toString().getBytes());
                     Tx += sb.toString().getBytes().length;
                     copyFileToStream(pair.second,out);
@@ -495,14 +492,14 @@ public class NetProcessor implements Runnable{
         if (file == null || !file.exists())
             return;
         OutputStream outDelegate=mRequest.isSendGzip()?new GZIPOutputStream(out):out;
-        InputStream in = new FileInputStream(file);
+        InputStream fileIn = new FileInputStream(file);
         byte[] data = new byte[BUFF_LENGTH];
         int len;
         long time = System.currentTimeMillis();
         long count = 0;
         int speed = 0;
 
-        while ((len = in.read(data)) != -1&&!Thread.currentThread().isInterrupted()){
+        while ((len = fileIn.read(data)) != -1&&!Thread.currentThread().isInterrupted()){
             outDelegate.write(data, 0, len);
             count += len;
             speed += len;
@@ -515,6 +512,7 @@ public class NetProcessor implements Runnable{
         }
         if(mRequest.isSendGzip())
             ((GZIPOutputStream)outDelegate).finish();
+        fileIn.close();
     }
 
     /**

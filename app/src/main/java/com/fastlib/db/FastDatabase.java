@@ -746,6 +746,7 @@ public class FastDatabase{
                         Object oldData=FastDatabase.getInstance(mContext,mAttribute.getWhichDatabase()).getFirst(obj.getClass());
                         if (oldData != null) {
                             isUpdate = true;
+                            success=setFilter(And.condition(Condition.equal(Reflect.objToStr(keyValue)))).update(obj);
                         }
                     }
                 } catch (NoSuchFieldException e){

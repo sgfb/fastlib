@@ -173,11 +173,12 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 	 * 如何对待新数据
 	 * @param list
 	 */
-	public void dataRefresh(List<T> list){
-		if(isRefresh)
-			mData = list;
-		else
-			mData.addAll(list);
+	private void dataRefresh(List<T> list){
+		if(isRefresh) mData = list;
+		else{
+			if(list!=null)
+			    mData.addAll(list);
+		}
 	}
 
 	@Override
@@ -187,14 +188,8 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 		List<T> list=translate(result);
 
 		isLoading=false;
-		if(list==null||list.size()<=0){
+		if(list==null||list.size()<mPerCount){
 			isMore=false;
-			if(mViewState!=null)
-				mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
-			return;
-		}
-		if(list.size()<mPerCount){
-			isMore = false;
 			if(mViewState!=null)
 				mViewState.onStateChanged(AdapterViewState.STATE_NO_MORE);
 		}

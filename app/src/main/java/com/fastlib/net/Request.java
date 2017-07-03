@@ -106,6 +106,8 @@ public class Request {
         this.method = method.toUpperCase();
         mUrl = isReplaceChinese?transferSpaceAndChinese(url):url;
         isReplaceChinese=true;
+        isSendGzip=false;
+        isReceiveGzip=false;
         useFactory = true;
         mParams = new ArrayList<>();
         mFiles = new ArrayList<>();
@@ -123,7 +125,6 @@ public class Request {
         isReceiveGzip = false;
         method = null;
         mUrl = null;
-//        mGenericName = null;
         mSendCookies = null;
         mDownloadable = null;
         mSendHeadExtra.clear();
