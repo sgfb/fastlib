@@ -55,56 +55,66 @@ public class ImageUtil{
     }
 
     /**
+     * 生成缩略图
+     * @param limit 最大限制
+     * @param quality 质量
+     * @param path 原图路径
+     * @param parent 压缩图像存储的父路径
+     * @return 图像文件（压缩前后更小的那个图像文件）
+     * @throws IOException
+     */
+    public static File getThumbImageFile(int limit,int quality,String path,String parent)throws IOException{
+        return getThumbImageFile(false,true,limit,quality,path,parent, Bitmap.CompressFormat.JPEG);
+    }
+
+    /**
      * 图像缩略
-     * @param deleteEither 是否删除占空间大的图像
+     * @param deleteBigger 是否删除占空间大的图像
      * @param resultSmaller 是否返回占更小的图像
      * @param limit 限制最大宽高
      * @param quality 图像质量
      * @param path 源图像路径
      * @param parent 压缩图像存储父路径
-     * @return
+     * @param format 存储压缩文件的格式
+     * @return 图像文件（指定压缩后或是更小的图像文件）
      * @throws IOException
      */
-    public static File getThumbImageFile(boolean deleteEither,boolean resultSmaller,int limit,int quality,String path,String parent)throws IOException{
+    public static File getThumbImageFile(boolean deleteBigger, boolean resultSmaller, int limit, int quality, String path, String parent,Bitmap.CompressFormat format)throws IOException{
         File f=new File(path);
         if(f.exists())
             if(Fastlib.isShowLog())
-                System.out.println(f.length());
+                System.out.println("压缩前:"+f.length());
         else
             if(Fastlib.isShowLog())
                 System.out.println("file not exists");
-        File smallerFile,bigerFile;
+        String suffix;
+        if(Bitmap.CompressFormat.JPEG==format)
+            suffix=".jpg";
+        else if(Bitmap.CompressFormat.PNG==format)
+            suffix=".png";
+        else suffix=".webp";
+        File smallerFile,biggerFile;
         Bitmap bitmap=getThumbBitmap(path,limit);
-        File file=getTempFile(new File(parent));
+        File file=getTempFile("compress",suffix,new File(parent));
         FileOutputStream fos =new FileOutputStream(file);
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, quality, stream);
-        byte[] bytes = stream.toByteArray();
-        fos.write(bytes);
-        fos.close();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, quality,fos);
         if(f.length()<file.length()){
             smallerFile=f;
-            bigerFile=file;
+            biggerFile=file;
         }
         else{
             smallerFile=file;
-            bigerFile=f;
+            biggerFile=f;
         }
-        if(deleteEither)
-            bigerFile.delete();
+        if(deleteBigger)
+            biggerFile.delete();
+        if(Fastlib.isShowLog())
+            System.out.println("压缩后:"+file.length());
+        bitmap.recycle();
+        fos.close();
         if(resultSmaller)
             return smallerFile;
         return file;
-    }
-
-    /**
-     * 生成缩略图
-     * @param path
-     * @param limit
-     * @return
-     */
-    public static File getThumbImageFile(int limit,int quality,String path,String parent)throws IOException{
-        return getThumbImageFile(false,false,limit,quality,path,parent);
     }
 
     /**
@@ -293,15 +303,29 @@ public class ImageUtil{
 
     /**
      * 创建可指定父级的临时文件
-     * @param parent
+     * @param parent 父级目录
      */
     public static File getTempFile(@Nullable File parent){
+        return getTempFile(null,null,parent);
+    }
+
+    /**
+     * 创建可指定父级和前缀的临时文件
+     * @param prefix 前缀
+     * @param suffix 后缀
+     * @param parent 父级目录
+     * @return
+     */
+    public static File getTempFile(@Nullable String prefix,@Nullable String suffix,@Nullable File parent){
         File file=null;
+
+        if(prefix==null) prefix="";
+        if(suffix==null) suffix="";
         if(parent!=null&&parent.exists())
-            file=new File(parent.getAbsolutePath()+File.separator+Long.toString(System.currentTimeMillis())+".jpg");
+            file=new File(parent,prefix+System.currentTimeMillis()+suffix);
         else{
             if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
-                file=new File(Environment.getExternalStorageDirectory().getAbsolutePath()+File.separator+System.currentTimeMillis()+".jpg");
+                file=new File(Environment.getExternalStorageDirectory(),prefix+System.currentTimeMillis()+suffix);
         }
         if(file!=null)
             try {
@@ -374,7 +398,6 @@ public class ImageUtil{
 
     /**
      * 获取图片路径（新sdk）
-     *
      * @param uri
      * @param context
      */

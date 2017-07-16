@@ -3,13 +3,13 @@ package com.fastlib.base;
 import android.os.Bundle;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.fastlib.R;
-import com.fastlib.app.FastActivity;
 import com.fastlib.utils.N;
 import com.fastlib.widget.PinchImageView;
 
@@ -19,7 +19,7 @@ import java.util.List;
  * Created by sgfb on 16/3/18.
  * 预览照片模块。支持多图和索引样式替换
  */
-public abstract class AbsPreviewImageActivity extends FastActivity implements ViewPager.OnPageChangeListener{
+public abstract class AbsPreviewImageActivity extends AppCompatActivity implements ViewPager.OnPageChangeListener{
     public static final String ARG_LAYOUT_ID="LAYOUT_ID";
     public static final String ARG_IMAGES ="IMAGES";
     public static final String ARG_INDEX ="INDEX";

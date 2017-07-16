@@ -9,7 +9,7 @@ import android.text.TextUtils;
 public final class Condition {
     public static final int TYPE_NULL=0;
     public static final int TYPE_NOT_NULL=1;
-    public static final int TYPE_BIGER=2;
+    public static final int TYPE_BIGGER =2;
     public static final int TYPE_SMALLER=3;
     public static final int TYPE_EQUAL=4;
     public static final int TYPE_UNEQUAL=5;
@@ -27,44 +27,44 @@ public final class Condition {
         mValue=value;
     }
 
-    public static Condition biger(String value){
-        return biger(null,value);
+    public static Condition bigger(String value){
+        return bigger(null,value);
     }
 
-    public static Condition biger(int value){
-        return biger(Integer.toString(value));
+    public static Condition bigger(int value){
+        return bigger(Integer.toString(value));
     }
 
-    public static Condition biger(long value){
-        return biger(Long.toString(value));
+    public static Condition bigger(long value){
+        return bigger(Long.toString(value));
     }
 
-    public static Condition biger(float value){
-        return biger(Float.toString(value));
+    public static Condition bigger(float value){
+        return bigger(Float.toString(value));
     }
 
-    public static Condition biger(double value){
-        return biger(Double.toString(value));
+    public static Condition bigger(double value){
+        return bigger(Double.toString(value));
     }
 
-    public static Condition biger(String field,int value){
-        return biger(field,Integer.toString(value));
+    public static Condition bigger(String field, int value){
+        return bigger(field,Integer.toString(value));
     }
 
-    public static Condition biger(String field,long value){
-        return biger(field,Long.toString(value));
+    public static Condition bigger(String field, long value){
+        return bigger(field,Long.toString(value));
     }
 
-    public static Condition biger(String field,float value){
-        return biger(field,Float.toString(value));
+    public static Condition bigger(String field, float value){
+        return bigger(field,Float.toString(value));
     }
 
-    public static Condition biger(String field,double value){
-        return biger(field,Double.toString(value));
+    public static Condition bigger(String field, double value){
+        return bigger(field,Double.toString(value));
     }
 
-    public static Condition biger(String field, String value){
-        return new Condition(TYPE_BIGER,field,value);
+    public static Condition bigger(String field, String value){
+        return new Condition(TYPE_BIGGER,field,value);
     }
 
     public static Condition smaller(String value){
@@ -203,7 +203,7 @@ public final class Condition {
     public String getExpression(String key){
         String fieldName= TextUtils.isEmpty(mField)?key:mField;
         switch(mType){
-            case TYPE_BIGER:
+            case TYPE_BIGGER:
                 return fieldName+">?";
             case TYPE_EQUAL:
                 return fieldName+"=?";

@@ -233,10 +233,8 @@ public abstract class FastActivity extends AppCompatActivity{
         EventObserver.getInstance().unsubscribe(this);
         mThreadPool.shutdownNow();
         mThreadPool.purge();
-        for (Request request : mRequests) {
+        for (Request request : mRequests)
             request.clear();
-            request=null;
-        }
         mRequests.clear();
         mRequests=null;
     }

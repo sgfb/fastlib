@@ -57,24 +57,15 @@ public class ViewInject{
                 public void run(){
                     try {
                         m.invoke(mHost);  //先尝试绑定无参方法
-                    } catch (InvocationTargetException e){
-                        try {
-                            m.invoke(mHost,objs);
-                        } catch (IllegalAccessException|IllegalArgumentException e1){
-                            if(Fastlib.isShowLog()){
-                                System.out.println("toggle exception");
-                                e1.printStackTrace();
-                            }
-                        } catch (InvocationTargetException e2) {
-                            if(Fastlib.isShowLog()){
-                                System.out.println("toggle exception");
-                                e2.printStackTrace();
-                            }
+                    } catch (InvocationTargetException e){ //这个异常是非方法参数异常所以直接显示或抛出
+                        if(Fastlib.isShowLog()){
+                            System.out.println("toggle exception");
+                            e.printStackTrace();
                         }
                     } catch (IllegalAccessException e) {
                         try {
                             m.invoke(mHost,objs);
-                        } catch (IllegalAccessException|IllegalArgumentException e1) {
+                        } catch (IllegalAccessException e1) {
                             if(Fastlib.isShowLog()){
                                 System.out.println("toggle exception");
                                 e1.printStackTrace();

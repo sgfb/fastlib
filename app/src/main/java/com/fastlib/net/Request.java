@@ -127,9 +127,12 @@ public class Request {
         mUrl = null;
         mSendCookies = null;
         mDownloadable = null;
-        mSendHeadExtra.clear();
-        mParams.clear();
-        mFiles.clear();
+        if(mSendHeadExtra!=null)
+            mSendHeadExtra.clear();
+        if(mParams!=null)
+            mParams.clear();
+        if(mFiles!=null)
+            mFiles.clear();
         mType = RequestType.DEFAULT;
         mTag = null;
         mReceiveCookies = null;
@@ -156,7 +159,7 @@ public class Request {
             return false;
         Request another = (Request) o;
         //如果url和上传的参数，文件都相同那么认为这个网络请求是同一个
-        return another == this || (another.getUrl().equals(mUrl) && another.getParamsRaw().equals(mParams) && another.getFiles().equals(mFiles));
+        return another == this || (TextUtils.equals(mUrl,another.getUrl()) && another.getParamsRaw().equals(mParams) && another.getFiles().equals(mFiles));
     }
 
     public Request start() {
@@ -833,8 +836,27 @@ public class Request {
     }
 
     @Override
-    public String toString() {
-        return "url:" + mUrl + " method:" + method + " params:" + mParams + " uploadFile:" + mFiles;
+    public String toString(){
+        StringBuilder paramsStr=new StringBuilder();
+        StringBuilder uploadFileStr=new StringBuilder();
+
+        paramsStr.append("params:").append("[");
+        if(mParams!=null&&!mParams.isEmpty()){
+            for(Pair<String,String> pair:mParams)
+                paramsStr.append("{").append(pair.first).append(",").append(pair.second).append("}").append(",");
+            paramsStr.deleteCharAt(paramsStr.length()-1); //去掉最后的逗号
+        }
+        paramsStr.append("]");
+        uploadFileStr.append("files:").append("[");
+        if(mFiles!=null&&!mFiles.isEmpty()){
+            for(Pair<String,File> pair:mFiles)
+                uploadFileStr.append("{").append(pair.first).append(",").append(pair.second).append("}").append(",");
+            uploadFileStr.deleteCharAt(uploadFileStr.length()-1);
+        }
+        uploadFileStr.append("]");
+        return "url:" + mUrl + " method:" + method + "\n" +
+                paramsStr.toString() + "\n" +
+                uploadFileStr.toString();
     }
 
     /**

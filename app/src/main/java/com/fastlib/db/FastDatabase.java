@@ -41,6 +41,7 @@ public class FastDatabase{
     private CustomUpdate mCustomUpdate;
     private Context mContext;
     private RuntimeAttribute mAttribute;
+    private FunctionCommand mFunctionCommand;
 
     private FastDatabase(Context context){
         mContext = context.getApplicationContext();
@@ -204,8 +205,8 @@ public class FastDatabase{
             database.close();
             return null;
         }
-        cursor.moveToFirst();
         Gson gson = new Gson();
+        cursor.moveToFirst();
         while (!cursor.isAfterLast()){
             try {
                 Object[] constructorParams=mAttribute.getConstructorParams();
@@ -213,7 +214,7 @@ public class FastDatabase{
                 Field[] fields = cla.getDeclaredFields();
                 Map<String,Object> params=new HashMap<>();
 
-                for (Field field : fields) {
+                for (Field field : fields){
                     Database inject = field.getAnnotation(Database.class);
                     field.setAccessible(true);
                     String type = field.getType().getSimpleName();
@@ -232,7 +233,31 @@ public class FastDatabase{
                         field.set(obj, gson.fromJson(json, field.getType()));
                         continue;
                     }
-
+                    //函数命令,仅对第一个参数有效
+                    if(mFunctionCommand!=null&&field.getName().equals(mFunctionCommand.getFieldName())){
+                        boolean functionSuccess=false;
+                        List<String> functionArgs=new ArrayList<>();
+                        Cursor functionCursor=database.rawQuery("select "+mFunctionCommand.getType().getName()+"("+mFunctionCommand.getFieldName()+")"+" from '"+tableName+
+                                "' "+getFilters(key,mFunctionCommand.getFilterCommand(),functionArgs),functionArgs.toArray(new String[]{}));
+                        if(functionCursor!=null){
+                            functionCursor.moveToFirst();
+                            if(field.getType()==int.class||field.getType()==long.class){
+                                long value=functionCursor.getLong(0);
+                                if(field.getType()==int.class) field.setInt(obj,(int)value);
+                                else field.setLong(obj,value);
+                                functionSuccess=true;
+                            }
+                            else if(field.getType()==float.class||field.getType()==double.class){
+                                double value=functionCursor.getDouble(0);
+                                if(field.getType()==float.class) field.setFloat(obj,(float)value);
+                                else field.setDouble(obj,value);
+                                functionSuccess=true;
+                            }
+                            functionCursor.close();
+                        }
+                        mFunctionCommand=null; //清除掉函数命令
+                        if(functionSuccess) continue;
+                    }
                     switch (type) {
                         case "int":
                             if(obj!=null) field.setInt(obj, cursor.getInt(columnIndex));
@@ -704,7 +729,7 @@ public class FastDatabase{
      * @param objs
      * @return
      */
-    private boolean saveOrUpdate(Object[] objs) {
+    private boolean saveOrUpdate(Object[] objs){
         Object obj = null;
         String tableName;
         boolean isUpdate = false;
@@ -1311,7 +1336,6 @@ public class FastDatabase{
 
     /**
      * 编译过滤语句
-     *
      * @param key           主键名
      * @param filterCommand 过滤命令
      * @param args          对应值
@@ -1425,6 +1449,11 @@ public class FastDatabase{
         }
         db.close();
         return false;
+    }
+
+    public FastDatabase setFunctionCommand(FunctionCommand functionCommand) {
+        mFunctionCommand = functionCommand;
+        return this;
     }
 
     /**

@@ -4,7 +4,9 @@ import android.content.Context;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.SparseArray;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -12,7 +14,7 @@ import android.widget.TextView;
 /**
  * 通用View持有者
  */
-public class OldViewHolder {
+public class OldViewHolder{
 	private SparseArray<View> mViews;
 	private View mConvertView;
 	private int mLayoutId;
@@ -32,7 +34,7 @@ public class OldViewHolder {
 	 * @param layoutId 布局id
 	 * @return View持有者
 	 */
-	public static OldViewHolder get(Context context, View convertView, ViewGroup parent, int layoutId) {
+	public static OldViewHolder get(Context context, View convertView, ViewGroup parent, int layoutId){
 		if (convertView == null)
 			return new OldViewHolder(context, parent, layoutId);
 		else if (convertView.getTag() instanceof OldViewHolder&&((OldViewHolder)convertView.getTag()).mLayoutId==layoutId)

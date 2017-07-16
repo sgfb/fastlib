@@ -99,7 +99,7 @@ public abstract class DatabaseAdapter<T> extends BaseAdapter implements Database
     public void onResult(List<T> result){
         isLoading=false;
         if(mRefreshable!=null)
-            mRefreshable.setRefreshing(false);
+            mRefreshable.setRefreshStatus(false);
         if(result==null||result.isEmpty())
             isMore = false;
         if(isRefresh)
