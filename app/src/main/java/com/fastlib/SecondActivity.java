@@ -1,6 +1,8 @@
 package com.fastlib;
 
+import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.Application;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
@@ -13,6 +15,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.gesture.Gesture;
+import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.hardware.SensorManager;
 import android.hardware.usb.UsbConstants;
@@ -42,6 +45,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.widget.TextView;
@@ -84,11 +88,12 @@ import java.util.Map;
 /**
  * Created by sgfb on 17/6/26.
  */
-@ContentView(R.layout.act_main_2)
+@ContentView(R.layout.main)
 public class SecondActivity extends FastActivity{
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
+        EventObserver.build(this);
         super.onCreate(savedInstanceState);
     }
 
@@ -99,30 +104,10 @@ public class SecondActivity extends FastActivity{
 
     @Bind(R.id.bt1)
     private void commit(View v){
-        LoadingDialog.show(this);
-        v.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                LoadingDialog.dismissNow(SecondActivity.this);
-            }
-        },5000);
+        N.showShort(this,Boolean.toString(BuildConfig.DEBUG));
     }
 
     @Bind(R.id.bt2)
     private void commit2(final View v){
-        final LoadingDialog loading=new LoadingDialog();
-        loading.show(getSupportFragmentManager(),"loading");
-        loading.setHint("just test");
-        v.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                loading.dismiss();
-            }
-        },2000);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
     }
 }

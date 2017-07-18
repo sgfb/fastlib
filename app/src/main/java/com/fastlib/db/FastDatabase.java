@@ -34,10 +34,9 @@ import android.text.TextUtils;
  * @author sgfb
  */
 public class FastDatabase{
-    public final String TAG = FastDatabase.class.getSimpleName();
-
     private static final String DEFAULT_DATABASE_NAME = "default";
     private static DatabaseConfig sConfig=new DatabaseConfig();
+
     private CustomUpdate mCustomUpdate;
     private Context mContext;
     private RuntimeAttribute mAttribute;

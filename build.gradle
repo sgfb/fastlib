@@ -15,13 +15,6 @@ buildscript {
 allprojects {
     repositories{
         jcenter()
-//        maven {
-//            url = "http://shenhf.cn:8081/content/repositories/android/"
-//        }
-//        maven {
-//            url "http://mvn.gt.igexin.com/nexus/content/repositories/releases/"
-//        }
-//        maven { url 'http://repo.baichuan-android.taobao.com/content/groups/BaichuanRepositories/' }
     }
 }
 
