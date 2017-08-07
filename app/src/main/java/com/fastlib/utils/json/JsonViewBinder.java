@@ -22,24 +22,25 @@ import java.util.Map;
  * Created by sgfb on 16/4/23.
  * Json键名对id自动绑定数据与视图
  */
-public class JsonViewBinder {
-    private Map<Class,ViewResolve> mResolves;
+public class JsonViewBinder{
+    private Map<Class,ViewResolve> mResolves; //视图类型和对应解析器
     private Map<String,Integer> mNameWithId; //视图id值与视图名映射
     private Context mContext;
     private View mRootView;
 
-    public JsonViewBinder(Context context){
-        this(context, null);
-    }
-
     /**
      * 应在setContentView之后使用此构造
-     * @param activity
+     * @param activity 主模块
      */
     public JsonViewBinder(Activity activity){
         this(activity,activity.findViewById(android.R.id.content));
     }
 
+    /**
+     * 指定上下文和相对根视图
+     * @param context 上下文
+     * @param convertView 相对根视图
+     */
     public JsonViewBinder(Context context, View convertView){
         mContext=context;
         mResolves=new HashMap<>();
@@ -57,23 +58,46 @@ public class JsonViewBinder {
 
     /**
      * 绑定json数据到视图,使用解析时的根视图
-     * @param data
+     * @param data 映射数据
      */
-    public void bindDataToViwe(Map<String,Object> data){
-        bindDataToViwe(mRootView,data);
+    public void bindDataToView(Map<String,Object> data){
+        bindDataToView(mRootView,data);
     }
 
     /**
      * 绑定json数据到视图,使用自定义的根视图
-     * @param root
-     * @param data
+     * @param root 指定根视图
+     * @param data 映射数据
      */
-    public void bindDataToViwe(View root, Map<String,Object> data){
-        bindDataToViwe(root,data, mNameWithId);
+    public void bindDataToView(View root, Map<String,Object> data){
+        bindDataToView(root,data, mNameWithId);
     }
 
-    public void bindDataToView(View v, JsonObject jo){
+    /**
+     * 绑定json数据到视图
+     * @param json json字符串
+     */
+    public void bindDataToView(String json) throws IOException{
+        bindDataToView(FastJson.fromJson(json));
+    }
 
+    /**
+     * 绑定json数据到视图
+     * @param jo json对象
+     */
+    public void bindDataToView(JsonObject jo){
+        for(Map.Entry<String,Integer> entry:mNameWithId.entrySet()){
+            Integer id=entry.getValue();
+            if(id==null)
+                continue;
+            View view=mRootView.findViewById(id);
+            if(view==null)
+                continue;
+            ViewResolve vr=mResolves.get(view.getClass());
+            Object obj=jo.findValue(entry.getKey(),true,null);
+            if(vr!=null&&obj!=null)
+                vr.resolve(view,obj);
+        }
     }
 
     /**
@@ -82,7 +106,7 @@ public class JsonViewBinder {
      * @param data
      * @param views
      */
-    public void bindDataToViwe(View root,Map<String,Object> data, Map<String,Integer> views){
+    public void bindDataToView(View root, Map<String,Object> data, Map<String,Integer> views){
         Iterator<String> iter=data.keySet().iterator();
         while(iter.hasNext()){
             String key=iter.next();

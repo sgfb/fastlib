@@ -34,7 +34,7 @@ import java.net.URL;
  * 简易webview模块
  */
 public abstract class AbsWebViewActivity extends AppCompatActivity {
-    public static final String ARG_URL = "url";
+    public static final String ARG_URL = "URL";
     public static final String ARG_TITLE = "title";
     public static final String ARG_DATA = "data"; //本地html数据
 

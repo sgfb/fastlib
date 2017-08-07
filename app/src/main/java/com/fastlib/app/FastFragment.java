@@ -91,14 +91,6 @@ public abstract class FastFragment extends Fragment{
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-//        mThreadPool.execute(new Runnable() {
-//            @Override
-//            public void run() {
-//                ViewInject.inject(FastFragment.this,mThreadPool);
-//                prepareTask();
-//
-//            }
-//        });
         mThreadPool.execute(new Runnable(){
             @Override
             public void run() {

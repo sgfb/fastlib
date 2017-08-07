@@ -27,6 +27,19 @@ public class OldViewHolder{
 	}
 
 	/**
+	 * 初始化View持有者
+	 * @param rootView 根视图
+     */
+	private OldViewHolder(View rootView){
+		this.mViews=new SparseArray<>();
+		this.mConvertView=rootView;
+	}
+
+	public static OldViewHolder get(View rootView){
+		return new OldViewHolder(rootView);
+	}
+
+	/**
 	 * 获取ViewHolder实例
 	 * @param context 上下文
 	 * @param convertView 根view

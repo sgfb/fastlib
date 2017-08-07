@@ -30,7 +30,6 @@ import com.fastlib.app.Fastlib;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -482,7 +481,7 @@ public class ImageUtil{
      * @param filePath
      * @return
      */
-    private static Bitmap getVideFirstFrame(String filePath) {
+    private static Bitmap getVideoFirstFrame(String filePath) {
         Bitmap bitmap;
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         retriever.setDataSource(filePath);
@@ -492,7 +491,7 @@ public class ImageUtil{
     }
 
     public static void saveVideoFrame(Context context,String srcFilePath,String name) throws IOException {
-        Bitmap bitmap=getVideFirstFrame(srcFilePath);
+        Bitmap bitmap= getVideoFirstFrame(srcFilePath);
         if(bitmap!=null)
             saveImage(context,name,bitmap);
     }

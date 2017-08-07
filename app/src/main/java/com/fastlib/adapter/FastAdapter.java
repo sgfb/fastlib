@@ -61,7 +61,8 @@ public abstract class FastAdapter<T> extends BaseAdapter{
      * @param list
      */
     public void setData(List<T> list){
-        mData=list;
+        if(list==null) mData.clear();
+        else mData=list;
         notifyDataSetChanged();
     }
 

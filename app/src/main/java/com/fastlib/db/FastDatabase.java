@@ -885,8 +885,7 @@ public class FastDatabase{
 
     /**
      * 排序
-     *
-     * @param asc        如果是true为升序，反之降序
+     * @param asc  如果是true为升序，反之降序
      * @param columnName
      * @return
      */
@@ -910,7 +909,6 @@ public class FastDatabase{
 
     /**
      * 仅取某些列字段
-     *
      * @param columns
      * @return current database
      */
@@ -1450,6 +1448,11 @@ public class FastDatabase{
         return false;
     }
 
+    /**
+     * sql函数过滤
+     * @param functionCommand
+     * @return
+     */
     public FastDatabase setFunctionCommand(FunctionCommand functionCommand) {
         mFunctionCommand = functionCommand;
         return this;

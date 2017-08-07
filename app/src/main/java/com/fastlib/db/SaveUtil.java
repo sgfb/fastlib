@@ -11,8 +11,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 /**
@@ -135,8 +133,8 @@ public class SaveUtil{
      * @param def
      * @return
      */
-    public static Object getFromSp(Context context,String key,Object def){
-        return getFromSp(context,sSpName,key,def);
+    public static <T> T getFromSp(Context context,String key,T def){
+        return (T) getFromSp(context,sSpName,key,def);
     }
 
     /**
@@ -147,60 +145,34 @@ public class SaveUtil{
      * @param def
      * @return
      */
-    public static Object getFromSp(Context context,String name,String key,Object def){
+    public static <T> T getFromSp(Context context,String name,String key,T def){
         Object obj=getFromSp(context,name,key);
         if(obj==null)
             obj=def;
-        return obj;
+        return (T) obj;
     }
 
     /**
-     * 简单存储字符串到指定文件中
-     * @param file
-     * @param str
+     * 简单存储数据到指定文件中
+     * @param file 指定文件
+     * @param data 要存储的数据
      * @throws IOException
      */
-    public static void saveToFile(File file,String str,boolean append)throws IOException{
+    public static void saveToFile(File file,byte[] data,boolean append)throws IOException{
         OutputStream out=new FileOutputStream(file,append);
-        out.write(str.getBytes());
+        out.write(data);
         out.close();
-    }
-
-    /**
-     * 存储数据到指定文件
-     * @param file
-     * @param obj
-     * @throws IOException
-     */
-    public static void saveToFile(File file,Object obj) throws IOException {
-        ObjectOutputStream out=new ObjectOutputStream(new FileOutputStream(file));
-        out.writeObject(obj);
-        out.close();
-    }
-
-    /**
-     * 从指定文件中取出数据
-     * @param file
-     * @return
-     * @throws IOException
-     * @throws ClassNotFoundException
-     */
-    public static Object getFromFile(File file) throws IOException, ClassNotFoundException {
-        ObjectInputStream in=new ObjectInputStream(new FileInputStream(file));
-        Object obj=in.readObject();
-        in.close();
-        return obj;
     }
 
     /**
      * 保存数据到内部
      * @param context 上下文
      * @param name 包含后缀名
-     * @param obj 数据
+     * @param data 数据
      * @param isCache 是否缓存
      * @throws IOException
      */
-    public static void saveToInternal(Context context,String name,Object obj,boolean isCache) throws IOException {
+    public static void saveToInternal(Context context,String name,byte[] data,boolean isCache) throws IOException {
         File directory=isCache?context.getCacheDir():context.getFilesDir();
         File file=new File(directory+File.separator+name);
         file.createNewFile();
@@ -208,7 +180,7 @@ public class SaveUtil{
             Log.w(TAG,"文件创建失败");
             return;
         }
-        saveToFile(file, obj);
+        saveToFile(file,data,false);
     }
 
     /**
@@ -239,8 +211,8 @@ public class SaveUtil{
 
     /**
      * 文件或文件夹占用容量.应将此方法置于工作线程中
-     * @param file
-     * @return
+     * @param file 要查询的文件
+     * @return 文件或文件夹及底下所有文件占用空间
      */
     public static long fileSize(File file){
         long count=0;
@@ -254,6 +226,33 @@ public class SaveUtil{
                 count+=fileSize(f);
         }
         return count;
+    }
+
+    /**
+     * 文件或文件夹占用容量.应将此方法置于工作线程中
+     * @param file 要查询的文件
+     * @return 文件或文件夹及底下所有文件占用空间和数量(包括根文件数)
+     */
+    public static FileSizeWrapper fileSizeDetail(File file){
+        FileSizeWrapper wrapper=new FileSizeWrapper();
+        if(file==null||!file.exists()||Thread.currentThread().isInterrupted())
+            return wrapper;
+        if(file.isFile()){
+            wrapper.fileCount=1;
+            wrapper.directionCount=0;
+            wrapper.fileSizeCount=file.length();
+        }
+        else{
+            File[] files=file.listFiles();
+            for(File f:files){
+                FileSizeWrapper childWrapper=fileSizeDetail(f);
+                wrapper.fileCount+=childWrapper.fileCount;
+                wrapper.directionCount+=childWrapper.directionCount;
+                wrapper.fileSizeCount+=childWrapper.fileSizeCount;
+            }
+            wrapper.directionCount+=1;
+        }
+        return wrapper;
     }
 
     /**
@@ -287,5 +286,19 @@ public class SaveUtil{
             }
         }
         return true;
+    }
+
+    /**
+     * 文件夹底下的文件和文件夹数量.总占空间
+     */
+    public static class FileSizeWrapper {
+        public int directionCount;
+        public int fileCount;
+        public long fileSizeCount;
+
+        @Override
+        public String toString() {
+            return "directionCount:"+directionCount+" fileCount:"+fileCount+" fileSizeCount:"+fileSizeCount;
+        }
     }
 }

@@ -111,11 +111,9 @@ public class Utils{
 
     /**
      * 对字符串进行MD5加密
-     * @param source
-     * 			需要进行加密的字符串
-     * @param is16bits
-     * 			加密长度,true为16位反之32位
-     * @return
+     * @param source 需要进行加密的字符串
+     * @param is16bits 加密长度,true为16位反之32位
+     * @return MD5加密后字符串
      */
     public static String getMd5(String source,boolean is16bits){
         MessageDigest messageDigest = null;
@@ -148,9 +146,9 @@ public class Utils{
 
     /**
      * sha1文件检验
-     * @param filePath
+     * @param filePath 文件路径
      * @param type 文件校验类型
-     * @return
+     * @return sha1文件校验码
      */
     public static String getFileVerify(String filePath,FileVerifyType type){
         String typeStr="SHA-1";
@@ -185,8 +183,8 @@ public class Utils{
 
     /**
      * 是否是正规手机号
-     * @param phone
-     * @return
+     * @param phone 验证号码
+     * @return true是手机号，否则false
      */
     public static boolean isPhoneNumber(String phone){
         if(TextUtils.isEmpty(phone)) return false;
@@ -227,6 +225,20 @@ public class Utils{
 		return flag;
 	}
 
+    /**
+     * 多字节转数字。默认小数端,最多处理8字节
+     * @param bytes
+     * @return
+     */
+    public static long bytesToNumber(byte... bytes){
+        long number=0;
+        for(int i=0;i<bytes.length;i++){
+            long temp=bytes[i];
+            number+=temp<<(i*8);
+        }
+        return number;
+    }
+
     public static int bytesToInt(byte... data){
         int var=0;
         for(int i=0;i<data.length;i++){
@@ -234,15 +246,6 @@ public class Utils{
             var|=((0xff&middle)<<i*8);
         }
         return var;
-    }
-
-    public static int bytesToInt(int start,int end,byte... data){
-        if(end<start)
-            throw new IllegalArgumentException("start大于end");
-        byte[] bytes=new byte[end-start];
-        for (int i=0;i<end-start;i++)
-            bytes[i]=data[start+i];
-        return bytesToInt(bytes);
     }
 
     /**

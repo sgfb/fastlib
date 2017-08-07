@@ -34,8 +34,8 @@ public final class JsonObject{
      * @return
      * @throws ClassCastException
      */
-    public <T> T findValue(String key)throws ClassCastException{
-        return findValue(key,false);
+    public <T> T findValue(String key,T defaultValue)throws ClassCastException{
+        return findValue(key,false,defaultValue);
     }
 
     /**
@@ -47,18 +47,18 @@ public final class JsonObject{
      * @return
      */
     public <T> T findValue(Context context, @IdRes int id) throws ClassCastException{
-        return findValue(context.getResources().getResourceEntryName(id),true);
+        return findValue(context.getResources().getResourceEntryName(id),true,null);
     }
 
     /**
      * 根据键名返回值
-     * @param key
+     * @param key 键
      * @param deep 是否逐层寻找
-     * @param <T>
+     * @param <T> 一般泛型
      * @return
      * @throws ClassCastException
      */
-    public <T> T findValue(String key,boolean deep)throws ClassCastException{
+    public <T> T findValue(String key,boolean deep,T defaultValue)throws ClassCastException{
         if(TextUtils.equals(mKey,key))
             return getValue();
         else{
@@ -66,17 +66,17 @@ public final class JsonObject{
                 Map<String,JsonObject> joMap= (Map<String, JsonObject>) mValue;
                 JsonObject jo=joMap.get(key);
                 if(jo!=null)
-                    return jo.findValue(key);
+                    return jo.findValue(key,null);
                 else{
                     if(deep){
                         Iterator<String> iter = joMap.keySet().iterator();
                         while (iter.hasNext())
-                            return joMap.get(iter.next()).findValue(key);
+                            return joMap.get(iter.next()).findValue(key,null);
                     }
                 }
             }
         }
-        throw new ClassCastException();
+        return defaultValue;
     }
 
     /**

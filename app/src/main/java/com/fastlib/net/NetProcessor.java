@@ -27,7 +27,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -35,6 +34,8 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
+import javax.net.ssl.HttpsURLConnection;
 
 /**
  * 网络请求的具体处理.在结束时会保存一些状态<br/>
@@ -45,7 +46,6 @@ public class NetProcessor implements Runnable{
     private final String CRLF = "\r\n";
     private final String END = "--" + BOUNDARY + "--" + CRLF;
     private final int BUFF_LENGTH = 4096;
-//    private final int CHUNK_LENGTH = 4096;
 
     public static long mDiffServerTime; //与服务器时间差
 
@@ -89,14 +89,13 @@ public class NetProcessor implements Runnable{
             URL url = new URL(isPost?mRequest.getUrl():splicingGetUrl());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
-            if(isPost&&(mRequest.getFiles() != null && mRequest.getFiles().size() > 0)){
+            if(isPost&&(mRequest.getFiles() != null && mRequest.getFiles().size() > 0))
                 isMulti = true;
-//                connection.setChunkedStreamingMode(CHUNK_LENGTH);
-            }
             //添加额外信息到头部
             if (mRequest.getSendHeadExtra() != null) {
-                for (Pair<String, String> pair : mRequest.getSendHeadExtra())
-                    connection.addRequestProperty(pair.first, pair.second);
+                for (Request.ExtraHeader extra : mRequest.getSendHeadExtra())
+                    if(extra.canDuplication) connection.addRequestProperty(extra.field,extra.value);
+                    else connection.setRequestProperty(extra.field,extra.value);
             }
             //检测是否可保存为文件
             if (mRequest.downloadable()) {
@@ -128,9 +127,15 @@ public class NetProcessor implements Runnable{
                 else{
                     //如果原始字节流存在，发送原始字节流，否则发送标准参数
                     byte[] rawBytes=mRequest.getByteStream();
-                    if(rawBytes!=null&&rawBytes.length>0){
-                        Tx+=rawBytes.length;
-                        out.write(rawBytes);
+                    if(rawBytes!=null){
+                        if(rawBytes.length==0){
+                            Gson gson=new Gson();
+                            rawBytes=gson.toJson(mRequest.getParams()).getBytes();
+                        }
+                        if(rawBytes.length!=0){
+                            Tx+=rawBytes.length;
+                            out.write(rawBytes);
+                        }
                     }
                     else{
                         StringBuilder sb = new StringBuilder();
@@ -142,6 +147,7 @@ public class NetProcessor implements Runnable{
                 }
                 out.close();
             }
+            checkErrorStream(connection,connectionTimer); //判断返回码是否200.不是的话做额外处理
             in=mRequest.isReceiveGzip()?new GZIPInputStream(connection.getInputStream()):connection.getInputStream();
             int len;
             byte[] data = new byte[BUFF_LENGTH];
@@ -201,6 +207,28 @@ public class NetProcessor implements Runnable{
         } finally {
             if (mListener != null)
                 mListener.onComplete(this);
+        }
+    }
+
+    /**
+     * 检测错误流
+     * @param connection
+     * @param requestTime
+     * @throws IOException
+     */
+    private void checkErrorStream(HttpURLConnection connection,long requestTime) throws IOException{
+        ByteArrayOutputStream baos=new ByteArrayOutputStream();
+        if(connection.getResponseCode()!= HttpURLConnection.HTTP_OK){
+            byte[] errbyte=new byte[4096];
+            int len;
+            while((len=connection.getErrorStream().read(errbyte))!=-1)
+                baos.write(errbyte,0,len);
+            ResponseStatus status=new ResponseStatus();
+            status.message=connection.getResponseMessage();
+            status.code=connection.getResponseCode();
+            status.time=System.currentTimeMillis()-requestTime;
+            mRequest.setResponseStatus(status);
+            throw new NetException(baos.toString());
         }
     }
 
@@ -272,7 +300,8 @@ public class NetProcessor implements Runnable{
      * 触发回调，必定触发的回调，除非遇到致命错误
      */
     private void toggleCallback(){
-        final Listener gloablListener=NetManager.getInstance().getGlobalListener();
+        final GlobalListener globalListener=(NetManager.getInstance().getGlobalListener()==null||
+                !mRequest.isAcceptGlobalCallback()?new GlobalListener():NetManager.getInstance().getGlobalListener()); //如果这次请求不允许全局回调或者全局回调为空，返回空白全局回调，简化if判断
         final Listener l = mRequest.getListener();
         if(l==null||Thread.currentThread().isInterrupted())
             return;
@@ -288,26 +317,23 @@ public class NetProcessor implements Runnable{
                 hostAvailable = false;
         }
         if (hostAvailable){
-            if(gloablListener!=null)
-                l.onRawData(mRequest,mResponse);
+            mResponse=globalListener.onRawData(mRequest,mResponse);
             l.onRawData(mRequest,mResponse);
             Type[] realType = mRequest.getGenericType();
             int realTypeIndex=1;
             String json=null;
 
             try {
-                final Object responseObj;
+                Object responseObj;
                 if (entityIsRawType(realType))
                     responseObj = mResponse;
                 else if (entityIsStringType(realType)){
                     responseObj = mResponse==null?"":new String(mResponse);
-                    if(gloablListener!=null)
-                        gloablListener.onTranslateJson(mRequest,(String)responseObj);
+                    responseObj=globalListener.onTranslateJson(mRequest,(String)responseObj);
                     l.onTranslateJson(mRequest,(String) responseObj);
                 }else{
                     json=mResponse==null?"":new String(mResponse);
-                    if(gloablListener!=null)
-                        gloablListener.onTranslateJson(mRequest,json);
+                    json=globalListener.onTranslateJson(mRequest,json);
                     l.onTranslateJson(mRequest,json);
                     Pair<Integer,Object> pair=mResponse==null?null:guessJsonEntity(json,realType);
                     if(pair!=null){
@@ -318,19 +344,20 @@ public class NetProcessor implements Runnable{
                         responseObj=null;
                 }
                 final int fRealTypeIndex=realTypeIndex;
+                final Object fResponseObj=responseObj;
                 if(isSuccess){
                     mResponsePoster.execute(new Runnable(){
                         @Override
                         public void run(){
                             switch (fRealTypeIndex){
-                                case 1:l.onResponseListener(mRequest,responseObj,null,null);
-                                    if(gloablListener!=null) gloablListener.onResponseListener(mRequest,responseObj,null,null);
+                                case 1:l.onResponseListener(mRequest,fResponseObj,null,null);
+                                    globalListener.onResponseListener(mRequest,fResponseObj,null,null);
                                     break;
-                                case 2:l.onResponseListener(mRequest,null,responseObj,null);
-                                    if(gloablListener!=null) gloablListener.onResponseListener(mRequest,null,responseObj,null);
+                                case 2:l.onResponseListener(mRequest,null,fResponseObj,null);
+                                    globalListener.onResponseListener(mRequest,null,fResponseObj,null);
                                     break;
-                                case 3:l.onResponseListener(mRequest,null,null,responseObj);
-                                    if(gloablListener!=null) gloablListener.onResponseListener(mRequest,null,null,responseObj);
+                                case 3:l.onResponseListener(mRequest,null,null,fResponseObj);
+                                    globalListener.onResponseListener(mRequest,null,null,fResponseObj);
                                     break;
                             }
                         }
@@ -344,9 +371,8 @@ public class NetProcessor implements Runnable{
                 mResponsePoster.execute(new Runnable(){
                     @Override
                     public void run(){
-                        if(gloablListener!=null)
-                            gloablListener.onErrorListener(mRequest,mMessage);
-                        l.onErrorListener(mRequest, mMessage);
+                        mMessage=globalListener.onErrorListener(mRequest,mMessage);
+                        l.onErrorListener(mRequest,mMessage);
                     }
                 });
             }

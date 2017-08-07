@@ -197,21 +197,21 @@ public class ViewInject{
                             System.out.println(e.getMessage());
                         }
                     }
-                    else{
-                        //如果视图id是空的，尝试根据属性名绑定对应视图
-                        String name=field.getName();
-                        int viewId;
-                        try{
-                            if((viewId=mRoot.getResources().getIdentifier(name,"id",mRoot.getContext().getPackageName()))!=0){
-                                View view=mRoot.findViewById(viewId);
-                                field.setAccessible(true);
-                                field.set(mHost,view);
-                            }
-                        }catch(IllegalAccessException e){
-                            if(Fastlib.isShowLog())
-                                System.out.println(e.getMessage());
-                        }
-                    }
+//                    else{
+//                        //如果视图id是空的，尝试根据属性名绑定对应视图
+//                        String name=field.getName();
+//                        int viewId;
+//                        try{
+//                            if((viewId=mRoot.getResources().getIdentifier(name,"id",mRoot.getContext().getPackageName()))!=0){
+//                                View view=mRoot.findViewById(viewId);
+//                                field.setAccessible(true);
+//                                field.set(mHost,view);
+//                            }
+//                        }catch(IllegalAccessException e){
+//                            if(Fastlib.isShowLog())
+//                                System.out.println(e.getMessage());
+//                        }
+//                    }
                 }
             }
     }

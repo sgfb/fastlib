@@ -1,4 +1,4 @@
-package com.hzhanghuan.autoinsurance.common.widget;
+package com.fastlib.adapter;
 
 import android.content.Context;
 import android.graphics.Point;
@@ -17,11 +17,11 @@ import java.util.List;
  * Created by sgfb on 17/5/20.
  * 根据type来决定位置的多类型item适配器
  */
-public abstract class MultiAdapter2 extends BaseAdapter{
+public abstract class MultiAdapter extends BaseAdapter{
     protected Context mContext;
     protected List<ItemGroup> mData;  //类型与索引对齐 类型0对于List(0)
 
-    public MultiAdapter2(Context context){
+    public MultiAdapter(Context context){
         mContext = context;
         mData =new ArrayList<>();
     }

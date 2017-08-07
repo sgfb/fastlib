@@ -9,7 +9,7 @@ import java.util.List;
  * 网络全局数据
  */
 public class NetGlobalData{
-    public Pair<String,String>[] mHeads;
+    public Request.ExtraHeader[] mHeads;
     public Pair<String,String>[] mParams;
     public List<Pair<String, String>> mCookies;
 }

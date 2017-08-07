@@ -21,6 +21,9 @@ import com.fastlib.utils.PermissionHelper;
 import com.fastlib.utils.ViewInject;
 
 import java.io.File;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -39,10 +42,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 public abstract class FastActivity extends AppCompatActivity{
     protected ThreadPoolExecutor mThreadPool;
     protected PermissionHelper mPermissionHelper;
+    protected volatile int mPreparedTaskRemain=4; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
 
     private boolean isGatingPhoto; //是否正在获取图像
     private boolean isHadTransitionAnimation=false;
-    private volatile int mPreparedTaskRemain=2; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
     private Thread mMainThread;
     private LocalDataInject mLocalDataInject;
     private PhotoResultListener mPhotoResultListener;
@@ -57,19 +60,39 @@ public abstract class FastActivity extends AppCompatActivity{
         mPermissionHelper=new PermissionHelper(this);
         mLocalDataInject=new LocalDataInject(this);
         mThreadPool=generateThreadPool();
-        mThreadPool.execute(new Runnable() {
+        checkTransitionInject();
+        checkContentViewInject();
+        checkRuntimePermissionInject();
+        mThreadPool.execute(new Runnable(){
             @Override
             public void run() {
                 EventObserver.getInstance().subscribe(FastActivity.this);
+                prepareTask();
             }
         });
-        checkTransitionInject();
-        checkContentViewInject();
+    }
+
+    private void checkRuntimePermissionInject(){
+        mThreadPool.execute(new Runnable() {
+            @Override
+            public void run(){
+                mPermissionHelper.checkPermissionInject(FastActivity.this);
+                prepareTask();
+            }
+        });
+    }
+
+    /**
+     * 调起需要权限的方法(测试方法)
+     * @param methodName 方法名
+     */
+    protected void callPermissionMethod(String methodName){
+        mPermissionHelper.callLazyPermission(methodName);
     }
 
     /**
      * 后期绑定mThreadPool增加灵活性
-     * @return
+     * @return 线程池
      */
     protected ThreadPoolExecutor generateThreadPool(){
         return (ThreadPoolExecutor) Executors.newFixedThreadPool(3);
@@ -93,14 +116,12 @@ public abstract class FastActivity extends AppCompatActivity{
         ContentView cv=getClass().getAnnotation(ContentView.class);
         if(cv!=null)
             setContentView(cv.value());
-        else
-            setContentViewAfter(); //如果没有设置ContentView,手动调用一下准备任务
     }
+
 
     /**
      * 启动网络请求
-     *
-     * @param request
+     * @param request 网络请求
      */
     protected void net(Request request) {
         if (!mRequests.contains(request))
@@ -108,6 +129,10 @@ public abstract class FastActivity extends AppCompatActivity{
         request.setHost(this).setExecutor(mThreadPool).start(false);
     }
 
+    /**
+     * 增加网络请求到列表中，但是不立即请求
+     * @param request 网络请求
+     */
     public void addRequest(Request request) {
         if (!mRequests.contains(request))
             mRequests.add(request);
@@ -115,7 +140,7 @@ public abstract class FastActivity extends AppCompatActivity{
 
     /**
      * 启动一个任务链
-     * @param tc
+     * @param tc 任务链
      */
     public void startTasks(TaskChain tc){
         TaskChainHead.processTaskChain(this, mThreadPool, mMainThread,tc.getFirst());
@@ -123,7 +148,7 @@ public abstract class FastActivity extends AppCompatActivity{
 
     /**
      * 开启获取相册照片
-     * @param photoResultListener
+     * @param photoResultListener 取相册中相片回调
      */
     protected void openAlbum(final PhotoResultListener photoResultListener) {
         mPermissionHelper.requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE, new Runnable() {
@@ -143,7 +168,7 @@ public abstract class FastActivity extends AppCompatActivity{
 
     /**
      * 开启相机获取照片并且指定存储位置
-     * @param photoResultListener
+     * @param photoResultListener 照相成功后回调
      * @param path 指定路径,这个路径的文件不能已被创建
      */
     protected void openCamera(final PhotoResultListener photoResultListener, final String path) {
@@ -177,7 +202,7 @@ public abstract class FastActivity extends AppCompatActivity{
 
     /**
      * 开启相机获取照片
-     * @param photoResultListener
+     * @param photoResultListener 拍照成功回调
      */
     protected void openCamera(PhotoResultListener photoResultListener) {
         openCamera(photoResultListener, null);
@@ -204,25 +229,25 @@ public abstract class FastActivity extends AppCompatActivity{
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        mPermissionHelper.permissioResult(requestCode,permissions,grantResults);
+        mPermissionHelper.permissionResult(requestCode,permissions,grantResults);
     }
 
     @Override
     public void setContentView(int layoutResID) {
         super.setContentView(layoutResID);
-        setContentViewAfter();
+        afterSetContentView();
     }
 
     @Override
     public void setContentView(View view) {
         super.setContentView(view);
-        setContentViewAfter();
+        afterSetContentView();
     }
 
     @Override
     public void setContentView(View view, ViewGroup.LayoutParams params) {
         super.setContentView(view, params);
-        setContentViewAfter();
+        afterSetContentView();
     }
 
     @Override
@@ -231,6 +256,7 @@ public abstract class FastActivity extends AppCompatActivity{
         EventObserver.getInstance().unsubscribe(this);
         mThreadPool.shutdownNow();
         mThreadPool.purge();
+        mThreadPool=null;
         for (Request request : mRequests)
             request.clear();
         mRequests.clear();
@@ -238,9 +264,9 @@ public abstract class FastActivity extends AppCompatActivity{
     }
 
     /**
-     * 在设置布局时做几个必要动作
+     * 在设置布局后做几个必要动作
      */
-    private void setContentViewAfter(){
+    protected void afterSetContentView(){
         mThreadPool.execute(new Runnable() {
             @Override
             public void run() {
@@ -257,12 +283,27 @@ public abstract class FastActivity extends AppCompatActivity{
         });
     }
 
-
+    /**
+     * 快捷启动一个Activity
+     * @param cla 启动的Activity类
+     */
     public void startActivity(Class<? extends Activity> cla) {
         startActivity(new Intent(this, cla));
     }
 
-    private synchronized void prepareTask(){
+    /**
+     * 快捷启动一个Activity并且获取返回
+     * @param cla 启动的Activity类
+     * @param requestCode 请求码
+     */
+    public void startActivityForResult(Class<? extends Activity> cla,int requestCode){
+        startActivityForResult(new Intent(this,cla),requestCode);
+    }
+
+    /**
+     * 其中一个异步任务完成
+     */
+    protected synchronized void prepareTask(){
         if(--mPreparedTaskRemain<=0)
             runOnUiThread(new Runnable(){
                 @Override

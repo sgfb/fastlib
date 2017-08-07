@@ -19,14 +19,10 @@
     <style name="MaterialTheme" parent="Theme.AppCompat">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <!-- ActionBar color -->
-        <item name="colorPrimary">@color/orange_800</item>
-        <item name="android:windowBackground">@color/grey_200</item>
-        <item name="android:textColor">@android:color/black</item>
     </style>
 
-    <style name="DialogStyle" parent="android:Animation.Dialog">
-        <item name="android:windowEnterAnimation">@anim/in_bottom_to_top</item>
-        <item name="android:windowExitAnimation">@anim/out_top_to_bottom</item>
+    <style name="BottomDialogStyle" parent="android:Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/trans_bottom_to_top</item>
+        <item name="android:windowExitAnimation">@anim/trans_top_to_bottom</item>
     </style>
 </resources>

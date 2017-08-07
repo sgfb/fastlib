@@ -10,7 +10,6 @@ import com.fastlib.base.OldViewHolder;
 import com.fastlib.base.Refreshable;
 import com.fastlib.db.DatabaseListGetCallback;
 import com.fastlib.db.FastDatabase;
-import com.fastlib.db.FilterCommand;
 
 import java.util.List;
 

@@ -11,6 +11,12 @@ public class ResponseStatus{
     public int code;
     public String message;
 
+    public void clear(){
+        time=0;
+        code=0;
+        message=null;
+    }
+
     @Override
     public String toString(){
         return "[Status:"+code+" "+message+"  Time:"+time+"]";

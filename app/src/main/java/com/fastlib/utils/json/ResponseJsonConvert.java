@@ -1,3 +1,4 @@
+/*
 package com.fastlib.utils.json;
 
 import android.net.Uri;
@@ -16,10 +17,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+*/
 /**
  * Created by sgfb on 17/3/21.
  * 接口返回的json转换成实体类
- */
+ *//*
+
 public class ResponseJsonConvert{
     private File mSaveFolder; //存储转换好的实体类的文件夹，如果不存在会尝试创建
     private String mPackageName;
@@ -56,11 +59,13 @@ public class ResponseJsonConvert{
         return this;
     }
 
-    /**
+    */
+/**
      * 拼接文件名
      * @param uri
      * @return
-     */
+     *//*
+
     private String joinFileName(Uri uri){
         List<String> segment=uri.getPathSegments();
         if(segment==null||segment.isEmpty()) return "empty";
@@ -70,13 +75,15 @@ public class ResponseJsonConvert{
         return sb.toString()+".java";
     }
 
-    /**
+    */
+/**
      * 准备生成Json实体。生成文件，写包名，将实体写入文件等等
      * @param url
      * @param entity
-     */
-    private void prepareGenerateJsonEntity(String url, JsonObject entity){
-        Uri uri=Uri.parse(url);
+     *//*
+
+    private void prepareGenerateJsonEntity(String URL, JsonObject entity){
+        Uri uri=Uri.parse(URL);
         String fileName=joinFileName(uri);
         File file=new File(mSaveFolder,fileName.substring(0,1).toUpperCase()+fileName.substring(1));
         StringBuilder sb=new StringBuilder();
@@ -95,11 +102,13 @@ public class ResponseJsonConvert{
         }
     }
 
-    /**
+    */
+/**
      * 解析第一层json（正常json第一层只可能是{}或者[]）
      * @param sb
      * @param entity
-     */
+     *//*
+
     private void firstLayerParse(StringBuilder sb, JsonObject entity){
         if(entity.getValue() instanceof Map)
             sb.append(generateNestingClass(entity));
@@ -130,11 +139,13 @@ public class ResponseJsonConvert{
 
 
 
-    /**
+    */
+/**
      * 生成内部类.前条件 jsonObject的value一定是map
      * @param jo
      * @return
-     */
+     *//*
+
     private String generateNestingClass(JsonObject jo){
         StringBuilder sb=new StringBuilder();
         Map<String,JsonObject> map=jo.getValue();
@@ -213,10 +224,12 @@ public class ResponseJsonConvert{
         return sb.toString();
     }
 
-    /**
+    */
+/**
      * 对属性进行排序 1.boolean 2.long 3.double 4.String 5.other
      * @param unSortString
-     */
+     *//*
+
     private void sortFields(StringBuilder unSortString){
         int start=0;
         int afterIndex; //接到某个位置之后
@@ -280,9 +293,11 @@ public class ResponseJsonConvert{
         }
     }
 
-    /**
+    */
+/**
      * 开始调用接口,生成json实体类
-     */
+     *//*
+
     public void start(){
         if(mData!=null){
             try {
@@ -311,7 +326,7 @@ public class ResponseJsonConvert{
                             JsonObject jo=FastJson.fromJson(result);
                             Object entity;
 
-                            if(!TextUtils.isEmpty(mEntityBody)) entity=jo.findValue(mEntityBody);
+                            if(!TextUtils.isEmpty(mEntityBody)) entity=jo.findValue(mEntityBody,null);
                             else entity=jo.getValue();
                             if(entity!=null){
                                 if(!mSaveFolder.exists())
@@ -333,4 +348,4 @@ public class ResponseJsonConvert{
             }
         }
     }
-}
+}*/

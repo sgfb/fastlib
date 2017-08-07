@@ -65,7 +65,7 @@ public class SlidingView extends FrameLayout{
             anim.setDuration(500);
         }
         else
-            anim= AnimationUtils.loadAnimation(getContext(), R.anim.out_left_to_right);
+            anim= AnimationUtils.loadAnimation(getContext(), R.anim.trans_left_to_right);
         anim.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {

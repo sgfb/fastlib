@@ -27,7 +27,7 @@ public class NetManager{
     private Config mConfig;
     private NetGlobalData mGlobalData;
     private String mRootAddress;
-    private Listener mGlobalListener; //一个全局的事件回调监听，所有网络回调给具体回调之前做一次回调
+    private GlobalListener mGlobalListener; //一个全局的事件回调监听，所有网络回调给具体回调之前做一次回调
 
     private NetManager(){
         mConfig=new Config();
@@ -58,16 +58,16 @@ public class NetManager{
                             params.add(pair);
             }
             if(mGlobalData.mHeads!=null&&mGlobalData.mHeads.length>0){
-                List<Pair<String,String>> heads=request.getSendHeadExtra();
+                List<Request.ExtraHeader> heads=request.getSendHeadExtra();
                 if(heads==null){
                     heads=new ArrayList<>();
                     Collections.addAll(heads,mGlobalData.mHeads);
-                    request.setHeadExtra(heads);
+                    request.setSendHeader(heads);
                 }
                 else{
-                    for(Pair<String,String> pair:mGlobalData.mHeads)
-                        if(!heads.contains(pair))
-                            heads.add(pair);
+                    for(Request.ExtraHeader header:mGlobalData.mHeads)
+                        if(!heads.contains(header))
+                            heads.add(header);
                 }
             }
             if(mGlobalData.mCookies!=null&&!mGlobalData.mCookies.isEmpty()){
@@ -133,7 +133,7 @@ public class NetManager{
      * 设置网络全局头部
      * @param heads 网络全局头部
      */
-    public void setGlobalHead(Pair<String,String>... heads){
+    public void setGlobalHead(Request.ExtraHeader... heads){
         if(mGlobalData==null)
             mGlobalData=new NetGlobalData();
         mGlobalData.mHeads=heads;
@@ -175,11 +175,11 @@ public class NetManager{
         mRootAddress = rootAddress;
     }
 
-    public Listener getGlobalListener() {
+    public GlobalListener getGlobalListener() {
         return mGlobalListener;
     }
 
-    public void setGlobalListener(Listener globalListener) {
+    public void setGlobalListener(GlobalListener globalListener) {
         mGlobalListener = globalListener;
     }
 

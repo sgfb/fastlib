@@ -33,19 +33,19 @@ public class Request {
     private static Request sPool;
     private static int sPoolSize = 0;
 
+    private boolean isAcceptGlobalCallback; //是否接受全局回调监听.默认true
     private boolean isReplaceChinese; //是否替换中文url,默认为true
     private boolean hadRootAddress; //是否已加入根地址
     private boolean useFactory; //是否使用预设值
     private boolean isSendGzip; //指定这次请求发送时是否压缩成gzip流
     private boolean isReceiveGzip; //指定这次请求是否使用gzip解码
-    private byte[] mByteStream; //原始字节流，如果这个值存在就不会发送mParams参数了
+    private byte[] mByteStream; //原始字节流，如果这个值存在就不会发送mParams参数了.如果存在但是长度为0发送mParams参数json化数据
     private String method;
     private String mUrl;
-//    private String mGenericName;
     private List<Pair<String, String>> mSendCookies;
     private Downloadable mDownloadable;
     private Map<String,List<String>> mReceiveHeader;
-    private List<Pair<String, String>> mSendHeadExtra; //额外发送的头部信息
+    private List<ExtraHeader> mSendHeadExtra; //额外发送的头部信息
     private List<Pair<String,File>> mFiles;
     private List<Pair<String,String>> mParams;
     private RequestType mType = RequestType.DEFAULT;
@@ -61,7 +61,7 @@ public class Request {
     private ThreadPoolExecutor mExecutor; //运行在指定线程池中,如果未指定默认在公共的线程池中
     private Request mNext;
     private MockProcess mMock; //模拟数据
-    private ResponseStatus mResponseStatus;
+    private ResponseStatus mResponseStatus=new ResponseStatus(); //返回包裹信息，尽量不要置null
 
     public static Request obtain() {
         return obtain("");
@@ -105,6 +105,7 @@ public class Request {
     public Request(String method, String url) {
         this.method = method.toUpperCase();
         mUrl = isReplaceChinese?transferSpaceAndChinese(url):url;
+        isAcceptGlobalCallback=true;
         isReplaceChinese=true;
         isSendGzip=false;
         isReceiveGzip=false;
@@ -143,7 +144,8 @@ public class Request {
         mCacheManager = null;
         mExecutor = null;
         mMock=null;
-        mResponseStatus=null;
+        isAcceptGlobalCallback=true;
+        mResponseStatus.clear();
         synchronized (sLock) {
             if (sPoolSize < MAX_POOL_SIZE) {
                 mNext = sPool;
@@ -713,6 +715,12 @@ public class Request {
         mSendCookies = sendCookies;
     }
 
+    public void putSendCookies(String key,String value){
+        if(mSendCookies==null)
+            mSendCookies=new ArrayList<>();
+        mSendCookies.add(Pair.create(key,value));
+    }
+
     public void setGenericType(Type[] type) {
         mGenericType = type;
     }
@@ -737,40 +745,45 @@ public class Request {
         isSendGzip = sendGzip;
     }
 
-    public void putHeadExtra(String key, String value){
+    public Request putHeader(String key, String value){
         if(mSendHeadExtra ==null)
             mSendHeadExtra =new ArrayList<>();
-        Pair<String,String> pair=Pair.create(key,value);
-
-        if(!mSendHeadExtra.contains(pair))
-            mSendHeadExtra.add(pair);
-    }
-
-    public void removeHeadExtra(String key){
-        if(mSendHeadExtra ==null) return;
-        for(Pair<String,String> pair: mSendHeadExtra)
-            if(pair.first.equals(key)){
-                mSendHeadExtra.remove(pair);
-                break;
-            }
-    }
-
-    public Request addHead(String key,String value){
-        if(mSendHeadExtra ==null)
-            mSendHeadExtra =new ArrayList<>();
-        Pair<String,String> pair=Pair.create(key,value);
-        if(!mSendHeadExtra.contains(pair))
-            mSendHeadExtra.add(pair);
+        ExtraHeader extra=new ExtraHeader();
+        extra.canDuplication =false;
+        extra.field=key;
+        extra.value=value;
+        mSendHeadExtra.add(extra);
         return this;
     }
 
-    public List<Pair<String, String>> getSendHeadExtra() {
+    public Request removeHeader(String key){
+        if(mSendHeadExtra ==null) return this;
+        List<ExtraHeader> needDeleteList=new ArrayList<>();
+        for(ExtraHeader head: mSendHeadExtra)
+            if(head.field.equals(key))
+                needDeleteList.add(head);
+        for(ExtraHeader head:needDeleteList)
+            mSendHeadExtra.remove(head);
+        return this;
+    }
+
+    public Request addHeader(String key, String value){
+        if(mSendHeadExtra ==null)
+            mSendHeadExtra =new ArrayList<>();
+        ExtraHeader extra=new ExtraHeader();
+        extra.canDuplication =true;
+        extra.field=key;
+        extra.value=value;
+        mSendHeadExtra.add(extra);
+        return this;
+    }
+
+    public void setSendHeader(List<ExtraHeader> headers){
+        mSendHeadExtra=headers;
+    }
+
+    public List<ExtraHeader> getSendHeadExtra() {
         return mSendHeadExtra;
-    }
-
-    public Request setHeadExtra(List<Pair<String, String>> headExtra) {
-        mSendHeadExtra = headExtra;
-        return this;
     }
 
     public ServerCache getCacheManager() {
@@ -815,8 +828,9 @@ public class Request {
         return mResponseStatus;
     }
 
-    public void setResponseStatus(ResponseStatus responseStatus) {
-        mResponseStatus = responseStatus;
+    public void setResponseStatus(ResponseStatus responseStatus){
+        if(responseStatus==null) mResponseStatus.clear();
+        else mResponseStatus = responseStatus;
     }
 
     public Map<String, List<String>> getReceiveHeader() {
@@ -833,6 +847,14 @@ public class Request {
 
     public void setReplaceChinese(boolean replaceChinese) {
         isReplaceChinese = replaceChinese;
+    }
+
+    public boolean isAcceptGlobalCallback() {
+        return isAcceptGlobalCallback;
+    }
+
+    public void setAcceptGlobalCallback(boolean acceptGlobalCallback) {
+        isAcceptGlobalCallback = acceptGlobalCallback;
     }
 
     @Override
@@ -854,7 +876,7 @@ public class Request {
             uploadFileStr.deleteCharAt(uploadFileStr.length()-1);
         }
         uploadFileStr.append("]");
-        return "url:" + mUrl + " method:" + method + "\n" +
+        return "URL:" + mUrl + " Method:" + method + "\n" +
                 paramsStr.toString() + "\n" +
                 uploadFileStr.toString();
     }
@@ -869,5 +891,19 @@ public class Request {
         DEFAULT,
         GLOBAL,
         MUSTSEND
+    }
+
+    public static class ExtraHeader {
+        public boolean canDuplication; //add或者put
+        public String field;
+        public String value;
+
+        public ExtraHeader(){}
+
+        public ExtraHeader(boolean canDuplication, String field, String value) {
+            this.canDuplication = canDuplication;
+            this.field = field;
+            this.value = value;
+        }
     }
 }
