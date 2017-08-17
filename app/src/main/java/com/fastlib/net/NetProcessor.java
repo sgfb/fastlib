@@ -79,7 +79,8 @@ public class NetProcessor implements Runnable{
             return;
         }
         try {
-            boolean isMulti = false, isPost =mRequest.getMethod().equals("POST");
+            boolean isMulti = false, isPost =mRequest.getMethod().equals("POST")||mRequest.getMethod().equals("PUT")
+                    ,needBody=(isPost||mRequest.getMethod().equals("GET")); //如果不是post类型也不是get，不需要请求体
             long existsLength;
             long connectionTimer=System.currentTimeMillis();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -107,7 +108,8 @@ public class NetProcessor implements Runnable{
                     connection.addRequestProperty("If-Modified-Since",mRequest.getDownloadable().expireTime());
             }
             connection.setRequestMethod(mRequest.getMethod());
-            connection.setDoInput(true);
+            if(needBody)
+                connection.setDoInput(true);
             if (isPost){
                 connection.setDoOutput(true);
                 if (isMulti) {
@@ -148,42 +150,44 @@ public class NetProcessor implements Runnable{
                 out.close();
             }
             checkErrorStream(connection,connectionTimer); //判断返回码是否200.不是的话做额外处理
-            in=mRequest.isReceiveGzip()?new GZIPInputStream(connection.getInputStream()):connection.getInputStream();
-            int len;
-            byte[] data = new byte[BUFF_LENGTH];
-            //如果支持,修改下载的文件名
-            if (canWriteToFile(connection)){
-                OutputStream fileOut = new FileOutputStream(downloadFile,mRequest.getDownloadable().supportBreak());
-                String disposition = connection.getHeaderField("Content-Disposition");
-                if (!TextUtils.isEmpty(disposition) && disposition.length() > 9 && mRequest.getDownloadable().changeIfHadName()){
-                    String filename = URLDecoder.decode(disposition.substring(disposition.indexOf("filename=") + 9), "UTF-8");
-                    if (!TextUtils.isEmpty(filename))
-                        downloadFile.renameTo(new File(downloadFile.getParent() + File.separator + filename));
-                }
-                int maxCount = connection.getContentLength();
-                int speed = 0;
-                long timer = System.currentTimeMillis();
-                while ((len = in.read(data)) != -1&&!Thread.currentThread().isInterrupted()){
-                    fileOut.write(data,0,len);
-                    Rx += len;
-                    speed += len;
-                    if ((System.currentTimeMillis() - timer) > 1000) { //每秒发送一次广播
-                        EventObserver.getInstance().sendEvent(new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(),mRequest));
-                        speed = 0;
-                        timer = System.currentTimeMillis();
+            if(needBody){
+                in=mRequest.isReceiveGzip()?new GZIPInputStream(connection.getInputStream()):connection.getInputStream();
+                int len;
+                byte[] data = new byte[BUFF_LENGTH];
+                //如果支持,修改下载的文件名
+                if (canWriteToFile(connection)){
+                    OutputStream fileOut = new FileOutputStream(downloadFile,mRequest.getDownloadable().supportBreak());
+                    String disposition = connection.getHeaderField("Content-Disposition");
+                    if (!TextUtils.isEmpty(disposition) && disposition.length() > 9 && mRequest.getDownloadable().changeIfHadName()){
+                        String filename = URLDecoder.decode(disposition.substring(disposition.indexOf("filename=") + 9), "UTF-8");
+                        if (!TextUtils.isEmpty(filename))
+                            downloadFile.renameTo(new File(downloadFile.getParent() + File.separator + filename));
                     }
+                    int maxCount = connection.getContentLength();
+                    int speed = 0;
+                    long timer = System.currentTimeMillis();
+                    while ((len = in.read(data)) != -1&&!Thread.currentThread().isInterrupted()){
+                        fileOut.write(data,0,len);
+                        Rx += len;
+                        speed += len;
+                        if ((System.currentTimeMillis() - timer) > 1000) { //每秒发送一次广播
+                            EventObserver.getInstance().sendEvent(new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(),mRequest));
+                            speed = 0;
+                            timer = System.currentTimeMillis();
+                        }
+                    }
+                    EventObserver.getInstance().sendEvent(new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(),mRequest)); //下载结束发一次广播
+                    fileOut.close();
+                    mResponse = downloadFile.getAbsolutePath().getBytes();
+                } else {
+                    while((len = in.read(data))!=-1&&!Thread.currentThread().isInterrupted())
+                        baos.write(data, 0, len);
+                    Rx += baos.size();
+                    mResponse = baos.toByteArray();
                 }
-                EventObserver.getInstance().sendEvent(new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(),mRequest)); //下载结束发一次广播
-                fileOut.close();
-                mResponse = downloadFile.getAbsolutePath().getBytes();
-            } else {
-                while((len = in.read(data))!=-1&&!Thread.currentThread().isInterrupted())
-                    baos.write(data, 0, len);
-                Rx += baos.size();
-                mResponse = baos.toByteArray();
+                baos.close();
+                in.close();
             }
-            baos.close();
-            in.close();
             List<String> trustHost = NetManager.getInstance().getConfig().getTrustHost(); //调整信任服务器时间差
             if (trustHost != null) {
                 for (String host : trustHost) {
@@ -350,14 +354,11 @@ public class NetProcessor implements Runnable{
                         @Override
                         public void run(){
                             switch (fRealTypeIndex){
-                                case 1:l.onResponseListener(mRequest,fResponseObj,null,null);
-                                    globalListener.onResponseListener(mRequest,fResponseObj,null,null);
+                                case 1:
+                                    Object cookedData=globalListener.onResponseListener(mRequest,fResponseObj,null);
+                                    l.onResponseListener(mRequest,fResponseObj,null,cookedData);
                                     break;
-                                case 2:l.onResponseListener(mRequest,null,fResponseObj,null);
-                                    globalListener.onResponseListener(mRequest,null,fResponseObj,null);
-                                    break;
-                                case 3:l.onResponseListener(mRequest,null,null,fResponseObj);
-                                    globalListener.onResponseListener(mRequest,null,null,fResponseObj);
+                                case 2:l.onResponseListener(mRequest,null,fResponseObj,globalListener.onResponseListener(mRequest,null,fResponseObj));
                                     break;
                             }
                         }
@@ -419,13 +420,8 @@ public class NetProcessor implements Runnable{
         try{
             return Pair.create(1,gson.fromJson(json,types[0])); //第一次猜想
         }catch (JsonParseException e){
-            try{
-                if(types.length>1&&types[1]!=null) return Pair.create(2,gson.fromJson(json,types[1])); //如果存在，进行第二次猜想
-                throw e;
-            }catch (JsonParseException e1){
-                if(types.length>2&&types[2]!=null) return Pair.create(3,gson.fromJson(json,types[2])); //如果存在，进行第三次猜想
-                throw e;
-            }
+            if(types.length>1&&types[1]!=null) return Pair.create(2,gson.fromJson(json,types[1])); //如果存在，进行第二次猜想
+            throw e;
         }
     }
 

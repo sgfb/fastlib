@@ -5,6 +5,7 @@ import android.support.v4.util.Pair;
 
 import com.fastlib.net.Listener;
 import com.fastlib.net.Request;
+import com.fastlib.net.SimpleListener;
 
 import java.io.File;
 import java.io.IOException;
@@ -104,31 +105,19 @@ public abstract class UploadUncaughtException implements Thread.UncaughtExceptio
             Pair<String,String> param=generateErrorParams(logFile);
 
             request.put(param.first,param.second);
-            request.setListener(new Listener<String,Object,Object>(){
+            request.setListener(new SimpleListener<String>(){
 
                 @Override
-                public void onRawData(Request r, byte[] data) {
-
-                }
-
-                @Override
-                public void onTranslateJson(Request r, String json) {
-
-                }
-
-                @Override
-                public void onResponseListener(Request r, String result,Object none1,Object none2){
+                public void onResponseListener(Request r, String result) {
                     logFile.delete();
-                    if(listener!=null)
-                        listener.onResponseListener(r,null,null,null);
+                    if(listener!=null) listener.onResponseListener(r,result,null,null);
                     r.clear();
                 }
 
                 @Override
-                public void onErrorListener(Request r, String error){
-                    //因为已经奔溃了，奔溃里的错误什么事都不做
-                    if(listener!=null)
-                        listener.onErrorListener(r,error);
+                public void onErrorListener(Request r, String error) {
+                    super.onErrorListener(r, error);
+                    if(listener!=null) listener.onErrorListener(r,error);
                     r.clear();
                 }
             });

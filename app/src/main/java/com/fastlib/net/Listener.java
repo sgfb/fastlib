@@ -2,9 +2,9 @@ package com.fastlib.net;
 
 /**
  * Created by sgfb on 16/12/28.
- * 网络回调监听
+ * 网络回调监听.最原始级,可以使用更简便封装好的{@link SimpleListener}{@link SimpleListener2}{@link SimpleListener3}{@link CookedListener}
  */
-public interface Listener<T,T2,T3>{
+public interface Listener<T,T2,R>{
 
     /**
      * 原始字节数据回调
@@ -19,13 +19,13 @@ public interface Listener<T,T2,T3>{
     void onTranslateJson(Request r,String json);
 
     /**
-     * 数据原型回调,会进行实体转换猜想，最多3种
+     * 数据原型回调,前实体转换猜想，最多2种.
      * @param r 网络请求
      * @param result 返回的实体
      * @param result2 可能的返回实体2
-     * @param result3 可能的返回实体3
+     * @param cookedResult 被全局监听处理过的实体
      */
-    void onResponseListener(Request r,T result,T2 result2,T3 result3);
+    void onResponseListener(Request r,T result,T2 result2,R cookedResult);
 
     /**
      * 错误回调

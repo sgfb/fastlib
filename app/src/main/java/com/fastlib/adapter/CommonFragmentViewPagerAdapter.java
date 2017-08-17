@@ -11,10 +11,10 @@ import java.util.List;
  * Created by sgfb on 17/3/13.
  * 通用页面适配器,页面不可过多否则会增加内存压力
  */
-public class CommonFragmentViewPager extends FragmentPagerAdapter{
+public class CommonFragmentViewPagerAdapter extends FragmentPagerAdapter{
     private List<Pair<String,Fragment>> mFragments;
 
-    public CommonFragmentViewPager(FragmentManager fm, List<Pair<String, Fragment>> fragments){
+    public CommonFragmentViewPagerAdapter(FragmentManager fm, List<Pair<String, Fragment>> fragments){
         super(fm);
         mFragments=fragments;
     }

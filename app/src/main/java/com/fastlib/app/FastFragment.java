@@ -43,7 +43,7 @@ public abstract class FastFragment extends Fragment{
 
     private boolean isGatingPhoto; //是否正在获取图像
     private boolean isHadTransitionAnimation=false;
-    private volatile int mPreparedTaskRemain=2; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
+    private volatile int mPreparedTaskRemain=3; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
     private List<Request> mRequests=new ArrayList<>();
     private LocalDataInject mLocalDataInject;
     private PhotoResultListener mPhotoResultListener;
@@ -54,25 +54,31 @@ public abstract class FastFragment extends Fragment{
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mLocalDataInject=new LocalDataInject(this);
-        mPermissionHelper=new PermissionHelper(getActivity());
+        mPermissionHelper=new PermissionHelper();
         mThreadPool=(ThreadPoolExecutor) Executors.newFixedThreadPool(3);
         mThreadPool.execute(new Runnable(){
             @Override
             public void run(){
                 EventObserver.getInstance().subscribe(FastFragment.this);
+                prepareTask();
             }
         });
     }
 
     @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState){
+    public View onCreateView(final LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState){
         checkTransitionAnimationInject();
-        ContentView cv=getClass().getAnnotation(ContentView.class);
+        final ContentView cv=getClass().getAnnotation(ContentView.class);
         if(cv!=null){
-            View root=inflater.inflate(cv.value(),null);
-            ViewInject.inject(FastFragment.this,root,mThreadPool);
-            prepareTask();
+            final View root=inflater.inflate(cv.value(),null);
+            mThreadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    ViewInject.inject(FastFragment.this,root,mThreadPool);
+                    prepareTask();
+                }
+            });
             return root;
         }
         return super.onCreateView(inflater, container, savedInstanceState);
@@ -122,7 +128,7 @@ public abstract class FastFragment extends Fragment{
      * @param photoResultListener
      */
     protected void openAlbum(final PhotoResultListener photoResultListener) {
-        mPermissionHelper.requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE, new Runnable() {
+        mPermissionHelper.requestPermission(getActivity(),new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, new Runnable() {
             @Override
             public void run() {
                 isGatingPhoto = true;
@@ -143,10 +149,10 @@ public abstract class FastFragment extends Fragment{
      * @param path
      */
     protected void openCamera(final PhotoResultListener photoResultListener,final String path) {
-        mPermissionHelper.requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, new Runnable() {
+        mPermissionHelper.requestPermission(getActivity(),new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, new Runnable() {
             @Override
             public void run() {
-                mPermissionHelper.requestPermission(Manifest.permission.CAMERA, new Runnable() {
+                mPermissionHelper.requestPermission(getActivity(),new String[]{Manifest.permission.CAMERA}, new Runnable() {
                     @Override
                     public void run() {
                         isGatingPhoto = true;

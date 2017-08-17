@@ -1,4 +1,4 @@
-package com.fastlib.uncomplete.UrlImage;
+package com.fastlib.test.UrlImage;
 
 import android.graphics.Bitmap;
 

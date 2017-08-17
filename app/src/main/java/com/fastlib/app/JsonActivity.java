@@ -1,13 +1,10 @@
-package com.fastlib.base;
+package com.fastlib.app;
 
 import android.os.Bundle;
 import android.support.v4.util.Pair;
 import android.view.View;
 
-import com.fastlib.app.FastActivity;
-import com.fastlib.app.TaskAction;
-import com.fastlib.app.TaskChain;
-import com.fastlib.app.TaskChainHead;
+import com.fastlib.base.OldViewHolder;
 import com.fastlib.utils.json.JsonObject;
 import com.fastlib.utils.json.JsonViewBinder;
 
@@ -25,7 +22,7 @@ public abstract class JsonActivity extends FastActivity{
     protected OldViewHolder mViewHolder;
 
     public JsonActivity(){
-        mPreparedTaskRemain=3;
+        mPreparedTaskRemain++;
     }
 
     public Pair<JsonViewBinder.ViewResolve,Class<? extends View>>[] generateViewResolves(){

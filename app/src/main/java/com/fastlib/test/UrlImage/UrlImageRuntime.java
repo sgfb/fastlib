@@ -1,4 +1,4 @@
-package com.fastlib.uncomplete.UrlImage;
+package com.fastlib.test.UrlImage;
 
 import android.app.Application;
 import android.graphics.Bitmap;
@@ -12,8 +12,8 @@ import com.fastlib.app.TaskAction;
 import com.fastlib.app.TaskChain;
 import com.fastlib.app.TaskChainHead;
 import com.fastlib.net.DefaultDownload;
-import com.fastlib.net.Listener;
 import com.fastlib.net.Request;
+import com.fastlib.net.SimpleListener;
 
 import java.io.File;
 
@@ -64,7 +64,7 @@ public class UrlImageRuntime{
                             options.inPreferredConfig=mConfig.mConfig;
                             return BitmapFactory.decodeFile(t,options); //已节省内存格式读入
                         }
-                    },TaskChain.TYPE_THREAD_ON_MAIN).next(new TaskAction<Bitmap,Void>(){
+                    }, TaskChain.TYPE_THREAD_ON_MAIN).next(new TaskAction<Bitmap,Void>(){
                         @Override
                         public Void call(Bitmap t){
                             mImage.mBitmap=t;
@@ -86,27 +86,18 @@ public class UrlImageRuntime{
         mImage.isDownloading=true;
         Request request=new Request("get",mImage.mUrl);
         request.setDownloadable(new DefaultDownload(fImage));
-        request.setListener(new Listener<String,Object,Object>(){
+        request.setListener(new SimpleListener<String>(){
 
             @Override
-            public void onRawData(Request r, byte[] data) {
-
-            }
-
-            @Override
-            public void onTranslateJson(Request r, String json) {
-
-            }
-
-            @Override
-            public void onResponseListener(Request r, String result,Object none1,Object none2){
+            public void onResponseListener(Request r, String result) {
                 mImage.isDownloading=false;
                 checkOverMemory();
                 into(imageView);
             }
 
             @Override
-            public void onErrorListener(Request r, String error){
+            public void onErrorListener(Request r, String error) {
+                super.onErrorListener(r, error);
                 mImage.isDownloading=false;
                 if(Fastlib.isShowLog())
                     System.out.println("下载图像异常:"+error);

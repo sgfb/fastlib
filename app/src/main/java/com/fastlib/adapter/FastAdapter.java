@@ -17,7 +17,7 @@ import java.util.List;
  */
 public abstract class FastAdapter<T> extends BaseAdapter{
     private int mItemId;
-    private List<T> mData;
+    protected List<T> mData;
     protected Context mContext;
 
     public abstract void binding(int position,T data,OldViewHolder holder);
@@ -118,5 +118,9 @@ public abstract class FastAdapter<T> extends BaseAdapter{
     public void remove(int position){
         mData.remove(position);
         notifyDataSetChanged();
+    }
+
+    public List<T> getData() {
+        return mData;
     }
 }

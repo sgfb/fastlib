@@ -6,152 +6,127 @@ import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.text.TextUtils;
+import android.util.SparseArray;
 
 import com.fastlib.annotation.Permission;
+import com.fastlib.annotation.PermissionInterface;
 import com.fastlib.bean.PermissionRequest;
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.lang.reflect.Proxy;
+import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
- * Created by sgfb on 17/2/21.
- * 6.0权限获取辅助类
+ * Created by sgfb on 17/8/10.
+ * 6.0权限获取辅助类.需要在Activity中的onRequestPermissionsResult来回调permissionResult方法.
+ * 有两种方法来回去权限并且回调成功或者失败的处理
+ * 方案一 直接调用requestPermission(Activity 上下文,String[] 权限,Runnable 成功回调,Runnable 失败回调)
+ * 方案二 1创建注解PermissionInterface接口，在接口需要权限的方法上注解Permission.2调用permissionGuard来实现一个权限保护对象来使用
  */
 public class PermissionHelper{
-    private Map<String,PermissionRequest> mPermissionMap = new HashMap<>();
-    private Map<String,LazyPermissionMethod> mLazyCallMethods=new HashMap<>(); //调起的方法名-->请求权限及其后续动作包裹
-    private Activity mActivity;
-    private Object mLazyHost;
-
-    public PermissionHelper(Activity activity){
-        mActivity = activity;
-    }
+    private SparseArray<PermissionRequest> mPermissionMap = new SparseArray<>();     //请求码->权限请求
 
     /**
-     * 6.0后请求权限
+     * 6.0后发起请求权限
      * @param permission 权限名
      * @param grantedAfterProcess 成功后回调
      * @param deniedAfterProcess 失败后回调
      */
-    public void requestPermission(String permission, Runnable grantedAfterProcess, Runnable deniedAfterProcess) {
-        if (ContextCompat.checkSelfPermission(mActivity,permission) == PackageManager.PERMISSION_GRANTED)
+    public void requestPermission(Activity activity, String[] permission, Runnable grantedAfterProcess, Runnable deniedAfterProcess) {
+        if (Build.VERSION.SDK_INT<Build.VERSION_CODES.M||checkPermissionGranted(activity,permission))   //小于6.0或之前已获取过权限，直接运行
             grantedAfterProcess.run();
         else {
-            if (!mPermissionMap.containsKey(permission)) {
-                int requestCode = mPermissionMap.size() + 1;
-                mPermissionMap.put(permission, new PermissionRequest(requestCode, grantedAfterProcess, deniedAfterProcess));
-                ActivityCompat.requestPermissions(mActivity, new String[]{permission}, requestCode);
-            }
+            int requestCode = mPermissionMap.size() + 1;
+            mPermissionMap.put(requestCode, new PermissionRequest(requestCode, grantedAfterProcess, deniedAfterProcess));
+            ActivityCompat.requestPermissions(activity,permission, requestCode);
         }
     }
 
+    /**
+     * 6.0请求权限返回
+     * @param requestCode 请求码
+     * @param permissions 权限组
+     * @param grantResults 返回结果
+     */
     public void permissionResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults){
-        for (int i = 0; i < permissions.length; i++){
-            PermissionRequest pr = mPermissionMap.remove(permissions[i]);
-            if (pr != null) {
-                if (grantResults[i] == PackageManager.PERMISSION_GRANTED)
-                    pr.hadPermissionProcess.run();
-                else
-                    pr.deniedPermissionProcess.run();
+        boolean success=true;
+        for (int i = 0; i < grantResults.length; i++){
+            if(grantResults[i]==PackageManager.PERMISSION_DENIED){  //有一个权限被拒绝就运行请求权限被拒绝回调
+                success=false;
                 break;
             }
         }
+
+        PermissionRequest pr = mPermissionMap.get(requestCode);
+        if (pr != null){
+            mPermissionMap.remove(requestCode);
+            if (success) pr.hadPermissionProcess.run();
+            else pr.deniedPermissionProcess.run();
+        }
     }
 
     /**
-     * 循环请求所有权限，如果有一个权限请求失败即调起失败回调或者显示失败信息
-     * @param lpm
-     * @param permissions
+     * 检查之前是否获取成功过
+     * @param activity 上下文
+     * @param permissions 权限
+     * @return 如果获取成功过返回true，否则false
      */
-    private void recursiveRequestPermission(final LazyPermissionMethod lpm, final List<String> permissions){
-        if(permissions.isEmpty()){
-            if(lpm.successMethod!=null)
-                try {
-                    lpm.successMethod.invoke(mLazyHost);
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                } catch (InvocationTargetException e) {
-                    e.printStackTrace();
-                }
+    private boolean checkPermissionGranted(Activity activity,String[] permissions){
+        for(String permission:permissions){
+            if(ContextCompat.checkSelfPermission(activity,permission) == PackageManager.PERMISSION_DENIED)
+                return false;
         }
-        else{
-            requestPermission(permissions.get(0), new Runnable() {
-                @Override
-                public void run() {
-                    permissions.remove(0);
-                    recursiveRequestPermission(lpm,permissions);
-                }
-            }, new Runnable() {
-                @Override
-                public void run() {
-                    if(lpm.failureMethod==null) //如果权限请求失败回调不存在，显示失败提示信息
-                        N.showShort(mActivity,lpm.failureMessage);
-                    else try {
-                        lpm.failureMethod.invoke(mLazyHost);
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    } catch (InvocationTargetException e) {
-                        e.printStackTrace();
+        return true;
+    }
+
+    /**
+     * 动态代理权限自动申请，仅仅对第一个代理接口有效d
+     * @param activity 上下文
+     * @param obj 有实现有PermissionInterface注解的接口的对象
+     * @return 小于6.0返回obj对象本体否则返回代理类
+     */
+    public Object permissionGuard(final Activity activity,final Object obj){
+        if(Build.VERSION.SDK_INT<Build.VERSION_CODES.M) return obj;
+        Class<?>[] interfaces=obj.getClass().getInterfaces();
+
+        for(Class<?> inter:interfaces){
+            PermissionInterface piInject=inter.getAnnotation(PermissionInterface.class);
+            if(piInject!=null){
+                return Proxy.newProxyInstance(inter.getClassLoader(), new Class<?>[]{inter}, new InvocationHandler() {
+                    @Override
+                    public Object invoke(Object proxy, final Method method, final Object[] args) throws Throwable{
+                        final Permission permissionInject=method.getAnnotation(Permission.class);
+                        if(permissionInject!=null)
+                            requestPermission(activity, permissionInject.value(), new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        method.invoke(obj,args);
+                                    } catch (IllegalAccessException e) {
+                                        e.printStackTrace();
+                                    } catch (InvocationTargetException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }, new Runnable() {
+                                @Override
+                                public void run() {
+                                    if(!TextUtils.isEmpty(permissionInject.print())){
+                                        N.showShort(activity,permissionInject.print());
+                                    }
+                                }
+                            });
+                        else return method.invoke(obj,args);
+                        return null;
                     }
-                }
-            });
-        }
-    }
-
-    /**
-     * 调起延迟请求权限
-     * @param name
-     */
-    public void callLazyPermission(String name){
-        if(mLazyCallMethods.containsKey(name)){
-            final LazyPermissionMethod lazyPermission=mLazyCallMethods.get(name);
-            List<String> list= new ArrayList<>();
-
-            for(String permission:lazyPermission.permissions)
-                list.add(permission);
-            recursiveRequestPermission(lazyPermission,list);
-        }
-    }
-
-    /**
-     * 自动填充Permission注解
-     * @param obj 被Permission注解对象
-     */
-    public void checkPermissionInject(Object obj){
-        if(Build.VERSION.SDK_INT<Build.VERSION_CODES.M) //如果小于6.0，不需要运行时权限
-            return;
-
-        mLazyHost=obj;
-        Method[] methods=obj.getClass().getDeclaredMethods();
-
-        for(Method m:methods){
-            Permission inject=m.getAnnotation(Permission.class);
-            String methodName=m.getName();
-            if(inject!=null){
-                String[] requestPermissions=inject.value();
-                LazyPermissionMethod lm=mLazyCallMethods.get(methodName);
-                if(lm==null){
-                    lm=new LazyPermissionMethod();
-                    mLazyCallMethods.put(methodName,lm);
-                }
-                lm.permissions=requestPermissions;
-                lm.failureMessage=inject.print();
-                if(inject.type()==0) lm.successMethod=m;
-                else lm.failureMethod=m;
+                });
             }
         }
-    }
-
-    public class LazyPermissionMethod{
-        public String[] permissions;
-        public Method successMethod,failureMethod;
-        public String failureMessage;
-
-        public LazyPermissionMethod() {}
+        throw new IllegalArgumentException("对象没有实现有PermissionInterface注解的接口");
     }
 }

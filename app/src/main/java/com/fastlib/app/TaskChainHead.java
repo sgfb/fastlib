@@ -1,9 +1,9 @@
 package com.fastlib.app;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.os.Build;
 
+import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -13,12 +13,43 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class TaskChainHead<T>{
     private T mData;
 
+    private TaskChainHead(){
+
+    }
+
     private TaskChainHead(T data){
         mData=data;
     }
 
+    /**
+     * 给予初始化参数，引导任务链
+     * @param data 初始化参数
+     * @param <T> 初始参数类型
+     * @return 任务链头
+     */
     public static <T> TaskChainHead<T> begin(T data){
         return new TaskChainHead<T>(data);
+    }
+
+    /**
+     * 给予无参数任务，引导任务链
+     * @param action 任务
+     * @param <R1> 处理的线程类型
+     * @return 任务链
+     */
+    public static <R1> TaskChain<Object, R1> begin(TaskAction<Object,R1> action){
+        return new TaskChainHead<>().next(action);
+    }
+
+    /**
+     * 给予无参数任务，引导任务链，有线程选择
+     * @param action 任务
+     * @param onWhichThread 处理的线程类型
+     * @param <R1> 参数类型
+     * @return 任务链
+     */
+    public static <R1> TaskChain<Object,R1> begin(TaskAction<Object,R1> action,int onWhichThread){
+        return new TaskChainHead<>().next(action,onWhichThread);
     }
 
     /**
@@ -45,6 +76,10 @@ public class TaskChainHead<T>{
         return mFirstTask;
     }
 
+//    public <R1> TaskChain<T,R1> cycle(TaskAction<T[],T> action){
+//
+//    }
+
     /**
      * 开始处理任务链
      * @param activity
@@ -53,7 +88,7 @@ public class TaskChainHead<T>{
      * @param taskChain
      */
     public static void processTaskChain(final Activity activity, final ThreadPoolExecutor threadPool, final Thread hostThread, final TaskChain taskChain){
-        if(taskChain==null||activity.isFinishing()||isActivityDestroy(activity)) return;
+        if(taskChain==null||isActivityDestroy(activity)) return;
         if(taskChain.mOnWitchThread==TaskChain.TYPE_THREAD_ON_MAIN){
             if(hostThread==Thread.currentThread()){
                 taskChain.mAction.run();
@@ -98,8 +133,6 @@ public class TaskChainHead<T>{
     }
 
     private static boolean isActivityDestroy(Activity activity){
-        if(Build.VERSION.SDK_INT<17)
-            return false;
-        return activity.isDestroyed();
+        return (Build.VERSION.SDK_INT >= 17 && activity.isDestroyed())||activity.isFinishing();
     }
 }

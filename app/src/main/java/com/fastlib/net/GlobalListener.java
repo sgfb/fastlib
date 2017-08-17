@@ -4,7 +4,7 @@ package com.fastlib.net;
  * Created by sgfb on 17/7/31.
  * 与{@link Listener}相似.但是全局仅存一个并且有修改源数据的能力
  */
-public class GlobalListener {
+public class GlobalListener{
 
     /**
      * 原始字节数据回调
@@ -25,14 +25,15 @@ public class GlobalListener {
     }
 
     /**
-     * 数据原型回调,会进行实体转换猜想，最多3种.因为对象是引用的可直接修改，所以在这里就不返回
+     * 数据原型回调,会进行实体转换猜想，最多3种
      * @param r 网络请求
      * @param result 返回的实体
      * @param result2 可能的返回实体2
-     * @param result3 可能的返回实体3
+     * @return 默认返回非空result
      */
-    public void onResponseListener(Request r,Object result,Object result2,Object result3){
-
+    public Object onResponseListener(Request r,Object result,Object result2){
+        if(result!=null) return result;
+        else return result2;
     }
 
     /**

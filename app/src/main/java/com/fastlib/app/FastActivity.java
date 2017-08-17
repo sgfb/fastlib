@@ -21,9 +21,6 @@ import com.fastlib.utils.PermissionHelper;
 import com.fastlib.utils.ViewInject;
 
 import java.io.File;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -42,7 +39,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public abstract class FastActivity extends AppCompatActivity{
     protected ThreadPoolExecutor mThreadPool;
     protected PermissionHelper mPermissionHelper;
-    protected volatile int mPreparedTaskRemain=4; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
+    protected volatile int mPreparedTaskRemain=3; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
 
     private boolean isGatingPhoto; //是否正在获取图像
     private boolean isHadTransitionAnimation=false;
@@ -57,12 +54,11 @@ public abstract class FastActivity extends AppCompatActivity{
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         mMainThread = Thread.currentThread();
-        mPermissionHelper=new PermissionHelper(this);
+        mPermissionHelper=new PermissionHelper();
         mLocalDataInject=new LocalDataInject(this);
         mThreadPool=generateThreadPool();
         checkTransitionInject();
         checkContentViewInject();
-        checkRuntimePermissionInject();
         mThreadPool.execute(new Runnable(){
             @Override
             public void run() {
@@ -70,24 +66,6 @@ public abstract class FastActivity extends AppCompatActivity{
                 prepareTask();
             }
         });
-    }
-
-    private void checkRuntimePermissionInject(){
-        mThreadPool.execute(new Runnable() {
-            @Override
-            public void run(){
-                mPermissionHelper.checkPermissionInject(FastActivity.this);
-                prepareTask();
-            }
-        });
-    }
-
-    /**
-     * 调起需要权限的方法(测试方法)
-     * @param methodName 方法名
-     */
-    protected void callPermissionMethod(String methodName){
-        mPermissionHelper.callLazyPermission(methodName);
     }
 
     /**
@@ -151,7 +129,7 @@ public abstract class FastActivity extends AppCompatActivity{
      * @param photoResultListener 取相册中相片回调
      */
     protected void openAlbum(final PhotoResultListener photoResultListener) {
-        mPermissionHelper.requestPermission(Manifest.permission.READ_EXTERNAL_STORAGE, new Runnable() {
+        mPermissionHelper.requestPermission(this,new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, new Runnable() {
             @Override
             public void run() {
                 isGatingPhoto = true;
@@ -172,10 +150,10 @@ public abstract class FastActivity extends AppCompatActivity{
      * @param path 指定路径,这个路径的文件不能已被创建
      */
     protected void openCamera(final PhotoResultListener photoResultListener, final String path) {
-        mPermissionHelper.requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, new Runnable() {
+        mPermissionHelper.requestPermission(this,new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, new Runnable() {
             @Override
             public void run() {
-                mPermissionHelper.requestPermission(Manifest.permission.CAMERA, new Runnable() {
+                mPermissionHelper.requestPermission(FastActivity.this,new String[]{Manifest.permission.CAMERA}, new Runnable() {
                     @Override
                     public void run() {
                         isGatingPhoto = true;

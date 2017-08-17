@@ -11,6 +11,7 @@ import com.fastlib.base.Refreshable;
 import com.fastlib.db.DatabaseListGetCallback;
 import com.fastlib.db.FastDatabase;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -78,6 +79,9 @@ public abstract class DatabaseAdapter<T> extends BaseAdapter implements Database
         return holder.getConvertView();
     }
 
+    /**
+     * 刷新数据
+     */
     public void refresh(){
     	isRefresh=true;
     	isMore=true;
@@ -86,6 +90,9 @@ public abstract class DatabaseAdapter<T> extends BaseAdapter implements Database
                 .getAsync(mCla,this);
     }
 
+    /**
+     * 读取下一页
+     */
     protected void loadMore(){
         isLoading=true;
     	isRefresh=false;
@@ -109,19 +116,53 @@ public abstract class DatabaseAdapter<T> extends BaseAdapter implements Database
         notifyDataSetChanged();
     }
 
+    /**
+     * 获取每次读取的条数
+     * @return 每次读取的条数
+     */
     public int getPerCount() {
         return mPerCount;
     }
 
+    /**
+     * 设置每次读取的条数
+     * @param perCount 每次读取的条数
+     */
     public void setPerCount(int perCount) {
         mPerCount = perCount;
     }
 
+    /**
+     * 获取刷新组件
+     * @return 刷新组件
+     */
     public Refreshable getRefreshable() {
         return mRefreshable;
     }
 
+    /**
+     * 设置刷新组件
+     * @param refreshable 刷新组件
+     */
     public void setRefreshable(Refreshable refreshable) {
         mRefreshable = refreshable;
+    }
+
+    /**
+     * 增加数据
+     * @param data 单个数据
+     */
+    public void addData(T data){
+        if(mData==null) mData=new ArrayList<>();
+        mData.add(data);
+    }
+
+    /**
+     * 增加一组数据
+     * @param datas 一组数据
+     */
+    public void addData(List<T> datas){
+        if(mData==null) mData=datas;
+        else mData.addAll(datas);
     }
 }

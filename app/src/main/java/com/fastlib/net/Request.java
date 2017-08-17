@@ -6,6 +6,10 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.fastlib.db.FastDatabase;
 import com.fastlib.db.ServerCache;
@@ -99,6 +103,7 @@ public class Request {
      * @param mock
      */
     public Request(MockProcess mock){
+        this("");
         mMock=mock;
     }
 
@@ -301,6 +306,15 @@ public class Request {
         mParams.add(Pair.create(key,value));
         return this;
     }
+
+    public Request put(String key,View view){
+        if(view instanceof TextView)
+            return put(key,((TextView)view).getText().toString());
+        else if(view instanceof Spinner)
+            return put(key,((Spinner)view).getSelectedItem());
+        throw new IllegalArgumentException("不支持的view类型");
+    }
+
 
     /**
      * 添加短整型请求参数,如果存在,覆盖第一个

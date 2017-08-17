@@ -143,6 +143,11 @@ public abstract class MultiAdapter extends BaseAdapter{
             notifyDataSetChanged();
         }
 
+        public void remove(ItemMVC<T> t){
+            if(mData.remove(t))
+                notifyDataSetChanged();
+        }
+
         public List<ItemMVC<T>> getItems(){
             return mData;
         }
@@ -157,11 +162,20 @@ public abstract class MultiAdapter extends BaseAdapter{
      * 单类型列
      * @param <T>
      */
-    public interface ItemMVC<T>{
-        int getType();
-        int getLayoutId();
-        T getData();
+    public abstract class ItemMVC<T>{
+        protected T mData;
 
-        void controlDataToView(int position,int type,OldViewHolder holder);
+        public ItemMVC(T data) {
+            mData = data;
+        }
+
+        public abstract int getType();
+        protected abstract int getLayoutId();
+
+        public T getData(){
+            return mData;
+        }
+
+        protected abstract void controlDataToView(int position,int type,OldViewHolder holder);
     }
 }

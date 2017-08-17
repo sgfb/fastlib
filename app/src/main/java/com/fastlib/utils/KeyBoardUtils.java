@@ -16,9 +16,7 @@ public class KeyBoardUtils
 {
 	/**
 	 * 打开软键盘
-	 * 
-	 * @param et
-	 *            输入框
+	 * @param et 输入框
 	 */
 	public static void openKeybord(EditText et)
 	{
@@ -31,33 +29,34 @@ public class KeyBoardUtils
 
 	/**
 	 * 关闭软键盘
-	 * 
-	 * @param et
-	 *            输入框
+	 * @param et 输入框
 	 */
 	public static void closeKeybord(EditText et)
 	{
 		InputMethodManager imm = (InputMethodManager) et.getContext()
 				.getSystemService(Context.INPUT_METHOD_SERVICE);
-
 		imm.hideSoftInputFromWindow(et.getWindowToken(), 0);
 	}
-	
+
+	/**
+	 * 关闭软键盘
+	 * @param act 上下文
+     */
 	public static void closeKeybord(Activity act){
-		if(act.getCurrentFocus()==null){
+		if(act.getCurrentFocus()==null)
 			return;
-		}
 		InputMethodManager imm = (InputMethodManager) act
 				.getSystemService(Context.INPUT_METHOD_SERVICE);
 		imm.hideSoftInputFromWindow(act.getCurrentFocus().getWindowToken(), InputMethodManager.SHOW_FORCED);
 	}
-	
-	
-	public static void openKeybord(Activity act)
-	{
-		if(act.getCurrentFocus()==null){
+
+	/**
+	 * 打开软键盘
+	 * @param act 上下文
+     */
+	public static void openKeybord(Activity act){
+		if(act.getCurrentFocus()==null)
 			return;
-		}
 		InputMethodManager imm = (InputMethodManager) act
 				.getSystemService(Context.INPUT_METHOD_SERVICE);
 		imm.showSoftInput(act.getCurrentFocus(), InputMethodManager.HIDE_NOT_ALWAYS);

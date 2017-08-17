@@ -31,7 +31,7 @@ public abstract class SimpleListener<T> implements Listener<T,Object,Object>{
      * @param result3 不可能存在的返回实体3
      */
     @Override
-    public void onResponseListener(Request r, T result, Object result2, Object result3) {
+    public void onResponseListener(Request r, T result, Object result2, Object result3){
         onResponseListener(r,result);
     }
 }

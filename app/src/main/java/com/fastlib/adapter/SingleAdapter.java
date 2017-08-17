@@ -213,4 +213,20 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 	public void onTranslateJson(Request r, String json) {
 		//被适配
 	}
+
+	/**
+	 * 获取适配器中所有数据
+	 * @return 适配器中所有数据
+     	*/
+	public List<T> getData() {
+		return mData;
+	}
+
+	/**
+	 * 适配器中的网络请求
+	 * @return 网络请求
+     	*/
+	public Request getRequest() {
+		return mRequest;
+	}
 }

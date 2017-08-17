@@ -2,7 +2,10 @@ package com.fastlib.utils.zip;
 
 /**
  * Created by sgfb on 17/8/7.
- * Zip各结构的位意义.Zip中使用的是Dos时间记录结构
+ * 具体请查阅 https://pkware.cachefly.net/webdocs/APPNOTE/APPNOTE-6.2.0.txt
+ * Zip各结构的位意义.压缩包一般是 头部->File data->File descriptor->CDH->EOCD
+ *
+ * Zip中使用的是Dos时间记录结构
  * 日期说明
  * 0-4日(1-31)
  * 5-8月(1表January,2表February,…)
@@ -11,8 +14,32 @@ package com.fastlib.utils.zip;
  * 0-4秒
  * 5-10分(0-59)
  * 11-15时(0-23)
+ *
+ * Zip中的Version双字节高位表示兼容版本，低位版本号
+ * 0 - MS-DOS and OS/2 (FAT / VFAT / FAT32 file systems)
+ * 1 - Amiga                     2 - OpenVMS
+ * 3 - Unix                      4 - VM/CMS
+ * 5 - Atari ST                  6 - OS/2 H.P.F.S.
+ * 7 - Macintosh                 8 - Z-System
+ * 9 - CP/M                      10 - Windows NTFS
+ * 11 - MVS (OS/390 - Z/OS)      12 - VSE
+ * 13 - Acorn Risc               14 - VFAT
+ * 15 - alternate MVS            16 - BeOS
+ * 17 - Tandem                   18 - OS/400
+ * 19 - OS/X (Darwin)            20 thru 255 - unused
+ *
+ * 压缩方式通常是0存储，8压缩
+ *
+ * 通用标识位。一般情况
+ * bit0 置1加密文件
+ * bit 2  bit 1
+ * 0      0    正常压缩
+ * 0      1    最大化压缩
+ * 1      0    快速压缩
+ * 1      1    最快速压缩
  */
 public interface ZipFlag{
+
     /**
      * 头部.最后包括了n+m的可变长度文件名和可扩展区
      */
@@ -70,4 +97,10 @@ public interface ZipFlag{
     short EOCD_CENTRAL_DIRECTORY_SIZE=2; //核心目录大小 byte单位
     short EOCD_OFFSET_START_DISK_NUMBER=4; //核心目录开始位置相对于archive开始的位移
     short EOCD_COMMENT_LENGTH=2; //注释长度(n)
+
+    /**
+     * 头部长度.不包括扩展区
+     */
+    short LENGTH_HEADER_BASE =HEADER_SIGNATURE+HEADER_VERSION+HEADER_GENERAL_PURPOSE_FLAG+HEADER_COMPRESSION_METHOD+HEADER_LAST_MOD_FILE_TIME+
+            HEADER_LAST_MOD_FILE_DATE+HEADER_CRC_32+HEADER_COMPRESSED_SIZE+HEADER_UNCOMPRESSED_SIZE+HEADER_FILE_NAME_LENGTH+HEADER_EXTRA_FIELD_LENGTH;
 }

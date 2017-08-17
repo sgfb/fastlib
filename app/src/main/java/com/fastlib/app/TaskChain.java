@@ -1,5 +1,7 @@
 package com.fastlib.app;
 
+import java.util.List;
+
 /**
  * Created by sgfb on 17/2/22.
  * 任务队列基本单元
@@ -11,6 +13,7 @@ public class TaskChain<T,R1>{
     TaskAction<T,R1> mAction;
     TaskChain mNext;
     TaskChain mFirst;
+    TaskCycle mCycle;
     int mOnWitchThread;
 
     public TaskChain(TaskAction<T,R1> action){
@@ -30,6 +33,10 @@ public class TaskChain<T,R1>{
         mNext=new TaskChain<>(action,type);
         mNext.mFirst=mFirst;
         return mNext;
+    }
+
+    public TaskCycle<R1> cycleTask(List<R1> list){
+        return mCycle=new TaskCycle(this,list);
     }
 
     public void setData(T data){
