@@ -10,8 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Database;
-import com.fastlib.app.Fastlib;
 import com.fastlib.bean.DatabaseTable;
 import com.fastlib.net.NetManager;
 import com.fastlib.utils.Reflect;
@@ -40,11 +40,12 @@ public class FastDatabase{
     private CustomUpdate mCustomUpdate;
     private Context mContext;
     private RuntimeAttribute mAttribute;
-    private FunctionCommand mFunctionCommand;
+    private Map<String,FunctionCommand> mFunctionCommand; //数据库函数与各字段映射
 
     private FastDatabase(Context context){
         mContext = context.getApplicationContext();
         mAttribute = new RuntimeAttribute();
+        mFunctionCommand=new HashMap<>();
     }
 
     /**
@@ -199,7 +200,7 @@ public class FastDatabase{
         String[] args = selectionArgs.isEmpty() ? null : selectionArgs.toArray(new String[]{});
         cursor = database.rawQuery(complete, args);
         if (cursor == null) {
-            if (Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 System.out.println("请求的数据不存在数据库");
             database.close();
             return null;
@@ -233,11 +234,12 @@ public class FastDatabase{
                         continue;
                     }
                     //函数命令,仅对第一个参数有效
-                    if(mFunctionCommand!=null&&field.getName().equals(mFunctionCommand.getFieldName())){
+                    if(mFunctionCommand.containsKey(field.getName())){
+                        FunctionCommand functionCommand=mFunctionCommand.get(field.getName());
                         boolean functionSuccess=false;
                         List<String> functionArgs=new ArrayList<>();
-                        Cursor functionCursor=database.rawQuery("select "+mFunctionCommand.getType().getName()+"("+mFunctionCommand.getFieldName()+")"+" from '"+tableName+
-                                "' "+getFilters(key,mFunctionCommand.getFilterCommand(),functionArgs),functionArgs.toArray(new String[]{}));
+                        Cursor functionCursor=database.rawQuery("select "+functionCommand.getType().getName()+"("+field.getName()+")"+" from '"+tableName+
+                                "' "+getFilters(key,functionCommand.getFilterCommand(),functionArgs),functionArgs.toArray(new String[]{}));
                         if(functionCursor!=null){
                             functionCursor.moveToFirst();
                             if(field.getType()==int.class||field.getType()==long.class){
@@ -252,9 +254,10 @@ public class FastDatabase{
                                 else field.setDouble(obj,value);
                                 functionSuccess=true;
                             }
+                            else System.out.println("数据库函数方法仅对数字类型有效 字段"+field.getName()+"类型为"+field.getType());
                             functionCursor.close();
                         }
-                        mFunctionCommand=null; //清除掉函数命令
+                        mFunctionCommand.remove(field.getName()); //清除掉函数命令
                         if(functionSuccess) continue;
                     }
                     switch (type) {
@@ -328,7 +331,6 @@ public class FastDatabase{
                     Constructor<T> constructor=cla.getDeclaredConstructor(clas);
                     obj=constructor.newInstance(constructorParams);
                     //参数注入.这一块有优化可能
-
                     for (String fieldName : params.keySet()){
                         Field field = cla.getDeclaredField(fieldName);
 
@@ -339,7 +341,7 @@ public class FastDatabase{
                 list.add(obj);
                 cursor.moveToNext();
             } catch (Exception e) {
-                if (Fastlib.isShowLog())
+                if (BuildConfig.DEBUG)
                     System.out.println("数据库在取数据时发生异常:" + e.toString());
                 database.close();
                 return null;
@@ -448,7 +450,7 @@ public class FastDatabase{
                         deleteCommand = deleteCommand.replaceFirst("[?]", "'" + replaceStr + "'");
                 database.execSQL(deleteCommand);
                 database.setTransactionSuccessful();
-                if(Fastlib.isShowLog())
+                if (BuildConfig.DEBUG)
                     System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabaseComplete()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabaseComplete()) + "--d--" + Integer.toString(count) + "->" + tableName);
             } catch (SQLiteException e) {
                 return false;
@@ -478,13 +480,13 @@ public class FastDatabase{
 
         tableName = obj.getClass().getCanonicalName();
         //如果表不存在或者表中没有这条数据，则返回false
-        if (!tableExists(tableName)) {
-            if (Fastlib.isShowLog())
+        if (!tableExists(tableName))
+            if (BuildConfig.DEBUG){
                 System.out.println("更新数据失败，表不存在");
             return false;
         }
         if (!tableHadData(tableName)) {
-            if (Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 System.out.println("更新数据失败，表中不含如何数据");
             return false;
         }
@@ -494,7 +496,7 @@ public class FastDatabase{
         Cursor cursor = database.rawQuery("select *from '" + tableName + "'" + filter, ss = args.toArray(new String[]{}));
         cursor.moveToFirst();
         if (cursor.isAfterLast()) {
-            if (Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 System.out.println("更新数据失败,没有找到要更新的数据");
             cursor.close();
             database.close();
@@ -578,10 +580,10 @@ public class FastDatabase{
             database.beginTransaction();
             database.update("'" + tableName + "'", cv, filter, ss);
             database.setTransactionSuccessful();
-            if (Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabaseComplete()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabaseComplete()) + "<--u-" + count + "- " + tableName);
         } catch (SQLiteException e) {
-            if (Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 System.out.println("更新数据失败，异常：" + e.toString());
             return false;
         } finally {
@@ -689,7 +691,7 @@ public class FastDatabase{
                                 cv.put(columnName, json);
                         }
                     } catch (IllegalAccessException | IllegalArgumentException e){
-                        if(Fastlib.isShowLog())
+                        if (BuildConfig.DEBUG)
                             System.out.println("更新数据失败:"+e.getMessage());
                         return false;
                     }
@@ -703,17 +705,17 @@ public class FastDatabase{
                         else if(autoIncreKeyField.getType()==long.class||autoIncreKeyField.getType()==Long.class)
                             autoIncreKeyField.setLong(obj,rowId);
                     }catch (IllegalAccessException e){
-                        if(Fastlib.isShowLog())
+                        if (BuildConfig.DEBUG)
                             System.out.println("更新数据失败:"+e.getMessage());
                         return false;
                     }
                 }
             }
-            if (Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabaseComplete()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabaseComplete()) + "<--"+array.length+"--" + tableName);
             db.setTransactionSuccessful();
         } catch (SQLiteException e){
-            if(Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 System.out.println("更新数据失败:"+e.getMessage());
             return false;
         } finally {
@@ -774,11 +776,11 @@ public class FastDatabase{
                         }
                     }
                 } catch (NoSuchFieldException e){
-                    if (Fastlib.isShowLog())
+                    if (BuildConfig.DEBUG)
                         System.out.println("数据库saveOrUpdate时出现异常:" + e.toString());
                     return false;
                 } catch (IllegalAccessException e) {
-                    if (Fastlib.isShowLog())
+                    if (BuildConfig.DEBUG)
                         System.out.println("数据库saveOrUpdate时出现异常:" + e.toString());
                     return false;
                 }
@@ -859,10 +861,10 @@ public class FastDatabase{
         SQLiteDatabase db = mContext.openOrCreateDatabase(database, Context.MODE_PRIVATE, null);
         if (tableExists(table)) {
             db.execSQL("drop table '" + table + "'");
-            if (Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 System.out.println("删除表" + table);
         } else{
-            if(Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 System.out.println("表" + table + "不存在");
         }
     }
@@ -1073,25 +1075,25 @@ public class FastDatabase{
 
             @Override
             public void onCreate(SQLiteDatabase db) {
-                if(Fastlib.isShowLog())
+                if (BuildConfig.DEBUG)
                     System.out.println("创建数据库:"+db.getPath().substring(db.getPath().lastIndexOf(File.separator)+1));
             }
 
             @Override
             public void onUpgrade(SQLiteDatabase db, int oldVersion,
                                   int newVersion) {
-                if (Fastlib.isShowLog())
+                if (BuildConfig.DEBUG)
                     System.out.println("发现数据库版本需要升级，开始升级");
                 if (mCustomUpdate != null) {
-                    if (Fastlib.isShowLog())
+                    if (BuildConfig.DEBUG)
                         System.out.println("使用自定义升级方案");
                     mCustomUpdate.update(db, oldVersion, newVersion);
                 } else{
-                    if(Fastlib.isShowLog())
+                    if (BuildConfig.DEBUG)
                         System.out.println("使用自动升级方案");
                     updateDatabase(db);
                 }
-                if (Fastlib.isShowLog())
+                if (BuildConfig.DEBUG)
                     System.out.println("数据库升级完毕");
             }
         };
@@ -1149,7 +1151,7 @@ public class FastDatabase{
             cla = Class.forName(tableName);
         } catch (ClassNotFoundException e) {
             db.execSQL("drop table '" + tableName + "'");
-            if (Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 System.out.println("删除表" + tableName);
             return;
         }
@@ -1250,7 +1252,7 @@ public class FastDatabase{
         }
         if (needRebuildTable || newColumn.size() > 0)
             alterTable(db, cla, convertDatas, newColumn, needRebuildTable);
-        else if (Fastlib.isShowLog())
+        else if (BuildConfig.DEBUG)
             System.out.println("表 " + tableName + " 不需要修改");
     }
 
@@ -1275,7 +1277,7 @@ public class FastDatabase{
                     String type = newColumn.get(column);
                     db.execSQL("alter table '" + tableName + "' add " + column + " " + type);
                 }
-                if (Fastlib.isShowLog())
+                if (BuildConfig.DEBUG)
                     System.out.println("表" + tableName + "增加" + Integer.toString(newColumn.size()) + "列");
             }
         } else {
@@ -1299,7 +1301,7 @@ public class FastDatabase{
                 db.execSQL("drop table '" + tableName + "'");
                 db.execSQL(generateCreateTableSql(cla));
             }
-            if (Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 System.out.println("表" + tableName + "被调整");
         }
     }
@@ -1450,11 +1452,12 @@ public class FastDatabase{
 
     /**
      * sql函数过滤
-     * @param functionCommand
+     * @param field 字段名
+     * @param functionCommand sql函数命令
      * @return
      */
-    public FastDatabase setFunctionCommand(FunctionCommand functionCommand) {
-        mFunctionCommand = functionCommand;
+    public FastDatabase putFunctionCommand(String field,FunctionCommand functionCommand){
+        mFunctionCommand.put(field,functionCommand);
         return this;
     }
 

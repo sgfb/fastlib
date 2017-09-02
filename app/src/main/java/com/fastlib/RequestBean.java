@@ -3,19 +3,22 @@ package com.fastlib;
 import java.util.Map;
 
 /**
- * Created by sgfb on 17/8/15.
+ * Created by sgfb on 17/8/29.
  */
 public class RequestBean{
-    public RequestHead riskAppHeader;
+    public Header riskAppHeader;
     public Map<String,String> riskAppContent;
 
-    public RequestBean(String sign,Map<String, String> riskAppContent) {
+    public RequestBean(String headerStr, Map<String, String> riskAppContent) {
+        riskAppHeader=new Header(headerStr);
         this.riskAppContent = riskAppContent;
-        riskAppHeader=new RequestHead();
-        riskAppHeader.signMsg=sign;
     }
 
-    public class RequestHead{
+    public class Header{
         public String signMsg;
+
+        public Header(String signMsg) {
+            this.signMsg = signMsg;
+        }
     }
 }

@@ -6,6 +6,8 @@ import com.fastlib.bean.NetFlow;
 import com.fastlib.db.And;
 import com.fastlib.db.FastDatabase;
 import com.fastlib.db.Condition;
+import com.fastlib.db.FunctionCommand;
+import com.fastlib.db.FunctionType;
 import com.fastlib.net.NetManager;
 import com.fastlib.utils.TimeUtil;
 
@@ -34,5 +36,18 @@ public class Plus{
         }
         if(netFlow.requestCount>0)
             FastDatabase.getDefaultInstance(context).saveOrUpdate(netFlow);
+    }
+
+    /**
+     * 获取流量使用情况
+     * @param context 上下文
+     * @return 流量使用情况总和
+     */
+    public static NetFlow getUsedNet(Context context){
+        return FastDatabase.getDefaultInstance(context)
+                .putFunctionCommand("requestCount",FunctionCommand.sum())
+                .putFunctionCommand("receiveByte",FunctionCommand.sum())
+                .putFunctionCommand("takeByte",FunctionCommand.sum())
+                .getFirst(NetFlow.class);
     }
 }

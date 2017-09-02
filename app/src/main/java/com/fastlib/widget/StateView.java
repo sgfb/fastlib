@@ -7,7 +7,7 @@ import android.util.SparseArray;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import com.fastlib.app.Fastlib;
+import com.fastlib.BuildConfig;
 import com.fastlib.base.AdapterViewState;
 
 /**
@@ -32,7 +32,7 @@ public class StateView extends FrameLayout implements AdapterViewState{
     public void onStateChanged(int state){
         View v=mViews.get(state);
         if(v==null){
-            if(Fastlib.isShowLog())
+            if(BuildConfig.DEBUG)
             Log.d(TAG,"StateView改变成一个非预期的状态");
             return;
         }

@@ -1,10 +1,29 @@
 package com.fastlib;
 
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
+import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.BitmapRegionDecoder;
+import android.graphics.Point;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.telephony.TelephonyManager;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.ImageSpan;
+import android.view.View;
+import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
@@ -15,18 +34,27 @@ import com.fastlib.app.EventObserver;
 import com.fastlib.app.FastActivity;
 import com.fastlib.app.PhotoResultListener;
 import com.fastlib.base.AbsPreviewImageActivity;
+import com.fastlib.base.RoundDrawable;
+import com.fastlib.db.FastDatabase;
+import com.fastlib.db.FunctionCommand;
 import com.fastlib.net.CookedListener;
 import com.fastlib.net.GlobalListener;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.net.SimpleListener;
 import com.fastlib.net.SimpleMockProcessor;
+import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.N;
+import com.fastlib.utils.ScreenUtils;
+import com.fastlib.utils.TimeUtil;
+import com.fastlib.utils.Utils;
+import com.fastlib.widget.RoundImageView;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Iterator;
 
 /**
@@ -36,13 +64,21 @@ import java.util.Iterator;
 public class MainActivity extends FastActivity{
     @Bind(R.id.path)
     EditText mPath;
-    @Bind(R.id.imagesPath)
-    TextView mImagesPath;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState){
-        EventObserver.build(this);
-        super.onCreate(savedInstanceState);
+    public void beginTask(Task task){
+        Task firstTask=task;
+        while(firstTask.getPrevious()!=null)
+            firstTask=firstTask.getPrevious();
+        processTask(firstTask);
+    }
+
+    public void processTask(Task task){
+        Object obj=task.getReturn();
+        Task nextTask=task.getNext();
+        if(nextTask!=null){
+            nextTask.getAction().setParam(obj);
+            processTask(nextTask);
+        }
     }
 
     @Override
@@ -51,15 +87,27 @@ public class MainActivity extends FastActivity{
     }
 
     @Bind(R.id.bt)
-    private void commit() throws IOException {
-        Intent intent=new Intent(this,ImagePreviewActivity.class);
-        String[] paths=mImagesPath.getText().toString().split("\\|");
-        ArrayList<String> list=new ArrayList<>();
-        for(String s:paths)
-            if(!TextUtils.isEmpty(s))
-                list.add(s);
-        intent.putExtra(AbsPreviewImageActivity.ARG_IMAGES,list);
-        startActivity(intent);
+    private void commit() throws IOException{
+        beginTask(Task.begin(new DefaultAction<String,String>(){
+
+            @Override
+            public String execute(String param){
+                return "b";
+            }
+        }).cycle(new DefaultAction<String[],String>(){
+
+            @Override
+            public String execute(String[] param){
+                return param+"a";
+            }
+        }).next(new DefaultAction<String,String>(){
+
+            @Override
+            public String execute(String param){
+                System.out.println(param+"o");
+                return null;
+            }
+        }));
 //        File file=new File(Environment.getExternalStorageDirectory(),mPath.getText().toString());
 //        if(file.exists()&&file.isFile()){
 //            InputStream in=new FileInputStream(file);
@@ -91,18 +139,14 @@ public class MainActivity extends FastActivity{
 
     @Bind(R.id.bt2)
     private void commit2(){
-        openAlbum(new PhotoResultListener() {
-            @Override
-            public void onPhotoResult(String path) {
-                mImagesPath.append(path+"|");
-            }
-        });
+
     }
 
     @Bind(R.id.bt3)
-    private void commit3(){
+    private void commit3(View view){
 
     }
+
 
     private boolean isEncrypted(byte flag){
         return flag>>7==1;

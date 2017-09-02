@@ -5,9 +5,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.widget.ImageView;
 
+import com.fastlib.BuildConfig;
 import com.fastlib.R;
 import com.fastlib.app.FastActivity;
-import com.fastlib.app.Fastlib;
 import com.fastlib.app.TaskAction;
 import com.fastlib.app.TaskChain;
 import com.fastlib.app.TaskChainHead;
@@ -99,7 +99,7 @@ public class UrlImageRuntime{
             public void onErrorListener(Request r, String error) {
                 super.onErrorListener(r, error);
                 mImage.isDownloading=false;
-                if(Fastlib.isShowLog())
+                if(BuildConfig.DEBUG)
                     System.out.println("下载图像异常:"+error);
             }
         });

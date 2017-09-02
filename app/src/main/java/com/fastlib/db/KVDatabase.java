@@ -4,7 +4,7 @@ import android.content.Context;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
-import com.fastlib.app.Fastlib;
+import com.fastlib.BuildConfig;
 import com.fastlib.bean.HashMapTable;
 import com.fastlib.bean.ListTable;
 import com.fastlib.bean.SetTable;
@@ -96,7 +96,7 @@ public class KVDatabase{
                     setStr(Pair.create(key,Double.toHexString(doubleValue+1)));
                     return true;
                 }catch (NumberFormatException e1) {
-                    if (Fastlib.isShowLog())
+                    if (BuildConfig.DEBUG)
                         e1.printStackTrace();
                 }
             }
@@ -122,7 +122,7 @@ public class KVDatabase{
                     setStr(Pair.create(key,Double.toString(doubleValue-1)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(Fastlib.isShowLog())
+                    if(BuildConfig.DEBUG)
                         e1.printStackTrace();
                 }
             }
@@ -149,7 +149,7 @@ public class KVDatabase{
                     setStr(Pair.create(key, Double.toString(doubleValue+incrementCount)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(Fastlib.isShowLog())
+                    if(BuildConfig.DEBUG)
                         e1.printStackTrace();
                 }
             }
@@ -176,7 +176,7 @@ public class KVDatabase{
                     setStr(Pair.create(key,Double.toString(doubleValue-decrementCount)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(Fastlib.isShowLog())
+                    if(BuildConfig.DEBUG)
                         e1.printStackTrace();
                 }
             }
@@ -203,7 +203,7 @@ public class KVDatabase{
                     setStr(Pair.create(key,Double.toString(doubleValue+incrementCount)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(Fastlib.isShowLog())
+                    if(BuildConfig.DEBUG)
                         e1.printStackTrace();
                     return false;
                 }
@@ -231,7 +231,7 @@ public class KVDatabase{
                     setStr(Pair.create(key,Double.toString(doubleValue-decrementCount)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(Fastlib.isShowLog())
+                    if(BuildConfig.DEBUG)
                         e1.printStackTrace();
                 }
             }

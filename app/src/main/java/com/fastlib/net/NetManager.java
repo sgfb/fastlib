@@ -6,7 +6,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
-import com.fastlib.app.Fastlib;
+import com.fastlib.BuildConfig;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -100,7 +100,7 @@ public class NetManager{
                 mRequestCount++;
                 Tx+=processor1.getTx();
                 Rx+=processor1.getRx();
-                if(Fastlib.isShowLog())
+                if(BuildConfig.DEBUG)
                     System.out.println(processor1);
             }
         },new Handler(Looper.getMainLooper()));

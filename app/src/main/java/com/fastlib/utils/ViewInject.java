@@ -8,10 +8,10 @@ import android.support.v4.app.Fragment;
 import android.view.View;
 import android.widget.AdapterView;
 
+import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.LocalData;
 import com.fastlib.annotation.TransitionAnimation;
-import com.fastlib.app.Fastlib;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -58,7 +58,7 @@ public class ViewInject{
                     try {
                         m.invoke(mHost);  //先尝试绑定无参方法
                     } catch (InvocationTargetException e){ //这个异常是非方法参数异常所以直接显示或抛出
-                        if(Fastlib.isShowLog()){
+                        if(BuildConfig.DEBUG){
                             System.out.println("toggle exception");
                             e.printStackTrace();
                         }
@@ -66,12 +66,12 @@ public class ViewInject{
                         try {
                             m.invoke(mHost,objs);
                         } catch (IllegalAccessException e1) {
-                            if(Fastlib.isShowLog()){
+                            if(BuildConfig.DEBUG){
                                 System.out.println("toggle exception");
                                 e1.printStackTrace();
                             }
                         } catch (InvocationTargetException e2) {
-                            if(Fastlib.isShowLog()){
+                            if(BuildConfig.DEBUG){
                                 System.out.println("toggle exception");
                                 e2.printStackTrace();
                             }
@@ -90,19 +90,19 @@ public class ViewInject{
                     if(result instanceof Boolean)
                         return (Boolean)result;
                 } catch (IllegalAccessException|IllegalArgumentException e1) {
-                    if(Fastlib.isShowLog()){
+                    if(BuildConfig.DEBUG){
                         System.out.println("toggle exception");
                         e1.printStackTrace();
                     }
                 } catch (InvocationTargetException e2){
-                    if(Fastlib.isShowLog()){
+                    if(BuildConfig.DEBUG){
                         System.out.println("toggle exception");
                         e2.printStackTrace();
                     }
                 }
                 return false;
             } catch (InvocationTargetException e){
-                if(Fastlib.isShowLog()){
+                if(BuildConfig.DEBUG){
                     System.out.println("toggle exception");
                     e.printStackTrace();
                 }
@@ -193,7 +193,7 @@ public class ViewInject{
                             field.set(mHost,view);
                             checkTransitionAnimationInject(view,field);
                         } catch (IllegalAccessException e) {
-                            if(Fastlib.isShowLog())
+                            if(BuildConfig.DEBUG)
                             System.out.println(e.getMessage());
                         }
                     }
@@ -224,7 +224,7 @@ public class ViewInject{
         if(Build.VERSION.SDK_INT<Build.VERSION_CODES.LOLLIPOP) //小于5.0不检查
             return;
         if(view==null){
-            if(Fastlib.isShowLog())
+            if(BuildConfig.DEBUG)
                 System.out.println("视图为空，不可使用共享动画名注入");
             return;
         }

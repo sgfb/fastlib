@@ -62,7 +62,7 @@ public abstract class FastActivity extends AppCompatActivity{
         mThreadPool.execute(new Runnable(){
             @Override
             public void run() {
-                EventObserver.getInstance().subscribe(FastActivity.this);
+                EventObserver.getInstance().subscribe(FastActivity.this,FastActivity.this);
                 prepareTask();
             }
         });
@@ -121,7 +121,7 @@ public abstract class FastActivity extends AppCompatActivity{
      * @param tc 任务链
      */
     public void startTasks(TaskChain tc){
-        TaskChainHead.processTaskChain(this, mThreadPool, mMainThread,tc.getFirst());
+//        TaskChainHead.processTaskChain(this, mThreadPool, mMainThread,tc.getFirst());
     }
 
     /**
@@ -231,7 +231,7 @@ public abstract class FastActivity extends AppCompatActivity{
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        EventObserver.getInstance().unsubscribe(this);
+        EventObserver.getInstance().unsubscribe(this,this);
         mThreadPool.shutdownNow();
         mThreadPool.purge();
         mThreadPool=null;

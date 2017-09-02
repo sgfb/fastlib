@@ -1,7 +1,5 @@
 package com.fastlib.app;
 
-import java.util.List;
-
 /**
  * Created by sgfb on 17/2/22.
  * 任务队列基本单元
@@ -12,9 +10,16 @@ public class TaskChain<T,R1>{
 
     TaskAction<T,R1> mAction;
     TaskChain mNext;
-    TaskChain mFirst;
-    TaskCycle mCycle;
+    TaskChain mPreviousCycleTask; //前置循环任务
     int mOnWitchThread;
+    int mCycleCount;
+    int mCycleRound; //循环堆叠
+    R1[] mCycleObj;
+
+    public TaskChain(){
+        mCycleCount=0;
+        mCycleRound =-1;
+    }
 
     public TaskChain(TaskAction<T,R1> action){
         this(action,TYPE_THREAD_ON_WORK);
@@ -31,19 +36,25 @@ public class TaskChain<T,R1>{
 
     public <R2> TaskChain<R1,R2> next(TaskAction<R1,R2> action,int type){
         mNext=new TaskChain<>(action,type);
-        mNext.mFirst=mFirst;
         return mNext;
     }
 
-    public TaskCycle<R1> cycleTask(List<R1> list){
-        return mCycle=new TaskCycle(this,list);
+//    public TaskChain<R1> cycle(int cycleCount,R1[] array,TaskSimpleAction<R1> action){
+//        mCycleCount=cycleCount;
+//        mCycleRound =0;
+//        mNext=new TaskChain<>(action);
+//        mCycleObj=array;
+//        return mNext;
+//    }
+
+    public TaskChain<T,R1> again(T t,TaskAction<T,R1> action){
+        TaskChain<T,R1> task=new TaskChain<>();
+        task.setData(t);
+        return task;
     }
+
 
     public void setData(T data){
         mAction.setData(data);
-    }
-
-    public TaskChain getFirst() {
-        return mFirst;
     }
 }

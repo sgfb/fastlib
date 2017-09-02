@@ -10,6 +10,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Event;
 import com.fastlib.net.NetManager;
 
@@ -32,33 +33,28 @@ public class EventObserver {
     private static EventObserver mOwer;
     private Map<String,LocalReceiver> mNameToObserver;   //订阅事件名->订阅广播
     private Map<Object,List<String>> mSubscriberToEvent; //订阅者->订阅事件名
-    private Context mContext;
 
-    private EventObserver(Context context){
-        mContext=context;
+    private EventObserver(){
         mNameToObserver =new HashMap<>();
         mSubscriberToEvent =new HashMap<>();
     }
 
     public static synchronized EventObserver getInstance(){
-        return mOwer;
-    }
-
-    public static synchronized void build(Context context){
         if(mOwer==null)
-            mOwer=new EventObserver(context);
+            mOwer=new EventObserver();
+        return mOwer;
     }
 
     /**
      * 订阅注册者所有有Event注解的本地事件.这个方法将会遍历订阅者所有方法
      * @param subscriber 订阅者
      */
-    public synchronized void subscribe(Object subscriber){
+    public synchronized void subscribe(Context context,Object subscriber){
         List<String> eventNames= mSubscriberToEvent.get(subscriber);
         List<Method> eventMethods=findEventMethods(subscriber);
 
         if(eventMethods==null||eventMethods.isEmpty()){
-            if(Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 Log.d(TAG,"订阅者"+subscriber+"没有广播接收方法,请检查是否添加了Event注解和广播方法参数");
             return;
         }
@@ -73,31 +69,31 @@ public class EventObserver {
             if(receiver==null){
                 receiver = new LocalReceiver();
                 mNameToObserver.put(eventName,receiver);
-                LocalBroadcastManager.getInstance(mContext).registerReceiver(receiver,filter);
+                LocalBroadcastManager.getInstance(context).registerReceiver(receiver,filter);
             }
             if(!eventNames.contains(eventName)) {
                 eventNames.add(eventName);
                 receiver.mSubscribes.put(subscriber,m);
             }
-            if(Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 Log.d(TAG,"订阅者"+subscriber+"订阅事件"+eventName);
         }
     }
 
-    public void unsubscribe(Object subscriber,Class<?> event){
-        unsubscribe(subscriber,baseClassUpper(event));
+    public void unsubscribe(Context context,Object subscriber,Class<?> event){
+        unsubscribe(context,subscriber,baseClassUpper(event));
     }
 
     /**
      * 移除某订阅者所有订阅事件
      * @param subscribe 订阅者
      */
-    public synchronized void unsubscribe(Object subscribe){
+    public synchronized void unsubscribe(Context context,Object subscribe){
         List<String> events= mSubscriberToEvent.get(subscribe);
         if(events==null||events.size()<=0)
             return;
         for(String event:events)
-            unsubscribe(subscribe,event);
+            unsubscribe(context,subscribe,event);
     }
 
     /**
@@ -105,7 +101,7 @@ public class EventObserver {
      * @param subscriber 订阅者
      * @param eventName 订阅事件名
      */
-    public void unsubscribe(Object subscriber,String eventName){
+    public void unsubscribe(Context context,Object subscriber,String eventName){
         List<String> events= mSubscriberToEvent.get(subscriber);
         LocalReceiver receiver= mNameToObserver.get(eventName);
 
@@ -114,12 +110,12 @@ public class EventObserver {
         events.remove(eventName);
         receiver.mSubscribes.remove(subscriber);
         if(receiver.mSubscribes.size()==0){
-            LocalBroadcastManager.getInstance(mContext).unregisterReceiver(receiver);
+            LocalBroadcastManager.getInstance(context).unregisterReceiver(receiver);
             mNameToObserver.remove(eventName);
         }
         if(events.size()==0)
             mSubscriberToEvent.remove(subscriber);
-        if(Fastlib.isShowLog())
+        if (BuildConfig.DEBUG)
             Log.d(TAG, "订阅者" + subscriber + "移除事件"+eventName);
     }
 
@@ -127,9 +123,9 @@ public class EventObserver {
      * 发送本地事件
      * @param event
      */
-    public void sendEvent(Object event){
+    public void sendEvent(Context context,Object event){
         if(event==null){
-            if(Fastlib.isShowLog())
+            if (BuildConfig.DEBUG)
                 Log.d(TAG,"无法发送null事件");
             return;
         }
@@ -137,18 +133,18 @@ public class EventObserver {
         Intent intent=new Intent(name);
         EntityWrapper entity=new EntityWrapper(event);
         intent.putExtra("entity",entity);
-        LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
-        if(Fastlib.isShowLog())
+        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
+        if (BuildConfig.DEBUG)
             Log.d(TAG,"广播事件"+name);
     }
 
     /**
      * 应用退出时应该调用这个方法清理所有数据
      */
-    public void close(){
-        if(Fastlib.isShowLog())
+    public void close(Context context){
+        if (BuildConfig.DEBUG)
             Log.d(TAG,"清理所有数据");
-        clearReceiver();
+        clearReceiver(context);
         mNameToObserver.clear();
         mSubscriberToEvent.clear();
         mOwer=null;
@@ -159,12 +155,12 @@ public class EventObserver {
     /**
      * 清理所有广播
      */
-    private void clearReceiver(){
+    private void clearReceiver(Context context){
         Iterator<String> iter= mNameToObserver.keySet().iterator();
         while(iter.hasNext()){
             String key=iter.next();
             LocalReceiver receiver= mNameToObserver.get(key);
-            LocalBroadcastManager.getInstance(mContext).unregisterReceiver(receiver);
+            LocalBroadcastManager.getInstance(context).unregisterReceiver(receiver);
         }
     }
 
@@ -258,7 +254,7 @@ public class EventObserver {
                 }
             }
             for(Object obj:invisibleSubscriber)
-                unsubscribe(obj);
+                unsubscribe(context,obj);
         }
 
         /**

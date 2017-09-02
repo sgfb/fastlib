@@ -59,7 +59,7 @@ public abstract class FastFragment extends Fragment{
         mThreadPool.execute(new Runnable(){
             @Override
             public void run(){
-                EventObserver.getInstance().subscribe(FastFragment.this);
+                EventObserver.getInstance().subscribe(getContext(),FastFragment.this);
                 prepareTask();
             }
         });
@@ -205,7 +205,7 @@ public abstract class FastFragment extends Fragment{
      * @param tc
      */
     protected void startTasks(TaskChain tc) {
-        TaskChainHead.processTaskChain(getActivity(),mThreadPool,Thread.currentThread(),tc.getFirst());
+//        TaskChainHead.processTaskChain(getActivity(),mThreadPool,Thread.currentThread(),tc.getFirst());
     }
 
     /**
@@ -225,7 +225,7 @@ public abstract class FastFragment extends Fragment{
     @Override
     public void onDestroy(){
         super.onDestroy();
-        EventObserver.getInstance().unsubscribe(this);
+        EventObserver.getInstance().unsubscribe(getContext(),this);
         mThreadPool.shutdownNow();
         mThreadPool.purge();
         for(Request request:mRequests)

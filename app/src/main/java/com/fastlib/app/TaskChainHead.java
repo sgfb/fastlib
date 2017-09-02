@@ -3,7 +3,6 @@ package com.fastlib.app;
 import android.app.Activity;
 import android.os.Build;
 
-import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -72,12 +71,15 @@ public class TaskChainHead<T>{
     public <R1> TaskChain<T,R1> next(TaskAction<T,R1> action, int onWhichThread){
         TaskChain<T,R1> mFirstTask =new TaskChain<>(action,onWhichThread);
         mFirstTask.setData(mData);
-        mFirstTask.mFirst=mFirstTask;
         return mFirstTask;
     }
 
-//    public <R1> TaskChain<T,R1> cycle(TaskAction<T[],T> action){
-//
+//    public static void processTaskChain2(Activity activity,ThreadPoolExecutor threadPool,Thread hostThread,TaskChain taskChain){
+//        if(taskChain==null||isActivityDestroy(activity)) return;
+//        //指针跳到第一个任务
+//        while(taskChain.getPrevious()!=null)
+//            taskChain=taskChain.getPrevious();
+//        processTaskChain(activity,threadPool,hostThread,taskChain);
 //    }
 
     /**
@@ -90,44 +92,45 @@ public class TaskChainHead<T>{
     public static void processTaskChain(final Activity activity, final ThreadPoolExecutor threadPool, final Thread hostThread, final TaskChain taskChain){
         if(taskChain==null||isActivityDestroy(activity)) return;
         if(taskChain.mOnWitchThread==TaskChain.TYPE_THREAD_ON_MAIN){
-            if(hostThread==Thread.currentThread()){
-                taskChain.mAction.run();
-                if(taskChain.mNext!=null) {
-                    taskChain.mNext.setData(taskChain.mAction.getReturn());
-                    processTaskChain(activity,threadPool,hostThread,taskChain.mNext);
+            if(hostThread==Thread.currentThread()) taskProcess(activity,threadPool,hostThread,taskChain);
+            else activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    taskProcess(activity,threadPool,hostThread,taskChain);
                 }
-            }
-            else
-                activity.runOnUiThread(new Runnable(){
-                    @Override
-                    public void run(){
-                        taskChain.mAction.run();
-                        if(taskChain.mNext!=null){
-                            taskChain.mNext.setData(taskChain.mAction.getReturn());
-                            processTaskChain(activity,threadPool,hostThread,taskChain.mNext);
-                        }
-                    }
-                });
+            });
         }
         else{
-            if(hostThread==Thread.currentThread()){
+            if(hostThread==Thread.currentThread())
                 threadPool.execute(new Runnable() {
                     @Override
                     public void run() {
-                        taskChain.mAction.run();
-                        if(taskChain.mNext!=null){
-                            taskChain.mNext.setData(taskChain.mAction.getReturn());
-                            processTaskChain(activity,threadPool,hostThread,taskChain.mNext);
-                        }
+                        taskProcess(activity,threadPool,hostThread,taskChain);
                     }
                 });
+            else taskProcess(activity,threadPool,hostThread,taskChain);
+
+        }
+    }
+
+    private static void taskProcess(Activity activity,ThreadPoolExecutor threadPool,Thread hostThread,TaskChain taskChain){
+        taskChain.mAction.run();
+        if(taskChain.mNext!=null){
+            //是否循环起点
+            if(taskChain.mCycleCount>0){
+                taskChain.mCycleCount--;
+                taskChain.mNext.mCycleRound =taskChain.mCycleRound +1;
             }
-            else{
-                taskChain.mAction.run();
-                if(taskChain.mNext!=null){
-                    taskChain.mNext.setData(taskChain.mAction.getReturn());
-                    processTaskChain(activity,threadPool,hostThread,taskChain.mNext);
-                }
+            taskChain.mNext.setData(taskChain.mAction.getReturn());
+            processTaskChain(activity,threadPool,hostThread,taskChain.mNext);
+        }
+        else{
+            //是否循环终点
+            if(taskChain.mCycleRound >0){
+                TaskChain cycleTask=taskChain;
+//                while(cycleTask.mCycleRound >0)
+//                    cycleTask=cycleTask.getPrevious();
+                processTaskChain(activity,threadPool,hostThread,cycleTask);
             }
         }
     }

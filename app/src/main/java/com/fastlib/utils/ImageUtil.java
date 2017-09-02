@@ -26,7 +26,7 @@ import android.support.v8.renderscript.RenderScript;
 import android.support.v8.renderscript.ScriptIntrinsicBlur;
 import android.view.View;
 
-import com.fastlib.app.Fastlib;
+import com.fastlib.BuildConfig;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -80,11 +80,13 @@ public class ImageUtil{
      */
     public static File getThumbImageFile(boolean deleteBigger, boolean resultSmaller, int limit, int quality, String path, String parent,Bitmap.CompressFormat format)throws IOException{
         File f=new File(path);
+
+        f.setExecutable(true); //7.0文件安全权限
         if(f.exists())
-            if(Fastlib.isShowLog())
+            if(BuildConfig.DEBUG)
                 System.out.println("压缩前:"+f.length());
         else
-            if(Fastlib.isShowLog())
+            if(BuildConfig.DEBUG)
                 System.out.println("file not exists");
         String suffix;
         if(Bitmap.CompressFormat.JPEG==format)
@@ -96,7 +98,7 @@ public class ImageUtil{
         Bitmap bitmap=getThumbBitmap(path,limit);
         File file=getTempFile("compress",suffix,new File(parent));
         FileOutputStream fos =new FileOutputStream(file);
-        bitmap.compress(Bitmap.CompressFormat.JPEG, quality,fos);
+        bitmap.compress(format, quality,fos);
         if(f.length()<file.length()){
             smallerFile=f;
             biggerFile=file;
@@ -107,7 +109,7 @@ public class ImageUtil{
         }
         if(deleteBigger)
             biggerFile.delete();
-        if(Fastlib.isShowLog())
+        if(BuildConfig.DEBUG)
             System.out.println("压缩后:"+file.length());
         bitmap.recycle();
         fos.close();
@@ -533,7 +535,7 @@ public class ImageUtil{
                 e.printStackTrace();
             }
         else
-            if(Fastlib.isShowLog())
+            if(BuildConfig.DEBUG)
                 System.out.println("保存view到文件中失败");
     }
 }

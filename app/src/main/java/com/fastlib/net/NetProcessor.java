@@ -1,6 +1,7 @@
 package com.fastlib.net;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -151,6 +152,7 @@ public class NetProcessor implements Runnable{
             }
             checkErrorStream(connection,connectionTimer); //判断返回码是否200.不是的话做额外处理
             if(needBody){
+                Context context=getHostContext();
                 in=mRequest.isReceiveGzip()?new GZIPInputStream(connection.getInputStream()):connection.getInputStream();
                 int len;
                 byte[] data = new byte[BUFF_LENGTH];
@@ -170,13 +172,13 @@ public class NetProcessor implements Runnable{
                         fileOut.write(data,0,len);
                         Rx += len;
                         speed += len;
-                        if ((System.currentTimeMillis() - timer) > 1000) { //每秒发送一次广播
-                            EventObserver.getInstance().sendEvent(new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(),mRequest));
+                        if (context!=null&&(System.currentTimeMillis() - timer) > 1000) { //每秒发送一次广播
+                            EventObserver.getInstance().sendEvent(context,new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(),mRequest));
                             speed = 0;
                             timer = System.currentTimeMillis();
                         }
                     }
-                    EventObserver.getInstance().sendEvent(new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(),mRequest)); //下载结束发一次广播
+                    EventObserver.getInstance().sendEvent(context,new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(),mRequest)); //下载结束发一次广播
                     fileOut.close();
                     mResponse = downloadFile.getAbsolutePath().getBytes();
                 } else {
@@ -521,13 +523,14 @@ public class NetProcessor implements Runnable{
         long count = 0;
         int speed = 0;
 
+        Context context=getHostContext();
         while ((len = fileIn.read(data)) != -1&&!Thread.currentThread().isInterrupted()){
             outDelegate.write(data, 0, len);
             count += len;
             speed += len;
             Tx += len;
-            if ((System.currentTimeMillis() - time) > 1000) {
-                EventObserver.getInstance().sendEvent(new EventUploading(speed, count, file.getAbsolutePath()));
+            if (context!=null&&(System.currentTimeMillis() - time) > 1000) {
+                EventObserver.getInstance().sendEvent(context,new EventUploading(speed, count, file.getAbsolutePath()));
                 speed = 0;
                 time = System.currentTimeMillis();
             }
@@ -559,6 +562,13 @@ public class NetProcessor implements Runnable{
             }
         }
         return sb.toString().replace(" ","%20"); //最后空格置换
+    }
+
+    public Context getHostContext(){
+        Object host=mRequest.getHost();
+        if(host instanceof Activity) return (Context) host;
+        else if(host instanceof Fragment) return ((Fragment)host).getContext();
+        return null;
     }
 
     @Override

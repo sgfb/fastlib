@@ -13,9 +13,9 @@ import android.util.SparseArray;
 import android.view.View;
 import android.widget.AdapterView;
 
+import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.LocalData;
-import com.fastlib.app.Fastlib;
 import com.fastlib.db.And;
 import com.fastlib.db.FastDatabase;
 import com.fastlib.db.Condition;
@@ -161,7 +161,7 @@ public class LocalDataInject{
         Class<?>[] paramTypes = m.getParameterTypes();
         try {
             if (data == null) { //如果没有则读取一份进入缓存
-                if (Fastlib.isShowLog())
+                if (BuildConfig.DEBUG)
                     System.out.println("缓存中没有触发数据");
                 //截断触发事件直到数据读取完毕
                 switch (type) {
@@ -195,7 +195,7 @@ public class LocalDataInject{
                 }
                 mToggleData.append(v.getId(), data);
                 v.setOnClickListener(clickListener);
-            } else if(Fastlib.isShowLog())
+            } else if (BuildConfig.DEBUG)
                 System.out.println("缓存中有触发数据");
             //View必须在第一个，接下来是参数对象数组
             flatInvoke(m, v, data);
@@ -318,7 +318,7 @@ public class LocalDataInject{
      */
     private Object loadLocalDataFromSp(int position, LocalData ld, Class<?> paramType) {
         Activity host=mActivity==null?mFragment.getActivity():mActivity;
-        SharedPreferences sp = host.getSharedPreferences(Fastlib.getsDefaultName(),Context.MODE_PRIVATE);
+        SharedPreferences sp = host.getSharedPreferences(BuildConfig.DEFAULT_DATA_FILE_NAME,Context.MODE_PRIVATE);
         if (paramType == boolean.class || paramType == Boolean.class)
             return sp.getBoolean(ld.value()[position], false);
         else if (paramType == int.class || paramType == Integer.class)
@@ -403,7 +403,7 @@ public class LocalDataInject{
      */
     private void loadLocalDataFromSp(Field field, LocalData lr) throws IllegalAccessException{
         Activity host=mActivity==null?mFragment.getActivity():mActivity;
-        SharedPreferences sp =host.getSharedPreferences(Fastlib.getsDefaultName(),Context.MODE_PRIVATE);
+        SharedPreferences sp =host.getSharedPreferences(BuildConfig.DEFAULT_DATA_FILE_NAME,Context.MODE_PRIVATE);
         Class<?> type = field.getType();
         if (type == boolean.class)
             field.setBoolean(host, sp.getBoolean(lr.value()[0], false));
