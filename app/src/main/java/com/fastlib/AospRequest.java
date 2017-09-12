@@ -28,7 +28,7 @@ public class AospRequest extends Request{
     }
 
     @Override
-    public Request start(boolean forceRefresh){
+    public byte[] start(boolean forceRefresh){
         Gson gson=new Gson();
         String parmasjson=gson.toJson(getParams());
         String headerStr= Utils.getMd5(parmasjson+KEY,false);

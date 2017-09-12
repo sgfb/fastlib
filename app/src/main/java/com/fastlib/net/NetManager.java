@@ -42,9 +42,10 @@ public class NetManager{
     /**
      * 网络任务入队列
      * @param request
+     * @return 立即返回模式时，返回网络请求返回的数据
      */
-    public void netRequest(Request request){
-        if(mGlobalData!=null&&request.isUseFactory()){
+    public byte[] netRequest(Request request){
+        if(mGlobalData!=null&&request.isUseFactory()){ //全局预加载参数
             if(mGlobalData.mParams!=null&&mGlobalData.mParams.length>0){
                 List<Pair<String,String>> params=request.getParamsRaw();
                 if(params==null){
@@ -57,7 +58,7 @@ public class NetManager{
                         if(!params.contains(pair))
                             params.add(pair);
             }
-            if(mGlobalData.mHeads!=null&&mGlobalData.mHeads.length>0){
+            if(mGlobalData.mHeads!=null&&mGlobalData.mHeads.length>0){ //全局预加载头部
                 List<Request.ExtraHeader> heads=request.getSendHeadExtra();
                 if(heads==null){
                     heads=new ArrayList<>();
@@ -70,7 +71,7 @@ public class NetManager{
                             heads.add(header);
                 }
             }
-            if(mGlobalData.mCookies!=null&&!mGlobalData.mCookies.isEmpty()){
+            if(mGlobalData.mCookies!=null&&!mGlobalData.mCookies.isEmpty()){ //全局预加载Cookies
                 List<Pair<String, String>> cookies=request.getSendCookies();
                 if(cookies==null)
                     request.setSendCookies(mGlobalData.mCookies);
@@ -81,18 +82,18 @@ public class NetManager{
                 }
             }
         }
-        if(!TextUtils.isEmpty(mRootAddress)&&!request.isHadRootAddress()){
+        if(!TextUtils.isEmpty(mRootAddress)&&!request.isHadRootAddress()){ //添加根地址，如果需要的话
             request.setUrl(mRootAddress + request.getUrl());
             request.setHadRootAddress(true);
         }
-        enqueue(request);
+        return enqueue(request);
     }
 
     /**
      * 网络请求内部入队列处理
      * @param request
      */
-    private void enqueue(Request request){
+    private byte[] enqueue(Request request){
         ThreadPoolExecutor pool=request.getExecutor();
         NetProcessor processor=new NetProcessor(request,new NetProcessor.OnCompleteListener(){
             @Override
@@ -104,8 +105,13 @@ public class NetManager{
                     System.out.println(processor1);
             }
         },new Handler(Looper.getMainLooper()));
+        if(request.isPromptlyBack()){ //如果是立即返回模式，不进入线程池直接运行后返回数据
+            processor.run();
+            return processor.getResponse();
+        }
         if(pool!=null) pool.execute(processor);
         else sRequestPool.execute(processor);
+        return null;
     }
 
     public void close(){

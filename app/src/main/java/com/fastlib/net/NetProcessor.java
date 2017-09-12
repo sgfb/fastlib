@@ -32,7 +32,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
+import java.util.concurrent.FutureTask;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -94,8 +96,9 @@ public class NetProcessor implements Runnable{
             if(isPost&&(mRequest.getFiles() != null && mRequest.getFiles().size() > 0))
                 isMulti = true;
             //添加额外信息到头部
-            if (mRequest.getSendHeadExtra() != null) {
-                for (Request.ExtraHeader extra : mRequest.getSendHeadExtra())
+            if (mRequest.getSendHeadExtra() != null){
+                List<Request.ExtraHeader> list=mRequest.getSendHeadExtra();
+                for (Request.ExtraHeader extra : list)
                     if(extra.canDuplication) connection.addRequestProperty(extra.field,extra.value);
                     else connection.setRequestProperty(extra.field,extra.value);
             }
@@ -265,7 +268,8 @@ public class NetProcessor implements Runnable{
         for(Map.Entry<String,List<String>> entry:connection.getHeaderFields().entrySet())
             map.put(entry.getKey(),entry.getValue());
         mRequest.setReceiveHeader(map);
-        List<String> cookies=mRequest.getReceiveHeader().remove("Set-Cookie");
+        Map<String,List<String>> cookiesMap=mRequest.getReceiveHeader();
+        List<String> cookies=cookiesMap.remove("Set-Cookie");
         if(cookies!=null&&!cookies.isEmpty()){
             Pair<String,String>[] cookieArray=new Pair[cookies.size()];
             for(int i=0;i<cookies.size();i++){
@@ -594,5 +598,9 @@ public class NetProcessor implements Runnable{
 
     public interface OnCompleteListener {
         void onComplete(NetProcessor processer);
+    }
+
+    public byte[] getResponse() {
+        return mResponse;
     }
 }

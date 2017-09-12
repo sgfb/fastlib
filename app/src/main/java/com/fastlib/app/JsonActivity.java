@@ -4,6 +4,9 @@ import android.os.Bundle;
 import android.support.v4.util.Pair;
 import android.view.View;
 
+import com.fastlib.app.task.Action;
+import com.fastlib.app.task.Task;
+import com.fastlib.app.task.ThreadType;
 import com.fastlib.base.OldViewHolder;
 import com.fastlib.utils.json.JsonObject;
 import com.fastlib.utils.json.JsonViewBinder;
@@ -33,10 +36,11 @@ public abstract class JsonActivity extends FastActivity{
     protected void afterSetContentView(){
         super.afterSetContentView();
         mViewHolder=OldViewHolder.get(findViewById(android.R.id.content));
-        startTasks(TaskChainHead.begin(0).next(new TaskAction<Integer,Integer>(){
+        startTask(Task.begin(0)
+        .next(new Action<Integer,Integer>(){
 
             @Override
-            public Integer call(Integer t){ //初始化有遍历View过程，放入工作线程来处理
+            protected Integer execute(Integer param){  //初始化有遍历View过程，放入工作线程来处理
                 mJsonViewBinder=new JsonViewBinder(JsonActivity.this);
                 Pair<JsonViewBinder.ViewResolve,Class<? extends View>>[] extraViewResolves=generateViewResolves();
                 if(extraViewResolves!=null&&extraViewResolves.length>0)
@@ -45,18 +49,17 @@ public abstract class JsonActivity extends FastActivity{
                 return 0;
             }
         })
-        .next(new TaskAction<Integer,Integer>(){ //任务初始化阶段完毕
-
+        .next(new Action<Integer,Integer>(){
             @Override
-            public Integer call(Integer t){
+            protected Integer execute(Integer param){
                 prepareTask();
                 return 0;
             }
-        },TaskChain.TYPE_THREAD_ON_MAIN)
-        .next(new TaskAction<Integer,Map<String,Object>>(){ //将Intent中的参数全部取出，尝试填充对应视图
+        }, ThreadType.MAIN)
+        .next(new Action<Integer,Map<String,Object>>(){  //将Intent中的参数全部取出，尝试填充对应视图
 
             @Override
-            public Map<String, Object> call(Integer t){
+            protected Map<String, Object> execute(Integer param) {
                 Map<String,Object> map=new HashMap<>();
                 Bundle bundle=getIntent().getExtras();
                 Set<String> keys=bundle.keySet();
@@ -65,13 +68,13 @@ public abstract class JsonActivity extends FastActivity{
                 return map;
             }
         })
-        .next(new TaskAction<Map<String,Object>,Integer>(){ //填充数据到视图
+        .next(new Action<Map<String,Object>,Integer>(){
             @Override
-            public Integer call(Map<String,Object> t){
-                mJsonViewBinder.bindDataToView(t);
+            protected Integer execute(Map<String, Object> param){
+                mJsonViewBinder.bindDataToView(param);
                 return 0;
             }
-        },TaskChain.TYPE_THREAD_ON_MAIN));
+        },ThreadType.MAIN));
     }
 
     /**

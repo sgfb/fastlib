@@ -111,7 +111,7 @@ public class Reflect{
 	}
 
 	public static boolean isVarchar(String type){
-		if(type.equals("char")||type.equals("String"))
+		if(type.equals("char")||type.equals("java_lang_String")||type.equals("String"))
 			return true;
 		return false;
 	}

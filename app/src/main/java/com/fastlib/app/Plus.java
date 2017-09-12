@@ -14,7 +14,7 @@ import com.fastlib.utils.TimeUtil;
 import java.util.Date;
 
 /**
- * 全局环境配置
+ * 增强功能
  */
 public class Plus{
 

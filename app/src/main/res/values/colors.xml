@@ -279,4 +279,5 @@
     <color name="translucent">#55000000</color>
     <color name="translucent_dark">#cc000000</color>
     <color name="translucent_white">#55FFFFFF</color>
+    <color name="translucent_dialog">#99000000</color>
 </resources>

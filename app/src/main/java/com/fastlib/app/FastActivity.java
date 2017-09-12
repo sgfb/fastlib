@@ -5,14 +5,18 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.fastlib.R;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.annotation.TransitionAnimation;
+import com.fastlib.app.task.Task;
+import com.fastlib.app.task.TaskLauncher;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.LocalDataInject;
@@ -31,7 +35,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * Activity基本封装.
  * 1.ContentView注解，Bind视图注解.
  * 2.全局事件注册和解注册(EventObserver)
- * 3.线程池及顺序任务列辅助方法(mThreadPool和startTasks(TaskChain))
+ * 3.线程池及顺序任务列辅助方法(mThreadPool和startTasks(Task))
  * 4.本地数据辅助（LocalData）
  * 5.相机相册调取（openAlbum(PhotoResultListener)和openCamera(PhotoResultListener))
  * 6.6.0权限获取辅助(mPermissionHelper)
@@ -43,9 +47,10 @@ public abstract class FastActivity extends AppCompatActivity{
 
     private boolean isGatingPhoto; //是否正在获取图像
     private boolean isHadTransitionAnimation=false;
-    private Thread mMainThread;
     private LocalDataInject mLocalDataInject;
     private PhotoResultListener mPhotoResultListener;
+    private TaskLauncher mTaskLauncher;
+    private LoadingDialog mLoading;
     private List<Request> mRequests = new ArrayList<>();
 
     protected abstract void alreadyPrepared(); //所有初始化任务结束
@@ -53,10 +58,10 @@ public abstract class FastActivity extends AppCompatActivity{
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        mMainThread = Thread.currentThread();
         mPermissionHelper=new PermissionHelper();
         mLocalDataInject=new LocalDataInject(this);
         mThreadPool=generateThreadPool();
+        mTaskLauncher=new TaskLauncher(this,mThreadPool);
         checkTransitionInject();
         checkContentViewInject();
         mThreadPool.execute(new Runnable(){
@@ -96,7 +101,6 @@ public abstract class FastActivity extends AppCompatActivity{
             setContentView(cv.value());
     }
 
-
     /**
      * 启动网络请求
      * @param request 网络请求
@@ -117,11 +121,11 @@ public abstract class FastActivity extends AppCompatActivity{
     }
 
     /**
-     * 启动一个任务链
-     * @param tc 任务链
+     * 开始线性任务
+     * @param task 任务
      */
-    public void startTasks(TaskChain tc){
-//        TaskChainHead.processTaskChain(this, mThreadPool, mMainThread,tc.getFirst());
+    public void startTask(Task task){
+        mTaskLauncher.startTask(task);
     }
 
     /**
@@ -276,6 +280,50 @@ public abstract class FastActivity extends AppCompatActivity{
      */
     public void startActivityForResult(Class<? extends Activity> cla,int requestCode){
         startActivityForResult(new Intent(this,cla),requestCode);
+    }
+
+    /**
+     * 获取权限辅助工具
+     * @return 权限辅助工具
+     */
+    public PermissionHelper getPermissionHelper(){
+        return mPermissionHelper;
+    }
+
+    /**
+     * 显示进度条
+     */
+    public void loading(){
+        loading(getString(R.string.loading));
+    }
+
+    /**
+     * 显示无限进度
+     * @param hint 进度提示
+     */
+    public void loading(final String hint){
+        if(mLoading==null) {
+            mLoading=new LoadingDialog();
+            mLoading.show(getSupportFragmentManager());
+        }
+        if(Looper.getMainLooper()!=Looper.myLooper()){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mLoading.setHint(hint);
+                }
+            });
+        }
+    }
+
+    /**
+     * 关闭进度条
+     */
+    public void dismissLoading(){
+        if(mLoading!=null){
+            mLoading.dismiss();
+            mLoading=null;
+        }
     }
 
     /**

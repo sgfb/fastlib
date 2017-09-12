@@ -5,15 +5,20 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.fastlib.R;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.annotation.TransitionAnimation;
+import com.fastlib.app.task.Task;
+import com.fastlib.app.task.TaskLauncher;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.LocalDataInject;
@@ -32,7 +37,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * Fragment基本封装
  * 1.全局事件注册和解注册（EventObserver）
  * 2.视图属性和事件注解（Bind）
- * 3.线程池及顺序任务列辅助方法(mThreadPool和startTasks(TaskChain))
+ * 3.线程池及顺序任务列辅助方法(mThreadPool和startTasks(Task))
  * 4.本地数据辅助（LocalData）
  * 5.相机相册调取（openAlbum(PhotoResultListener)和openCamera(PhotoResultListener))
  * 6.6.0权限获取辅助(mPermissionHelper)
@@ -46,6 +51,8 @@ public abstract class FastFragment extends Fragment{
     private volatile int mPreparedTaskRemain=3; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
     private List<Request> mRequests=new ArrayList<>();
     private LocalDataInject mLocalDataInject;
+    private TaskLauncher mTaskLauncher;
+    private LoadingDialog mLoading;
     private PhotoResultListener mPhotoResultListener;
 
     protected abstract void alreadyPrepared(); //所有初始化任务结束
@@ -56,6 +63,7 @@ public abstract class FastFragment extends Fragment{
         mLocalDataInject=new LocalDataInject(this);
         mPermissionHelper=new PermissionHelper();
         mThreadPool=(ThreadPoolExecutor) Executors.newFixedThreadPool(3);
+        mTaskLauncher=new TaskLauncher(this,mThreadPool);
         mThreadPool.execute(new Runnable(){
             @Override
             public void run(){
@@ -201,19 +209,19 @@ public abstract class FastFragment extends Fragment{
     }
 
     /**
-     * 启动一个任务链
-     * @param tc
-     */
-    protected void startTasks(TaskChain tc) {
-//        TaskChainHead.processTaskChain(getActivity(),mThreadPool,Thread.currentThread(),tc.getFirst());
-    }
-
-    /**
      * 启动Activity
      * @param cla
      */
     protected void startActivity(Class<? extends Activity> cla){
         startActivity(new Intent(getContext(),cla));
+    }
+
+    /**
+     * 启动线性任务
+     * @param task 任务
+     */
+    protected void startTask(Task task){
+        mTaskLauncher.startTask(task);
     }
 
     @Override
@@ -230,6 +238,42 @@ public abstract class FastFragment extends Fragment{
         mThreadPool.purge();
         for(Request request:mRequests)
             request.clear();
+    }
+
+    /**
+     * 显示进度条
+     */
+    public void loading(){
+        loading(getString(R.string.loading));
+    }
+
+    /**
+     * 显示无限进度
+     * @param hint 进度提示
+     */
+    public void loading(final String hint){
+        if(mLoading==null) {
+            mLoading=new LoadingDialog();
+            mLoading.show(getFragmentManager(),false);
+        }
+        if(Looper.getMainLooper()!=Looper.myLooper()){
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mLoading.setHint(hint);
+                }
+            });
+        }
+    }
+
+    /**
+     * 关闭进度条
+     */
+    public void dismissLoading(){
+        if(mLoading!=null){
+            mLoading.dismiss();
+            mLoading=null;
+        }
     }
 
     /**

@@ -3,7 +3,7 @@ package com.fastlib.app;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -18,15 +18,13 @@ import com.fastlib.R;
 
 /**
  * Created by sgfb on 16/9/20.
- * 顶层循环进度视图,默认居中
+ * 进度提示,默认居中
  */
 public class LoadingDialog extends DialogFragment{
-    private int mShowingCount; //每个activity仅显示一个进度视图,当count等于0时关闭进度视图
     private TextView mHint;
     private String mHintStr;
 
     public LoadingDialog(){
-        mShowingCount=0;
         setStyle(STYLE_NO_TITLE,0);
     }
 
@@ -39,47 +37,13 @@ public class LoadingDialog extends DialogFragment{
         window.setGravity(Gravity.CENTER);
     }
 
-    public static void show(AppCompatActivity activity){
-        show(activity,false);
+    public void show(FragmentManager fm){
+        show(fm,false);
     }
 
-    public static void show(AppCompatActivity activity,boolean cancelable){
-        String tag=activity.getClass().getCanonicalName();
-        LoadingDialog loading=new LoadingDialog();
-        if(loading.mShowingCount==0){
-            loading.mShowingCount++;
-            loading.setCancelable(cancelable);
-            loading.show(activity.getSupportFragmentManager(),tag);
-        }
-        else
-            loading.mShowingCount++;
-    }
-
-    /**
-     * 只有在当前activity的showCount等于0时才关闭进度视图
-     * @param activity
-     */
-    public static void dismiss(AppCompatActivity activity){
-        String tag=activity.getClass().getCanonicalName();
-        Fragment fragment=activity.getSupportFragmentManager().findFragmentByTag(tag);
-        if(fragment instanceof LoadingDialog){
-            LoadingDialog ld= (LoadingDialog) fragment;
-            if(ld.mShowingCount<=1)
-                ld.dismiss();
-            else
-                ld.mShowingCount--;
-        }
-    }
-
-    /**
-     * 无视计数，直接关闭进度视图
-     * @param activity
-     */
-    public static void dismissNow(AppCompatActivity activity){
-        String tag=activity.getClass().getCanonicalName();
-        Fragment fragment=activity.getSupportFragmentManager().findFragmentByTag(tag);
-        if(fragment instanceof LoadingDialog)
-            ((LoadingDialog)fragment).dismiss();
+    public void show(FragmentManager fm,boolean cancelable){
+        setCancelable(cancelable);
+        show(fm,"loading dialog");
     }
 
     @Nullable
@@ -92,9 +56,19 @@ public class LoadingDialog extends DialogFragment{
         return view;
     }
 
+    /**
+     * 设置提示文字
+     * @param hint 提示文字
+     */
     public void setHint(String hint){
         mHintStr=hint;
-        if(mHint!=null)
-            mHint.setText(mHintStr);
+        if(mHint!=null) {
+            if(TextUtils.isEmpty(mHintStr))
+                mHint.setVisibility(View.GONE);
+            else{
+                mHint.setVisibility(View.VISIBLE);
+                mHint.setText(mHintStr);
+            }
+        }
     }
 }

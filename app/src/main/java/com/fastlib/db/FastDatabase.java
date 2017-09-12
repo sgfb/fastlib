@@ -3,6 +3,7 @@ package com.fastlib.db;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -217,20 +218,21 @@ public class FastDatabase{
                 for (Field field : fields){
                     Database inject = field.getAnnotation(Database.class);
                     field.setAccessible(true);
-                    String type = field.getType().getSimpleName();
+                    Class<?> type=field.getType();
+                    String typeName = field.getType().getSimpleName();
                     int columnIndex = cursor.getColumnIndex(field.getName());
 
                     if (columnIndex == -1)
                         continue;
                     if (inject != null && inject.ignore()) //跳过忽视字段
                         continue;
-                    if (type.contains("this"))
+                    if (typeName.contains("this"))
                         continue;
-                    if (type.contains("$"))
+                    if (typeName.contains("$"))
                         continue;
-                    if (field.getType().isArray()) {
+                    if (type.isArray()) {
                         String json = cursor.getString(columnIndex);
-                        field.set(obj, gson.fromJson(json, field.getType()));
+                        field.set(obj, gson.fromJson(json, field.getGenericType()));
                         continue;
                     }
                     //函数命令,仅对第一个参数有效
@@ -242,64 +244,58 @@ public class FastDatabase{
                                 "' "+getFilters(key,functionCommand.getFilterCommand(),functionArgs),functionArgs.toArray(new String[]{}));
                         if(functionCursor!=null){
                             functionCursor.moveToFirst();
-                            if(field.getType()==int.class||field.getType()==long.class){
+                            if(type==int.class||type==long.class){
                                 long value=functionCursor.getLong(0);
-                                if(field.getType()==int.class) field.setInt(obj,(int)value);
+                                if(type==int.class) field.setInt(obj,(int)value);
                                 else field.setLong(obj,value);
                                 functionSuccess=true;
                             }
-                            else if(field.getType()==float.class||field.getType()==double.class){
+                            else if(type==float.class||type==double.class){
                                 double value=functionCursor.getDouble(0);
-                                if(field.getType()==float.class) field.setFloat(obj,(float)value);
+                                if(type==float.class) field.setFloat(obj,(float)value);
                                 else field.setDouble(obj,value);
                                 functionSuccess=true;
                             }
-                            else System.out.println("数据库函数方法仅对数字类型有效 字段"+field.getName()+"类型为"+field.getType());
+                            else System.out.println("数据库函数方法仅对数字类型有效 字段"+field.getName()+"类型为"+type);
                             functionCursor.close();
                         }
                         mFunctionCommand.remove(field.getName()); //清除掉函数命令
                         if(functionSuccess) continue;
                     }
-                    switch (type) {
-                        case "int":
-                            if(obj!=null) field.setInt(obj, cursor.getInt(columnIndex));
-                           else params.put(field.getName(),cursor.getInt(columnIndex));
-                            break;
-                        case "long":
-                            if(obj!=null) field.setLong(obj, cursor.getLong(columnIndex));
-                            else params.put(field.getName(),cursor.getLong(columnIndex));
-                            break;
-                        case "short":
-                            if(obj!=null) field.setShort(obj, cursor.getShort(columnIndex));
-                            else params.put(field.getName(),cursor.getShort(columnIndex));
-                            break;
-                        case "boolean":
-                            int value = cursor.getInt(columnIndex);
-                            if(obj!=null) field.setBoolean(obj, value > 0);
-                            else params.put(field.getName(),value>0);
-                            break;
-                        case "float":
-                            if(obj!=null) field.setFloat(obj, cursor.getFloat(columnIndex));
-                            else params.put(field.getName(),cursor.getFloat(columnIndex));
-                            break;
-                        case "double":
-                            if(obj!=null) field.setDouble(obj, cursor.getDouble(columnIndex));
-                            else params.put(field.getName(),cursor.getDouble(columnIndex));
-                            break;
-                        case "String":
-                            if(obj!=null) field.set(obj, cursor.getString(columnIndex));
-                            else params.put(field.getName(),cursor.getString(columnIndex));
-                            break;
-                        default:
-                            String json = cursor.getString(columnIndex);
-                            try {
-                                Object preObj = gson.fromJson(json, field.getType());
-                                if(obj!=null) field.set(obj, preObj);
-                                else params.put(field.getName(),preObj);
-                            } catch (RuntimeException e) {
-                                continue;
-                            }
-                            break;
+                    if(type==boolean .class){
+                        int value = cursor.getInt(columnIndex);
+                        if(obj!=null) field.setBoolean(obj, value > 0);
+                        else params.put(field.getName(),value>0);
+                    }
+                    else if(type==int.class){
+                        if(obj!=null) field.setInt(obj, cursor.getInt(columnIndex));
+                        else params.put(field.getName(),cursor.getInt(columnIndex));
+                    }
+                    else if(type==short.class){
+                        if(obj!=null) field.setShort(obj, cursor.getShort(columnIndex));
+                        else params.put(field.getName(),cursor.getShort(columnIndex));
+                    }
+                    else if(type==long.class){
+                        if(obj!=null) field.setLong(obj, cursor.getLong(columnIndex));
+                        else params.put(field.getName(),cursor.getLong(columnIndex));
+                    }
+                    else if(type==float.class){
+                        if(obj!=null) field.setFloat(obj, cursor.getFloat(columnIndex));
+                        else params.put(field.getName(),cursor.getFloat(columnIndex));
+                    }
+                    else if(type==double.class){
+                        if(obj!=null) field.setDouble(obj, cursor.getDouble(columnIndex));
+                        else params.put(field.getName(),cursor.getDouble(columnIndex));
+                    }
+                    else if(type==String.class){
+                        if(obj!=null) field.set(obj, cursor.getString(columnIndex));
+                        else params.put(field.getName(),cursor.getString(columnIndex));
+                    }
+                    else{
+                        String json = cursor.getString(columnIndex);
+                        Object preObj = gson.fromJson(json,field.getGenericType());
+                        if(obj!=null) field.set(obj,preObj);
+                        else params.put(field.getName(),preObj);
                     }
                 }
                 //如果是使用非空构造实例化对象的话，整理一下构造参数，实例化并且将参数注入
@@ -372,30 +368,18 @@ public class FastDatabase{
             }
         }
 
-        if (primaryField != null) {
+        if (primaryField != null){
+            Class<?> type=primaryField.getType();
             try {
-                switch (primaryField.getType().getSimpleName()) {
-                    case "short":
-                        columnValue = Short.toString(primaryField.getShort(obj));
-                        break;
-                    case "int":
-                        columnValue = Integer.toString(primaryField.getInt(obj));
-                        break;
-                    case "String":
-                        columnValue = (String) primaryField.get(obj);
-                        break;
-                    case "long":
-                        columnValue = Long.toString(primaryField.getLong(obj));
-                        break;
-                    case "float":
-                        columnValue = Float.toString(primaryField.getFloat(obj));
-                        break;
-                    case "double":
-                        columnValue = Double.toString(primaryField.getDouble(obj));
-                        break;
-                    default:
-                        System.out.println("不支持 short,int,long,String,float,double 之外的类型做为主键");
-                        return false;
+                if(type==short.class) columnValue=Short.toString(primaryField.getShort(obj));
+                else if(type==int.class) columnValue=Integer.toString(primaryField.getInt(obj));
+                else if(type==long.class) columnValue=Long.toString(primaryField.getLong(obj));
+                else if(type==float.class) columnValue=Float.toString(primaryField.getFloat(obj));
+                else if(type==double.class) columnValue=Double.toString(primaryField.getDouble(obj));
+                else if(type==String.class) columnValue=primaryField.get(obj).toString();
+                else{
+                    System.out.println("不支持 short,int,long,String,float,double 之外的类型做为主键");
+                    return false;
                 }
             } catch (IllegalAccessException | IllegalArgumentException e) {
                 e.printStackTrace();
@@ -464,7 +448,6 @@ public class FastDatabase{
 
     /**
      * 更新数据
-     *
      * @param obj
      * @return 是否成功更新
      */
@@ -508,7 +491,7 @@ public class FastDatabase{
         fields = obj.getClass().getDeclaredFields();
         for (Field field : fields) {
             field.setAccessible(true);
-            String type = field.getType().getSimpleName();
+            Class<?> type = field.getType();
             Database fieldInject = field.getAnnotation(Database.class);
             String columnName;
 
@@ -524,49 +507,35 @@ public class FastDatabase{
             if (columnName.contains("$"))
                 continue;
             try {
-                switch (type) {
-                    case "boolean":
-                        cv.put(columnName, field.getBoolean(obj));
-                        break;
-                    case "short":
-                        cv.put(columnName, field.getShort(obj));
-                        break;
-                    case "int":
-                        cv.put(columnName, field.getInt(obj));
-                        break;
-                    case "long":
-                        cv.put(columnName, field.getLong(obj));
-                        break;
-                    case "float":
-                        cv.put(columnName, field.getFloat(obj));
-                        break;
-                    case "double":
-                        cv.put(columnName, field.getDouble(obj));
-                        break;
-                    case "char":
-                        char c = field.getChar(obj);
-                        if (c == 0)
-                            cv.putNull(columnName);
-                        else
-                            cv.put(columnName, String.valueOf(c));
-                        break;
-                    case "String":
-                        String s = (String) field.get(obj);
-                        if (s == null)
-                            cv.putNull(columnName);
-                        else
-                            cv.put(columnName, s);
-                        break;
-                    default:
-                        Object pre = field.get(obj);
-                        Gson gson = new Gson();
-                        String json = gson.toJson(pre);
+                if(type==boolean.class) cv.put(columnName,field.getBoolean(obj));
+                else if(type==short.class) cv.put(columnName,field.getShort(obj));
+                else if(type==int.class) cv.put(columnName,field.getInt(obj));
+                else if(type==long.class) cv.put(columnName,field.getLong(obj));
+                else if(type==float.class) cv.put(columnName,field.getFloat(obj));
+                else if(type==double.class) cv.put(columnName,field.getDouble(obj));
+                else if(type==char.class){
+                    char c = field.getChar(obj);
+                    if (c == 0)
+                        cv.putNull(columnName);
+                    else
+                        cv.put(columnName, String.valueOf(c));
+                }
+                else if(type==String.class){
+                    String s = (String) field.get(obj);
+                    if (s == null)
+                        cv.putNull(columnName);
+                    else
+                        cv.put(columnName, s);
+                }
+                else{
+                    Object pre = field.get(obj);
+                    Gson gson = new Gson();
+                    String json = gson.toJson(pre);
 
-                        if (pre == null)
-                            cv.putNull(columnName);
-                        else
-                            cv.put(columnName, json);
-                        break;
+                    if (pre == null)
+                        cv.putNull(columnName);
+                    else
+                        cv.put(columnName, json);
                 }
             } catch (IllegalAccessException | IllegalArgumentException e) {
                 database.close();
@@ -632,14 +601,14 @@ public class FastDatabase{
                         continue;
                     try {
                         if (fieldInject != null && fieldInject.keyPrimary() && fieldInject.autoincrement()){
-                            if(field.getType()==int.class||field.getType()==Integer.class) {
+                            if(type==int.class||type==Integer.class) {
                                 int keyValue = field.getInt(obj);
                                 if(keyValue<=0){
                                     autoIncreKeyField=field;
                                     continue;
                                 }
                             }
-                            else if(field.getType()==long.class||field.getType()==Long.class){
+                            else if(type==long.class||type==Long.class){
                                 long keyValue=field.getLong(obj);
                                 if(keyValue<=0){
                                     autoIncreKeyField=field;
@@ -997,8 +966,8 @@ public class FastDatabase{
 
     /**
      * 生成创建表sql语句
-     * @param cla
-     * @return
+     * @param cla 对象
+     * @return 创建表语句
      */
     private String generateCreateTableSql(Class<?> cla) {
         StringBuilder sb = new StringBuilder();
@@ -1039,17 +1008,18 @@ public class FastDatabase{
         dt.tableName = cla.getCanonicalName();
 
         //如果是内嵌类，将$替换成点
-//        if(dt.tableName.contains("$"))
-            dt.tableName=dt.tableName.replace("$",".");
+        dt.tableName=dt.tableName.replace("$",".");
         for (Field f : fields) {
             Database fieldInject = f.getAnnotation(Database.class);
             DatabaseTable.DatabaseColumn column = new DatabaseTable.DatabaseColumn();
-            String type = f.getType().getSimpleName();
+            String typeName = f.getGenericType().toString();
 
+            //修改点和破折号为转义字符，去掉class+空格
+            typeName=typeName.replace(".","_").replace("<","0lt").replace(">","0rt").replace("class ","");
             if (f.getClass().isArray())
-                type = f.getType().getName();
+                typeName = f.getType().getName();
             column.columnName = f.getName();
-            column.type = Reflect.toSQLType(type);
+            column.type = Reflect.toSQLType(typeName);
             if (fieldInject != null) {
                 if (!TextUtils.isEmpty(fieldInject.columnName()))
                     column.columnName = fieldInject.columnName();
@@ -1060,7 +1030,7 @@ public class FastDatabase{
                 column.isPrimaryKey = fieldInject.keyPrimary();
                 column.autoincrement = fieldInject.autoincrement();
                 column.isIgnore = fieldInject.ignore();
-                if (column.isPrimaryKey && !Reflect.isInteger(type) && !Reflect.isReal(type) && !Reflect.isVarchar(type))
+                if (column.isPrimaryKey && !Reflect.isInteger(typeName) && !Reflect.isReal(typeName) && !Reflect.isVarchar(typeName))
                     throw new UnsupportedOperationException("不支持数组或者引用类成为任何键");
             }
             dt.columnMap.put(f.getName(), column);
@@ -1111,8 +1081,7 @@ public class FastDatabase{
 
     /**
      * 遍历所有table反射对象来作对比调整
-     *
-     * @param db
+     * @param db 指定数据库
      */
     private void updateDatabase(SQLiteDatabase db) {
         Cursor cursor = db.rawQuery("select name from sqlite_master where type='table'", null);
@@ -1134,8 +1103,8 @@ public class FastDatabase{
 
     /**
      * 检查表对类映射.如果增加新列可以直接操作，但是如果是更改主键或者修改列类型删除列就需要表重建
-     *
-     * @param tableName
+     * @param db 指定数据库
+     * @param tableName 指定数据表
      */
     private void checkTableChanged(SQLiteDatabase db, String tableName) {
         boolean needRebuildTable = false;//列被删除或字段类型被修改时重置表
@@ -1231,7 +1200,9 @@ public class FastDatabase{
                     }
                     break;
                 default:
-                    if (!field.getType().getName().equals(column.type)) {
+                    String typeName=field.getGenericType().toString();
+                    typeName=typeName.replace(".","_").replace("<","0lt").replace(">","0rt").replace("class ","");
+                    if (!typeName.equals(column.type)) {
                         needRebuildTable = true;
                         convertDatas.remove(column.columnName);
                     }

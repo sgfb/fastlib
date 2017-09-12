@@ -1,114 +1,72 @@
 package com.fastlib;
 
-import android.animation.ObjectAnimator;
-import android.animation.ValueAnimator;
-import android.app.DatePickerDialog;
-import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.BitmapRegionDecoder;
-import android.graphics.Point;
-import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Environment;
-import android.telephony.TelephonyManager;
-import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
-import android.text.TextUtils;
-import android.text.style.ImageSpan;
-import android.view.View;
-import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.GridView;
-import android.widget.ImageView;
-import android.widget.ListView;
-import android.widget.TextView;
-import android.widget.ViewFlipper;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
-import com.fastlib.app.EventObserver;
 import com.fastlib.app.FastActivity;
-import com.fastlib.app.PhotoResultListener;
-import com.fastlib.base.AbsPreviewImageActivity;
-import com.fastlib.base.RoundDrawable;
 import com.fastlib.db.FastDatabase;
-import com.fastlib.db.FunctionCommand;
-import com.fastlib.net.CookedListener;
-import com.fastlib.net.GlobalListener;
-import com.fastlib.net.NetManager;
-import com.fastlib.net.Request;
-import com.fastlib.net.SimpleListener;
-import com.fastlib.net.SimpleMockProcessor;
-import com.fastlib.utils.ImageUtil;
-import com.fastlib.utils.N;
-import com.fastlib.utils.ScreenUtils;
-import com.fastlib.utils.TimeUtil;
-import com.fastlib.utils.Utils;
-import com.fastlib.widget.RoundImageView;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Iterator;
+import java.util.List;
+
 
 /**
  * Created by sgfb on 17/8/7.
  */
 @ContentView(R.layout.act_main)
-public class MainActivity extends FastActivity{
+public class MainActivity extends FastActivity {
     @Bind(R.id.path)
     EditText mPath;
-
-    public void beginTask(Task task){
-        Task firstTask=task;
-        while(firstTask.getPrevious()!=null)
-            firstTask=firstTask.getPrevious();
-        processTask(firstTask);
-    }
-
-    public void processTask(Task task){
-        Object obj=task.getReturn();
-        Task nextTask=task.getNext();
-        if(nextTask!=null){
-            nextTask.getAction().setParam(obj);
-            processTask(nextTask);
-        }
-    }
+    Bean mList;
 
     @Override
     protected void alreadyPrepared(){
-
+        FastDatabase.getConfig().setVersion(6);
     }
 
     @Bind(R.id.bt)
-    private void commit() throws IOException{
-        beginTask(Task.begin(new DefaultAction<String,String>(){
+    private void commit(){
+        Student student=new Student();
+        student.list=getStrings();
+        student.name="sgfb";
+        student.age=20;
+        student.score=98;
+        FastDatabase.getDefaultInstance(this).saveOrUpdate(student);
+    }
 
-            @Override
-            public String execute(String param){
-                return "b";
-            }
-        }).cycle(new DefaultAction<String[],String>(){
+    private List<String> getStrings2(){
+        List<String> list=new ArrayList<>();
+        list.add("hello");
+        list.add(",world");
+        return list;
+    }
 
-            @Override
-            public String execute(String[] param){
-                return param+"a";
-            }
-        }).next(new DefaultAction<String,String>(){
+    private ArrayList<Bean<String>> getStrings(){
+        ArrayList<Bean<String>> list=new ArrayList<>();
+        Bean<String> tb1=new Bean<>();
+        Bean<String> tb2=new Bean<>();
+        tb1.status=new Status();
+        tb1.status.success=true;
+        tb1.status.message="just a message";
+        tb1.data="hello,world";
+        tb2.status=new Status();
+        tb2.status.message="2message";
+        tb2.data="may I question?";
+        list.add(tb1);
+        list.add(tb2);
+        return list;
+    }
 
-            @Override
-            public String execute(String param){
-                System.out.println(param+"o");
-                return null;
-            }
-        }));
-//        File file=new File(Environment.getExternalStorageDirectory(),mPath.getText().toString());
+    @Bind(R.id.bt2)
+    private void commit2(){
+        List<Student> student=FastDatabase.getDefaultInstance(this).get(Student.class);
+        System.out.println("location");
+    }
+
+    @Bind(R.id.bt3)
+    private void commit3() {
+        //        File file=new File(Environment.getExternalStorageDirectory(),mPath.getText().toString());
 //        if(file.exists()&&file.isFile()){
 //            InputStream in=new FileInputStream(file);
 //            byte[] data=new byte[4096];
@@ -137,30 +95,25 @@ public class MainActivity extends FastActivity{
 //        }
     }
 
-    @Bind(R.id.bt2)
-    private void commit2(){
 
+    private boolean isEncrypted(byte flag) {
+        return flag >> 7 == 1;
     }
 
-    @Bind(R.id.bt3)
-    private void commit3(View view){
-
-    }
-
-
-    private boolean isEncrypted(byte flag){
-        return flag>>7==1;
-    }
-
-    private String getCompressLevel(byte flag){
-        int offsetFlag=flag>>5;
-        offsetFlag&=3; //保留两位bit位
-        switch (offsetFlag){
-            case 0:return "Normal compress";
-            case 1:return "Fast compress";
-            case 2:return "Maximum compress";
-            case 3:return "Super fast compress";
-            default:return "unknown";
+    private String getCompressLevel(byte flag) {
+        int offsetFlag = flag >> 5;
+        offsetFlag &= 3; //保留两位bit位
+        switch (offsetFlag) {
+            case 0:
+                return "Normal compress";
+            case 1:
+                return "Fast compress";
+            case 2:
+                return "Maximum compress";
+            case 3:
+                return "Super fast compress";
+            default:
+                return "unknown";
         }
     }
 }

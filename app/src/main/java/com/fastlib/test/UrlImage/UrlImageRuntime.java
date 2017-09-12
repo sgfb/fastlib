@@ -7,10 +7,6 @@ import android.widget.ImageView;
 
 import com.fastlib.BuildConfig;
 import com.fastlib.R;
-import com.fastlib.app.FastActivity;
-import com.fastlib.app.TaskAction;
-import com.fastlib.app.TaskChain;
-import com.fastlib.app.TaskChainHead;
 import com.fastlib.net.DefaultDownload;
 import com.fastlib.net.Request;
 import com.fastlib.net.SimpleListener;
@@ -54,25 +50,10 @@ public class UrlImageRuntime{
             if(!fImage.exists())
                 addRequest(fImage,imageView);
             else{
-                //当前仅支持FastActivity
-                if(imageView.getContext() instanceof FastActivity){
-                    FastActivity fastActivity= (FastActivity) imageView.getContext();
-                    fastActivity.startTasks(TaskChainHead.begin(mImage.mDiskPath).next(new TaskAction<String,Bitmap>(){
-                        @Override
-                        public Bitmap call(String t){
-                            BitmapFactory.Options options=new BitmapFactory.Options();
-                            options.inPreferredConfig=mConfig.mConfig;
-                            return BitmapFactory.decodeFile(t,options); //已节省内存格式读入
-                        }
-                    }, TaskChain.TYPE_THREAD_ON_MAIN).next(new TaskAction<Bitmap,Void>(){
-                        @Override
-                        public Void call(Bitmap t){
-                            mImage.mBitmap=t;
-                            imageView.setImageBitmap(t);
-                            return null;
-                        }
-                    },TaskChain.TYPE_THREAD_ON_MAIN));
-                }
+                BitmapFactory.Options options=new BitmapFactory.Options();
+                options.inPreferredConfig=mConfig.mConfig;
+                mImage.mBitmap= BitmapFactory.decodeFile(mImage.mDiskPath,options);
+                imageView.setImageBitmap(mImage.mBitmap);
             }
         }
     }
