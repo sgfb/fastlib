@@ -2,9 +2,11 @@ package com.fastlib.app.task;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import com.fastlib.net.Request;
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -20,7 +22,7 @@ public abstract class NetAction<R> extends Action<Request,R> {
 
     @Override
     protected R execute(final Request param){
-        final Object responseObj;
+        Object responseObj=null;
         byte[] response=param.setPromptlyBack(true).start();
         Method[] methods=getClass().getDeclaredMethods();
         Class<?> rType=Object.class;
@@ -36,25 +38,41 @@ public abstract class NetAction<R> extends Action<Request,R> {
             }
             if(rType!=Object.class) break;
         }
-        if(rType==Object.class||rType==byte[].class||rType==byte.class)
-            responseObj=response;
-        else if(rType==String.class)
-            responseObj=new String(response);
-        else {
-            Gson gson=new Gson();
-            responseObj=gson.fromJson(new String(response),rType);
+        if(response!=null){
+            if(rType==Object.class||rType==byte[].class||rType==byte.class)
+                responseObj=response;
+            else if(rType==String.class)
+                responseObj=new String(response);
+            else {
+                Gson gson=new Gson();
+                try{
+                    responseObj=gson.fromJson(new String(response),rType);
+                }catch (JsonParseException e){
+                    e.printStackTrace();
+                    stopTask(); //如果异常了，停止任务链
+                }
+            }
         }
+        checkNetBackStatus(param);
         if(mThreadType== ThreadType.MAIN){
+            final Object fResponseObj=responseObj;
             Handler mainHandle=new Handler(Looper.getMainLooper());
             mainHandle.post(new Runnable() {
                 @Override
-                public void run() {
-                    executeAdapt((R) responseObj);
+                public void run(){
+                    executeAdapt((R) fResponseObj);
                 }
             });
         }
         else executeAdapt((R) responseObj);
         return (R) responseObj;
+    }
+
+    private void checkNetBackStatus(Request request){
+        if(request.getResponseStatus().code!=200) {
+            stopTask();
+            Log.d(NetAction.class.getSimpleName(),"net action error:"+request.getResponseStatus().message);
+        }
     }
 
     public ThreadPoolExecutor getExecutor() {

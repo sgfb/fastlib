@@ -8,7 +8,7 @@ import com.google.gson.Gson;
  * Created by sgfb on 17/8/29.
  */
 public class AospRequest extends Request{
-    final String KEY="yY8FhoBEvWzFhms6oBBlDHkoLQMxJlXu";
+    final String KEY="";
     final String aospformat = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:cxf=\"http://cxf.spring.core.sinosoft.com/\">\n"
             + "   <soapenv:Header/>"
             + "   <soapenv:Body>"

@@ -41,6 +41,8 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 6.6.0权限获取辅助(mPermissionHelper)
  */
 public abstract class FastActivity extends AppCompatActivity{
+    private static final int THREAD_POOL_SIZE =Runtime.getRuntime().availableProcessors()/2+1;
+
     protected ThreadPoolExecutor mThreadPool;
     protected PermissionHelper mPermissionHelper;
     protected volatile int mPreparedTaskRemain=3; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
@@ -58,6 +60,7 @@ public abstract class FastActivity extends AppCompatActivity{
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
+
         mPermissionHelper=new PermissionHelper();
         mLocalDataInject=new LocalDataInject(this);
         mThreadPool=generateThreadPool();
@@ -78,7 +81,7 @@ public abstract class FastActivity extends AppCompatActivity{
      * @return 线程池
      */
     protected ThreadPoolExecutor generateThreadPool(){
-        return (ThreadPoolExecutor) Executors.newFixedThreadPool(3);
+        return (ThreadPoolExecutor) Executors.newFixedThreadPool(THREAD_POOL_SIZE);
     }
 
     /**

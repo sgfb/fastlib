@@ -81,11 +81,11 @@ public class NetProcessor implements Runnable{
                 mListener.onComplete(this);
             return;
         }
+        long connectionTimer=System.currentTimeMillis();
         try {
             boolean isMulti = false, isPost =mRequest.getMethod().equals("POST")||mRequest.getMethod().equals("PUT")
                     ,needBody=(isPost||mRequest.getMethod().equals("GET")); //如果不是post类型也不是get，不需要请求体
             long existsLength;
-            long connectionTimer=System.currentTimeMillis();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             File downloadFile = null;
             InputStream in;
@@ -212,11 +212,24 @@ public class NetProcessor implements Runnable{
             e.printStackTrace();
             isSuccess=false;
             mMessage = e.toString();
+            saveErrorNetStatus(e.getMessage(),connectionTimer);
             toggleCallback();
         } finally {
             if (mListener != null)
                 mListener.onComplete(this);
         }
+    }
+
+    /**
+     * 保存异常状态到Request
+     * @param message 异常短信息
+     * @param requestTime 开始请求时间
+     */
+    private void saveErrorNetStatus(String message,long requestTime){
+        mRequest.getResponseStatus().message=message;
+        mRequest.getResponseStatus().time=0;
+        mRequest.getResponseStatus().code=-1;
+        mRequest.getResponseStatus().time=System.currentTimeMillis()-requestTime;
     }
 
     /**

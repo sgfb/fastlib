@@ -26,15 +26,15 @@ public class Task<R>{
 
     /**
      * 实体参数开始生成任务链
-     * @param param 参数
+     * @param realParam 参数
      * @param <R> 返回类型
      * @return 任务链头部
      */
-    public static <R> Task<R> begin(R param){
+    public static <R> Task<R> begin(final R realParam){
         return begin(new Action<Object,R>(){
             @Override
             protected R execute(Object param){
-                return (R) param;
+                return (R) realParam;
             }
         });
     }
