@@ -5,12 +5,6 @@
               android:layout_height="wrap_content"
               xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <com.fastlib.widget.TitleBar
-        android:id="@+id/titleBar"
-        android:layout_width="match_parent"
-        android:layout_height="?android:actionBarSize"
-        android:background="@color/blue_600"
-        app:titleText="Fastlib"/>
 
     <EditText
         android:id="@+id/path"
@@ -38,6 +32,19 @@
             android:id="@+id/bt3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="bt3"/>
+            android:text="编辑"/>
+
+        <Button
+            android:id="@+id/delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="invisible"
+            android:text="删除"/>
     </LinearLayout>
+
+    <GridView
+        android:id="@+id/gridView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:numColumns="5"/>
 </LinearLayout>
