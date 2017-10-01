@@ -20,6 +20,7 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>
+    <style name="MyNoActionBar" parent="Theme.AppCompat.NoActionBar"/>
 
     <style name="BottomDialogStyle" parent="android:Animation.Dialog">
         <item name="android:windowEnterAnimation">@anim/trans_bottom_to_top</item>

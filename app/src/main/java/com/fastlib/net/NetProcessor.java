@@ -494,9 +494,9 @@ public class NetProcessor implements Runnable{
             while (iter.hasNext()&&!Thread.currentThread().isInterrupted()){
                 Pair<String,String> pair=iter.next();
                 sb.append("--").append(BOUNDARY).append(CRLF)
-                  .append("Content-Disposition:form-data; name=\"" + pair.first + "\"").append(CRLF)
-                  .append("Content-Type:text/plain charset=utf-8").append(CRLF + CRLF)
-                  .append(pair.second).append(CRLF);
+                        .append("Content-Disposition:form-data; name=\"" + pair.first + "\"").append(CRLF)
+                        .append("Content-Type:text/plain;charset=utf-8").append(CRLF + CRLF)
+                        .append(pair.second).append(CRLF);
                 Tx += sb.toString().getBytes().length;
                 out.write(sb.toString().getBytes());
             }
