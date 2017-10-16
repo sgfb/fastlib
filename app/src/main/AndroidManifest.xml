@@ -11,7 +11,7 @@
         android:label="fastlib"
         android:theme="@style/MaterialTheme">
 
-        <activity android:name=".MainActivity">
+        <activity android:name=".local_test.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

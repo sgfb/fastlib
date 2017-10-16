@@ -8,17 +8,19 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewStub;
+import android.widget.FrameLayout;
 
 import com.fastlib.R;
 import com.fastlib.annotation.ContentView;
-import com.fastlib.annotation.TransitionAnimation;
+import com.fastlib.app.task.EmptyAction;
 import com.fastlib.app.task.Task;
 import com.fastlib.app.task.TaskLauncher;
+import com.fastlib.base.Deferrable;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.LocalDataInject;
@@ -27,8 +29,11 @@ import com.fastlib.utils.PermissionHelper;
 import com.fastlib.utils.ViewInject;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -41,33 +46,43 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 4.本地数据辅助（LocalData）
  * 5.相机相册调取（openAlbum(PhotoResultListener)和openCamera(PhotoResultListener))
  * 6.6.0权限获取辅助(mPermissionHelper)
+ * 7.延时启动优化
  */
-public abstract class FastFragment extends Fragment{
+public abstract class FastFragment extends Fragment implements Deferrable{
     protected ThreadPoolExecutor mThreadPool;
     protected PermissionHelper mPermissionHelper;
 
+    private boolean isFirstLoaded=false;
     private boolean isGatingPhoto; //是否正在获取图像
-    private boolean isHadTransitionAnimation=false;
-    private volatile int mPreparedTaskRemain=3; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
+    private volatile int mPreparedTaskRemain=4; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
     private List<Request> mRequests=new ArrayList<>();
     private LocalDataInject mLocalDataInject;
     private TaskLauncher mTaskLauncher;
     private LoadingDialog mLoading;
     private PhotoResultListener mPhotoResultListener;
+    private View mDeferView; //延迟加载预显示视图
+    private ViewStub mStubView;
 
     protected abstract void alreadyPrepared(); //所有初始化任务结束
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        mLocalDataInject=new LocalDataInject(this);
-        mPermissionHelper=new PermissionHelper();
-        mThreadPool=(ThreadPoolExecutor) Executors.newFixedThreadPool(3);
-        mTaskLauncher=new TaskLauncher(this,mThreadPool);
-        mThreadPool.execute(new Runnable(){
+        //如果延迟加载视图为空，开始初始化等正常流程
+        mDeferView=deferLoadingView();
+        if(mDeferView==null)
+            init();
+    }
+
+    private void init() {
+        mLocalDataInject = new LocalDataInject(this);
+        mPermissionHelper = new PermissionHelper();
+        mThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(3);
+        mTaskLauncher = new TaskLauncher(this, mThreadPool);
+        mThreadPool.execute(new Runnable() {
             @Override
-            public void run(){
-                EventObserver.getInstance().subscribe(getContext(),FastFragment.this);
+            public void run() {
+                EventObserver.getInstance().subscribe(getContext(), FastFragment.this);
                 prepareTask();
             }
         });
@@ -76,8 +91,15 @@ public abstract class FastFragment extends Fragment{
     @Nullable
     @Override
     public View onCreateView(final LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState){
-        checkTransitionAnimationInject();
         final ContentView cv=getClass().getAnnotation(ContentView.class);
+        //如果有延迟视图，把实际视图用stubView存根，等firstLoad后再加载
+        if(mDeferView!=null){
+            mStubView=new ViewStub(getContext(),cv==null?0:cv.value());
+            FrameLayout root=new FrameLayout(getContext());
+            root.addView(mStubView);
+            root.addView(mDeferView);
+            return root;
+        }
         if(cv!=null){
             final View root=inflater.inflate(cv.value(),null);
             mThreadPool.execute(new Runnable() {
@@ -92,26 +114,19 @@ public abstract class FastFragment extends Fragment{
         return super.onCreateView(inflater, container, savedInstanceState);
     }
 
-    /**
-     * 检查是否有共享元素动画
-     */
-    private void checkTransitionAnimationInject(){
-        TransitionAnimation ta=getClass().getAnnotation(TransitionAnimation.class);
-        if(ta!=null){
-
-        }
-    }
-
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mThreadPool.execute(new Runnable(){
-            @Override
-            public void run() {
-                mLocalDataInject.localDataInject();
-                prepareTask();
-            }
-        });
+        if(mDeferView==null){
+            mThreadPool.execute(new Runnable(){
+                @Override
+                public void run() {
+                    mLocalDataInject.localDataInject();
+                    prepareTask();
+                }
+            });
+            startInternalPrepareTask();
+        }
     }
 
     @Override
@@ -133,7 +148,7 @@ public abstract class FastFragment extends Fragment{
 
     /**
      * 开启获取相册照片
-     * @param photoResultListener
+     * @param photoResultListener 图像获取回调
      */
     protected void openAlbum(final PhotoResultListener photoResultListener) {
         mPermissionHelper.requestPermission(getActivity(),new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, new Runnable() {
@@ -152,9 +167,17 @@ public abstract class FastFragment extends Fragment{
     }
 
     /**
+     * 开启相机获取照片
+     * @param photoResultListener 图像获取回调
+     */
+    protected void openCamera(PhotoResultListener photoResultListener) {
+        openCamera(photoResultListener, null);
+    }
+
+    /**
      * 开启相机获取照片并且指定存储位置
-     * @param photoResultListener
-     * @param path
+     * @param photoResultListener 图像获取回调
+     * @param path 指定照片存储路径
      */
     protected void openCamera(final PhotoResultListener photoResultListener,final String path) {
         mPermissionHelper.requestPermission(getActivity(),new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, new Runnable() {
@@ -183,14 +206,6 @@ public abstract class FastFragment extends Fragment{
                 N.showShort(getContext(), "请开启写存储卡权限");
             }
         });
-    }
-
-    /**
-     * 开启相机获取照片
-     * @param photoResultListener
-     */
-    protected void openCamera(PhotoResultListener photoResultListener) {
-        openCamera(photoResultListener, null);
     }
 
     /**
@@ -224,6 +239,14 @@ public abstract class FastFragment extends Fragment{
         mTaskLauncher.startTask(task);
     }
 
+    /**
+     * 延迟启动替换视图，如果不为空，使用延迟启动策略
+     * @return 延迟启动视图
+     */
+    protected View deferLoadingView(){
+        return null;
+    }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -234,10 +257,14 @@ public abstract class FastFragment extends Fragment{
     public void onDestroy(){
         super.onDestroy();
         EventObserver.getInstance().unsubscribe(getContext(),this);
-        mThreadPool.shutdownNow();
-        mThreadPool.purge();
-        for(Request request:mRequests)
-            request.clear();
+        if(mThreadPool!=null){
+            mThreadPool.shutdownNow();
+            mThreadPool.purge();
+        }
+        if(mRequests!=null){
+            for(Request request:mRequests)
+                request.clear();
+        }
     }
 
     /**
@@ -297,13 +324,72 @@ public abstract class FastFragment extends Fragment{
                 .commit();
     }
 
+    /**
+     * 完成单项预任务，如果所有预任务都完成将会回调alreadyPrepared方法
+     */
     private synchronized void prepareTask(){
         if(--mPreparedTaskRemain<=0)
             getActivity().runOnUiThread(new Runnable() {
                 @Override
-                public void run() {
+                public void run(){
+                    if(mDeferView!=null) {
+                        if(mDeferView.getParent() instanceof ViewGroup){
+                            ViewGroup parent= (ViewGroup) mDeferView.getParent();
+                            parent.removeView(mDeferView);
+                        }
+                    }
                     alreadyPrepared();
                 }
             });
+    }
+
+    @Override
+    public void firstLoad(){
+        if(!isFirstLoaded&&mStubView!=null){
+            isFirstLoaded=true;
+            final View view=mStubView.inflate();
+            init();
+            mThreadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    ViewInject.inject(FastFragment.this,view,mThreadPool);
+                    prepareTask();
+                }
+            });
+            mThreadPool.execute(new Runnable(){
+                @Override
+                public void run() {
+                    mLocalDataInject.localDataInject();
+                    prepareTask();
+                }
+            });
+            startInternalPrepareTask();
+        }
+    }
+
+    /**
+     * 开始内部任务加载
+     */
+    private void startInternalPrepareTask(){
+        Task task=internalPrepare();
+        if(task==null)
+            prepareTask();
+        else{
+            task.again(new EmptyAction() {
+                @Override
+                protected void executeAdapt() {
+                    prepareTask();
+                }
+            });
+            startTask(task);
+        }
+    }
+
+    /**
+     * 内部预任务加载
+     * @return 额外内部预任务顺序事件
+     */
+    protected Task internalPrepare(){
+        return null;
     }
 }

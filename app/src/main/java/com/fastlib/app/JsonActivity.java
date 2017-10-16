@@ -33,8 +33,8 @@ public abstract class JsonActivity extends FastActivity{
     }
 
     @Override
-    protected void afterSetContentView(){
-        super.afterSetContentView();
+    protected void afterSetContentView(boolean flag){
+        super.afterSetContentView(flag);
         mViewHolder=OldViewHolder.get(findViewById(android.R.id.content));
         startTask(Task.begin(0)
         .next(new Action<Integer,Integer>(){

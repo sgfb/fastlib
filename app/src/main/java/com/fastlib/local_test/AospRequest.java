@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.local_test;
 
 import com.fastlib.net.Request;
 import com.fastlib.utils.Utils;

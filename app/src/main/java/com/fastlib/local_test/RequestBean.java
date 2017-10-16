@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.local_test;
 
 import java.util.Map;
 
