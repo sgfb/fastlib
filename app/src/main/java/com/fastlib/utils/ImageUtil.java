@@ -207,17 +207,16 @@ public class ImageUtil{
     @TargetApi(18)
     public static void openAlbum(Activity activity,Fragment fragment,boolean multiChoose){
         Intent intent = new Intent();
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT)
-            intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
-        else
-            intent.setAction(Intent.ACTION_GET_CONTENT);
+//        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT)
+//            intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
+//        else
+//            intent.setAction(Intent.ACTION_GET_CONTENT);
+        intent.setAction(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         intent.putExtra(Intent.CATEGORY_OPENABLE, true);
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiChoose);
-        if(activity!=null)
-            activity.startActivityForResult(intent, REQUEST_FROM_ALBUM);
-        else
-            fragment.startActivityForResult(intent,REQUEST_FROM_ALBUM);
+        if(activity!=null) activity.startActivityForResult(intent, REQUEST_FROM_ALBUM);
+        else fragment.startActivityForResult(intent,REQUEST_FROM_ALBUM);
     }
 
     /**

@@ -1,19 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="wrap_content"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="horizontal"
+              android:layout_width="match_parent"
               android:layout_height="wrap_content">
 
     <TextView
-        android:id="@+id/text"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:paddingTop="10dp"
-        android:text="1"/>
+        android:layout_weight="1"
+        android:text="本地住宅"
+        android:drawableTop="@mipmap/ic_launcher"
+        android:gravity="center_horizontal"
+        android:textSize="@dimen/font_size_small"
+        android:layout_margin="5dp"
+        android:drawablePadding="5dp"/>
 
-    <com.fastlib.BrokenLineColumn
-        android:id="@+id/brokenLine"
-        android:layout_width="70dp"
+    <TextView
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_above="@id/text"/>
-</RelativeLayout>
+        android:layout_weight="1"
+        android:text="商业地产"
+        android:drawableTop="@mipmap/ic_launcher"
+        android:gravity="center_horizontal"
+        android:textSize="@dimen/font_size_small"
+        android:layout_margin="5dp"
+        android:drawablePadding="5dp"/>
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="一手房"
+        android:drawableTop="@mipmap/ic_launcher"
+        android:gravity="center_horizontal"
+        android:textSize="@dimen/font_size_small"
+        android:layout_margin="5dp"
+        android:drawablePadding="5dp"/>
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="二手房"
+        android:drawableTop="@mipmap/ic_launcher"
+        android:gravity="center_horizontal"
+        android:textSize="@dimen/font_size_small"
+        android:layout_margin="5dp"
+        android:drawablePadding="5dp"/>
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="金融贷款"
+        android:drawableTop="@mipmap/ic_launcher"
+        android:gravity="center_horizontal"
+        android:textSize="@dimen/font_size_small"
+        android:layout_margin="5dp"
+        android:drawablePadding="5dp"/>
+</LinearLayout>
