@@ -30,4 +30,10 @@
         <attr name="leftTextColor" format="color"/>
         <attr name="rightTextColor" format="color"/>
     </declare-styleable>
+
+    <!--圆柱进度条属性-->
+    <declare-styleable name="RectProgress">
+        <attr name="progressPercent" format="float"/>
+        <attr name="progressTitle" format="string"/>
+    </declare-styleable>
 </resources>

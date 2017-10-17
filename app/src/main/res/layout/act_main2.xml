@@ -3,45 +3,44 @@
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent">
-    <EditText
-        android:id="@+id/content"
+
+    <android.support.v4.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="match_parent">
 
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-        <Button
-            android:id="@+id/bt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="bt"/>
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
 
-        <Button
-            android:id="@+id/bt2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="bt2"/>
+                <Button
+                    android:id="@+id/bt"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="请求"/>
+            </LinearLayout>
 
-        <Button
-            android:id="@+id/bt3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="编辑"/>
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
 
-        <Button
-            android:id="@+id/delete"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="invisible"
-            android:text="删除"/>
-    </LinearLayout>
+                <EditText
+                    android:id="@+id/content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"/>
 
-    <ViewStub
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:inflatedId="@+id/a"
-        android:layout="@layout/act_second"/>
+                <WebView
+                    android:id="@+id/web"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_above="@id/content"/>
+            </RelativeLayout>
+        </LinearLayout>
+    </android.support.v4.widget.NestedScrollView>
 </LinearLayout>
