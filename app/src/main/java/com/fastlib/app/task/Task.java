@@ -155,7 +155,7 @@ public class Task<R>{
      * @param action 循环任务的行为
      * @return 下一个任务（循环任务）
      */
-    public Task<R> cycle(Action<R,R[]> action){
+    public Task<R> cycle(Action<String, Integer[]> action){
         return cycle(action,ThreadType.WORK);
     }
 

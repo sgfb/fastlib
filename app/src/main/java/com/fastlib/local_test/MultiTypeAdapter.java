@@ -1,6 +1,7 @@
-package com.fastlib.local_test;
+package com.fastlib.adapter;
 
 import android.content.Context;
+import android.support.annotation.LayoutRes;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
@@ -45,7 +46,7 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         RecyclerItem item= mRecyclerItem.get(position);
-        item.mGroup.binding(position,mRecyclerGroup.indexOf(item.mGroup),item.mData,(CommonViewHolder) holder);
+        item.mGroup.binding(position,item.mGroup.mItem.indexOf(item),item.mData,(CommonViewHolder) holder);
     }
 
     @Override
@@ -133,20 +134,21 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
 
         /**
          * 绑定视图
-         * @param position 列表中绝对位置
-         * @param type 类型
+         * @param positionOfRecyclerView 列表中绝对位置
+         * @param positionOfGroup 相对Group中的位置
          * @param holder 视图持有者
          */
-        protected abstract void binding(int position, int type,T data,CommonViewHolder holder);
+        protected abstract void binding(int positionOfRecyclerView, int positionOfGroup,T data,CommonViewHolder holder);
+        protected abstract @LayoutRes int getLayoutId();
 
-        public RecyclerGroup(int layoutId){
-            this(null,layoutId);
+        public RecyclerGroup(){
+            this(null);
         }
 
-        public RecyclerGroup(MultiTypeAdapter adapter,int layoutId){
+        public RecyclerGroup(MultiTypeAdapter adapter){
             mItem =new ArrayList<>();
             mMultiAdapter=adapter;
-            mLayoutId =layoutId;
+            mLayoutId =getLayoutId();
         }
 
         /**
@@ -219,6 +221,11 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
             }
         }
 
+        public void setData(int position,T data){
+            mItem.get(position).mData=data;
+            if(mMultiAdapter!=null) mMultiAdapter.notifyDataSetChanged();
+        }
+
         /**
          * 增加多行
          * @param list
@@ -256,10 +263,18 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
         }
 
         /**
+         * 获取类型
+         * @return 类型
+         */
+        public int getType(){
+            return mType;
+        }
+
+        /**
          * 获取所有映射数据
          * @return 所有映射数据
          */
-        public List<T> getData(){
+        public List<T> getCopyData(){
             List<T> list=new ArrayList<>();
             for(RecyclerItem<T> item:mItem)
                 list.add(item.mData);
