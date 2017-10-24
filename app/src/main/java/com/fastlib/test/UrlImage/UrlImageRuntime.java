@@ -12,6 +12,7 @@ import com.fastlib.net.Request;
 import com.fastlib.net.SimpleListener;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  * Created by sgfb on 17/2/28.

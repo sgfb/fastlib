@@ -8,6 +8,7 @@ import android.text.TextUtils;
 
 import com.fastlib.BuildConfig;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,10 +42,55 @@ public class NetManager{
 
     /**
      * 网络任务入队列
-     * @param request
-     * @return 立即返回模式时，返回网络请求返回的数据
+     * @param request 网络请求
      */
-    public byte[] netRequest(Request request){
+    public void netRequest(Request request){
+        request=prepareRequest(request);
+        try {
+            enqueue(request,false);
+        } catch (IOException e) {
+            //不会被触发，丢弃异常处理
+        }
+    }
+
+    /**
+     * 立即返回模式请求网络任务
+     * @param request 网络请求
+     * @return 服务器返回数据
+     * @throws IOException 触发的异常
+     */
+    public byte[] netRequestPromptlyBack(Request request) throws IOException {
+        request=prepareRequest(request);
+        return enqueue(request,true);
+    }
+
+    /**
+     * 网络请求内部入队列处理，只有立即返回模式才会触发异常
+     * @param request 网络请求
+     * @param promptlyBackMode 标识立即返回模式
+     */
+    private byte[] enqueue(Request request,boolean promptlyBackMode)throws IOException{
+        ThreadPoolExecutor pool=request.getExecutor();
+        NetProcessor processor=new NetProcessor(request,new NetProcessor.OnCompleteListener(){
+            @Override
+            public void onComplete(NetProcessor processor1){
+                mRequestCount++;
+                Tx+=processor1.getTx();
+                Rx+=processor1.getRx();
+                if(BuildConfig.DEBUG)
+                    System.out.println(processor1);
+            }
+        },new Handler(Looper.getMainLooper()));
+        if(promptlyBackMode){ //如果是立即返回模式，不进入线程池直接运行后返回数据
+            processor.run();
+            return processor.getResponse();
+        }
+        if(pool!=null) pool.execute(processor);
+        else sRequestPool.execute(processor);
+        return null;
+    }
+
+    private Request prepareRequest(Request request){
         if(mGlobalData!=null&&request.isUseFactory()){ //全局预加载参数
             if(mGlobalData.mParams!=null&&mGlobalData.mParams.length>0){
                 List<Pair<String,String>> params=request.getParamsRaw();
@@ -86,32 +132,7 @@ public class NetManager{
             request.setUrl(mRootAddress + request.getUrl());
             request.setHadRootAddress(true);
         }
-        return enqueue(request);
-    }
-
-    /**
-     * 网络请求内部入队列处理
-     * @param request
-     */
-    private byte[] enqueue(Request request){
-        ThreadPoolExecutor pool=request.getExecutor();
-        NetProcessor processor=new NetProcessor(request,new NetProcessor.OnCompleteListener(){
-            @Override
-            public void onComplete(NetProcessor processor1){
-                mRequestCount++;
-                Tx+=processor1.getTx();
-                Rx+=processor1.getRx();
-                if(BuildConfig.DEBUG)
-                    System.out.println(processor1);
-            }
-        },new Handler(Looper.getMainLooper()));
-        if(request.isPromptlyBack()){ //如果是立即返回模式，不进入线程池直接运行后返回数据
-            processor.run();
-            return processor.getResponse();
-        }
-        if(pool!=null) pool.execute(processor);
-        else sRequestPool.execute(processor);
-        return null;
+        return request;
     }
 
     public void close(){

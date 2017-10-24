@@ -1,5 +1,6 @@
 package com.fastlib.adapter;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.List;

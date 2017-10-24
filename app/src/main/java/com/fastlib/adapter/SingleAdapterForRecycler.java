@@ -8,6 +8,7 @@ import com.fastlib.base.Refreshable;
 import com.fastlib.net.Listener;
 import com.fastlib.net.Request;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.List;

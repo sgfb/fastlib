@@ -1,20 +1,16 @@
 package com.fastlib.local_test;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.view.View;
-import android.widget.EditText;
-
 import com.fastlib.R;
-import com.fastlib.adapter.MultiAdapter;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.FastActivity;
 import com.fastlib.app.task.Action;
+import com.fastlib.app.task.EmptyAction;
+import com.fastlib.app.task.NoParamAction;
+import com.fastlib.app.task.NoReturnAction;
 import com.fastlib.app.task.Task;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,31 +26,45 @@ public class MainActivity extends FastActivity {
 
     @Bind(R.id.bt)
     private void commit() {
-        startTask(Task.begin(new Action<String, String>() {
+        loading();
+        startTask(Task.begin().cycleList(new NoParamAction<List<Integer>>() {
 
             @Override
-            protected String execute(String param) {
-                return "hello";
+            protected List<Integer> executeAdapt() {
+                ArrayList<Integer> list = new ArrayList<>();
+                list.add(1);
+                list.add(2);
+                list.add(3);
+                return list;
             }
-        }).cycle(new Action<String, Integer[]>() {
-
-            @Override
-            protected Integer[] execute(String param) {
-                return new Integer[0];
-            }
-                }).next(new Action<String,String>(){
-
+        })
+                .filter(new Action<Integer, Boolean>() {
                     @Override
-                    protected String execute(String param) {
-                        return param;
+                    protected Boolean execute(Integer param) throws Throwable {
+                        return param%2==0;
                     }
-                }).again(new Action<List<String>,String>(){
+                })
+                .again(new Action<List<Integer>,Object>(){
 
                     @Override
-                    protected String execute(List<String> param) {
+                    protected Object execute(List<Integer> param) throws Throwable{
+                        if(param!=null&&!param.isEmpty())
+                            for(int i:param)
+                                System.out.println(i);
+                        else System.out.println("list is empty");
                         return null;
                     }
-                }));
+                }), new NoReturnAction<Throwable>() {
+            @Override
+            public void executeAdapt(Throwable param) {
+                param.printStackTrace();
+            }
+        }, new EmptyAction() {
+            @Override
+            protected void executeAdapt() {
+                dismissLoading();
+            }
+        });
     }
 
     @Bind(R.id.bt2)

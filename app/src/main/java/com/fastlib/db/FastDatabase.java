@@ -462,8 +462,8 @@ public class FastDatabase{
 
         tableName = obj.getClass().getCanonicalName();
         //如果表不存在或者表中没有这条数据，则返回false
-        if (!tableExists(tableName))
-            if (BuildConfig.DEBUG){
+        if (!tableExists(tableName)){
+            if (BuildConfig.DEBUG)
                 System.out.println("更新数据失败，表不存在");
             return false;
         }
@@ -1014,7 +1014,7 @@ public class FastDatabase{
             String typeName = f.getGenericType().toString();
 
             //修改点和破折号为转义字符，去掉class+空格
-            typeName=typeName.replace(".","_").replace("<","0lt").replace(">","0rt").replace("class ","");
+            typeName=typeName.replace(".","_").replace("<","0lt").replace(">","0rt").replace("class ","").replace(";","").replace("[","");
             if (f.getClass().isArray())
                 typeName = f.getType().getName();
             column.columnName = f.getName();

@@ -8,13 +8,15 @@ import java.util.List;
  * rx风格任务链.现有功能是任务线性化、任务线程切换、平铺和集合任务
  */
 public class Task<R>{
+    private boolean isFilterTask=false; //是否是过滤任务
     private int mCycleIndex=-1; //默认往左移。如果是循环移到0,如果是跳出式任务为-2
     private Action mAction;
     private Task mPrevious;
     private Task mNext;
     private Task mCycler;
     private R[] mCycleData; //循环参数
-    private List mCycleResult=new ArrayList();
+    private NoReturnAction<Throwable> mExceptionHandler; //异常处理器
+    private List mCycleResult=new ArrayList(); //循环任务的临时存储空间
 
     /**
      * 空参数开始生成任务链
@@ -71,7 +73,7 @@ public class Task<R>{
      * @param <T> 平铺参数类型
      * @return 任务链头部
      */
-    public static <T> Task<T> beginCycle(final T[] param){
+    public static <T> Task<T> beginCycle(final T... param){
         Task task=new Task();
         task.mCycleIndex=0;
         task.mAction=new Action<T,T[]>(){
@@ -151,11 +153,32 @@ public class Task<R>{
     }
 
     /**
-     * 循环任务
-     * @param action 循环任务的行为
+     * 过滤任务
+     * @param action
+     * @return
+     */
+    public Task<R> filter(Action<R,Boolean> action){
+        return filter(action,ThreadType.WORK);
+    }
+
+    /**
+     * 过滤任务，指定了运行线程
+     * @param action
+     * @param whichThread
+     * @return
+     */
+    public Task<R> filter(Action<R,Boolean> action,ThreadType whichThread){
+        next(action,whichThread);
+        mNext.isFilterTask=true;
+        return mNext;
+    }
+
+    /**
+     * 循环任务，默认运行在工作线程上
+     * @param action 循环任务行为
      * @return 下一个任务（循环任务）
      */
-    public Task<R> cycle(Action<String, Integer[]> action){
+    public <T> Task<T> cycle(Action<R,T[]> action){
         return cycle(action,ThreadType.WORK);
     }
 
@@ -165,30 +188,26 @@ public class Task<R>{
      * @param whichThread 运行在指定线程上
      * @return 下一个任务（循环任务）
      */
-    public Task<R> cycle(Action<R,R[]> action, ThreadType whichThread){
+    public <T> Task<T> cycle(Action<R,T[]> action, ThreadType whichThread){
         mNext=new Task();
         mNext.mAction=action;
         mNext.mPrevious=this;
         mNext.mCycleIndex=0;
+        mNext.mAction.setThreadType(whichThread);
         return mNext;
     }
 
-    /**
-     * 循环任务
-     * @param params 需要循环的参数
-     * @return 下一个任务（循环任务）
-     */
-    public Task<R> cycle(final R[] params){
-        return cycle(params,ThreadType.WORK);
+    public <T> Task<T> cycleList(Action<R,List<T>> action){
+        return cycleList(action,ThreadType.WORK);
     }
 
-    public Task<R> cycle(final R[] params,ThreadType whichThread){
-        return cycle(new Action<R, R[]>() {
-            @Override
-            public R[] execute(R param) {
-                return params;
-            }
-        },whichThread);
+    public <T> Task<T> cycleList(Action<R,List<T>> action, ThreadType whichThread){
+        mNext=new Task();
+        mNext.mAction=action;
+        mNext.mPrevious=this;
+        mNext.mCycleIndex=0;
+        mNext.mAction.setThreadType(whichThread);
+        return mNext;
     }
 
     /**
@@ -197,21 +216,26 @@ public class Task<R>{
      */
     public Object getReturn(){
         Object result=null;
-        if(mCycleIndex<0){ //默认和跳出类型
-            if(mNext!=null)
-                mNext.mCycleResult.add(mAction.getReturn());
+        if(mCycleIndex<0){ //默认和跳出类型,不能是过滤类型
+            if(mNext!=null){
+                if(!isFilterTask) //如果是循环类型，给予前面传递下来的组合
+                    mNext.mCycleResult.add(mAction.getReturn());
+                else mNext.mCycleResult=mCycleResult;
+            }
             return mAction.getReturn();
         }
         if(mCycleIndex==0&&mCycleData==null) { //循环类型，并且未生成循环数据
-            mCycleData = (R[]) mAction.getReturn();
+            Object returnData=mAction.getReturn();
+            if(returnData instanceof List) mCycleData = (R[]) ((List<R>) returnData).toArray();
+            else mCycleData = (R[]) mAction.getReturn();
             if(mCycleData!=null&&mCycleData.length>0) return mCycleData[mCycleIndex++];
             else return null;
         }
         //还是循环类型，但是已有循环数据
         if(mCycleIndex>0) {
             if((mCycleData==null||mCycleIndex>=mCycleData.length)) //循环终结
-            return null;
-            else result=mCycleData[mCycleIndex++]; ////返回循环中指定索引
+                return null;
+            else result=mCycleData[mCycleIndex++]; //返回循环中指定索引
         }
         if(mNext!=null&&mNext.mCycleIndex==-2) //如果下一个任务是循环跳出类型
             mNext.mCycleResult.add(result);
@@ -228,7 +252,7 @@ public class Task<R>{
     /**
      * 执行行为.循环任务只执行一次拿到数组数据
      */
-    public void process(){
+    public void process() throws Throwable {
         if(mCycleIndex<=0) mAction.process();
     }
 
@@ -245,6 +269,10 @@ public class Task<R>{
         return task.mNext;
     }
 
+    public Object getParam(){
+        return mAction.getParam();
+    }
+
     public boolean isStopNow(){
         return mAction.isInterrupt();
     }
@@ -255,5 +283,22 @@ public class Task<R>{
 
     public ThreadType getOnWhichThread() {
         return mAction.getThreadType();
+    }
+
+    public boolean isFilterTask(){
+        return isFilterTask;
+    }
+
+    public Task getCycler(){
+        return mCycler;
+    }
+
+    public Task setTaskExceptionHandler(NoReturnAction<Throwable> handler){
+        mExceptionHandler=handler;
+        return this;
+    }
+
+    public NoReturnAction<Throwable> getTaskExceptionHandler(){
+        return mExceptionHandler;
     }
 }

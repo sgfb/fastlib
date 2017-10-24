@@ -1,5 +1,7 @@
 package com.fastlib.app.task;
 
+import java.io.IOException;
+
 /**
  * Created by sgfb on 17/9/1.
  * 任务事件
@@ -10,14 +12,18 @@ public abstract class Action<P,R>{
     private R mReturn;
     protected ThreadType mThreadType=ThreadType.WORK; //被告知运行在哪个线程类型上,默认工作线程
 
-    protected abstract R execute(P param);
+    protected abstract R execute(P param) throws Throwable;
 
-    public void process(){
+    public void process() throws Throwable {
         mReturn=execute(mParam);
     }
 
     public R getReturn(){
         return mReturn;
+    }
+
+    public P getParam(){
+        return mParam;
     }
 
     public void setParam(P param) {

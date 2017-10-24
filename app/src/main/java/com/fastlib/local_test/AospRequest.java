@@ -4,6 +4,8 @@ import com.fastlib.net.Request;
 import com.fastlib.utils.Utils;
 import com.google.gson.Gson;
 
+import java.io.IOException;
+
 /**
  * Created by sgfb on 2017/9/25.
  */
@@ -26,7 +28,7 @@ public class AospRequest extends Request{
     }
 
     @Override
-    public byte[] start(boolean forceRefresh){
+    public void start(boolean forceRefresh){
         Gson gson=new Gson();
         RequestBean bean=new RequestBean(Utils.getMd5(gson.toJson(getParams())+KEY,false),getParams());
         String beanJson=gson.toJson(bean);
@@ -35,6 +37,6 @@ public class AospRequest extends Request{
         setUrl(URL);
         setMethod("POST");
         putHeader("Content-Type","application/json");
-        return super.start(forceRefresh);
+        super.start(forceRefresh);
     }
 }
