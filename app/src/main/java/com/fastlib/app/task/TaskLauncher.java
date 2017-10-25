@@ -81,7 +81,14 @@ public class TaskLauncher{
             if(task.isFilterTask()){
                 if(obj!=null&&(obj instanceof Boolean)){
                     Boolean b= (Boolean) obj;
-                    if(!b) nextTask=task.getCycler();
+                    if(!b){
+                        if(task.isCycleEnd()){
+                            while(nextTask!=null&&!nextTask.isAgainTask())
+                                nextTask=nextTask.getNext();
+                        }
+                        else
+                            nextTask=task.getCycler();
+                    }
                 }
                 obj=task.getParam(); //过滤任务的参数就是返回，递交给下一个任务
             }

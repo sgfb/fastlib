@@ -161,7 +161,7 @@ public class LocalDataInject{
         Class<?>[] paramTypes = m.getParameterTypes();
         try {
             if (data == null) { //如果没有则读取一份进入缓存
-                if (BuildConfig.DEBUG)
+                if (BuildConfig.isShowLog)
                     System.out.println("缓存中没有触发数据");
                 //截断触发事件直到数据读取完毕
                 switch (type) {
@@ -195,7 +195,7 @@ public class LocalDataInject{
                 }
                 mToggleData.append(v.getId(), data);
                 v.setOnClickListener(clickListener);
-            } else if (BuildConfig.DEBUG)
+            } else if (BuildConfig.isShowLog)
                 System.out.println("缓存中有触发数据");
             //View必须在第一个，接下来是参数对象数组
             flatInvoke(m, v, data);

@@ -184,7 +184,7 @@ public class KVDatabasePlus extends KVDatabase{
                         setStr(Pair.create(key,Double.toHexString(doubleValue+1)));
                         return true;
                     }catch (NumberFormatException e1) {
-                        if (BuildConfig.DEBUG)
+                        if (BuildConfig.isShowLog)
                             e1.printStackTrace();
                     }
                 }
@@ -208,7 +208,7 @@ public class KVDatabasePlus extends KVDatabase{
                     setStr(Pair.create(key,Double.toString(doubleValue-1)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(BuildConfig.DEBUG)
+                    if(BuildConfig.isShowLog)
                         e1.printStackTrace();
                 }
             }
@@ -231,7 +231,7 @@ public class KVDatabasePlus extends KVDatabase{
                     setStr(Pair.create(key, Double.toString(doubleValue+incrementCount)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(BuildConfig.DEBUG)
+                    if(BuildConfig.isShowLog)
                         e1.printStackTrace();
                 }
             }
@@ -254,7 +254,7 @@ public class KVDatabasePlus extends KVDatabase{
                     setStr(Pair.create(key,Double.toString(doubleValue-decrementCount)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(BuildConfig.DEBUG)
+                    if(BuildConfig.isShowLog)
                         e1.printStackTrace();
                 }
             }
@@ -277,7 +277,7 @@ public class KVDatabasePlus extends KVDatabase{
                     setStr(Pair.create(key,Double.toString(doubleValue+incrementCount)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(BuildConfig.DEBUG)
+                    if(BuildConfig.isShowLog)
                         e1.printStackTrace();
                 }
             }
@@ -300,7 +300,7 @@ public class KVDatabasePlus extends KVDatabase{
                     setStr(Pair.create(key,Double.toString(doubleValue-decrementCount)));
                     return true;
                 }catch (NumberFormatException e1){
-                    if(BuildConfig.DEBUG)
+                    if(BuildConfig.isShowLog)
                         e1.printStackTrace();
                 }
             }

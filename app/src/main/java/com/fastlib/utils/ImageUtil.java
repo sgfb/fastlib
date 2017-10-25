@@ -83,10 +83,10 @@ public class ImageUtil{
 
         f.setExecutable(true); //7.0文件安全权限
         if(f.exists())
-            if(BuildConfig.DEBUG)
+            if(BuildConfig.isShowLog)
                 System.out.println("压缩前:"+f.length());
         else
-            if(BuildConfig.DEBUG)
+            if(BuildConfig.isShowLog)
                 System.out.println("file not exists");
         String suffix;
         if(Bitmap.CompressFormat.JPEG==format)
@@ -109,7 +109,7 @@ public class ImageUtil{
         }
         if(deleteBigger)
             biggerFile.delete();
-        if(BuildConfig.DEBUG)
+        if(BuildConfig.isShowLog)
             System.out.println("压缩后:"+file.length());
         bitmap.recycle();
         fos.close();
@@ -534,7 +534,7 @@ public class ImageUtil{
                 e.printStackTrace();
             }
         else
-            if(BuildConfig.DEBUG)
+            if(BuildConfig.isShowLog)
                 System.out.println("保存view到文件中失败");
     }
 }
