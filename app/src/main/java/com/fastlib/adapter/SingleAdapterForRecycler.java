@@ -1,14 +1,17 @@
 package com.fastlib.adapter;
 
 import android.content.Context;
+import android.support.annotation.LayoutRes;
 import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
 
 import com.fastlib.app.FastActivity;
+import com.fastlib.base.CommonViewHolder;
 import com.fastlib.base.Refreshable;
 import com.fastlib.net.Listener;
 import com.fastlib.net.Request;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.List;
@@ -18,14 +21,14 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 单请求绑定适配器,将视图与服务器中的数据捆绑
  * @param <T> 数据类型
  * @param <R> 返回类型
- * @Param <H> 视图持有者
  */
-public abstract class SingleAdapterForRecycler<T,R,H extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<H>  implements Listener<R,Object,Object>{
+public abstract class SingleAdapterForRecycler<T,R> extends RecyclerView.Adapter<CommonViewHolder>  implements Listener<R,Object,Object> {
     private boolean isRefresh,isLoading,isMore;
     private List<T> mData;
     private Refreshable mRefreshLayout;
     private ThreadPoolExecutor mThreadPool;
     private int mPerCount; //每次读取条数，默认为1
+    private int mLayoutId;
     protected Context mContext;
     protected Request mRequest;
 
@@ -37,7 +40,7 @@ public abstract class SingleAdapterForRecycler<T,R,H extends RecyclerView.ViewHo
      * @param data
      * @param holder
      */
-    public abstract void binding(int position,T data,H holder);
+    public abstract void binding(int position,T data,CommonViewHolder holder);
 
     /**
      * 返回的数据转换
@@ -58,17 +61,18 @@ public abstract class SingleAdapterForRecycler<T,R,H extends RecyclerView.ViewHo
      */
     public abstract void getRefreshDataRequest(Request request);
 
-    public SingleAdapterForRecycler(Context context){
-        this(context,true);
+    public SingleAdapterForRecycler(Context context, @LayoutRes int layoutId){
+        this(context,layoutId,true);
     }
 
-    public SingleAdapterForRecycler(Context context, boolean startNow){
+    public SingleAdapterForRecycler(Context context, @LayoutRes int layoutId, boolean startNow){
         mContext=context;
         mRequest= generateRequest();
         mPerCount=1;
         isRefresh=true;
         isMore=true;
         isLoading=false;
+        mLayoutId=layoutId;
         mRequest.setGenericType(new Type[]{getResponseType()});
         mRequest.setListener(this);
         if(mContext instanceof FastActivity)
@@ -79,9 +83,13 @@ public abstract class SingleAdapterForRecycler<T,R,H extends RecyclerView.ViewHo
 
     private Type getResponseType(){
         Method[] methods=getClass().getDeclaredMethods();
-        for(Method m:methods)
-            if(m.getName().equals("translate"))
-                return m.getTypeParameters()[0];
+        for(Method m:methods){
+            if(m.getName().equals("translate")) {
+                Type type=m.getGenericParameterTypes()[0];
+                if(type!=Object.class)
+                    return type;
+            }
+        }
         return null;
     }
 
@@ -105,7 +113,12 @@ public abstract class SingleAdapterForRecycler<T,R,H extends RecyclerView.ViewHo
     }
 
     @Override
-    public void onBindViewHolder(H holder,int position){
+    public CommonViewHolder onCreateViewHolder(ViewGroup parent, int viewType){
+        return new CommonViewHolder(LayoutInflater.from(mContext).inflate(mLayoutId,parent,false));
+    }
+
+    @Override
+    public void onBindViewHolder(CommonViewHolder holder, int position){
         if(position>=getItemCount()-1&&isMore&&!isLoading)
             loadMoreData();
         binding(position,mData.get(position),holder);
@@ -117,7 +130,7 @@ public abstract class SingleAdapterForRecycler<T,R,H extends RecyclerView.ViewHo
     }
 
     @Override
-    public void onResponseListener(Request r,R result,Object none1,Object none2){
+    public void onResponseListener(Request r, R result, Object none1, Object none2){
         if(mRefreshLayout!=null)
             mRefreshLayout.setRefreshStatus(false);
         List<T> list=translate(result);
@@ -162,5 +175,15 @@ public abstract class SingleAdapterForRecycler<T,R,H extends RecyclerView.ViewHo
 
     public void setRefreshLayout(Refreshable refreshLayout) {
         mRefreshLayout = refreshLayout;
+    }
+
+    @Override
+    public void onRawData(Request r, byte[] data) {
+        //被适配
+    }
+
+    @Override
+    public void onTranslateJson(Request r, String json) {
+        //被适配
     }
 }

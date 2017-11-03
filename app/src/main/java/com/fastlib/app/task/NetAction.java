@@ -11,6 +11,7 @@ import com.google.gson.JsonParseException;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -27,12 +28,12 @@ public abstract class NetAction<R> extends Action<Request,R> {
         Object responseObj=null;
         byte[] response= NetManager.getInstance().netRequestPromptlyBack(param);
         Method[] methods=getClass().getDeclaredMethods();
-        Class<?> rType=Object.class;
+        Type rType=Object.class;
 
         for(Method m:methods){
             if("executeAdapt".equals(m.getName())){
-                Class<?>[] paramsType=m.getParameterTypes();
-                for(Class<?> paramType:paramsType)
+                Type[] paramsType=m.getGenericParameterTypes();
+                for(Type paramType:paramsType)
                     if(paramType!=Object.class){
                         rType=paramType;
                         break;

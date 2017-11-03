@@ -139,4 +139,8 @@ public abstract class FastAdapterForRecycler<T> extends RecyclerView.Adapter<Com
         if(anim) notifyItemRangeRemoved(position,count);
         else notifyDataSetChanged();
     }
+
+    public List<T> getData(){
+        return mData;
+    }
 }

@@ -74,7 +74,10 @@ public class TaskLauncher{
     private void processTask(Task task){
         try{
             task.process(); //执行事件后才有返回
-            if(checkStopStatus(task)) return; //中断任务事件
+            if(checkStopStatus(task)){ //中断任务事件
+                if(mCompleteAction!=null) mCompleteAction.executeAdapt();
+                return;
+            }
             Object obj=task.getReturn();
             Task nextTask=task.getNext();
             //过滤任务处理
