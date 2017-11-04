@@ -74,14 +74,24 @@ public class TaskLauncher{
     private void processTask(Task task){
         try{
             task.process(); //执行事件后才有返回
-            if(checkStopStatus(task)) return; //中断任务事件
+            if(checkStopStatus(task)){ //中断任务事件
+                if(mCompleteAction!=null) mCompleteAction.executeAdapt();
+                return;
+            }
             Object obj=task.getReturn();
             Task nextTask=task.getNext();
             //过滤任务处理
             if(task.isFilterTask()){
                 if(obj!=null&&(obj instanceof Boolean)){
                     Boolean b= (Boolean) obj;
-                    if(!b) nextTask=task.getCycler();
+                    if(!b){
+                        if(task.isCycleEnd()){
+                            while(nextTask!=null&&!nextTask.isAgainTask())
+                                nextTask=nextTask.getNext();
+                        }
+                        else
+                            nextTask=task.getCycler();
+                    }
                 }
                 obj=task.getParam(); //过滤任务的参数就是返回，递交给下一个任务
             }

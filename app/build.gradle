@@ -13,6 +13,7 @@ android {
         renderscriptTargetApi 15
         renderscriptSupportModeEnabled true
         buildConfigField("String","DEFAULT_DATA_FILE_NAME","\"fastlib\"") //sp和数据库默认存储名
+        buildConfigField("boolean","isShowLog","true") //打印库中的log信息
     }
     buildTypes{
         release {

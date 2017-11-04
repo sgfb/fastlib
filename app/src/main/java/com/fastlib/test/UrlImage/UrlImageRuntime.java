@@ -81,7 +81,7 @@ public class UrlImageRuntime{
             public void onErrorListener(Request r, String error) {
                 super.onErrorListener(r, error);
                 mImage.isDownloading=false;
-                if(BuildConfig.DEBUG)
+                if(BuildConfig.isShowLog)
                     System.out.println("下载图像异常:"+error);
             }
         });

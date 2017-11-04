@@ -14,9 +14,7 @@ import java.util.Map;
 
 /**
  * 具有状态的列表,状态显示在底部
- * 
  * @author sgfb,shenhaofeng
- *
  */
 public class StateListView extends ListView implements AdapterViewState{
 	private int mCurrState;

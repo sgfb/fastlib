@@ -77,7 +77,7 @@ public class NetManager{
                 mRequestCount++;
                 Tx+=processor1.getTx();
                 Rx+=processor1.getRx();
-                if(BuildConfig.DEBUG)
+                if(BuildConfig.isShowLog)
                     System.out.println(processor1);
             }
         },new Handler(Looper.getMainLooper()));

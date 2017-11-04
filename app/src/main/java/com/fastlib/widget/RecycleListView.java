@@ -23,7 +23,7 @@ import android.widget.RelativeLayout;
  * @author sgfb
  * 与listview类似的recycleView.具有下拉刷新，有状态变化
  */
-public class RecycleListView2 extends RelativeLayout implements AdapterViewState{
+public class RecycleListView extends RelativeLayout implements AdapterViewState{
 	private SwipeRefreshLayout mSwipe;
 	private RecyclerView mRecyclerView;
 	private LinearLayoutManager mLayoutManager;
@@ -59,12 +59,12 @@ public class RecycleListView2 extends RelativeLayout implements AdapterViewState
 		}
 	};
 
-	public RecycleListView2(Context context){
+	public RecycleListView(Context context){
 		super(context);
 		init();
 	}
 
-	public RecycleListView2(Context context, AttributeSet attrs) {
+	public RecycleListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		init();
 	}

@@ -16,7 +16,7 @@ public class Task<R>{
     private Task mCycler;
     private R[] mCycleData; //循环参数
     private NoReturnAction<Throwable> mExceptionHandler; //异常处理器
-    private List mCycleResult=new ArrayList(); //循环任务的临时存储空间
+    private List mCycleResult=new ArrayList(); //循环任务返回的临时存储空间
 
     /**
      * 空参数开始生成任务链
@@ -218,9 +218,14 @@ public class Task<R>{
         Object result=null;
         if(mCycleIndex<0){ //默认和跳出类型,不能是过滤类型
             if(mNext!=null){
-                if(!isFilterTask) //如果是循环类型，给予前面传递下来的组合
+                if(!isFilterTask) //如果是过滤类型，判断是否过滤数据来添加到循环返回临时空间中
                     mNext.mCycleResult.add(mAction.getReturn());
-                else mNext.mCycleResult=mCycleResult;
+                else {
+                    Boolean filtered= (Boolean) mAction.getReturn();
+                    if(filtered!=null&&filtered)
+                        mNext.mCycleResult.add(mAction.getParam());
+//                    mNext.mCycleResult=mCycleResult;
+                }
             }
             return mAction.getReturn();
         }
@@ -233,7 +238,7 @@ public class Task<R>{
         }
         //还是循环类型，但是已有循环数据
         if(mCycleIndex>0) {
-            if((mCycleData==null||mCycleIndex>=mCycleData.length)) //循环终结
+            if((mCycleData==null||mCycleIndex>=mCycleData.length)) //循环终结,返回终结标识
                 return null;
             else result=mCycleData[mCycleIndex++]; //返回循环中指定索引
         }
@@ -262,11 +267,24 @@ public class Task<R>{
      */
     public Task getNext(){
         Task task=this;
-        if(task.mCycler!=null&&(task.mCycler.mCycleData==null||task.mCycler.mCycleData.length==task.mCycler.mCycleIndex)) //如果链接到一个循环器，并且循环器索引已到尾端，结束这个循环器
+        if(task.mCycler!=null&&(task.mCycler.mCycleData==null||task.mCycler.mCycleData.length==task.mCycler.mCycleIndex)){ //如果链接到一个循环器，并且循环器索引已到尾端，结束这个循环器
             return task.mNext;
+        }
         if(task.mNext==null||task.mNext.mCycleIndex==-2) //如果下一个任务存在并且是跳出循环类型
             return task.mCycler!=null?task.mCycler:task.mNext;
         return task.mNext;
+    }
+
+    /**
+     * 是否循环尾部
+     * @return true循环尾部，false不是循环或者未到循环尾部
+     */
+    public boolean isCycleEnd(){
+        return mCycler!=null&&mCycler.mCycleIndex>=mCycler.mCycleData.length;
+    }
+
+    public boolean isAgainTask(){
+        return mCycleIndex==-2;
     }
 
     public Object getParam(){

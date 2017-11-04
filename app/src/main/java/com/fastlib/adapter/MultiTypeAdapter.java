@@ -117,6 +117,13 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
         return mRecyclerGroup.get(type);
     }
 
+    /**
+     * 清理所有数据
+     */
+    public void clear(){
+        for(RecyclerGroup group:mRecyclerGroup)
+            group.clear();
+    }
 
     /**
      * 关联RecyclerView内部类
@@ -214,7 +221,7 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
             if(mMultiAdapter!=null){
                 List<RecyclerItem> allItem=mMultiAdapter.getRecyclerItem();
                 if(mCanSuspend&&!mItem.isEmpty())
-                    allItem.add(allItem.indexOf(mItem.get(allItem.size()-1))+1,item);
+                    allItem.add(allItem.indexOf(mItem.get(allItem.size()))+1,item);
                 else allItem.add(item);
                 if(!isSuspend)
                     mMultiAdapter.notifyDataSetChanged();
@@ -293,13 +300,19 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
                 mMultiAdapter.getRecyclerItem().addAll(index,mItem);
             }
         }
+
+        public void clear(){
+            if(mMultiAdapter!=null)
+                mMultiAdapter.getRecyclerItem().removeAll(mItem);
+            mItem.clear();
+        }
     }
 
     /**
      * 列表元素最小单位
      * @param <T>
      */
-    public static class RecyclerItem<T>{
+    public static class RecyclerItem<T> {
         T mData;
         RecyclerGroup mGroup;
 
