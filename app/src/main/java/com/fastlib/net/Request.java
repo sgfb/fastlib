@@ -30,8 +30,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author sgfb
- * 请求体<br/>
- * 每个任务都是不同的，（NetQueue）会根据属性来配置请求，调整请求开始完成或失败后不同的事件
+ * 请求体
+ * 每个任务都是不同的，{@link NetManager}会根据属性来配置请求，调整请求开始完成或失败后不同的事件
  */
 public class Request{
     private static final Object sLock = new Object();
@@ -46,6 +46,8 @@ public class Request{
     private boolean isSendGzip; //指定这次请求发送时是否压缩成gzip流
     private boolean isReceiveGzip; //指定这次请求是否使用gzip解码
     private byte[] mByteStream; //原始字节流，如果这个值存在就不会发送mParams参数了.如果存在但是长度为0发送mParams参数json化数据
+    private long mLastModified; //资源最后修改时间
+    private long mResourceExpire; //资源过期时间
     private String method;
     private String mUrl;
     private List<Pair<String, String>> mSendCookies;
@@ -57,7 +59,6 @@ public class Request{
     private RequestType mType = RequestType.DEFAULT;
     private Object mTag; //额外信息
     private Pair<String,String>[] mReceiveCookies; //留存的cookies
-    private String mLastModified; //资源最后修改时间
     //加入activity或者fragment可以提升安全性
     private Activity mActivity;
     private Fragment mFragment;
@@ -673,8 +674,9 @@ public class Request{
         return hadRootAddress;
     }
 
-    public void setHadRootAddress(boolean hadRootAddress) {
+    public Request setHadRootAddress(boolean hadRootAddress) {
         this.hadRootAddress = hadRootAddress;
+        return this;
     }
 
     public boolean downloadable() {
@@ -822,11 +824,11 @@ public class Request{
         return this;
     }
 
-    public String getLastModified(){
+    public long getLastModified(){
         return mLastModified;
     }
 
-    public void setLastModified(String lastModified) {
+    public void setLastModified(long lastModified) {
         mLastModified = lastModified;
     }
 
@@ -893,6 +895,14 @@ public class Request{
         return "URL:" + mUrl + " Method:" + method + "\n" +
                 paramsStr.toString() + "\n" +
                 uploadFileStr.toString();
+    }
+
+    public long getResourceExpire() {
+        return mResourceExpire;
+    }
+
+    public void setmResourceExpire(long mResourceExpire) {
+        this.mResourceExpire = mResourceExpire;
     }
 
     /**

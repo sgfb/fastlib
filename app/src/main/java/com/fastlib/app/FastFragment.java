@@ -307,7 +307,7 @@ public abstract class FastFragment extends Fragment implements Deferrable{
     /**
      * 从宿主Activity中移除自身
      */
-    protected void finish(){
+    public void finish(){
         getFragmentManager()
                 .beginTransaction()
                 .remove(this)

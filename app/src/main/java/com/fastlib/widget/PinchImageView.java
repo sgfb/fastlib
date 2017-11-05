@@ -17,13 +17,7 @@ import android.widget.ImageView;
  * 手势图片控件
  * @author clifford
  */
-<<<<<<< HEAD
-public class PinchImageView extends AppCompatImageView{
-=======
 public class PinchImageView extends AppCompatImageView {
->>>>>>> 1e17980b9a42bd5712635a4eb2f629a61975f2e2
-
-
     ////////////////////////////////配置参数////////////////////////////////
 
     //图片缩放动画时间

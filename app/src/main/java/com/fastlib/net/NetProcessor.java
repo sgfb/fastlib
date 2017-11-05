@@ -82,7 +82,7 @@ public class NetProcessor implements Runnable {
                 mListener.onComplete(this);
             return;
         }
-        long connectionTimer = System.currentTimeMillis();
+        long connectionTimer = System.currentTimeMillis(); //优先使用X-Android-Received-Millis和X-Android-Sent_Millis来作为与服务器交互的时间,这个作为备用
         try {
             boolean isMulti = false, isPost = mRequest.getMethod().equals("POST") || mRequest.getMethod().equals("PUT"), needBody = (isPost || mRequest.getMethod().equals("GET")); //如果不是post类型也不是get，不需要请求体
             long existsLength;
@@ -203,10 +203,11 @@ public class NetProcessor implements Runnable {
                 }
             }
             connection.disconnect();
-            mRequest.setLastModified(connection.getHeaderField("Last-Modified"));
+            mRequest.setmResourceExpire(connection.getExpiration());
+            mRequest.setLastModified(computeLastModified(connection));
             mMessage = connection.getResponseMessage();
             saveExtraToRequest(connection);
-            saveResponseStatus(connection.getResponseCode(), System.currentTimeMillis() - connectionTimer, connection.getResponseMessage());
+            saveResponseStatus(connection.getResponseCode(),computeRequestTime(connection,connectionTimer),connection.getResponseMessage());
             toggleCallback();
         } catch (IOException e){
             mException=e;
@@ -219,6 +220,38 @@ public class NetProcessor implements Runnable {
             if (mListener != null)
                 mListener.onComplete(this);
         }
+    }
+
+    /**
+     * 计算文件最后修改时间 -1代表永不过期
+     * @param connection 连接
+     * @return 文件最后修改时间 -1永不过期
+     */
+    private long computeLastModified(HttpURLConnection connection){
+        String lastModified=connection.getHeaderField("Last-Modified");
+        long lastModifiedLong=-1;
+        try{
+            lastModifiedLong=Long.parseLong(lastModified);
+        }catch (NumberFormatException e){
+            //使用-1来表示永不过期
+        }
+        return lastModifiedLong;
+    }
+
+    /**
+     * 计算与服务器交互时间长度
+     * @return 服务器交互时间长度
+     */
+    private long computeRequestTime(HttpURLConnection connection,long backUpRequestTime){
+        long requestTime=backUpRequestTime;
+        long receiveTime=System.currentTimeMillis();
+        try{
+            requestTime=Long.parseLong(connection.getHeaderField("X-Android-Sent-Millis"));
+            receiveTime=Long.parseLong(connection.getHeaderField("X-Android-Received-Millis"));
+        }catch (NumberFormatException e){
+            //使用备用时间计算与服务器交互时间长度
+        }
+        return receiveTime-requestTime;
     }
 
     /**
@@ -315,7 +348,6 @@ public class NetProcessor implements Runnable {
 
     /**
      * 检测错误流
-     *
      * @param connection
      * @param requestTime
      * @throws IOException
@@ -338,7 +370,6 @@ public class NetProcessor implements Runnable {
 
     /**
      * 从Request中取出并组合要发送的Cookie
-     *
      * @return 组合好的Cookies
      */
     private String generateSendCookies() {
@@ -356,7 +387,6 @@ public class NetProcessor implements Runnable {
 
     /**
      * 保存一些诸如Header和Cookies的数据到Request中
-     *
      * @param connection
      */
     private void saveExtraToRequest(HttpURLConnection connection) {
@@ -379,7 +409,6 @@ public class NetProcessor implements Runnable {
 
     /**
      * 保存返回状态值
-     *
      * @param code
      * @param time
      * @param message
@@ -394,7 +423,6 @@ public class NetProcessor implements Runnable {
 
     /**
      * 如果文件大小为0，并且不为Gzip流，不输出到文件中
-     *
      * @param connection
      * @return
      */
@@ -407,7 +435,6 @@ public class NetProcessor implements Runnable {
 
     /**
      * 实体类型是否源类型
-     *
      * @param types 实体类型组
      * @return 如果是源类型返回true，否则false
      */
@@ -421,7 +448,6 @@ public class NetProcessor implements Runnable {
 
     /**
      * 实体类型是否字符串类型
-     *
      * @param types 实体类型组
      * @return 如果是字符串类型返回true，否则false
      */
@@ -605,7 +631,8 @@ public class NetProcessor implements Runnable {
 
     @Override
     public String toString() {
-        return "message:" + mMessage + " tx:" + Tx + " rx:" + Rx;
+        long tc=mRequest==null?0:(mRequest.getResponseStatus()==null?0:mRequest.getResponseStatus().time);
+        return "message:" + mMessage + " tx:" + Tx + " rx:" + Rx+" tc:"+tc;
     }
 
     public long getTx() {

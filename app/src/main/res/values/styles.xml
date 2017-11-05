@@ -25,8 +25,4 @@
         <item name="android:windowEnterAnimation">@anim/trans_bottom_to_top</item>
         <item name="android:windowExitAnimation">@anim/trans_top_to_bottom</item>
     </style>
-
-    <style name="MyStarLoading" parent="Base.Widget.AppCompat.RatingBar">
-        <item name="android:progressDrawable">@drawable/customer_star_loading</item>
-    </style>
 </resources>
