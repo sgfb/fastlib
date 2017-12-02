@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class TaskLauncher{
     private Object mHost;
     private ThreadPoolExecutor mThreadPool;
-    private volatile boolean mStopFlag;
+    private volatile boolean mStopFlag; //停止标志
 
     public TaskLauncher(Activity activity, ThreadPoolExecutor threadPool) {
         mHost = activity;
@@ -76,6 +76,15 @@ public class TaskLauncher{
         Object obj=task.getReturn();
         Task nextTask=task.getNext();
         if(nextTask!=null){
+            while(nextTask.isFilter()){
+                if(obj instanceof Boolean){
+                    Boolean b= (Boolean) obj;
+                    if(!b){
+                        obj=nextTask.getReturn();
+                        nextTask=nextTask.getNext();
+                    }
+                }
+            }
             nextTask.setParam(obj);
             threadDispatch(nextTask);
         }
@@ -90,6 +99,10 @@ public class TaskLauncher{
         return hostIsFinish()||task.isStopNow()||mStopFlag;
     }
 
+    /**
+     * 宿主模块是否已结束生命周期
+     * @return true已结束，否则未结束
+     */
     private boolean hostIsFinish(){
         if(mHost instanceof Activity){
             Activity activity= (Activity) mHost;

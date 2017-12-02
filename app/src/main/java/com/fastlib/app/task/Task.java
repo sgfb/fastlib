@@ -8,6 +8,7 @@ import java.util.List;
  * rx风格任务链.现有功能是任务线性化、任务线程切换、平铺和集合任务
  */
 public class Task<R>{
+    private boolean isFilter=false;
     private int mCycleIndex=-1; //默认往左移。如果是循环移到0,如果是跳出式任务为-2
     private Action mAction;
     private Task mPrevious;
@@ -178,7 +179,7 @@ public class Task<R>{
      * @param params 需要循环的参数
      * @return 下一个任务（循环任务）
      */
-    public Task<R> cycle(final R[] params){
+    public Task<R> cycle(R[] params){
         return cycle(params,ThreadType.WORK);
     }
 
@@ -189,6 +190,20 @@ public class Task<R>{
                 return params;
             }
         },whichThread);
+    }
+
+    /**
+     * 过滤任务
+     * @param action
+     * @return
+     */
+    public Task<R> filter(Action<R,Boolean> action){
+        mNext=new Task();
+        mNext.mAction=action;
+        mNext.mPrevious=this;
+        mNext.mCycleIndex=0;
+        mNext.isFilter=true;
+        return mNext;
     }
 
     /**
@@ -255,5 +270,9 @@ public class Task<R>{
 
     public ThreadType getOnWhichThread() {
         return mAction.getThreadType();
+    }
+
+    public boolean isFilter(){
+        return isFilter;
     }
 }

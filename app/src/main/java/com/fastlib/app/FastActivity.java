@@ -279,7 +279,7 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
      * @param waitDeferTask 是否等待延迟任务
      */
     protected void afterSetContentView(boolean waitDeferTask){
-        if(!waitDeferTask&&mDeferView!=null){
+        if(!waitDeferTask||mDeferView==null){
             mThreadPool.execute(new Runnable() {
                 @Override
                 public void run() {
