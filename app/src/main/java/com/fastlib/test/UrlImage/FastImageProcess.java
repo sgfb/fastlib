@@ -26,39 +26,39 @@ public class FastImageProcess implements Runnable{
 
     @Override
     public void run(){
-        String key=mRequest.getKey();
-        //先从内存池中寻找Bitmap
-        if(ReferenceManager.getInstance().getBitmapPool().containBitmap(key)){
-            mCallback.complete(mRequest,ReferenceManager.getInstance().getBitmapPool().getBitmap(key));
-            return;
-        }
-        //开始外存寻找，寻找完后尝试连接服务器询问是否有被修改，如果有再从服务器下载最新图像
-        FastImageConfig config=FastImage.getInstance().getConfig();
-        File imageFile=mRequest.getSpecifiedStoreFile()==null?new File(config.mSaveFolder,key):mRequest.getSpecifiedStoreFile();
-
-        if(imageFile.exists()&&!imageFile.isDirectory()){
-            Bitmap bitmap=loadBitmapFromFile(imageFile);
-            mCallback.complete(mRequest,bitmap);
-            try{
-                //如果服务器与外存中图像一致，结束这次请求
-                if(!checkImageModified(imageFile)) return;
-            }catch (IOException e){
-                e.printStackTrace();
-            }
-        }
-        try {
-            imageFile.createNewFile();
-            Request imageRequest=Request.obtain("get",mRequest.getUrl()).setHadRootAddress(true).setUseFactory(false);
-            DefaultDownload downloadable=new DefaultDownload(imageFile);
-
-            downloadable.setSupportBreak(true);
-            downloadable.setChangeIfHadName(mRequest.isStoreRealName());
-            imageRequest.setDownloadable(downloadable);
-            byte[] result=NetManager.getInstance().netRequestPromptlyBack(imageRequest);
-            mCallback.complete(mRequest,loadBitmapFromFile(imageFile));
-        } catch (IOException e){
-            e.printStackTrace();
-        }
+//        String key=mRequest.getKey();
+//        //先从内存池中寻找Bitmap
+//        if(ReferenceManager.containBitmap(key)){
+//            mCallback.complete(mRequest,ReferenceManager.getInstance().getBitmapPool().getBitmap(key));
+//            return;
+//        }
+//        //开始外存寻找，寻找完后尝试连接服务器询问是否有被修改，如果有再从服务器下载最新图像
+//        FastImageConfig config=FastImage.getInstance().getConfig();
+//        File imageFile=mRequest.getSpecifiedStoreFile()==null?new File(config.mSaveFolder,key):mRequest.getSpecifiedStoreFile();
+//
+//        if(imageFile.exists()&&!imageFile.isDirectory()){
+//            Bitmap bitmap=loadBitmapFromFile(imageFile);
+//            mCallback.complete(mRequest,bitmap);
+//            try{
+//                //如果服务器与外存中图像一致，结束这次请求
+//                if(!checkImageModified(imageFile)) return;
+//            }catch (IOException e){
+//                e.printStackTrace();
+//            }
+//        }
+//        try {
+//            imageFile.createNewFile();
+//            Request imageRequest=Request.obtain("get",mRequest.getUrl()).setHadRootAddress(true).setUseFactory(false);
+//            DefaultDownload downloadable=new DefaultDownload(imageFile);
+//
+//            downloadable.setSupportBreak(true);
+//            downloadable.setChangeIfHadName(mRequest.isStoreRealName());
+//            imageRequest.setDownloadable(downloadable);
+//            byte[] result=NetManager.getInstance().netRequestPromptlyBack(imageRequest);
+//            mCallback.complete(mRequest,loadBitmapFromFile(imageFile));
+//        } catch (IOException e){
+//            e.printStackTrace();
+//        }
     }
 
     /**
@@ -94,8 +94,8 @@ public class FastImageProcess implements Runnable{
             options.inSampleSize=maxRatio;
         options.inPreferredConfig=mRequest.getBitmapConfig();
         bitmap=BitmapFactory.decodeFile(file.getAbsolutePath());
-        if(mRequest.getStrategy()==StoreStrategy.DEFAULT) //存储Bitmap到池
-            ReferenceManager.getInstance().getBitmapPool().addBitmap(mRequest.getKey(),bitmap);
+//        if(mRequest.getStrategy()==StoreStrategy.DEFAULT) //存储Bitmap到池
+//            ReferenceManager.getInstance().getBitmapPool().addBitmap(mRequest.getKey(),bitmap);
         return bitmap;
     }
 }
