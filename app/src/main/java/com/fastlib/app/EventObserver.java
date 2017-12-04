@@ -54,7 +54,7 @@ public class EventObserver {
         List<Method> eventMethods=findEventMethods(subscriber);
 
         if(eventMethods==null||eventMethods.isEmpty()){
-            if (BuildConfig.DEBUG)
+            if (BuildConfig.isShowLog)
                 Log.d(TAG,"订阅者"+subscriber+"没有广播接收方法,请检查是否添加了Event注解和广播方法参数");
             return;
         }
@@ -75,7 +75,7 @@ public class EventObserver {
                 eventNames.add(eventName);
                 receiver.mSubscribes.put(subscriber,m);
             }
-            if (BuildConfig.DEBUG)
+            if (BuildConfig.isShowLog)
                 Log.d(TAG,"订阅者"+subscriber+"订阅事件"+eventName);
         }
     }
@@ -115,7 +115,7 @@ public class EventObserver {
         }
         if(events.size()==0)
             mSubscriberToEvent.remove(subscriber);
-        if (BuildConfig.DEBUG)
+        if (BuildConfig.isShowLog)
             Log.d(TAG, "订阅者" + subscriber + "移除事件"+eventName);
     }
 
@@ -125,7 +125,7 @@ public class EventObserver {
      */
     public void sendEvent(Context context,Object event){
         if(event==null){
-            if (BuildConfig.DEBUG)
+            if (BuildConfig.isShowLog)
                 Log.d(TAG,"无法发送null事件");
             return;
         }
@@ -134,7 +134,7 @@ public class EventObserver {
         EntityWrapper entity=new EntityWrapper(event);
         intent.putExtra("entity",entity);
         LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
-        if (BuildConfig.DEBUG)
+        if (BuildConfig.isShowLog)
             Log.d(TAG,"广播事件"+name);
     }
 
@@ -142,7 +142,7 @@ public class EventObserver {
      * 应用退出时应该调用这个方法清理所有数据
      */
     public void close(Context context){
-        if (BuildConfig.DEBUG)
+        if (BuildConfig.isShowLog)
             Log.d(TAG,"清理所有数据");
         clearReceiver(context);
         mNameToObserver.clear();

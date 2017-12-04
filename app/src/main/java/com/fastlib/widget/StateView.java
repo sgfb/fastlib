@@ -32,7 +32,7 @@ public class StateView extends FrameLayout implements AdapterViewState{
     public void onStateChanged(int state){
         View v=mViews.get(state);
         if(v==null){
-            if(BuildConfig.DEBUG)
+            if(BuildConfig.isShowLog)
             Log.d(TAG,"StateView改变成一个非预期的状态");
             return;
         }

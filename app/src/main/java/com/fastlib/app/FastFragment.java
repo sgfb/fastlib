@@ -29,6 +29,7 @@ import com.fastlib.utils.PermissionHelper;
 import com.fastlib.utils.ViewInject;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -306,7 +307,7 @@ public abstract class FastFragment extends Fragment implements Deferrable{
     /**
      * 从宿主Activity中移除自身
      */
-    protected void finish(){
+    public void finish(){
         getFragmentManager()
                 .beginTransaction()
                 .remove(this)

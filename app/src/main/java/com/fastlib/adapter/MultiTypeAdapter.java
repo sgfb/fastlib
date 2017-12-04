@@ -1,6 +1,7 @@
-package com.fastlib.local_test;
+package com.fastlib.adapter;
 
 import android.content.Context;
+import android.support.annotation.LayoutRes;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
@@ -45,7 +46,7 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         RecyclerItem item= mRecyclerItem.get(position);
-        item.mGroup.binding(position,mRecyclerGroup.indexOf(item.mGroup),item.mData,(CommonViewHolder) holder);
+        item.mGroup.binding(position,item.mGroup.mItem.indexOf(item),item.mData,(CommonViewHolder) holder);
     }
 
     @Override
@@ -80,6 +81,7 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
         if(mRecyclerGroup.contains(group)) return; //如果存在，跳过
         if(group.mType==0)
             group.mType=++mIncreaseType;
+        //特殊类型自动添加一个占位
         if(group.getClass().getGenericSuperclass() instanceof ParameterizedType){
             ParameterizedType pt= (ParameterizedType) group.getClass().getGenericSuperclass();
             if(group.getCount()<=0&&pt.getActualTypeArguments().length>0&&(pt.getActualTypeArguments()[0]==Object.class||pt.getActualTypeArguments()[0]==Void.class))
@@ -115,6 +117,13 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
         return mRecyclerGroup.get(type);
     }
 
+    /**
+     * 清理所有数据
+     */
+    public void clear(){
+        for(RecyclerGroup group:mRecyclerGroup)
+            group.clear();
+    }
 
     /**
      * 关联RecyclerView内部类
@@ -132,20 +141,21 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
 
         /**
          * 绑定视图
-         * @param position 列表中绝对位置
-         * @param type 类型
+         * @param positionOfRecyclerView 列表中绝对位置
+         * @param positionOfGroup 相对Group中的位置
          * @param holder 视图持有者
          */
-        protected abstract void binding(int position, int type,T data,CommonViewHolder holder);
+        protected abstract void binding(int positionOfRecyclerView, int positionOfGroup,T data,CommonViewHolder holder);
+        protected abstract @LayoutRes int getLayoutId();
 
-        public RecyclerGroup(int layoutId){
-            this(null,layoutId);
+        public RecyclerGroup(){
+            this(null);
         }
 
-        public RecyclerGroup(MultiTypeAdapter adapter,int layoutId){
+        public RecyclerGroup(MultiTypeAdapter adapter){
             mItem =new ArrayList<>();
             mMultiAdapter=adapter;
-            mLayoutId =layoutId;
+            mLayoutId =getLayoutId();
         }
 
         /**
@@ -167,6 +177,13 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
                     mMultiAdapter.notifyDataSetChanged();
                 }
             }
+        }
+
+        /**
+         * 如果收拢则展开否则收拢
+         */
+        public void suspend(){
+            suspend(!isSuspend);
         }
 
         /**
@@ -204,11 +221,16 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
             if(mMultiAdapter!=null){
                 List<RecyclerItem> allItem=mMultiAdapter.getRecyclerItem();
                 if(mCanSuspend&&!mItem.isEmpty())
-                    allItem.add(allItem.indexOf(mItem.get(allItem.size()-1))+1,item);
+                    allItem.add(allItem.indexOf(mItem.get(allItem.size()))+1,item);
                 else allItem.add(item);
                 if(!isSuspend)
                     mMultiAdapter.notifyDataSetChanged();
             }
+        }
+
+        public void setData(int position,T data){
+            mItem.get(position).mData=data;
+            if(mMultiAdapter!=null) mMultiAdapter.notifyDataSetChanged();
         }
 
         /**
@@ -248,10 +270,18 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
         }
 
         /**
+         * 获取类型
+         * @return 类型
+         */
+        public int getType(){
+            return mType;
+        }
+
+        /**
          * 获取所有映射数据
          * @return 所有映射数据
          */
-        public List<T> getData(){
+        public List<T> getCopyData(){
             List<T> list=new ArrayList<>();
             for(RecyclerItem<T> item:mItem)
                 list.add(item.mData);
@@ -270,13 +300,19 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
                 mMultiAdapter.getRecyclerItem().addAll(index,mItem);
             }
         }
+
+        public void clear(){
+            if(mMultiAdapter!=null)
+                mMultiAdapter.getRecyclerItem().removeAll(mItem);
+            mItem.clear();
+        }
     }
 
     /**
      * 列表元素最小单位
      * @param <T>
      */
-    public static class RecyclerItem<T>{
+    public static class RecyclerItem<T> {
         T mData;
         RecyclerGroup mGroup;
 

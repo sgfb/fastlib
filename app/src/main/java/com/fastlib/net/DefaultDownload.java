@@ -36,12 +36,6 @@ public class DefaultDownload implements Downloadable {
             }
         }
     }
-
-    public DefaultDownload setSupport(boolean support){
-        mSupportBreak=support;
-        return this;
-    }
-
     public DefaultDownload setTargetFile(File targetFile) {
         mTargetFile = targetFile;
         return this;

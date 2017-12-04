@@ -1,22 +1,22 @@
 package com.fastlib.adapter;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.util.List;
-import java.util.concurrent.ThreadPoolExecutor;
-
-import com.fastlib.app.FastActivity;
-import com.fastlib.base.OldViewHolder;
-import com.fastlib.base.Refreshable;
-import com.fastlib.base.AdapterViewState;
-import com.fastlib.net.Listener;
-import com.fastlib.net.Request;
-
 import android.content.Context;
 import android.support.annotation.LayoutRes;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+
+import com.fastlib.app.FastActivity;
+import com.fastlib.base.AdapterViewState;
+import com.fastlib.base.OldViewHolder;
+import com.fastlib.base.Refreshable;
+import com.fastlib.net.Listener;
+import com.fastlib.net.Request;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 单类型绑定适配器,将视图与服务器中的数据捆绑

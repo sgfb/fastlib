@@ -14,7 +14,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class TaskLauncher{
     private Object mHost;
     private ThreadPoolExecutor mThreadPool;
-    private volatile boolean mStopFlag; //停止标志
+    private volatile boolean mStopFlag;
+    private NoReturnAction<Throwable> mExceptionHandler; //一个全局的异常处理器,如果Task有对应异常处理器则不调用此处理器
+    private EmptyAction mCompleteAction;
 
     public TaskLauncher(Activity activity, ThreadPoolExecutor threadPool) {
         mHost = activity;
@@ -70,23 +72,49 @@ public class TaskLauncher{
      * @param task
      */
     private void processTask(Task task){
-        task.process(); //执行事件后才有返回
-
-        if(checkStopStatus(task)) return; //中断任务事件
-        Object obj=task.getReturn();
-        Task nextTask=task.getNext();
-        if(nextTask!=null){
-            while(nextTask.isFilter()){
-                if(obj instanceof Boolean){
+        try{
+            task.process(); //执行事件后才有返回
+            if(checkStopStatus(task)){ //中断任务事件
+                if(mCompleteAction!=null) mCompleteAction.executeAdapt();
+                return;
+            }
+            Object obj=task.getReturn();
+            Task nextTask=task.getNext();
+            //过滤任务处理
+            if(task.isFilterTask()){
+                if(obj!=null&&(obj instanceof Boolean)){
                     Boolean b= (Boolean) obj;
                     if(!b){
-                        obj=nextTask.getReturn();
-                        nextTask=nextTask.getNext();
+                        if(task.isCycleEnd()){
+                            while(nextTask!=null&&!nextTask.isAgainTask())
+                                nextTask=nextTask.getNext();
+                        }
+                        else
+                            nextTask=task.getCycler();
                     }
                 }
+                obj=task.getParam(); //过滤任务的参数就是返回，递交给下一个任务
             }
-            nextTask.setParam(obj);
-            threadDispatch(nextTask);
+            if(nextTask!=null){
+                nextTask.setParam(obj);
+                threadDispatch(nextTask);
+            }
+            else{
+                if(mCompleteAction!=null)
+                    mCompleteAction.execute(null);
+            }
+        }catch (Throwable throwable){
+            //优先处理任务中存在的异常处理器，如果没有再尝试运行全局异常处理器
+            boolean handled=false;
+            if(task!=null){
+                NoReturnAction<Throwable> taskExceptionHandler=task.getTaskExceptionHandler();
+                if(taskExceptionHandler!=null){
+                    taskExceptionHandler.execute(throwable);
+                    handled=true;
+                }
+            }
+            if(mExceptionHandler!=null&&!handled) mExceptionHandler.execute(throwable);
+            if(mCompleteAction!=null) mCompleteAction.execute(null);
         }
     }
 
@@ -100,8 +128,8 @@ public class TaskLauncher{
     }
 
     /**
-     * 宿主模块是否已结束生命周期
-     * @return true已结束，否则未结束
+     * 宿主是否已结束生命周期
+     * @return true已结束（不继续任务事件）
      */
     private boolean hostIsFinish(){
         if(mHost instanceof Activity){
@@ -116,5 +144,25 @@ public class TaskLauncher{
 
     public void stopNow(boolean stopFlag){
         mStopFlag = stopFlag;
+    }
+
+    /**
+     * 这次线性任务全局异常处理
+     * @param handler 异常处理器
+     * @return 线性任务启动器
+     */
+    public TaskLauncher setExceptionHandler(NoReturnAction<Throwable> handler){
+        mExceptionHandler=handler;
+        return this;
+    }
+
+    /**
+     * 无论是正常流程结束还是异常结束，最后都调用这个方法，如果存在的话
+     * @param action 结尾任务
+     * @return 线性任务启动器
+     */
+    public TaskLauncher setLastTask(EmptyAction action){
+        mCompleteAction=action;
+        return this;
     }
 }

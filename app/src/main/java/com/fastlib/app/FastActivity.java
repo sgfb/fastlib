@@ -18,6 +18,7 @@ import com.fastlib.R;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.annotation.TransitionAnimation;
 import com.fastlib.app.task.EmptyAction;
+import com.fastlib.app.task.NoReturnAction;
 import com.fastlib.app.task.Task;
 import com.fastlib.app.task.TaskLauncher;
 import com.fastlib.base.Deferrable;
@@ -29,6 +30,7 @@ import com.fastlib.utils.PermissionHelper;
 import com.fastlib.utils.ViewInject;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -151,6 +153,19 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
      */
     public void startTask(Task task){
         mTaskLauncher.startTask(task);
+    }
+
+    /**
+     * 开始线性任务，并且有异常处理和尾回调
+     * @param task 任务
+     * @param exceptionHandler 异常处理
+     * @param lastAction 尾回调
+     */
+    public void startTask(Task task, NoReturnAction<Throwable> exceptionHandler,EmptyAction lastAction){
+        mTaskLauncher
+                .setExceptionHandler(exceptionHandler)
+                .setLastTask(lastAction)
+                .startTask(task);
     }
 
     /**
@@ -352,10 +367,8 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
      * 关闭进度条
      */
     public void dismissLoading(){
-        if(mLoading!=null){
+        if(mLoading!=null)
             mLoading.dismiss();
-            mLoading=null;
-        }
     }
 
     /**
@@ -420,7 +433,7 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
                     prepareTask();
                 }
             });
-            startTask(task);
+            startTask(task,null,null);
         }
     }
 }

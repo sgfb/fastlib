@@ -14,6 +14,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.ThumbnailUtils;
 import android.os.Build;
+import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.ImageView;
@@ -25,7 +26,7 @@ import com.fastlib.R;
  * Created by Mikhael LOPEZ on 09/10/2015.
  */
 @RemoteViews.RemoteView
-public class RoundImageView extends ImageView {
+public class RoundImageView extends AppCompatImageView {
     public static final int TYPE_CIRCLE=0;
     public static final int TYPE_ROUND_RECT=1;
     // Properties
@@ -52,12 +53,6 @@ public class RoundImageView extends ImageView {
 
     public RoundImageView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init(context, attrs, defStyleAttr);
-    }
-
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    public RoundImageView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
         init(context, attrs, defStyleAttr);
     }
 

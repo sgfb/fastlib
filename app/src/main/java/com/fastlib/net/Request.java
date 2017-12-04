@@ -16,6 +16,7 @@ import com.fastlib.db.ServerCache;
 import com.google.gson.Gson;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -29,8 +30,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author sgfb
- * 请求体<br/>
- * 每个任务都是不同的，（NetQueue）会根据属性来配置请求，调整请求开始完成或失败后不同的事件
+ * 请求体
+ * 每个任务都是不同的，{@link NetManager}会根据属性来配置请求，调整请求开始完成或失败后不同的事件
  */
 public class Request{
     private static final Object sLock = new Object();
@@ -44,8 +45,10 @@ public class Request{
     private boolean useFactory; //是否使用预设值
     private boolean isSendGzip; //指定这次请求发送时是否压缩成gzip流
     private boolean isReceiveGzip; //指定这次请求是否使用gzip解码
-    private boolean isPromptlyBack; //立即返回，即不使用回调的返回。默认使用回调返回
     private byte[] mByteStream; //原始字节流，如果这个值存在就不会发送mParams参数了.如果存在但是长度为0发送mParams参数json化数据
+    private long mLastModified; //资源最后修改时间
+    private long mResourceExpire; //资源过期时间
+    private long mIntervalSendFileTransferEvent=1000; //间隔多久发送上传和下载文件广播
     private String method;
     private String mUrl;
     private List<Pair<String, String>> mSendCookies;
@@ -57,7 +60,6 @@ public class Request{
     private RequestType mType = RequestType.DEFAULT;
     private Object mTag; //额外信息
     private Pair<String,String>[] mReceiveCookies; //留存的cookies
-    private String mLastModified; //资源最后修改时间
     //加入activity或者fragment可以提升安全性
     private Activity mActivity;
     private Fragment mFragment;
@@ -117,7 +119,6 @@ public class Request{
         isSendGzip=false;
         isReceiveGzip=false;
         useFactory = true;
-        isPromptlyBack=false;
         mParams = new ArrayList<>();
         mFiles = new ArrayList<>();
         mSendHeadExtra = new ArrayList<>();
@@ -127,7 +128,7 @@ public class Request{
      * 清理这个请求以便重复使用
      */
     public void clear() {
-        isPromptlyBack=false;
+        mIntervalSendFileTransferEvent=1000;
         isReplaceChinese=true;
         useFactory = true;
         hadRootAddress = false;
@@ -173,27 +174,24 @@ public class Request{
         return another == this || (TextUtils.equals(mUrl,another.getUrl()) && another.getParamsRaw().equals(mParams) && another.getFiles().equals(mFiles));
     }
 
-    public byte[] start() {
-        return start(false);
+    public void start()  {
+        start(false);
     }
 
-    public byte[] start(boolean forceRefresh, Fragment fragment) {
+    public void start(boolean forceRefresh, Fragment fragment)  {
         mFragment = fragment;
-        return start(forceRefresh);
+        start(forceRefresh);
     }
 
-    public byte[] start(boolean forceRefresh, Activity activity) {
+    public void start(boolean forceRefresh, Activity activity)  {
         mActivity = activity;
-        return start(forceRefresh);
+        start(forceRefresh);
     }
 
-    public byte[] start(boolean forceRefresh){
-        byte[] data=null;
+    public void start(boolean forceRefresh) {
         if (mCacheManager != null)
             mCacheManager.refresh(forceRefresh);
-        else
-            data=NetManager.getInstance().netRequest(this);
-        return data;
+        else NetManager.getInstance().netRequest(this);
     }
 
     /**
@@ -285,6 +283,17 @@ public class Request{
      */
     public Request add(String key,short value){
         return add(key,Short.toString(value));
+    }
+
+    /**
+     * 添加上传文件
+     * @param key
+     * @param file
+     * @return
+     */
+    public Request add(String key,File file){
+        mFiles.add(Pair.create(key,file));
+        return this;
     }
 
     /**
@@ -678,8 +687,9 @@ public class Request{
         return hadRootAddress;
     }
 
-    public void setHadRootAddress(boolean hadRootAddress) {
+    public Request setHadRootAddress(boolean hadRootAddress) {
         this.hadRootAddress = hadRootAddress;
+        return this;
     }
 
     public boolean downloadable() {
@@ -827,12 +837,21 @@ public class Request{
         return this;
     }
 
-    public String getLastModified(){
+    public long getLastModified(){
         return mLastModified;
     }
 
-    public void setLastModified(String lastModified) {
+    public void setLastModified(long lastModified) {
         mLastModified = lastModified;
+    }
+
+    public long getIntervalSendFileTransferEvent() {
+        return mIntervalSendFileTransferEvent;
+    }
+
+    public void setIntervalSendFileTransferEvent(long intervalSendFileTransferEvent) {
+        if(intervalSendFileTransferEvent<0) intervalSendFileTransferEvent=0;
+        mIntervalSendFileTransferEvent = intervalSendFileTransferEvent;
     }
 
     public Object getHost() {
@@ -876,11 +895,6 @@ public class Request{
         isAcceptGlobalCallback = acceptGlobalCallback;
     }
 
-    public Request setPromptlyBack(boolean promptlyBack) {
-        isPromptlyBack = promptlyBack;
-        return this;
-    }
-
     @Override
     public String toString(){
         StringBuilder paramsStr=new StringBuilder();
@@ -905,8 +919,12 @@ public class Request{
                 uploadFileStr.toString();
     }
 
-    public boolean isPromptlyBack() {
-        return isPromptlyBack;
+    public long getResourceExpire() {
+        return mResourceExpire;
+    }
+
+    public void setmResourceExpire(long mResourceExpire) {
+        this.mResourceExpire = mResourceExpire;
     }
 
     /**

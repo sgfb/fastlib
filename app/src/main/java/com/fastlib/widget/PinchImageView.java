@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.graphics.RectF;
+import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -16,17 +17,13 @@ import android.widget.ImageView;
  * 手势图片控件
  * @author clifford
  */
-public class PinchImageView extends ImageView  {
-
-
+public class PinchImageView extends AppCompatImageView {
     ////////////////////////////////配置参数////////////////////////////////
 
     //图片缩放动画时间
     public static final int SCALE_ANIMATOR_DURATION = 200;
-
     //惯性动画衰减参数
     public static final float FLING_DAMPING_FACTOR = 0.9f;
-
     //图片最大放大尺寸
     private static final float MAX_SCALE = 4f;
 
@@ -683,7 +680,7 @@ public class PinchImageView extends ImageView  {
 
     ////////////////////////////////数学计算工具类////////////////////////////////
 
-    private static class MathUtils {
+    private static class MathUtils{
 
         //获取两点距离
         public static float getDistance(float x1, float y1, float x2, float y2) {
