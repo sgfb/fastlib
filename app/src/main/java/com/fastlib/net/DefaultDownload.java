@@ -20,6 +20,7 @@ public class DefaultDownload implements Downloadable {
         mSupportBreak=false;
         mChangeIfHadName=false;
         mTargetFile=target;
+        ensureTargetFileExists();
     }
 
     /**

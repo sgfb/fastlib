@@ -22,6 +22,7 @@ import com.fastlib.app.task.NoReturnAction;
 import com.fastlib.app.task.Task;
 import com.fastlib.app.task.TaskLauncher;
 import com.fastlib.base.Deferrable;
+import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.LocalDataInject;
@@ -275,18 +276,24 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        EventObserver.getInstance().unsubscribe(this,this);
-        if(mThreadPool!=null){
-            mThreadPool.shutdownNow();
-            mThreadPool.purge();
-            mThreadPool=null;
-        }
-        if(mRequests!=null){
-            for (Request request : mRequests)
-                request.clear();
-            mRequests.clear();
-            mRequests=null;
-        }
+        //使用子线程清理
+        NetManager.sRequestPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                EventObserver.getInstance().unsubscribe(FastActivity.this,FastActivity.this);
+                if(mThreadPool!=null){
+                    mThreadPool.shutdownNow();
+                    mThreadPool.purge();
+                    mThreadPool=null;
+                }
+                if(mRequests!=null){
+                    for (Request request : mRequests)
+                        request.clear();
+                    mRequests.clear();
+                    mRequests=null;
+                }
+            }
+        });
     }
 
     /**

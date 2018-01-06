@@ -1,23 +1,28 @@
 package com.fastlib.test.UrlImage;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapRegionDecoder;
 import android.text.TextUtils;
+
+import com.fastlib.utils.Utils;
 
 import java.io.File;
 
 /**
  * Created by sgfb on 2017/11/4.
  * Bitmap请求类
+ * 如果指定宽高.按照指定宽高的centerCrop读取
+ * 如果没有指定宽高(width和height都是0),则尝试读取ImageView宽高,如果ImageView宽高也读取不到，载入一个小于屏幕尺寸的图像.
+ * 如果指定宽高为(-1,-1),读取原图宽高到内存中
  */
 public class BitmapRequest{
     private boolean isStoreRealName; //存储为图片真实名
     private int mRequestWidth;
     private int mRequestHeight;
+    private int mStoreStrategy=FastImageConfig.STORE_STRATEGY_DEFAULT;
     private String mUrl;
-    private String mKey; //url MD5 32位后数据
     private File mSpecifiedStoreFile; //指定下载位置
-    private StoreStrategy mStrategy=StoreStrategy.DEFAULT;
-    private Bitmap.Config mBitmapConfig=Bitmap.Config.ARGB_4444;
+    private Bitmap.Config mBitmapConfig=Bitmap.Config.RGB_565;
     private Status mStatus=Status.PREPARE;
     //TODO 动画占位
 
@@ -61,14 +66,6 @@ public class BitmapRequest{
         mUrl = url;
     }
 
-    public String getKey() {
-        return mKey;
-    }
-
-    public void setKey(String key) {
-        mKey = key;
-    }
-
     public File getSpecifiedStoreFile() {
         return mSpecifiedStoreFile;
     }
@@ -85,16 +82,17 @@ public class BitmapRequest{
         mBitmapConfig = bitmapConfig;
     }
 
-    public StoreStrategy getStrategy() {
-        return mStrategy;
-    }
-
-    public void setStrategy(StoreStrategy strategy) {
-        mStrategy = strategy;
-    }
-
     public Status getStatus(){
         return mStatus;
+    }
+
+    public static File getSaveFile(BitmapRequest request){
+        return request.getSpecifiedStoreFile()!=null?request.getSpecifiedStoreFile():
+                new File(FastImage.getInstance().getConfig().mSaveFolder,Utils.getMd5(request.getUrl(),false));
+    }
+
+    public String getKey(){
+        return Utils.getMd5(getUrl(),false);
     }
 
     @Override

@@ -21,6 +21,7 @@ import com.fastlib.app.task.EmptyAction;
 import com.fastlib.app.task.Task;
 import com.fastlib.app.task.TaskLauncher;
 import com.fastlib.base.Deferrable;
+import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.LocalDataInject;
@@ -50,6 +51,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 7.延时启动优化
  */
 public abstract class FastFragment extends Fragment implements Deferrable{
+    private static final int THREAD_POOL_SIZE =Runtime.getRuntime().availableProcessors()/2+1;
     protected ThreadPoolExecutor mThreadPool;
     protected PermissionHelper mPermissionHelper;
 
@@ -78,7 +80,7 @@ public abstract class FastFragment extends Fragment implements Deferrable{
     private void init() {
         mLocalDataInject = new LocalDataInject(this);
         mPermissionHelper = new PermissionHelper();
-        mThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(3);
+        mThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         mTaskLauncher = new TaskLauncher(this, mThreadPool);
         mThreadPool.execute(new Runnable() {
             @Override
@@ -257,15 +259,21 @@ public abstract class FastFragment extends Fragment implements Deferrable{
     @Override
     public void onDestroy(){
         super.onDestroy();
-        EventObserver.getInstance().unsubscribe(getContext(),this);
-        if(mThreadPool!=null){
-            mThreadPool.shutdownNow();
-            mThreadPool.purge();
-        }
-        if(mRequests!=null){
-            for(Request request:mRequests)
-                request.clear();
-        }
+        //使用子线程清理
+        NetManager.sRequestPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                EventObserver.getInstance().unsubscribe(getContext(),FastFragment.this);
+                if(mThreadPool!=null){
+                    mThreadPool.shutdownNow();
+                    mThreadPool.purge();
+                }
+                if(mRequests!=null){
+                    for(Request request:mRequests)
+                        request.clear();
+                }
+            }
+        });
     }
 
     /**

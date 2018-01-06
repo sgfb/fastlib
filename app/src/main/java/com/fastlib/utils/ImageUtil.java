@@ -20,10 +20,6 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v8.renderscript.Allocation;
-import android.support.v8.renderscript.Element;
-import android.support.v8.renderscript.RenderScript;
-import android.support.v8.renderscript.ScriptIntrinsicBlur;
 import android.view.View;
 
 import com.fastlib.BuildConfig;
@@ -440,41 +436,6 @@ public class ImageUtil{
                 return uri.getPath();
         }
         return null;
-    }
-
-    /**
-     * 高斯模糊，默认值25
-     * @param context
-     * @param raw
-     * @return
-     */
-    public static Bitmap blurBitmap(Context context,Bitmap raw){
-        return blurBitmap(context,raw,25);
-    }
-    /**
-     * 高斯模糊
-     * @param context
-     * @param raw
-     * @param radius
-     * @return
-     */
-    public static Bitmap blurBitmap(Context context,Bitmap raw,int radius){
-        RenderScript rs= RenderScript.create(context);
-        Bitmap bitmap=Bitmap.createBitmap(raw.getWidth(), raw.getHeight(), Bitmap.Config.ARGB_8888);
-        Allocation allocIn=Allocation.createFromBitmap(rs, raw);
-        Allocation allocOut=Allocation.createFromBitmap(rs,bitmap);
-        ScriptIntrinsicBlur blur=ScriptIntrinsicBlur.create(rs, Element.U8_4(rs));
-
-        if(radius<0)
-            radius=0;
-        else if(radius>25)
-            radius=25;
-        blur.setRadius(radius);
-        blur.setInput(allocIn);
-        blur.forEach(allocOut);
-        allocOut.copyTo(bitmap);
-        rs.destroy();
-        return bitmap;
     }
 
     /**

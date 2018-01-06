@@ -125,7 +125,7 @@ public class Request{
     }
 
     /**
-     * 清理这个请求以便重复使用
+     * 清理这个请求以便重复使用.建议在子线程中清理不再使用的请求已提高效率
      */
     public void clear() {
         mIntervalSendFileTransferEvent=1000;
