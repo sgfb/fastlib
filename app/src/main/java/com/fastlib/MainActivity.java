@@ -15,10 +15,11 @@ import com.fastlib.test.UrlImage.FastImageConfig;
 import com.fastlib.test.UrlImage.ImageProcessingManager;
 
 import java.io.File;
+import java.util.List;
+import java.util.Map;
 
 @ContentView(R.layout.act_main)
 public class MainActivity extends FastActivity{
-    ImageProcessingManager mImageProceissngManager;
     @Bind(R.id.image)
     ImageView mImage;
     @Bind(R.id.image2)
@@ -28,42 +29,40 @@ public class MainActivity extends FastActivity{
 
     @Override
     protected void alreadyPrepared(){
-        mImageProceissngManager=new ImageProcessingManager(this);
-        FastImageConfig config=FastImage.getInstance().getConfig();
+        FastImageConfig config=FastImage.getInstance(this).getConfig();
 
         config.mSaveFolder=getExternalCacheDir();
-        FastImage.getInstance().setConfig(config);
+        FastImage.getInstance(this).setConfig(config);
     }
 
     @Bind(R.id.bt)
     private void commit(){
         BitmapRequest request=new BitmapRequest();
-        request.setUrl("https://ss0.baidu.com/6ONWsjip0QIZ8tyhnq/it/u=2338511376,2933014988&fm=173&s=4CC2EA1A5743754B04C41DD8020010B2&w=550&h=992&img.JPEG");
+        request.setUrl("https://static.oschina.net/uploads/space/2018/0106/134811_VkaD_347223.jpg");
         request.setSpecifiedStoreFile(new File(Environment.getExternalStorageDirectory(),"temp.jpg"));
-        mImageProceissngManager.addBitmapRequest(request,mImage);
+        FastImage.getInstance(this).startRequest(this,request,mImage);
     }
 
     @Bind(R.id.bt2)
     private void commit2(){
         BitmapRequest request=new BitmapRequest();
-//        request.setUrl("https://static.oschina.net/uploads/space/2018/0106/134811_VkaD_347223.jpg");
-        request.setUrl("https://ss0.baidu.com/6ONWsjip0QIZ8tyhnq/it/u=2338511376,2933014988&fm=173&s=4CC2EA1A5743754B04C41DD8020010B2&w=550&h=992&img.JPEG");
+        request.setUrl("https://static.oschina.net/uploads/space/2018/0106/134811_VkaD_347223.jpg");
         request.setSpecifiedStoreFile(new File(Environment.getExternalStorageDirectory(),"temp.jpg"));
         request.setRequestWidth(100);
         request.setRequestHeight(100);
-        mImageProceissngManager.addBitmapRequest(request,mImage2);
+        FastImage.getInstance(this).startRequest(this,request,mImage2);
     }
 
     @Bind(R.id.bt3)
     private void commit3(){
-        Request request=Request.obtain("head","https://static.oschina.net/uploads/space/2018/0106/134811_VkaD_347223.jpg");
-        request.setListener(new SimpleListener<String>(){
+        BitmapRequest request=new BitmapRequest();
+        request.setUrl("http://c.hiphotos.baidu.com/image/pic/item/bd315c6034a85edfef0cf9e940540923dc547573.jpg");
+        FastImage.getInstance(this).startRequest(this,request,mImage3);
+    }
 
-            @Override
-            public void onResponseListener(Request r, String result) {
-                System.out.println("request complete");
-            }
-        });
-        net(request);
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        FastImage.getInstance(this).clearMemory();
     }
 }

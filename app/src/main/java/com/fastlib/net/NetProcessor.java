@@ -206,38 +206,23 @@ public class NetProcessor implements Runnable {
             }
             connection.disconnect();
             mRequest.setmResourceExpire(connection.getExpiration());
-            mRequest.setLastModified(computeLastModified(connection));
             mMessage = connection.getResponseMessage();
             saveExtraToRequest(connection);
             saveResponseStatus(connection.getResponseCode(),computeRequestTime(connection,connectionTimer),connection.getResponseMessage());
             toggleCallback();
         } catch (IOException e){
             mException=e;
-            e.printStackTrace();
+            if(!mRequest.getSuppressWarning())
+                e.printStackTrace();
             isSuccess = false;
             mMessage = e.toString();
-            saveErrorNetStatus(e.getMessage(), connectionTimer);
+            if(mRequest.getResponseStatus()==null)
+                saveErrorNetStatus(e.getMessage(), connectionTimer);
             toggleCallback();
         } finally {
             if (mListener != null)
                 mListener.onComplete(this);
         }
-    }
-
-    /**
-     * 计算文件最后修改时间 -1代表永不过期
-     * @param connection 连接
-     * @return 文件最后修改时间 -1永不过期
-     */
-    private long computeLastModified(HttpURLConnection connection){
-        String lastModified=connection.getHeaderField("Last-Modified");
-        long lastModifiedLong=-1;
-        try{
-            lastModifiedLong=Long.parseLong(lastModified);
-        }catch (NumberFormatException e){
-            //使用-1来表示永不过期
-        }
-        return lastModifiedLong;
     }
 
     /**
@@ -343,7 +328,6 @@ public class NetProcessor implements Runnable {
      */
     private void saveErrorNetStatus(String message, long requestTime) {
         mRequest.getResponseStatus().message = message;
-        mRequest.getResponseStatus().time = 0;
         mRequest.getResponseStatus().code = -1;
         mRequest.getResponseStatus().time = System.currentTimeMillis() - requestTime;
     }
@@ -359,6 +343,7 @@ public class NetProcessor implements Runnable {
         if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
             byte[] errbyte = new byte[4096];
             int len;
+            if(connection.getErrorStream()!=null)
             while ((len = connection.getErrorStream().read(errbyte)) != -1)
                 baos.write(errbyte, 0, len);
             ResponseStatus status = new ResponseStatus();
@@ -366,7 +351,7 @@ public class NetProcessor implements Runnable {
             status.code = connection.getResponseCode();
             status.time = System.currentTimeMillis() - requestTime;
             mRequest.setResponseStatus(status);
-            throw new NetException(baos.toString());
+            throw new NetException(TextUtils.isEmpty(baos.toString())?status.message:baos.toString());
         }
     }
 

@@ -35,10 +35,11 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class Request{
     private static final Object sLock = new Object();
-    private static final int MAX_POOL_SIZE = 20; //池中最大保存数
+    private static final int MAX_POOL_SIZE =15; //池中最大保存数
     private static Request sPool;
     private static int sPoolSize = 0;
 
+    private boolean isSuppressWarning;  //压制警告
     private boolean isAcceptGlobalCallback; //是否接受全局回调监听.默认true
     private boolean isReplaceChinese; //是否替换中文url,默认为true
     private boolean hadRootAddress; //是否已加入根地址
@@ -46,7 +47,6 @@ public class Request{
     private boolean isSendGzip; //指定这次请求发送时是否压缩成gzip流
     private boolean isReceiveGzip; //指定这次请求是否使用gzip解码
     private byte[] mByteStream; //原始字节流，如果这个值存在就不会发送mParams参数了.如果存在但是长度为0发送mParams参数json化数据
-    private long mLastModified; //资源最后修改时间
     private long mResourceExpire; //资源过期时间
     private long mIntervalSendFileTransferEvent=1000; //间隔多久发送上传和下载文件广播
     private String method;
@@ -128,6 +128,7 @@ public class Request{
      * 清理这个请求以便重复使用.建议在子线程中清理不再使用的请求已提高效率
      */
     public void clear() {
+        isSuppressWarning=false;
         mIntervalSendFileTransferEvent=1000;
         isReplaceChinese=true;
         useFactory = true;
@@ -837,14 +838,6 @@ public class Request{
         return this;
     }
 
-    public long getLastModified(){
-        return mLastModified;
-    }
-
-    public void setLastModified(long lastModified) {
-        mLastModified = lastModified;
-    }
-
     public long getIntervalSendFileTransferEvent() {
         return mIntervalSendFileTransferEvent;
     }
@@ -893,6 +886,15 @@ public class Request{
 
     public void setAcceptGlobalCallback(boolean acceptGlobalCallback) {
         isAcceptGlobalCallback = acceptGlobalCallback;
+    }
+
+    public Request setSuppressWarning(boolean suppressWarning){
+        isSuppressWarning=suppressWarning;
+        return this;
+    }
+
+    public boolean getSuppressWarning(){
+        return isSuppressWarning;
     }
 
     @Override

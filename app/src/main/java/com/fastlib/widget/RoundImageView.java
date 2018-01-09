@@ -1,6 +1,5 @@
 package com.fastlib.widget;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
@@ -13,11 +12,9 @@ import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.ThumbnailUtils;
-import android.os.Build;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.widget.ImageView;
 import android.widget.RemoteViews;
 
 import com.fastlib.R;
@@ -32,7 +29,8 @@ public class RoundImageView extends AppCompatImageView {
     // Properties
     private int type;
     private int borderWidth;
-    private int canvasSize;
+    private int canvasX;
+    private int canvasY;
     private int roundX;
     private int roundY;
 
@@ -41,6 +39,7 @@ public class RoundImageView extends AppCompatImageView {
     private Drawable drawable;
     private Paint paint;
     private Paint paintBorder;
+    private RectF mRect=new RectF();
 
     //region Constructor & Init Method
     public RoundImageView(final Context context) {
@@ -81,6 +80,7 @@ public class RoundImageView extends AppCompatImageView {
         type=attributes.getInteger(R.styleable.RoundImageView_type,0);
         roundX=attributes.getInteger(R.styleable.RoundImageView_round_x,5);
         roundY=attributes.getInteger(R.styleable.RoundImageView_round_y,5);
+        attributes.recycle();
     }
     //endregion
 
@@ -115,21 +115,20 @@ public class RoundImageView extends AppCompatImageView {
         if (image == null)
             return;
 
-        canvasSize = canvas.getWidth();
-        if (canvas.getHeight() < canvasSize) {
-            canvasSize = canvas.getHeight();
-        }
-
+        canvasX = canvas.getWidth();
+        canvasY=canvas.getHeight();
         // circleCenter is the x or y of the view's center
         // radius is the radius in pixels of the cirle to be drawn
         // paint contains the shader that will texture the shape
-        if(type==0){
+        if(type==TYPE_CIRCLE){
+            int canvasSize=Math.min(canvasY,canvasX);
             int circleCenter = (canvasSize - (borderWidth * 2)) / 2;
             canvas.drawCircle(circleCenter + borderWidth, circleCenter + borderWidth, circleCenter + borderWidth - 4.0f, paintBorder);
             canvas.drawCircle(circleCenter + borderWidth, circleCenter + borderWidth, circleCenter - 4.0f, paint);
         }
-        else if(type==1){
-            canvas.drawRoundRect(new RectF(0,0,canvas.getWidth(),canvas.getHeight()),roundX,roundY,paint);
+        else if(type==TYPE_ROUND_RECT){
+            mRect.set(0,0,canvas.getWidth(),canvas.getHeight());
+            canvas.drawRoundRect(mRect,roundX,roundY,paint);
         }
     }
 
@@ -142,17 +141,11 @@ public class RoundImageView extends AppCompatImageView {
         updateShader();
     }
 
-    public void changedShadow(float radius,float x,float y,int[] argb){
-        paintBorder.setShadowLayer(radius,x,y,Color.argb(argb[0],argb[1],argb[2],argb[3]));
-        invalidate();
-    }
-
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        canvasSize = w;
-        if (h < canvasSize)
-            canvasSize = h;
+        canvasX = w;
+        canvasY=h;
         if (image != null)
             updateShader();
     }
@@ -161,8 +154,8 @@ public class RoundImageView extends AppCompatImageView {
         if (this.image == null)
             return;
         BitmapShader shader = new BitmapShader(Bitmap.createScaledBitmap(
-                ThumbnailUtils.extractThumbnail(image, canvasSize,
-                        canvasSize), canvasSize, canvasSize, false),
+                ThumbnailUtils.extractThumbnail(image, canvasX,
+                        canvasY), canvasX, canvasY, false),
                 Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
         paint.setShader(shader);
     }
@@ -216,7 +209,7 @@ public class RoundImageView extends AppCompatImageView {
             result = specSize;
         } else {
             // The parent has not imposed any constraint on the child.
-            result = canvasSize;
+            result = canvasX;
         }
 
         return result;
@@ -235,7 +228,7 @@ public class RoundImageView extends AppCompatImageView {
             result = specSize;
         } else {
             // Measure the text (beware: ascent is a negative number)
-            result = canvasSize;
+            result = canvasX;
         }
 
         return (result + 2);

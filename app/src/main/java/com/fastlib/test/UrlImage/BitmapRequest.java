@@ -19,8 +19,10 @@ public class BitmapRequest{
     private boolean isStoreRealName; //存储为图片真实名
     private int mRequestWidth;
     private int mRequestHeight;
+    private int mImageResourceId;
     private int mStoreStrategy=FastImageConfig.STORE_STRATEGY_DEFAULT;
     private String mUrl;
+    private File mImageFile;
     private File mSpecifiedStoreFile; //指定下载位置
     private Bitmap.Config mBitmapConfig=Bitmap.Config.RGB_565;
     private Status mStatus=Status.PREPARE;
@@ -28,8 +30,16 @@ public class BitmapRequest{
 
     public BitmapRequest(){}
 
+    public BitmapRequest(int imageResourceId){
+        mImageResourceId=imageResourceId;
+    }
+
     public BitmapRequest(String url){
         mUrl=url;
+    }
+
+    public BitmapRequest(File file){
+        mImageFile=file;
     }
 
     public boolean isStoreRealName() {
@@ -88,7 +98,7 @@ public class BitmapRequest{
 
     public static File getSaveFile(BitmapRequest request){
         return request.getSpecifiedStoreFile()!=null?request.getSpecifiedStoreFile():
-                new File(FastImage.getInstance().getConfig().mSaveFolder,Utils.getMd5(request.getUrl(),false));
+                new File(FastImage.getConfig().mSaveFolder,Utils.getMd5(request.getUrl(),false));
     }
 
     public String getKey(){

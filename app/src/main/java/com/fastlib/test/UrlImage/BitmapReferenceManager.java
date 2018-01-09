@@ -49,12 +49,37 @@ public class BitmapReferenceManager {
     }
 
     /**
+     * 从内存中获取图像
+     * @param request 图像请求
+     * @return 如果存在返回Bitmap否则返回null
+     */
+    public Bitmap getFromMemory(BitmapRequest request){
+        if(checkContainImage(request)){
+            BitmapWrapper wrapper=mBitmapPool.getBitmapWrapper(request.getKey());
+            int requestWidth=request.getRequestWidth();
+            int requestHeight=request.getRequestHeight();
+            int bitmapWidth=wrapper.mBitmap.getWidth();
+            int bitmapHeight=wrapper.mBitmap.getHeight();
+
+            //图像一定大于等于请求尺寸，所以只判断是否需要返回缩小的图像(等比缩放)
+            if(requestWidth!=0&&requestHeight!=0&&(requestWidth<bitmapWidth||requestHeight<bitmapHeight)){
+                int minRadio=Math.min(bitmapWidth/requestWidth,bitmapHeight/requestHeight);
+                int thumbWidth=bitmapWidth/minRadio;
+                int thumbHeight=bitmapHeight/minRadio;
+                return Bitmap.createScaledBitmap(wrapper.mBitmap,thumbWidth,thumbHeight,false);
+            }
+            return wrapper.mBitmap;
+        }
+        return null;
+    }
+
+    /**
      * 增加图像引用.间接将图像载入内存中持有
-     * @param url 图像url地址，作为唯一键存在
+     * @param request 图像请求
      * @param wrapper 图像包裹
      * @param imageView 视图引用
      */
-    public void addBitmapReference(String url,BitmapWrapper wrapper, ImageView imageView){
+    public void addBitmapReference(BitmapRequest request,BitmapWrapper wrapper, ImageView imageView){
         if(wrapper==null||imageView==null) return;
         //先判断是否引用了其它的url再判断当前url的ImageView列表中是否存在
         for(Map.Entry<String,List<ImageView>> entry:mReference.entrySet()){
@@ -64,18 +89,18 @@ public class BitmapReferenceManager {
                 break;
             }
         }
-        List<ImageView> list=mReference.get(url);
+        List<ImageView> list=mReference.get(request.getKey());
 
         if(list==null) {
             list=new ArrayList<>();
-            mReference.put(url,list);
+            mReference.put(request.getKey(),list);
         }
         else{
             if(!list.contains(imageView))
                 list.add(imageView);
         }
         list.add(imageView);
-        mBitmapPool.addBitmap(url,wrapper);  //不判断该url是否已有Bitmap在池中，因为服务器的图像资源也可能会被修改
+        mBitmapPool.addBitmap(request.getKey(),wrapper);  //不判断该url是否已有Bitmap在池中，因为服务器的图像资源也可能会被修改
     }
 
     /**
