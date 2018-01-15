@@ -1,10 +1,14 @@
 package com.fastlib.test.UrlImage;
 
+import android.app.Activity;
+import android.app.Application;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 import android.widget.ImageView;
@@ -18,6 +22,8 @@ import com.fastlib.net.DefaultDownload;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.net.SimpleListener;
+import com.fastlib.test.UrlImage.processing_state.StateDownloadImageIfExpire;
+import com.fastlib.test.UrlImage.processing_state.StateFirstLoadImageOnDisk;
 import com.fastlib.utils.ScreenUtils;
 
 import java.io.File;
@@ -37,23 +43,23 @@ import java.util.concurrent.BlockingQueue;
 public class ImageProcessingManager{
     private BitmapReferenceManager mBitmapReferenceManager;
     private List<BitmapRequest> mRequestList=new ArrayList<>();
-    private BlockingQueue<Runnable> mDiskLoaderQueue=new ArrayBlockingQueue<>(2);
-    private BlockingQueue<Runnable> mNetDownloaderQueue=new ArrayBlockingQueue<>(2);
+    private BlockingQueue<UrlImageProcessing> mDiskLoaderQueue=new ArrayBlockingQueue<>(2);
+    private BlockingQueue<UrlImageProcessing> mNetDownloaderQueue=new ArrayBlockingQueue<>(2);
 
     public ImageProcessingManager(BitmapReferenceManager bitmapReferenceManager){
         mBitmapReferenceManager=bitmapReferenceManager;
-        //长期占用两根线程作为服务器中数据下载到本地和本地读取到内存中的工作调度线程
+        //长期占用两根线程作为服务器中数据下载到本地和本地读取到内存中处理工作(后期改为工作线程调度)
         NetManager.sRequestPool.execute(new Runnable() {
             @Override
             public void run() {
                 Thread.currentThread().setName("ImageDiskLoader");
-                while(true){
-                    try {
-                        Runnable runnable = mDiskLoaderQueue.take();
-                        NetManager.sRequestPool.execute(runnable);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                try{
+                    while(true){
+                        UrlImageProcessing processing = mDiskLoaderQueue.take();
+                        processing.handle(ImageProcessingManager.this);
                     }
+                }catch (InterruptedException e){
+                    e.printStackTrace();
                 }
             }
         });
@@ -61,24 +67,76 @@ public class ImageProcessingManager{
             @Override
             public void run() {
                 Thread.currentThread().setName("ImageNetDownloader");
-                while(true){
-                    try {
-                        Runnable runnable = mNetDownloaderQueue.take();
-                        NetManager.sRequestPool.execute(runnable);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                try{
+                    while(true){
+                        UrlImageProcessing processing = mNetDownloaderQueue.take();
+                        processing.handle(ImageProcessingManager.this);
                     }
+                }catch (InterruptedException e){
+                    e.printStackTrace();
                 }
             }
         });
     }
 
     /**
-     * 增加图像请求
+     * 图像处理状态转换
+     * @param diskState 硬盘或网络队列标志
+     * @param imageProcessing 处理器
+     */
+    public void imageProcessStateConvert(boolean diskState,UrlImageProcessing imageProcessing){
+        try{
+            if(diskState) mDiskLoaderQueue.put(imageProcessing);
+            else mNetDownloaderQueue.put(imageProcessing);
+        } catch (InterruptedException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void addBitmapRequest(Activity activity,BitmapRequest request,ImageView imageView){
+        final UrlImageProcessing urlImageProcessing=generateFirstImageProcessing(request);
+        activity.getApplication().registerActivityLifecycleCallbacks(new AdapterActivityLifecycleCallbacks(){
+            @Override
+            public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+                urlImageProcessing.onStart(activity);
+            }
+
+            @Override
+            public void onActivityPaused(Activity activity) {
+                urlImageProcessing.onPause(activity);
+            }
+
+            @Override
+            public void onActivityDestroyed(Activity activity) {
+                urlImageProcessing.onDestroy(activity);
+            }
+        });
+        internalAddBitmapRequest(activity,request,imageView);
+    }
+
+    public void addBitmapRequest(Fragment fragment,BitmapRequest request,ImageView imageView){
+        final UrlImageProcessing urlImageProcessing=generateFirstImageProcessing(request);
+        fragment.getChildFragmentManager()
+                .beginTransaction()
+                .add(null,"lifecycle")
+                .commit();
+        internalAddBitmapRequest(fragment.getActivity(),request,imageView);
+    }
+
+    private UrlImageProcessing generateFirstImageProcessing(BitmapRequest request){
+        return BitmapRequest.getSaveFile(request).exists()?
+                new StateFirstLoadImageOnDisk(request,null):
+                new StateDownloadImageIfExpire(request,null);
+    }
+
+    /**
+     * 增加图像请求.最初过滤，如果图片存在内存中直接取内存
+     * 如果存在磁盘中调起{@link com.fastlib.test.UrlImage.processing_state.StateFirstLoadImageOnDisk}
+     * 否则直接调起{@link com.fastlib.test.UrlImage.processing_state.StateDownloadImageIfExpire}
      * @param request 图像请求
      * @param imageView 要加载到的视图
      */
-    public void addBitmapRequest(final Context context,final BitmapRequest request, final ImageView imageView){
+    private void internalAddBitmapRequest(final Activity activity, final BitmapRequest request, final ImageView imageView){
         Bitmap bitmapOnMemory=mBitmapReferenceManager.getFromMemory(request);
         if(bitmapOnMemory!=null){
             System.out.println("从内存中获取Bitmap:"+request.getUrl());
@@ -86,127 +144,50 @@ public class ImageProcessingManager{
         }
         else{
             if(!mRequestList.contains(request)){
+                final boolean bitmapOnDisk=BitmapRequest.getSaveFile(request).exists();
+
                 mRequestList.add(request);
-                //使用线程调度从服务器中拉取和磁盘中拉取到内存
-                NetManager.sRequestPool.execute(new Runnable(){
+                final UrlImageProcessing urlImageProcessing=bitmapOnDisk?
+                        new StateFirstLoadImageOnDisk(request,null):
+                        new StateDownloadImageIfExpire(request,null);
+                activity.getApplication().registerActivityLifecycleCallbacks(new AdapterActivityLifecycleCallbacks(){
+                    @Override
+                    public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+                        urlImageProcessing.onStart(activity);
+                    }
+
+                    @Override
+                    public void onActivityPaused(Activity activity) {
+                        urlImageProcessing.onPause(activity);
+                    }
+
+                    @Override
+                    public void onActivityDestroyed(Activity activity) {
+                        urlImageProcessing.onDestroy(activity);
+                    }
+                });
+                NetManager.sRequestPool.execute(new Runnable() {
                     @Override
                     public void run() {
-                        startImageDownload(context,request,imageView);
+                        try{
+                            if(bitmapOnDisk)
+                                mDiskLoaderQueue.put(urlImageProcessing);
+                            else mNetDownloaderQueue.put(urlImageProcessing);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
                 });
             }
         }
     }
 
+
     /**
-     * 从磁盘中读取图像到内存
-     * @param request 图像请求
-     * @return Bitmap包裹
+     * 返回图像请求列表
+     * @return 图像请求列表
      */
-    private BitmapWrapper loadImageWrapperOnDisk(BitmapRequest request){
-        System.out.println("从磁盘读取图像到内存:"+request.getUrl());
-        File file=BitmapRequest.getSaveFile(request);
-        BitmapFactory.Options options=new BitmapFactory.Options();
-        BitmapFactory.Options justDecodeBoundOptions=new BitmapFactory.Options();
-
-        justDecodeBoundOptions.inJustDecodeBounds=true;
-        BitmapFactory.decodeFile(file.getAbsolutePath(),justDecodeBoundOptions);
-        //如果请求宽高非0，尝试读取指定宽高中的最低值等比缩小。非0则尝试读取比手机屏幕小的尺寸
-        if(request.getRequestWidth()!=0&&request.getRequestHeight()!=0){
-            float widthRadio=justDecodeBoundOptions.outWidth/request.getRequestWidth();
-            float heightRadio=justDecodeBoundOptions.outHeight/request.getRequestHeight();
-            float maxRadio=Math.max(widthRadio,heightRadio);
-
-            if(maxRadio>1)
-                options.inSampleSize= (int) maxRadio;
-        }
-        else{
-            Pair<Integer,Integer> screenSize=ScreenUtils.getScreenSize();
-
-            if(justDecodeBoundOptions.outWidth>screenSize.first||justDecodeBoundOptions.outHeight>screenSize.second){
-                float widthRadio=justDecodeBoundOptions.outWidth/screenSize.first;
-                float heightRadio=justDecodeBoundOptions.outHeight/screenSize.second;
-                float maxRadio=Math.max(widthRadio,heightRadio);
-
-                options.inSampleSize= (int) maxRadio;
-            }
-        }
-        options.inPreferredConfig=request.getBitmapConfig();
-        BitmapWrapper wrapper=new BitmapWrapper();
-
-        wrapper.mSampleSize=options.inSampleSize;
-        wrapper.mBitmap=BitmapFactory.decodeFile(file.getAbsolutePath(),options);
-        return wrapper;
-    }
-
-    private void startImageDownload(final Context context, final BitmapRequest bitmapRequest, final ImageView imageView){
-        final Request request=new Request("get",bitmapRequest.getUrl());
-        DefaultDownload dd=new DefaultDownload(BitmapRequest.getSaveFile(bitmapRequest));
-        StringTable lastModified= FastDatabase.getDefaultInstance(context)
-                .addFilter(And.condition(Condition.equal(bitmapRequest.getKey())))
-                .getFirst(StringTable.class);
-
-        if(lastModified!=null&&!TextUtils.isEmpty(lastModified.value)) {
-            request.addHeader("If-Modified-Since", lastModified.value);
-            System.out.println("验证服务器图像过期,如果过期重新在服务器上取:"+bitmapRequest.getUrl());
-        }
-        else System.out.println("从服务器中取图像到磁盘:"+bitmapRequest.getUrl());
-        request.setDownloadable(dd);
-        request.setSuppressWarning(true);
-        request.setListener(new SimpleListener<String>(){
-
-            @Override
-            public void onResponseListener(Request r, String result){
-                List<String> lastModifiedList=r.getReceiveHeader().get("Last-Modified");
-                String lastModified=lastModifiedList==null||lastModifiedList.isEmpty()?"":lastModifiedList.get(0);
-
-                mRequestList.remove(bitmapRequest);
-                addLoadBitmapOnDiskRequest(bitmapRequest,imageView);
-                saveImageLastModified(context,bitmapRequest.getKey(),lastModified);
-            }
-
-            @Override
-            public void onErrorListener(Request r, String error){
-                mRequestList.remove(bitmapRequest);
-                if(r.getResponseStatus().code==304)
-                    addLoadBitmapOnDiskRequest(bitmapRequest, imageView);
-            }
-        });
-        request.start();
-    }
-
-    private void saveImageLastModified(Context context,String key,String lastModified){
-        StringTable st=new StringTable();
-        st.key=key;
-        st.value=lastModified;
-        FastDatabase.getDefaultInstance(context).saveOrUpdateAsync(st, new DatabaseNoDataResultCallback() {
-            @Override
-            public void onResult(boolean success) {
-                //测试功能，还没想好异步存数据库后要干啥
-            }
-        });
-    }
-
-    private void addLoadBitmapOnDiskRequest(final BitmapRequest request, final ImageView imageView){
-        try {
-            mDiskLoaderQueue.put(new Runnable(){
-                @Override
-                public void run() {
-                    Handler handler=new Handler(Looper.getMainLooper());
-                    final BitmapWrapper wrapper= loadImageWrapperOnDisk(request);
-
-                    mRequestList.remove(request);
-                    mBitmapReferenceManager.addBitmapReference(request,wrapper,imageView);
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            imageView.setImageBitmap(wrapper.mBitmap);
-                        }
-                    });
-                }
-            });
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+    public List<BitmapRequest> getRequestList(){
+        return mRequestList;
     }
 }

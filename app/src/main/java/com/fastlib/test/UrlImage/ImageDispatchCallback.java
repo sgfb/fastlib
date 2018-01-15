@@ -1,7 +1,5 @@
 package com.fastlib.test.UrlImage;
 
-import android.graphics.Bitmap;
-
 /**
  * Created by sgfb on 2017/11/5.
  * 图像从url或路径中转换成Bitmap后回调
@@ -11,7 +9,7 @@ public interface ImageDispatchCallback{
     /**
      * 图像准备完毕回调
      * @param request 图像请求
-     * @param bitmap 准备完毕的bitmap
+     * @param wrapper bitmap和扩展属性
      */
-    void complete(BitmapRequest request, Bitmap bitmap);
+    void complete(BitmapRequest request,BitmapWrapper wrapper);
 }

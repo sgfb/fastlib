@@ -151,7 +151,8 @@ public abstract class SingleAdapterForRecycler<T,R> extends RecyclerView.Adapter
             else
                 mData.addAll(list);
         }
-        notifyItemRangeInserted(getItemCount()-list.size(),list.size());
+        notifyDataSetChanged();
+//        notifyItemRangeInserted(getItemCount()-list.size(),list.size());
     }
 
     @Override

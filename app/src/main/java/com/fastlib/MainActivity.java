@@ -13,8 +13,10 @@ import com.fastlib.test.UrlImage.BitmapRequest;
 import com.fastlib.test.UrlImage.FastImage;
 import com.fastlib.test.UrlImage.FastImageConfig;
 import com.fastlib.test.UrlImage.ImageProcessingManager;
+import com.fastlib.utils.Utils;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 
@@ -37,10 +39,13 @@ public class MainActivity extends FastActivity{
 
     @Bind(R.id.bt)
     private void commit(){
-        BitmapRequest request=new BitmapRequest();
-        request.setUrl("https://static.oschina.net/uploads/space/2018/0106/134811_VkaD_347223.jpg");
-        request.setSpecifiedStoreFile(new File(Environment.getExternalStorageDirectory(),"temp.jpg"));
-        FastImage.getInstance(this).startRequest(this,request,mImage);
+        Request request=new Request("http://192.168.31.181:8084/FastProject/Test");
+        request.put("arg1","just+test");
+        net(request);
+//        BitmapRequest request=new BitmapRequest();
+//        request.setUrl("https://static.oschina.net/uploads/space/2018/0106/134811_VkaD_347223.jpg");
+//        request.setSpecifiedStoreFile(new File(Environment.getExternalStorageDirectory(),"temp.jpg"));
+//        FastImage.getInstance(this).startRequest(this,request,mImage);
     }
 
     @Bind(R.id.bt2)

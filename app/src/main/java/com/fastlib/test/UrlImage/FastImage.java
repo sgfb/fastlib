@@ -34,7 +34,7 @@ public class FastImage{
     public void startRequest(Context context,final BitmapRequest request, final ImageView imageView){
         request.setRequestWidth(imageView.getWidth());
         request.setRequestHeight(imageView.getHeight());
-        mProcessingManager.addBitmapRequest(context,request,imageView);
+        mProcessingManager.internalAddBitmapRequest(context,request,imageView);
     }
 
     public BitmapReferenceManager getBitmapReferenceManager(){

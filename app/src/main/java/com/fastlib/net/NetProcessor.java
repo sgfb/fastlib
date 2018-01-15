@@ -21,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
@@ -500,7 +501,11 @@ public class NetProcessor implements Runnable {
 
         while (iter.hasNext()) {
             Pair<String, String> pair = iter.next();
-            sb.append(pair.first).append("=").append(pair.second).append("&");
+            try {
+                sb.append(pair.first).append("=").append(URLEncoder.encode(pair.second,"UTF-8")).append("&");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
         }
         sb.deleteCharAt(sb.length() - 1);
     }

@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.CRC32;
+import java.util.zip.CheckedInputStream;
 
 /**
  * Created by sgfb on 16/7/11.
@@ -151,13 +153,17 @@ public class Utils{
      * @return sha1文件校验码
      */
     public static String getFileVerify(String filePath,FileVerifyType type){
-        String typeStr="SHA-1";
-        switch (type){
-            case SHA_1:typeStr="SHA-1";break;
-            case MD5:typeStr="MD5";break;
-        }
+        String typeStr=type.toString();
         try {
             FileInputStream in=new FileInputStream(new File(filePath));
+
+            if(FileVerifyType.CRC32.equals(type)){
+                CRC32 crc32=new CRC32();
+                CheckedInputStream checkedInputStream=new CheckedInputStream(in,crc32);
+                while(checkedInputStream.read()!=-1){}
+                in.close();
+                return Long.toString(crc32.getValue());
+            }
             MessageDigest md= MessageDigest.getInstance(typeStr);
             byte[] data=new byte[8192];
             int len;
@@ -252,7 +258,20 @@ public class Utils{
      * 文件校验类型
      */
     public enum FileVerifyType{
-        SHA_1,
-        MD5,
+        SHA_1("SHA-1"),
+//        SHA3("SHA3"),
+        MD5("MD5"),
+        CRC32("CRC32");
+
+        private String flag;
+
+        FileVerifyType(String flag){
+            this.flag=flag;
+        }
+
+        @Override
+        public String toString() {
+            return flag;
+        }
     }
 }
