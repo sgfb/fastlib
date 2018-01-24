@@ -2,8 +2,6 @@ package com.fastlib.test.UrlImage.processing_state;
 
 import android.content.Context;
 import android.text.TextUtils;
-import android.util.Base64;
-import android.widget.ImageView;
 
 import com.fastlib.bean.StringTable;
 import com.fastlib.db.And;
@@ -13,60 +11,62 @@ import com.fastlib.db.FastDatabase;
 import com.fastlib.net.DefaultDownload;
 import com.fastlib.net.Request;
 import com.fastlib.net.SimpleListener;
-import com.fastlib.test.UrlImage.BitmapRequest;
+import com.fastlib.test.UrlImage.request.BitmapRequest;
 import com.fastlib.test.UrlImage.ImageDispatchCallback;
-import com.fastlib.test.UrlImage.ImageProcessingManager;
+import com.fastlib.test.UrlImage.ImageProcessManager;
 import com.fastlib.test.UrlImage.UrlImageProcessing;
+import com.fastlib.test.UrlImage.request.UrlBitmapRequest;
 
 import java.util.List;
 
 /**
  * Created by sgfb on 18/1/15.
- * 图像验证过期和下载状态。如果未过期，结束任务（在{@link StateFirstLoadImageOnDisk}已经处理完）
+ * 图像验证过期和下载状态。如果未过期，结束任务（在{@link StateCheckImagePrepare}已经处理完）
  * 如果过期或者不存在下载后再调起状态{@link StateLoadNewImageOnDisk}
  */
-public class StateDownloadImageIfExpire extends UrlImageProcessing {
-    private Context mContext;
+public class StateDownloadImageIfExpire extends UrlImageProcessing{
+    private Request mNetRequest;
 
     public StateDownloadImageIfExpire(BitmapRequest request,ImageDispatchCallback callback){
         super(request, callback);
     }
 
     @Override
-    public void handle(final ImageProcessingManager processingManager){
+    public void handle(final ImageProcessManager processingManager){
+        final UrlBitmapRequest br= (UrlBitmapRequest) mRequest;
         final List<BitmapRequest> requestList=processingManager.getRequestList();
-        final Request request=new Request("get",mRequest.getUrl());
-        DefaultDownload dd=new DefaultDownload(BitmapRequest.getSaveFile(mRequest));
-        StringTable lastModified= FastDatabase.getDefaultInstance(mContext)
-                .addFilter(And.condition(Condition.equal(mRequest.getKey())))
-                .getFirst(StringTable.class);
+        mNetRequest=new Request("get",br.getResource());
+        DefaultDownload dd=new DefaultDownload(br.getSaveFile()).setSupportBreak(true);
+        //如果文件存在再从数据库取过期时间
+        StringTable lastModified= mRequest.getSaveFile().exists()&&mRequest.getSaveFile().length()>0?
+                FastDatabase.getDefaultInstance(br.getContext())
+                        .addFilter(And.condition(Condition.equal(br.getKey())))
+                        .getFirst(StringTable.class):null;
         if(lastModified!=null&&!TextUtils.isEmpty(lastModified.value)) {
-            request.addHeader("If-Modified-Since", lastModified.value);
-            System.out.println("验证服务器图像过期,如果过期重新在服务器上取:"+mRequest.getUrl());
+            mNetRequest.addHeader("If-Modified-Since", lastModified.value);
+            System.out.println("验证服务器图像过期,如果过期重新在服务器上取:"+br.getResource());
         }
-        else System.out.println("从服务器中取图像到磁盘:"+mRequest.getUrl());
-        request.setDownloadable(dd);
-        request.setSuppressWarning(true);
-        request.setListener(new SimpleListener<String>(){
+        else System.out.println("从服务器中取图像到磁盘:"+br.getResource());
+        mNetRequest.setDownloadable(dd);
+        mNetRequest.setSuppressWarning(true);
+        mNetRequest.setListener(new SimpleListener<String>(){
 
             @Override
             public void onResponseListener(Request r, String result){
                 List<String> lastModifiedList=r.getReceiveHeader().get("Last-Modified");
                 String lastModified=lastModifiedList==null||lastModifiedList.isEmpty()?"":lastModifiedList.get(0);
 
-                requestList.remove(mRequest);
-                saveImageLastModified(mContext,mRequest.getKey(),lastModified);
-                processingManager.imageProcessStateConvert(false,new StateLoadNewImageOnDisk(mRequest,mCallback));
+                requestList.remove(br);
+                saveImageLastModified(br.getContext(),br.getKey(),lastModified);
+                processingManager.imageProcessStateConvert(false,StateDownloadImageIfExpire.this,new StateLoadNewImageOnDisk(br,mCallback));
             }
 
             @Override
             public void onErrorListener(Request r, String error){
-                requestList.remove(mRequest);
-                if(r.getResponseStatus().code==304)
-                    processingManager.imageProcessStateConvert(false,new StateLoadNewImageOnDisk(mRequest,mCallback));
+                requestList.remove(br);
             }
         });
-        request.start();
+        mNetRequest.start();
     }
 
     /**
@@ -89,16 +89,14 @@ public class StateDownloadImageIfExpire extends UrlImageProcessing {
 
     @Override
     public void onStart(Context context) {
-        mContext=context;
+        System.out.println("宿主开始生命周期，继续下载");
+        mNetRequest.reverseCancel();
+        mNetRequest.start();
     }
 
     @Override
-    public void onPause(Context context) {
-
-    }
-
-    @Override
-    public void onDestroy(Context context) {
-
+    public void onPause(Context context){
+        System.out.println("宿主暂停，暂停下载");
+        mNetRequest.cancel();
     }
 }

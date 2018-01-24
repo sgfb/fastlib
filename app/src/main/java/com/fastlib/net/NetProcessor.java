@@ -82,6 +82,9 @@ public class NetProcessor implements Runnable {
         }
         long connectionTimer = System.currentTimeMillis(); //优先使用X-Android-Received-Millis和X-Android-Sent_Millis来作为与服务器交互的时间,这个作为备用
         try {
+            if(mRequest.isCancel())
+                throw new BreakoutException();
+            else mRequest.setCurrThread();
             boolean isMulti = false, isPost = mRequest.getMethod().equals("POST") || mRequest.getMethod().equals("PUT"), needBody = (isPost || mRequest.getMethod().equals("GET")); //如果不是post类型也不是get，不需要请求体
             long existsLength;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -124,7 +127,7 @@ public class NetProcessor implements Runnable {
             if (mRequest.getSendCookies() != null)
                 connection.setRequestProperty("Cookie", generateSendCookies());
             if (Thread.currentThread().isInterrupted()) //在连接前判断线程是否已关闭
-                return;
+                throw new BreakoutException();
             connection.connect();
             if (isPost) {
                 out = mRequest.isSendGzip() ? new GZIPOutputStream(connection.getOutputStream()) : connection.getOutputStream();
@@ -171,7 +174,8 @@ public class NetProcessor implements Runnable {
                     int speed = 0;
                     long timer = System.currentTimeMillis();
                     boolean needEndSend=false; //在文件下载结束后保证最后一次的广播发送
-                    while ((len = in.read(data)) != -1 && !Thread.currentThread().isInterrupted()) {
+                    while ((len = in.read(data)) != -1){
+                        checkBreakout();
                         needEndSend=true;
                         fileOut.write(data, 0, len);
                         Rx += len;
@@ -182,15 +186,18 @@ public class NetProcessor implements Runnable {
                             speed = 0;
                             timer = System.currentTimeMillis();
                         }
+                        Thread.sleep(200);
                     }
                     if(context!=null&&needEndSend)
                         EventObserver.getInstance().sendEvent(context, new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(), mRequest)); //下载结束发一次广播
                     fileOut.close();
                     mResponse = downloadFile.getAbsolutePath().getBytes();
                 } else {
-                    while ((len = in.read(data)) != -1 && !Thread.currentThread().isInterrupted())
+                    while ((len = in.read(data)) != -1){
+                        checkBreakout();
                         baos.write(data, 0, len);
-                    Rx += baos.size();
+                        Rx+=len;
+                    }
                     mResponse = baos.toByteArray();
                 }
                 baos.close();
@@ -211,19 +218,28 @@ public class NetProcessor implements Runnable {
             saveExtraToRequest(connection);
             saveResponseStatus(connection.getResponseCode(),computeRequestTime(connection,connectionTimer),connection.getResponseMessage());
             toggleCallback();
-        } catch (IOException e){
-            mException=e;
+        } catch (IOException|InterruptedException e){
+            if(e instanceof IOException)
+                mException= (IOException) e;
             if(!mRequest.getSuppressWarning())
                 e.printStackTrace();
             isSuccess = false;
             mMessage = e.toString();
-            if(mRequest.getResponseStatus()==null)
+            if(mRequest.getResponseStatus()==null||mRequest.getResponseStatus().code==0)
                 saveErrorNetStatus(e.getMessage(), connectionTimer);
             toggleCallback();
         } finally {
             if (mListener != null)
                 mListener.onComplete(this);
         }
+    }
+
+    /**
+     * 中断检查
+     * @throws BreakoutException
+     */
+    private void checkBreakout() throws BreakoutException{
+        if(Thread.currentThread().isInterrupted()) throw new BreakoutException();
     }
 
     /**
@@ -341,7 +357,7 @@ public class NetProcessor implements Runnable {
      */
     private void checkErrorStream(HttpURLConnection connection, long requestTime) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+        if (connection.getResponseCode() < HttpURLConnection.HTTP_OK||connection.getResponseCode()>=300){
             byte[] errbyte = new byte[4096];
             int len;
             if(connection.getErrorStream()!=null)
@@ -512,16 +528,17 @@ public class NetProcessor implements Runnable {
 
     /**
      * 混合数据发送
-     * @param strParams
-     * @param fileParams
-     * @param out
+     * @param strParams 字符串参数
+     * @param fileParams 文件参数
+     * @param out 输出流
      * @throws IOException
      */
     private void multipart(List<Pair<String, String>> strParams, List<Pair<String, File>> fileParams, OutputStream out) throws IOException {
         if (strParams != null && strParams.size() > 0) {
             Iterator<Pair<String, String>> iter = strParams.iterator();
             StringBuilder sb = new StringBuilder();
-            while (iter.hasNext() && !Thread.currentThread().isInterrupted()) {
+            while (iter.hasNext()) {
+                checkBreakout();
                 Pair<String, String> pair = iter.next();
                 sb.append("--").append(BOUNDARY).append(CRLF)
                         .append("Content-Disposition:form-data; name=\"" + pair.first + "\"").append(CRLF)
@@ -534,7 +551,8 @@ public class NetProcessor implements Runnable {
 
         if (fileParams != null && fileParams.size() > 0) {
             Iterator<Pair<String, File>> iter = fileParams.iterator();
-            while (iter.hasNext() && !Thread.currentThread().isInterrupted()) {
+            while (iter.hasNext()) {
+                checkBreakout();
                 StringBuilder sb = new StringBuilder();
                 Pair<String, File> pair = iter.next();
                 if (pair.second != null && pair.second.exists() && pair.second.isFile()) {
@@ -571,7 +589,8 @@ public class NetProcessor implements Runnable {
 
         Context context = getHostContext();
         boolean needEndSend=false; //保证在文件结尾处发送一次上传广播
-        while ((len = fileIn.read(data)) != -1 && !Thread.currentThread().isInterrupted()) {
+        while ((len = fileIn.read(data)) != -1) {
+            checkBreakout();
             needEndSend=true;
             out.write(data, 0, len);
             count += len;

@@ -9,7 +9,7 @@ import android.content.Context;
 public interface HostLifecycle{
 
     /**
-     * 开始生命周期
+     * 开始生命周期,相当于onResume
      * @param context 对应宿主上下文
      */
     void onStart(Context context);

@@ -2,18 +2,14 @@ package com.fastlib.test.UrlImage;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.support.annotation.NonNull;
 import android.widget.ImageView;
 
-import com.fastlib.R;
+import com.fastlib.test.UrlImage.request.BitmapRequest;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Created by sgfb on 2017/11/4.
@@ -36,14 +32,13 @@ public class BitmapReferenceManager {
      * @return true存在内存中，false不存在内存中
      */
     public boolean checkContainImage(BitmapRequest request){
-        if(mReference.containsKey(request.getUrl())){
-            BitmapWrapper wrapper=mBitmapPool.getBitmapWrapper(request.getUrl());
+        if(mReference.containsKey(request.getKey())){
+            BitmapWrapper wrapper=mBitmapPool.getBitmapWrapper(request.getKey());
 
             if(wrapper==null) return false;
-            if(wrapper.mSampleSize<=1) return true;
-            if(request.getRequestWidth()==0&&request.getRequestHeight()==0&&wrapper.mSampleSize>1) return false;
-            Bitmap bitmap=wrapper.mBitmap;
-            return request.getRequestWidth()<bitmap.getWidth()&&request.getRequestHeight()<bitmap.getHeight();
+            if(wrapper.sampleSize <=1) return true;
+            if(request.getRequestWidth()==0&&request.getRequestHeight()==0&&wrapper.sampleSize >1) return false;
+            return request.computeMaxSampleSize(wrapper.originWidth,wrapper.originHeight)>=wrapper.sampleSize;
         }
         return false;
     }
@@ -58,17 +53,17 @@ public class BitmapReferenceManager {
             BitmapWrapper wrapper=mBitmapPool.getBitmapWrapper(request.getKey());
             int requestWidth=request.getRequestWidth();
             int requestHeight=request.getRequestHeight();
-            int bitmapWidth=wrapper.mBitmap.getWidth();
-            int bitmapHeight=wrapper.mBitmap.getHeight();
+            int bitmapWidth=wrapper.bitmap.getWidth();
+            int bitmapHeight=wrapper.bitmap.getHeight();
 
             //图像一定大于等于请求尺寸，所以只判断是否需要返回缩小的图像(等比缩放)
             if(requestWidth!=0&&requestHeight!=0&&(requestWidth<bitmapWidth||requestHeight<bitmapHeight)){
                 int minRadio=Math.min(bitmapWidth/requestWidth,bitmapHeight/requestHeight);
                 int thumbWidth=bitmapWidth/minRadio;
                 int thumbHeight=bitmapHeight/minRadio;
-                return Bitmap.createScaledBitmap(wrapper.mBitmap,thumbWidth,thumbHeight,false);
+                return Bitmap.createScaledBitmap(wrapper.bitmap,thumbWidth,thumbHeight,false);
             }
-            return wrapper.mBitmap;
+            return wrapper.bitmap;
         }
         return null;
     }
@@ -115,6 +110,7 @@ public class BitmapReferenceManager {
         mReference.clear();
         mBitmapPool.clear();
         System.gc();
+        System.out.println("清空图像池");
     }
 
     public Map<String,List<ImageView>> getReference(){

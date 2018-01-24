@@ -3,13 +3,16 @@ package com.fastlib.test.UrlImage;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.v4.util.Pair;
 import android.widget.ImageView;
 
+import com.fastlib.utils.zip.ZipFileEntity;
+
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Created by sgfb on 2017/11/4.
@@ -56,7 +59,7 @@ public class BitmapPool {
      * @param wrapper 图像包裹
      */
     public void addBitmap(String key,BitmapWrapper wrapper){
-        Bitmap bitmap=wrapper.mBitmap;
+        Bitmap bitmap=wrapper.bitmap;
         if(mPool.containsKey(key))
             removeBitmap(key);
         mPool.put(key,wrapper);
@@ -73,7 +76,7 @@ public class BitmapPool {
      */
     void clear(){
         for(Map.Entry<String,BitmapWrapper> entry:mPool.entrySet())
-            entry.getValue().mBitmap.recycle();
+            entry.getValue().bitmap.recycle();
         mPool.clear();
         mPoolRemain=mPoolSize;
     }
@@ -94,15 +97,23 @@ public class BitmapPool {
      * @param key 对应键
      */
     private void removeBitmap(String key){
-        Bitmap bitmap=mPool.remove(key).mBitmap;
+        BitmapWrapper wrapper=mPool.remove(key);
 
-        if(bitmap!=null){
-            mPoolRemain+=bitmap.getByteCount();
-            bitmap.recycle();
-            System.out.println("释放一个Bitmap 剩余Bitmap池容量:"+(mPoolRemain/1024)+"KB");
+        if(wrapper!=null){
+            Bitmap bitmap=wrapper.bitmap;
+            if(bitmap!=null){
+                mPoolRemain+=bitmap.getByteCount();
+                bitmap.recycle();
+                System.out.println("释放一个Bitmap 剩余Bitmap池容量:"+(mPoolRemain/1024)+"KB");
+            }
         }
     }
 
+    /**
+     * 寻找到引用最少的图片key.后面改为最近最少使用
+     * @param map 图片引用
+     * @return 图片key
+     */
     private String findLeastReferKey(Map<String,List<ImageView>> map){
         Pair<String,Integer> pair=Pair.create("",0);
 

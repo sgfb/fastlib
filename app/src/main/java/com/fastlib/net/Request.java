@@ -39,6 +39,7 @@ public class Request{
     private static Request sPool;
     private static int sPoolSize = 0;
 
+    private boolean isCancel;
     private boolean isSuppressWarning;  //压制警告
     private boolean isAcceptGlobalCallback; //是否接受全局回调监听.默认true
     private boolean isReplaceChinese; //是否替换中文url,默认为true
@@ -70,6 +71,7 @@ public class Request{
     private Request mNext;
     private MockProcess mMock; //模拟数据
     private ResponseStatus mResponseStatus=new ResponseStatus(); //返回包裹信息，尽量不要置null
+    private Thread mThread;
 
     public static Request obtain() {
         return obtain("");
@@ -128,6 +130,8 @@ public class Request{
      * 清理这个请求以便重复使用.建议在子线程中清理不再使用的请求已提高效率
      */
     public void clear() {
+        isCancel=false;
+        mThread=null;
         isSuppressWarning=false;
         mIntervalSendFileTransferEvent=1000;
         isReplaceChinese=true;
@@ -586,8 +590,10 @@ public class Request{
      * 取消网络请求
      */
     public void cancel(){
-        if(mListener != null)
-            mListener.onErrorListener(this, "取消请求 " + mUrl);
+        isCancel=true;
+        if(mThread!=null) mThread.interrupt();
+//        if(mListener != null)
+//            mListener.onErrorListener(this, "取消请求 " + mUrl);
     }
 
     /**
@@ -719,6 +725,14 @@ public class Request{
 
     public void setReceiveCookies(Pair<String,String>[] receiveCookies) {
         mReceiveCookies = receiveCookies;
+    }
+
+    public void setCurrThread(){
+        mThread=Thread.currentThread();
+    }
+
+    public Thread getCurrThread(){
+        return mThread;
     }
 
     public Object getTag() {
@@ -897,6 +911,10 @@ public class Request{
         return isSuppressWarning;
     }
 
+    public boolean isCancel(){
+        return isCancel;
+    }
+
     @Override
     public String toString(){
         StringBuilder paramsStr=new StringBuilder();
@@ -927,6 +945,10 @@ public class Request{
 
     public void setmResourceExpire(long mResourceExpire) {
         this.mResourceExpire = mResourceExpire;
+    }
+
+    public void reverseCancel(){
+        isCancel=false;
     }
 
     /**

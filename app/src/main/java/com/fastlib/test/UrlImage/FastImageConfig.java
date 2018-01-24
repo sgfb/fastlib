@@ -1,5 +1,7 @@
 package com.fastlib.test.UrlImage;
 
+import android.os.Environment;
+
 import java.io.File;
 
 /**
@@ -19,7 +21,7 @@ public class FastImageConfig implements Cloneable{
     /**
      * 全局配置
      */
-    public File mSaveFolder;
+    public File mSaveFolder= Environment.getExternalStorageDirectory();
 
     @Override
     protected FastImageConfig clone() throws CloneNotSupportedException{
