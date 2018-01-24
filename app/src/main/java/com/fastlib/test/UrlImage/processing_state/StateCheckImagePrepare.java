@@ -4,6 +4,10 @@ import android.graphics.BitmapFactory;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
+import com.fastlib.bean.ImageFileInfo;
+import com.fastlib.db.And;
+import com.fastlib.db.Condition;
+import com.fastlib.db.FastDatabase;
 import com.fastlib.test.UrlImage.BitmapWrapper;
 import com.fastlib.test.UrlImage.ImageDispatchCallback;
 import com.fastlib.test.UrlImage.ImageProcessManager;
@@ -19,16 +23,18 @@ import java.io.File;
  * 请求完后判断是否有请求对应url图像文件，如果没有则结束流程否则跳到判断资源过期流程
  */
 public class StateCheckImagePrepare extends UrlImageProcessing{
-    private Thread mThread;
 
     public StateCheckImagePrepare(BitmapRequest request, ImageDispatchCallback callback) {
         super(request, callback);
-        mThread=Thread.currentThread();
     }
 
     @Override
     public void handle(ImageProcessManager processingManager){
-        System.out.println("发起请求前从磁盘读取图像到内存:"+mRequest.getResource());
+        System.out.println("发起网络请求前从磁盘读取图像信息:"+mRequest.getResource());
+        if(!checkDownloadComplete()){
+            processingManager.imageProcessStateConvert(false,this,new StateDownloadImageIfExpire(mRequest,mCallback));
+            return;
+        }
         File file=mRequest.getSaveFile();
         BitmapFactory.Options options=new BitmapFactory.Options();
         BitmapFactory.Options justDecodeBoundOptions=new BitmapFactory.Options();
@@ -65,5 +71,16 @@ public class StateCheckImagePrepare extends UrlImageProcessing{
         mCallback.complete(this,mRequest,wrapper);
         if(!TextUtils.isEmpty((String)mRequest.getResource()))
             processingManager.imageProcessStateConvert(false,this,new StateDownloadImageIfExpire(mRequest,mCallback));
+    }
+
+    /**
+     * 检查图像下载状态
+     * @return true为下载完整，false不完整
+     */
+    private boolean checkDownloadComplete(){
+        ImageFileInfo imageFileInfo= FastDatabase.getDefaultInstance(mRequest.getContext())
+                .addFilter(And.condition(Condition.equal(mRequest.getKey())))
+                .getFirst(ImageFileInfo.class);
+        return imageFileInfo!=null&&imageFileInfo.isDownloadComplete;
     }
 }

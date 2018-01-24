@@ -34,14 +34,8 @@ public class FastImage{
         Object host=request.getHost();
 
         if(host==null) throw new IllegalArgumentException("BitmapRequest's host must not be null!");
-
         if(mBitmapReferenceManager==null){
-            Context context=null;
-            if(host instanceof Activity)
-                context= (Context) host;
-            else if(host instanceof Fragment)
-                context=((Fragment)host).getContext();
-            mBitmapReferenceManager=new BitmapReferenceManager(context);
+            mBitmapReferenceManager=new BitmapReferenceManager(request.getContext());
             mProcessingManager=new ImageProcessManager(mBitmapReferenceManager);
         }
         mProcessingManager.addBitmapRequest(request);

@@ -10,14 +10,14 @@ import android.support.v4.app.Fragment;
 public class BitmapRequestEntrance{
 
     private BitmapRequestEntrance(){
-        //不示例化
+        //不实例化
     }
 
-    public static BitmapRequestFactory buildBitmapRequestFactory(Activity activity){
+    public static BitmapRequestFactory factory(Activity activity){
         return new BitmapRequestFactory(activity);
     }
 
-    public static BitmapRequestFactory buildBitmapRequestFactory(Fragment fragment){
+    public static BitmapRequestFactory factory(Fragment fragment){
         return new BitmapRequestFactory(fragment);
     }
 }

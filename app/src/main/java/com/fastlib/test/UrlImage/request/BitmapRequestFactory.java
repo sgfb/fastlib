@@ -25,7 +25,7 @@ public class BitmapRequestFactory{
      * @param url 远程服务器地址
      * @return url图像请求
      */
-    public UrlBitmapRequest generateUrlBitmapRequest(String url){
+    public UrlBitmapRequest bitmapRequestByUrl(String url){
         if(mHost instanceof Activity) return new UrlBitmapRequest(url,(Activity)mHost);
         return new UrlBitmapRequest(url,(Fragment)mHost);
     }
@@ -35,7 +35,7 @@ public class BitmapRequestFactory{
      * @param file 文件路径
      * @return 磁盘图像请求
      */
-    public DiskBitmapRequest generateDiskBitmapRequest(File file){
+    public DiskBitmapRequest bitmapRequestByDisk(File file){
         if(mHost instanceof Activity) return new DiskBitmapRequest(file,(Activity)mHost);
         return new DiskBitmapRequest(file,(Fragment)mHost);
     }
@@ -45,7 +45,7 @@ public class BitmapRequestFactory{
      * @param resourceId 资源id
      * @return 资源库图像请求
      */
-    public ResourceBitmapRequest generateResourceBitmapRequest(int resourceId){
+    public ResourceBitmapRequest bitmapRequestResource(int resourceId){
         if(mHost instanceof Activity) return new ResourceBitmapRequest(resourceId,(Activity)mHost);
         return new ResourceBitmapRequest(resourceId,(Fragment)mHost);
     }

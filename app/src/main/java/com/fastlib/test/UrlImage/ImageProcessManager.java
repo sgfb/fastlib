@@ -8,8 +8,11 @@ import com.fastlib.net.NetManager;
 import com.fastlib.test.UrlImage.processing_state.StateDownloadImageIfExpire;
 import com.fastlib.test.UrlImage.processing_state.StateCheckImagePrepare;
 import com.fastlib.test.UrlImage.processing_state.StateLoadImageOnResource;
+import com.fastlib.test.UrlImage.processing_state.StateLoadNewImageOnDisk;
 import com.fastlib.test.UrlImage.request.BitmapRequest;
+import com.fastlib.test.UrlImage.request.DiskBitmapRequest;
 import com.fastlib.test.UrlImage.request.ResourceBitmapRequest;
+import com.fastlib.test.UrlImage.request.UrlBitmapRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -112,6 +115,8 @@ public class ImageProcessManager {
         //先检查是否请求内部,文件是否存在磁盘上
         if(request instanceof ResourceBitmapRequest)
             return new StateLoadImageOnResource(request,callback);
+        else if(request instanceof DiskBitmapRequest)
+            return new StateLoadNewImageOnDisk(request,callback);
         else if(request.getSaveFile().exists()&&request.getSaveFile().length()>0)
             return new StateCheckImagePrepare(request,callback);
         else return new StateDownloadImageIfExpire(request,callback);
@@ -137,9 +142,10 @@ public class ImageProcessManager {
                     @Override
                     public void run() {
                         try{
-                            if(request.getSaveFile().exists())
+                            if(request instanceof UrlBitmapRequest&&(request.getSaveFile()==null||!request.getSaveFile().exists()))
+                                mNetDownloaderQueue.put(urlImageProcessing);
+                            else
                                 mDiskLoaderQueue.put(urlImageProcessing);
-                            else mNetDownloaderQueue.put(urlImageProcessing);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }

@@ -22,7 +22,7 @@ public class StateLoadImageOnResource extends UrlImageProcessing{
 
     @Override
     public void handle(ImageProcessManager processingManager){
-        System.out.println("发送请求从内部资源中读取图像"+mRequest.getResource());
+        System.out.println("发送请求从内部资源中读取图像 ID号:"+mRequest.getResource());
 
         BitmapFactory.Options options=new BitmapFactory.Options();
         BitmapFactory.Options justDecodeBoundOptions=new BitmapFactory.Options();
@@ -57,6 +57,5 @@ public class StateLoadImageOnResource extends UrlImageProcessing{
         wrapper.sampleSize =options.inSampleSize;
         wrapper.bitmap =BitmapFactory.decodeResource(mRequest.getContext().getResources(),(int)mRequest.getResource(),options);
         mCallback.complete(this,mRequest,wrapper);
-        processingManager.imageProcessStateConvert(false,this,new StateDownloadImageIfExpire(mRequest,mCallback));
     }
 }

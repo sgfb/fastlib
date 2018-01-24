@@ -186,6 +186,7 @@ public class NetProcessor implements Runnable {
                             speed = 0;
                             timer = System.currentTimeMillis();
                         }
+                        //TODO
                         Thread.sleep(200);
                     }
                     if(context!=null&&needEndSend)
