@@ -63,6 +63,7 @@ public class StateDownloadImageIfExpire extends UrlImageProcessing{
 
             @Override
             public void onErrorListener(Request r, String error){
+                if(r.getResponseStatus().code!=304)
                 saveDownloadErrorImageInfo(br.getContext(),br.getKey());
                 requestList.remove(br);
             }

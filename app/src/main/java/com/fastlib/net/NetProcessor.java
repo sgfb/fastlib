@@ -187,7 +187,7 @@ public class NetProcessor implements Runnable {
                             timer = System.currentTimeMillis();
                         }
                         //TODO
-                        Thread.sleep(200);
+//                        Thread.sleep(200);
                     }
                     if(context!=null&&needEndSend)
                         EventObserver.getInstance().sendEvent(context, new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(), mRequest)); //下载结束发一次广播
@@ -219,7 +219,7 @@ public class NetProcessor implements Runnable {
             saveExtraToRequest(connection);
             saveResponseStatus(connection.getResponseCode(),computeRequestTime(connection,connectionTimer),connection.getResponseMessage());
             toggleCallback();
-        } catch (IOException|InterruptedException e){
+        } catch (IOException e){
             if(e instanceof IOException)
                 mException= (IOException) e;
             if(!mRequest.getSuppressWarning())
@@ -542,7 +542,7 @@ public class NetProcessor implements Runnable {
                 checkBreakout();
                 Pair<String, String> pair = iter.next();
                 sb.append("--").append(BOUNDARY).append(CRLF)
-                        .append("Content-Disposition:form-data; name=\"" + pair.first + "\"").append(CRLF)
+                        .append("Content-Disposition: form-data; name=\"" + pair.first + "\"").append(CRLF)
                         .append("Content-Type:text/plain;charset=utf-8").append(CRLF + CRLF)
                         .append(pair.second).append(CRLF);
                 Tx += sb.toString().getBytes().length;
@@ -558,7 +558,7 @@ public class NetProcessor implements Runnable {
                 Pair<String, File> pair = iter.next();
                 if (pair.second != null && pair.second.exists() && pair.second.isFile()) {
                     sb.append("--" + BOUNDARY).append(CRLF)
-                            .append("Content-Disposition:form-data; name=\"" + pair.first + "\";filename=\"" + pair.second.getName() + "\"").append(CRLF)
+                            .append("Content-Disposition: form-data; name=\"" + pair.first + "\";filename=\" " + pair.second.getName() + "\"").append(CRLF)
                             .append("Content-type: " + URLConnection.guessContentTypeFromName(pair.second.getName())).append(CRLF)
                             .append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
                     out.write(sb.toString().getBytes());

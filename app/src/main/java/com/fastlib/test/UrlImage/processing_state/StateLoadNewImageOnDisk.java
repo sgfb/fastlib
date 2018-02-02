@@ -1,14 +1,13 @@
 package com.fastlib.test.UrlImage.processing_state;
 
-import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.support.v4.util.Pair;
 
-import com.fastlib.test.UrlImage.request.BitmapRequest;
 import com.fastlib.test.UrlImage.BitmapWrapper;
 import com.fastlib.test.UrlImage.ImageDispatchCallback;
 import com.fastlib.test.UrlImage.ImageProcessManager;
 import com.fastlib.test.UrlImage.UrlImageProcessing;
+import com.fastlib.test.UrlImage.request.BitmapRequest;
 import com.fastlib.utils.ScreenUtils;
 
 import java.io.File;
@@ -61,20 +60,5 @@ public class StateLoadNewImageOnDisk extends UrlImageProcessing{
         wrapper.bitmap =BitmapFactory.decodeFile(file.getAbsolutePath(),options);
         mCallback.complete(this,mRequest,wrapper);
         processingManager.getRequestList().remove(mRequest);
-    }
-
-    @Override
-    public void onStart(Context context) {
-
-    }
-
-    @Override
-    public void onPause(Context context) {
-
-    }
-
-    @Override
-    public void onDestroy(Context context) {
-        super.onDestroy(context);
     }
 }

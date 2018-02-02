@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/text_bg"
+    android:textColor="@android:color/black"
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp"
+    android:paddingLeft="6dp"
+    android:paddingRight="6dp"
+    android:text="格力"/>

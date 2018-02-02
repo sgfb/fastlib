@@ -81,6 +81,6 @@ public class StateCheckImagePrepare extends UrlImageProcessing{
         ImageFileInfo imageFileInfo= FastDatabase.getDefaultInstance(mRequest.getContext())
                 .addFilter(And.condition(Condition.equal(mRequest.getKey())))
                 .getFirst(ImageFileInfo.class);
-        return imageFileInfo!=null&&imageFileInfo.isDownloadComplete;
+        return imageFileInfo==null||imageFileInfo.isDownloadComplete;
     }
 }

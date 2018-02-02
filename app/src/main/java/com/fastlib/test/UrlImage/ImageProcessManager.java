@@ -103,7 +103,11 @@ public class ImageProcessManager {
             @Override
             public void complete(UrlImageProcessing processing, final BitmapRequest request, final BitmapWrapper wrapper){
                 Handler handler=new Handler(Looper.getMainLooper());
-                mBitmapReferenceManager.addBitmapReference(request,wrapper,request.getImageView());
+                //根据策略来是否存储到内存池，和缓存在磁盘上
+                if((request.getStoreStrategy()&FastImageConfig.STRATEGY_STORE_SAVE_MEMORY)!=0)
+                    mBitmapReferenceManager.addBitmapReference(request,wrapper,request.getImageView());
+                else if(((request.getStoreStrategy()&FastImageConfig.STRATEGY_STORE_SAVE_DISK)==0)&&request.getSaveFile()!=null)
+                    request.getSaveFile().delete();
                 handler.post(new Runnable() {
                     @Override
                     public void run(){
