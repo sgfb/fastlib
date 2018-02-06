@@ -1,51 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <LinearLayout
-        android:orientation="vertical"
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/refresh"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent">
 
-        <EditText
-            android:id="@+id/duration"
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/list"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number" />
+            android:layout_height="match_parent"
+            app:layoutManager="LinearLayoutManager"/>
+    </android.support.v4.widget.SwipeRefreshLayout>
 
-        <Button
-            android:id="@+id/bt"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="bt"/>
+    <!--<LinearLayout-->
+        <!--android:orientation="vertical"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content">-->
 
-        <Button
-            android:id="@+id/bt2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="bt2"/>
+        <!--<Button-->
+            <!--android:id="@+id/bt"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:text="bt"/>-->
 
-        <Button
-            android:id="@+id/bt3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="bt3"/>
+        <!--<Button-->
+            <!--android:id="@+id/bt2"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:text="bt2"/>-->
 
-        <ImageView
-            android:id="@+id/image"
-            android:layout_width="130dp"
-            android:layout_height="130dp"/>
+        <!--<Button-->
+            <!--android:id="@+id/bt3"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:text="bt3"/>-->
 
-        <ImageView
-            android:id="@+id/image2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+        <!--<ImageView-->
+            <!--android:id="@+id/image"-->
+            <!--android:layout_width="130dp"-->
+            <!--android:layout_height="130dp"/>-->
 
-        <ImageView
-            android:id="@+id/image3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-    </LinearLayout>
-</ScrollView>
+        <!--<ImageView-->
+            <!--android:id="@+id/image2"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"/>-->
+
+        <!--<ImageView-->
+            <!--android:id="@+id/image3"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"/>-->
+    <!--</LinearLayout>-->
+</LinearLayout>

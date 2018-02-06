@@ -256,6 +256,10 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
         public void setData(List<T> list){
             if(list==null||list.isEmpty()) mItem.clear();
             else{
+                if(mMultiAdapter!=null){
+                    List<RecyclerItem> allItem=mMultiAdapter.getRecyclerItem();
+                    allItem.removeAll(mItem);
+                }
                 mItem.clear();
                 addAllData(list);
             }

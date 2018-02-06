@@ -32,8 +32,8 @@ import java.util.concurrent.BlockingQueue;
 public class ImageProcessManager {
     private BitmapReferenceManager mBitmapReferenceManager;
     private List<BitmapRequest> mRequestList=new ArrayList<>();
-    private BlockingQueue<UrlImageProcessing> mDiskLoaderQueue=new ArrayBlockingQueue<>(2);
-    private BlockingQueue<UrlImageProcessing> mNetDownloaderQueue=new ArrayBlockingQueue<>(2);
+    private BlockingQueue<UrlImageProcessing> mDiskLoaderQueue=new ArrayBlockingQueue<>(3);
+    private BlockingQueue<UrlImageProcessing> mNetDownloaderQueue=new ArrayBlockingQueue<>(3);
 
     public ImageProcessManager(BitmapReferenceManager bitmapReferenceManager){
         mBitmapReferenceManager=bitmapReferenceManager;
@@ -103,11 +103,13 @@ public class ImageProcessManager {
             @Override
             public void complete(UrlImageProcessing processing, final BitmapRequest request, final BitmapWrapper wrapper){
                 Handler handler=new Handler(Looper.getMainLooper());
-                //根据策略来是否存储到内存池，和缓存在磁盘上
-                if((request.getStoreStrategy()&FastImageConfig.STRATEGY_STORE_SAVE_MEMORY)!=0)
-                    mBitmapReferenceManager.addBitmapReference(request,wrapper,request.getImageView());
-                else if(((request.getStoreStrategy()&FastImageConfig.STRATEGY_STORE_SAVE_DISK)==0)&&request.getSaveFile()!=null)
-                    request.getSaveFile().delete();
+                if(wrapper.bitmap!=null){
+                    //根据策略来是否存储到内存池，和缓存在磁盘上
+                    if((request.getStoreStrategy()&FastImageConfig.STRATEGY_STORE_SAVE_MEMORY)!=0)
+                        mBitmapReferenceManager.addBitmapReference(request,wrapper,request.getImageView());
+                    else if(((request.getStoreStrategy()&FastImageConfig.STRATEGY_STORE_SAVE_DISK)==0)&&request.getSaveFile()!=null)
+                        request.getSaveFile().delete();
+                }
                 handler.post(new Runnable() {
                     @Override
                     public void run(){
@@ -121,9 +123,9 @@ public class ImageProcessManager {
             return new StateLoadImageOnResource(request,callback);
         else if(request instanceof DiskBitmapRequest)
             return new StateLoadNewImageOnDisk(request,callback);
-        else if(request.getSaveFile().exists()&&request.getSaveFile().length()>0)
+        else if(request instanceof UrlBitmapRequest)
             return new StateCheckImagePrepare(request,callback);
-        else return new StateDownloadImageIfExpire(request,callback);
+        else return null;
     }
 
     /**

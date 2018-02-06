@@ -9,7 +9,7 @@ import com.fastlib.test.UrlImage.request.BitmapRequest;
 public interface ImageDispatchCallback{
 
     /**
-     * 图像准备完毕回调
+     * 图像结束处理回调(成功和失败混合)
      * @param processing 图像处理具体实例(某个步骤)
      * @param request 图像请求
      * @param wrapper bitmap和扩展属性

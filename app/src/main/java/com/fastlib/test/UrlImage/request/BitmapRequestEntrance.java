@@ -1,6 +1,7 @@
 package com.fastlib.test.UrlImage.request;
 
 import android.app.Activity;
+import android.content.Context;
 import android.support.v4.app.Fragment;
 
 /**
@@ -13,8 +14,8 @@ public class BitmapRequestEntrance{
         //不实例化
     }
 
-    public static BitmapRequestFactory factory(Activity activity){
-        return new BitmapRequestFactory(activity);
+    public static BitmapRequestFactory factory(Context context){
+        return new BitmapRequestFactory((Activity) context);
     }
 
     public static BitmapRequestFactory factory(Fragment fragment){

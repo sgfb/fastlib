@@ -3,6 +3,7 @@ package com.fastlib.test.UrlImage.processing_state;
 import android.graphics.BitmapFactory;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
+import android.widget.ImageView;
 
 import com.fastlib.bean.ImageFileInfo;
 import com.fastlib.db.And;
@@ -19,7 +20,8 @@ import java.io.File;
 
 /**
  * Created by sgfb on 18/1/15.
- * 第一次在发起网络请求前往磁盘中取图像（必须是存在的，否则这个状态应该被跳过）
+ * 第一次在发起网络请求前往预处理图像
+ * 如果有本地图像则调入如果没有置ImageView中Bitmap为placeholder或者null
  * 请求完后判断是否有请求对应url图像文件，如果没有则结束流程否则跳到判断资源过期流程
  */
 public class StateCheckImagePrepare extends UrlImageProcessing{
@@ -30,12 +32,21 @@ public class StateCheckImagePrepare extends UrlImageProcessing{
 
     @Override
     public void handle(ImageProcessManager processingManager){
-        System.out.println("发起网络请求前从磁盘读取图像信息:"+mRequest.getResource());
-        if(!checkDownloadComplete()){
+        System.out.println("发起网络请求前预处理图像信息:"+mRequest.getResource());
+        File file=mRequest.getSaveFile();
+        if(!file.exists()||file.length()<=0||!checkDownloadComplete()){
+            final ImageView imageView=mRequest.getImageView();
+            if(imageView!=null){
+                imageView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        imageView.setImageDrawable(mRequest.getReplaceDrawable());
+                    }
+                });
+            }
             processingManager.imageProcessStateConvert(false,this,new StateDownloadImageIfExpire(mRequest,mCallback));
             return;
         }
-        File file=mRequest.getSaveFile();
         BitmapFactory.Options options=new BitmapFactory.Options();
         BitmapFactory.Options justDecodeBoundOptions=new BitmapFactory.Options();
 

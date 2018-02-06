@@ -11,6 +11,7 @@ import com.fastlib.db.FastDatabase;
 import com.fastlib.net.DefaultDownload;
 import com.fastlib.net.Request;
 import com.fastlib.net.SimpleListener;
+import com.fastlib.test.UrlImage.BitmapWrapper;
 import com.fastlib.test.UrlImage.request.BitmapRequest;
 import com.fastlib.test.UrlImage.ImageDispatchCallback;
 import com.fastlib.test.UrlImage.ImageProcessManager;
@@ -46,7 +47,10 @@ public class StateDownloadImageIfExpire extends UrlImageProcessing{
             mNetRequest.addHeader("If-Modified-Since", imageFileInfo.lastModified);
             System.out.println("验证服务器图像过期,如果过期重新在服务器上取:"+br.getResource());
         }
-        else System.out.println("从服务器中取图像到磁盘:"+br.getResource());
+        else{
+            System.out.println("从服务器中取图像到磁盘:"+br.getResource());
+            dd.setSupportBreak(false);
+        }
         mNetRequest.setDownloadable(dd);
         mNetRequest.setSuppressWarning(true);
         mNetRequest.setListener(new SimpleListener<String>(){
@@ -58,13 +62,17 @@ public class StateDownloadImageIfExpire extends UrlImageProcessing{
 
                 requestList.remove(br);
                 saveDownloadSuccessImageInfo(br.getContext(),br.getKey(),lastModified);
-                processingManager.imageProcessStateConvert(false,StateDownloadImageIfExpire.this,new StateLoadNewImageOnDisk(br,mCallback));
+                processingManager.imageProcessStateConvert(true,StateDownloadImageIfExpire.this,new StateLoadNewImageOnDisk(br,mCallback));
             }
 
             @Override
             public void onErrorListener(Request r, String error){
-                if(r.getResponseStatus().code!=304)
-                saveDownloadErrorImageInfo(br.getContext(),br.getKey());
+                if(r.getResponseStatus().code==304)
+                    processingManager.imageProcessStateConvert(true,StateDownloadImageIfExpire.this,new StateLoadNewImageOnDisk(br,mCallback));
+                else {
+                    saveDownloadErrorImageInfo(br.getContext(), br.getKey());
+                    mCallback.complete(StateDownloadImageIfExpire.this,mRequest,new BitmapWrapper());
+                }
                 requestList.remove(br);
             }
         });
