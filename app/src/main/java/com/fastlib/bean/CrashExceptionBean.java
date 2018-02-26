@@ -23,6 +23,7 @@ public class CrashExceptionBean{
     public String causePosition; //异常发生点
     public String netStatus; //网络状态
     public String projectName= BuildConfig.APPLICATION_ID;
+    public String abi;
     public String extra;
 
     @Override

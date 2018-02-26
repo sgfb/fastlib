@@ -235,7 +235,7 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
 
         /**
          * 增加多行
-         * @param list
+         * @param list 多行数据
          */
         public void addAllData(List<T> list){
             if(list==null||list.isEmpty()) return;
@@ -244,20 +244,37 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
                 mItem.add(item);
                 if(mMultiAdapter!=null){
                     List<RecyclerItem> allItem=mMultiAdapter.getRecyclerItem();
-                    if(mCanSuspend&&!mItem.isEmpty())
-                        allItem.add(mItem.indexOf(mItem.get(allItem.size()-1))+1,item);
+                    //如果支持折叠，item以组分割
+                    if(mCanSuspend){
+                        //插入到下个组的前面，如果没有下个组，或者下个组的item列表为空，则插入到总item列表的最后一个
+                        int nextGroupIndex=mMultiAdapter.mRecyclerGroup.indexOf(this)+1;
+                        if(nextGroupIndex<mMultiAdapter.mRecyclerGroup.size()){
+                            RecyclerGroup nextGroup=mMultiAdapter.mRecyclerGroup.get(nextGroupIndex);
+                            if(nextGroup.mItem!=null&&!nextGroup.mItem.isEmpty()){
+                                int firstItem=allItem.indexOf(nextGroup.mItem.get(0));
+                                allItem.add(firstItem,item);
+                            }
+                            else allItem.add(item);
+                        }
+                        else allItem.add(item);
+                    }
                     else allItem.add(item);
                 }
             }
-            if(!isSuspend&&mMultiAdapter!=null)
+            if(mMultiAdapter!=null)
                 mMultiAdapter.notifyDataSetChanged();
         }
 
         public void setData(List<T> list){
-            if(list==null||list.isEmpty()) mItem.clear();
-            else{
+            if(mMultiAdapter!=null){
+                mMultiAdapter.getRecyclerItem().removeAll(mItem);
                 mItem.clear();
+            }
+            if(list!=null&&!list.isEmpty())
                 addAllData(list);
+            else{
+                if(mMultiAdapter!=null)
+                    mMultiAdapter.notifyDataSetChanged();
             }
         }
 

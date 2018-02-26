@@ -162,7 +162,7 @@ public class NetProcessor implements Runnable {
                 int len;
                 byte[] data = new byte[BUFF_LENGTH];
                 //如果支持,修改下载的文件名
-                if (canWriteToFile(connection)) {
+                if (mRequest.getDownloadable() != null) {
                     OutputStream fileOut = new FileOutputStream(downloadFile, mRequest.getDownloadable().supportBreak());
                     String disposition = connection.getHeaderField("Content-Disposition");
                     if (!TextUtils.isEmpty(disposition) && disposition.length() > 9 && mRequest.getDownloadable().changeIfHadName()) {
@@ -170,7 +170,7 @@ public class NetProcessor implements Runnable {
                         if (!TextUtils.isEmpty(filename))
                             downloadFile.renameTo(new File(downloadFile.getParent() + File.separator + filename));
                     }
-                    int maxCount = connection.getContentLength();
+                    int maxCount = connection.getContentLength(); //如果流大小为－1说明是未知大小的流
                     int speed = 0;
                     long timer = System.currentTimeMillis();
                     boolean needEndSend=false; //在文件下载结束后保证最后一次的广播发送
@@ -186,8 +186,6 @@ public class NetProcessor implements Runnable {
                             speed = 0;
                             timer = System.currentTimeMillis();
                         }
-                        //TODO
-//                        Thread.sleep(200);
                     }
                     if(context!=null&&needEndSend)
                         EventObserver.getInstance().sendEvent(context, new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(), mRequest)); //下载结束发一次广播
@@ -427,18 +425,6 @@ public class NetProcessor implements Runnable {
     }
 
     /**
-     * 如果文件大小为0，并且不为Gzip流，不输出到文件中
-     * @param connection
-     * @return
-     */
-    private boolean canWriteToFile(HttpURLConnection connection) {
-        return mRequest.getDownloadable() != null
-                && ((!TextUtils.isEmpty(connection.getHeaderField("Content-Length"))
-                && connection.getHeaderFieldInt("Content-Length", 0) > 0)
-                || mRequest.isReceiveGzip());
-    }
-
-    /**
      * 实体类型是否源类型
      * @param types 实体类型组
      * @return 如果是源类型返回true，否则false
@@ -519,7 +505,7 @@ public class NetProcessor implements Runnable {
         while (iter.hasNext()) {
             Pair<String, String> pair = iter.next();
             try {
-                sb.append(pair.first).append("=").append(URLEncoder.encode(pair.second,"UTF-8")).append("&");
+                sb.append(pair.first).append("=").append(TextUtils.isEmpty(pair.second)?"":URLEncoder.encode(pair.second,"UTF-8")).append("&");
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }

@@ -59,6 +59,7 @@ public class BitmapReferenceManager {
             //图像一定大于等于请求尺寸，所以只判断是否需要返回缩小的图像(等比缩放)
             if(requestWidth!=0&&requestHeight!=0&&(requestWidth<bitmapWidth||requestHeight<bitmapHeight)){
                 int minRadio=Math.min(bitmapWidth/requestWidth,bitmapHeight/requestHeight);
+                if(minRadio<=0) return wrapper.bitmap;
                 int thumbWidth=bitmapWidth/minRadio;
                 int thumbHeight=bitmapHeight/minRadio;
                 return Bitmap.createScaledBitmap(wrapper.bitmap,thumbWidth,thumbHeight,false);
