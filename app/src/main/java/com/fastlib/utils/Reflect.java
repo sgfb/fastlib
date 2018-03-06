@@ -17,6 +17,15 @@ import java.util.Objects;
  * @author Sgfb
  */
 public class Reflect{
+
+	public static boolean instanceOfCheck(Class cla, Class superClass){
+		Class workClass=cla.getSuperclass();
+
+		while(workClass!=null&&workClass!=Object.class){
+			if(workClass==superClass) return true;
+		}
+		return false;
+	}
 	
 	/**
 	 * 使用方法:reflectString(对象,"对象.子对象.孙对象...")

@@ -152,6 +152,21 @@ public class Task<R>{
         return mNext;
     }
 
+    public <T> Task<T> next(Task<T> task){
+        return next(task,ThreadType.WORK);
+    }
+
+    public <T> Task<T> next(Task<T> task,ThreadType whichThread){
+        mNext=task;
+        mNext.mAction.setThreadType(whichThread);
+        mNext.mPrevious=this;
+        if(mCycler!=null)
+            mNext.mCycler=mCycler;
+        if(mCycleIndex==0)
+            mNext.mCycler=this;
+        return mNext;
+    }
+
     /**
      * 过滤任务
      * @param action

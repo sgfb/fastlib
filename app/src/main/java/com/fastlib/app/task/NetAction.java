@@ -1,7 +1,5 @@
 package com.fastlib.app.task;
 
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 
 import com.fastlib.net.NetManager;
@@ -18,23 +16,31 @@ import java.util.concurrent.ThreadPoolExecutor;
  * Created by sgfb on 17/9/5.
  * 网络事件.因为网络请求不能在主线程中，所以execute中的行为必须置与子线程中。而executeAdapt置与指定的线程中
  */
-public abstract class NetAction<R> extends Action<Request,R> {
-    private ThreadPoolExecutor mExecutor; //可选的运行线程池
+public abstract class NetAction<P,R> extends Action<Request,R>{
+    private static final Object mLock=new Object();
 
-    protected abstract void executeAdapt(R r,Request request);
+    protected abstract R executeAdapt(P r,Request request);
 
     @Override
     protected R execute(final Request param) throws IOException {
         Object responseObj=null;
-        byte[] response= NetManager.getInstance().netRequestPromptlyBack(param);
         Method[] methods=getClass().getDeclaredMethods();
         Type rType=Object.class;
+        byte[] response;
 
+        response=NetManager.getInstance().netRequestPromptlyBack(param);
+        synchronized (mLock){
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         for(Method m:methods){
             if("executeAdapt".equals(m.getName())){
                 Type[] paramsType=m.getGenericParameterTypes();
                 for(Type paramType:paramsType)
-                    if(paramType!=Object.class){
+                    if(paramType!=Object.class&&paramType!=Request.class){
                         rType=paramType;
                         break;
                     }
@@ -57,33 +63,14 @@ public abstract class NetAction<R> extends Action<Request,R> {
             }
         }
         checkNetBackStatus(param);
-        if(mThreadType== ThreadType.MAIN){
-            final Object fResponseObj=responseObj;
-            Handler mainHandle=new Handler(Looper.getMainLooper());
-            mainHandle.post(new Runnable() {
-                @Override
-                public void run(){
-                    executeAdapt((R) fResponseObj,param);
-                }
-            });
-        }
-        else executeAdapt((R) responseObj,param);
-        return (R) responseObj;
+        return executeAdapt((P) responseObj,param);
     }
 
     private void checkNetBackStatus(Request request){
-        if(request.getResponseStatus().code!=200) {
+        if(request.getResponseStatus().code<200||request.getResponseStatus().code>299){
             stopTask();
             Log.d(NetAction.class.getSimpleName(),"net action error:"+request.getResponseStatus().message);
         }
-    }
-
-    public ThreadPoolExecutor getExecutor() {
-        return mExecutor;
-    }
-
-    public void setExecutor(ThreadPoolExecutor executor) {
-        mExecutor = executor;
     }
 
     /**

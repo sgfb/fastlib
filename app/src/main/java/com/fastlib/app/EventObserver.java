@@ -53,11 +53,8 @@ public class EventObserver {
         List<String> eventNames= mSubscriberToEvent.get(subscriber);
         List<Method> eventMethods=findEventMethods(subscriber);
 
-        if(eventMethods==null||eventMethods.isEmpty()){
-            if (BuildConfig.isShowLog)
-                Log.d(TAG,"订阅者"+subscriber+"没有广播接收方法,请检查是否添加了Event注解和广播方法参数");
+        if(eventMethods==null||eventMethods.isEmpty())
             return;
-        }
         if(eventNames==null) {
             eventNames = new ArrayList<>();
             mSubscriberToEvent.put(subscriber,eventNames);

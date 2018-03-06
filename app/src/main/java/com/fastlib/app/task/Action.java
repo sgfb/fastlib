@@ -1,7 +1,5 @@
 package com.fastlib.app.task;
 
-import java.io.IOException;
-
 /**
  * Created by sgfb on 17/9/1.
  * 任务事件

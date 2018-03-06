@@ -1,4 +1,4 @@
-package com.fastlib.utils;
+package com.fastlib.utils.local_data;
 
 import android.app.Activity;
 import android.content.Context;
@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Parcelable;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
@@ -24,12 +25,15 @@ import com.google.gson.Gson;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -41,6 +45,7 @@ public class LocalDataInject{
     private Fragment mFragment;
     private List<Pair<Field,LocalData>> mChildActivityGiver = new ArrayList<>(); //子Activity返回时获取Intent中数据
     private SparseArray<Object[]> mToggleData = new SparseArray<>(); //触发后读取数据缓存点
+    private Map<Class<? extends View>,LocalDataViewActive<?>> mLocalDataViewMap=new HashMap<>();
 
     public LocalDataInject(Activity activity){
         mActivity=activity;
@@ -50,9 +55,13 @@ public class LocalDataInject{
         mFragment=fragment;
     }
 
+    public <V extends View> void putLocalDataViewActive(LocalDataViewActive<V> actives, Class<V> cla){
+        mLocalDataViewMap.put(cla,actives);
+    }
+
     /**
      * 处理子Activity返回的Intent中包含所需的数据
-     * @param data
+     * @param data 数据包裹
      */
     public void injectChildBack(Intent data){
         for (Pair<Field, LocalData> pair : mChildActivityGiver)
@@ -100,9 +109,7 @@ public class LocalDataInject{
                         default:
                             break;
                     }
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
+                } catch (IllegalAccessException | IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -254,7 +261,7 @@ public class LocalDataInject{
         for (int i = 0; i < datas.length; i++) {
             switch (ld.from()[i]){
                 case INTENT_PARENT:
-                    datas[i] = loadLocalDataFromIntent(i, ld,param[i]);
+                    datas[i] = loadLocalDataFromIntent(i, ld);
                     break;
                 case SP:
                     datas[i] = loadLocalDataFromSp(i, ld, param[i]);
@@ -337,53 +344,18 @@ public class LocalDataInject{
 
     /**
      * 读取在Intent或Bundle中的数据
-     * @param position
-     * @param ld
-     * @param paramType
-     * @return
+     * @param position 对应注解下标
+     * @param ld 本地数据注解
+     * @return 对应包裹里数据
      */
-    private Object loadLocalDataFromIntent(int position, LocalData ld, Class<?> paramType){
+    private Object loadLocalDataFromIntent(int position, LocalData ld){
         Intent intent=mActivity!=null?mActivity.getIntent():null;
         Bundle bundle=mActivity==null?mFragment.getArguments():null;
-        if (paramType == boolean.class)
-            return intent!=null?intent.getBooleanExtra(ld.value()[position],false):bundle.getBoolean(ld.value()[position],false);
-        else if (paramType == boolean[].class)
-            return intent!=null?intent.getBooleanArrayExtra(ld.value()[position]):bundle.getBooleanArray(ld.value()[position]);
-        else if (paramType == byte.class)
-            return intent!=null?intent.getByteExtra(ld.value()[position], (byte) -1):bundle.getByte(ld.value()[position],(byte)-1);
-        else if (paramType == byte[].class)
-            return intent!=null?intent.getByteArrayExtra(ld.value()[position]):bundle.getByteArray(ld.value()[position]);
-        else if (paramType == char.class)
-            return intent!=null?intent.getCharExtra(ld.value()[position],'0'):bundle.getChar(ld.value()[position],'0');
-        else if (paramType == char[].class)
-            return intent!=null?intent.getCharArrayExtra(ld.value()[position]):bundle.getCharArray(ld.value()[position]);
-        else if (paramType == short.class)
-            return intent!=null?intent.getShortExtra(ld.value()[position], (short) -1):bundle.getShort(ld.value()[position],(short)-1);
-        else if (paramType == short[].class)
-            return intent!=null?intent.getShortArrayExtra(ld.value()[position]):bundle.getShortArray(ld.value()[position]);
-        else if (paramType == int.class)
-            return intent!=null?intent.getIntExtra(ld.value()[position], -1):bundle.getInt(ld.value()[position],-1);
-        else if (paramType == int[].class)
-            return intent!=null?intent.getIntArrayExtra(ld.value()[position]):bundle.getIntArray(ld.value()[position]);
-        else if (paramType == float.class)
-            return intent!=null?intent.getFloatExtra(ld.value()[position], -1.1f):bundle.getFloat(ld.value()[position],-1.1f);
-        else if (paramType == float[].class)
-            return intent!=null?intent.getFloatArrayExtra(ld.value()[position]):bundle.getFloatArray(ld.value()[position]);
-        else if (paramType == double.class)
-            return intent!=null?intent.getDoubleExtra(ld.value()[position], -1.1):bundle.getDouble(ld.value()[position],-1.1);
-        else if (paramType == double[].class)
-            return intent!=null?intent.getDoubleArrayExtra(ld.value()[position]):bundle.getDoubleArray(ld.value()[position]);
-        else if (paramType == String.class)
-            return intent!=null?intent.getStringExtra(ld.value()[position]):bundle.getString(ld.value()[position],"-1");
-        else if (paramType == String[].class)
-            return intent!=null?intent.getStringArrayExtra(ld.value()[position]):bundle.getStringArray(ld.value()[position]);
-        else
-            return intent!=null?intent.getSerializableExtra(ld.value()[position]):bundle.getStringArray(ld.value()[position]);
+        return intent!=null?intent.getExtras().get(ld.value()[position]):bundle.get(ld.value()[position]);
     }
 
     /**
      * 从数据库中加载数据到属性中(仅支持FastDatabase)
-     *
      * @param field
      * @param lr
      * @throws IllegalAccessException
@@ -404,25 +376,7 @@ public class LocalDataInject{
     private void loadLocalDataFromSp(Field field, LocalData lr) throws IllegalAccessException{
         Activity host=mActivity==null?mFragment.getActivity():mActivity;
         SharedPreferences sp =host.getSharedPreferences(BuildConfig.DEFAULT_DATA_FILE_NAME,Context.MODE_PRIVATE);
-        Class<?> type = field.getType();
-        if (type == boolean.class)
-            field.setBoolean(host, sp.getBoolean(lr.value()[0], false));
-        else if (type == Boolean.class)
-            field.set(host, sp.getBoolean(lr.value()[0], false));
-        else if (type == int.class)
-            field.setInt(host, sp.getInt(lr.value()[0], -1));
-        else if (type == Integer.class)
-            field.set(host, sp.getInt(lr.value()[0], -1));
-        else if (type == float.class)
-            field.setFloat(host, sp.getFloat(lr.value()[0], -1));
-        else if (type == Float.class)
-            field.set(host, sp.getFloat(lr.value()[0], -1));
-        else if (type == long.class)
-            field.setLong(host, sp.getLong(lr.value()[0], -1));
-        else if (type == Long.class)
-            field.set(host, sp.getLong(lr.value()[0], -1));
-        else if (type == String.class)
-            field.set(host, sp.getString(lr.value()[0], null));
+        field.set(host,sp.getAll().get(lr.value()[0]));
     }
 
     /**
@@ -451,8 +405,8 @@ public class LocalDataInject{
 
     /**
      * 从Intent中加载本地数据
-     * @param field
-     * @param lr
+     * @param field 字段
+     * @param lr 本地数据注解
      * @throws IllegalAccessException
      */
     private void loadLocalDataFromIntent(@Nullable Intent childIntent, Field field, LocalData lr) throws IllegalAccessException{
@@ -461,56 +415,15 @@ public class LocalDataInject{
         Bundle bundle=mFragment!=null?mFragment.getArguments():null;
         if(intent==null)
             intent=mActivity!=null?mActivity.getIntent():null;
-        Class<?> type = field.getType();
-        if (type == byte.class)
-            field.setByte(host,intent!=null?intent.getByteExtra(lr.value()[0], (byte) -1):bundle.getByte(lr.value()[0],(byte)-1));
-        else if (type == Byte.class)
-            field.set(host, intent!=null?intent.getByteExtra(lr.value()[0], (byte) -1):bundle.getByte(lr.value()[0],(byte)-1));
-        else if (type == byte[].class)
-            field.set(host, intent!=null?intent.getByteArrayExtra(lr.value()[0]):bundle.getByteArray(lr.value()[0]));
-        else if (type == char.class)
-            field.set(host, intent!=null?intent.getCharExtra(lr.value()[0],'0'):bundle.getChar(lr.value()[0],'0'));
-        else if (type == char[].class)
-            field.set(host, intent!=null?intent.getCharArrayExtra(lr.value()[0]):bundle.getCharArray(lr.value()[0]));
-        else if (type == boolean.class)
-            field.setBoolean(host,intent!=null?intent.getBooleanExtra(lr.value()[0], false):bundle.getBoolean(lr.value()[0],false));
-        else if (type == Boolean.class)
-            field.set(host, intent!=null?intent.getBooleanExtra(lr.value()[0], false):bundle.getBoolean(lr.value()[0],false));
-        else if (type == boolean[].class)
-            field.set(host,intent!=null?intent.getBooleanArrayExtra(lr.value()[0]):bundle.getBooleanArray(lr.value()[0]));
-        else if (type == short.class)
-            field.set(host, intent!=null?intent.getShortExtra(lr.value()[0], (short) -1):bundle.getShort(lr.value()[0],(short)-1));
-        else if (type == Short.class)
-            field.set(host,intent!=null?intent.getShortExtra(lr.value()[0], (short) -1):bundle.getShort(lr.value()[0],(short)-1));
-        else if (type == short[].class)
-            field.set(host, intent!=null?intent.getShortArrayExtra(lr.value()[0]):bundle.getShortArray(lr.value()[0]));
-        else if (type == int.class)
-            field.setInt(host, intent!=null?intent.getIntExtra(lr.value()[0],-1):bundle.getInt(lr.value()[0],-1));
-        else if (type == Integer.class)
-            field.set(host, intent!=null?intent.getIntExtra(lr.value()[0], -1):bundle.getInt(lr.value()[0],-1));
-        else if (type == int[].class)
-            field.set(host, intent!=null?intent.getIntArrayExtra(lr.value()[0]):bundle.getShortArray(lr.value()[0]));
-        else if (type == float.class)
-            field.setFloat(host,intent!=null?intent.getFloatExtra(lr.value()[0], -1):bundle.getFloat(lr.value()[0],-1.1f));
-        else if (type == Float.class)
-            field.set(host, intent!=null?intent.getFloatExtra(lr.value()[0], -1):bundle.getFloat(lr.value()[0],-1.1f));
-        else if (type == float[].class)
-            field.set(host, intent!=null?intent.getFloatArrayExtra(lr.value()[0]):bundle.getFloatArray(lr.value()[0]));
-        else if (type == long.class)
-            field.setLong(host,intent!=null?intent.getLongExtra(lr.value()[0], -1):bundle.getLong(lr.value()[0],-1));
-        else if (type == Long.class)
-            field.set(host, intent!=null?intent.getLongExtra(lr.value()[0], -1):bundle.getLong(lr.value()[0],-1));
-        else if (type == long[].class)
-            field.set(host, intent!=null?intent.getLongArrayExtra(lr.value()[0]):bundle.getLongArray(lr.value()[0]));
-        else if (type == double.class)
-            field.setDouble(host,intent!=null?intent.getDoubleExtra(lr.value()[0],-1):bundle.getDouble(lr.value()[0],-1.1));
-        else if (type == Double.class)
-            field.setDouble(host,intent!=null?intent.getDoubleExtra(lr.value()[0], -1):bundle.getDouble(lr.value()[0],-1.1));
-        else if (type == double[].class)
-            field.set(host, intent!=null?intent.getDoubleArrayExtra(lr.value()[0]):bundle.getDoubleArray(lr.value()[0]));
-        else if (type == String.class)
-            field.set(host, intent!=null?intent.getStringExtra(lr.value()[0]):bundle.getString(lr.value()[0],"-1"));
-        else
-            field.set(host, intent!=null?intent.getSerializableExtra(lr.value()[0]):bundle.getSerializable(lr.value()[0]));
+
+        Object value=intent!=null?intent.getExtras().get(lr.value()[0]):bundle.get(lr.value()[0]);
+        if (value != null) {
+            LocalDataViewActive active=mLocalDataViewMap.get(field.getType());
+            if(active!=null){
+                View view= (View) field.get(host);
+                LocalDataViewActiveImpl.inflaterData(active,view,value);
+            }
+            else field.set(host,value);
+        }
     }
 }

@@ -8,11 +8,13 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatTextView;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import com.fastlib.R;
 import com.fastlib.annotation.ContentView;
@@ -25,13 +27,14 @@ import com.fastlib.base.Deferrable;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
-import com.fastlib.utils.LocalDataInject;
+import com.fastlib.utils.local_data.AppcompatTextViewDataActive;
+import com.fastlib.utils.local_data.LocalDataInject;
 import com.fastlib.utils.N;
 import com.fastlib.utils.PermissionHelper;
 import com.fastlib.utils.ViewInject;
+import com.fastlib.utils.local_data.TextViewDataActive;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -53,7 +56,7 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
 
     protected ThreadPoolExecutor mThreadPool;
     protected PermissionHelper mPermissionHelper;
-    protected volatile int mPreparedTaskRemain=4; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
+    protected volatile int mPreparedTaskRemain=3; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
 
     private boolean isFirstLoaded=false;
     private boolean isGatingPhoto; //是否正在获取图像
@@ -306,12 +309,6 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
                 @Override
                 public void run() {
                     ViewInject.inject(FastActivity.this,findViewById(android.R.id.content),mThreadPool);
-                    prepareTask();
-                }
-            });
-            mThreadPool.execute(new Runnable() {
-                @Override
-                public void run(){
                     mLocalDataInject.localDataInject();
                     prepareTask();
                 }

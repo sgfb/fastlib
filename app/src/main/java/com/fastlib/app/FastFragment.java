@@ -24,18 +24,14 @@ import com.fastlib.base.Deferrable;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
-import com.fastlib.utils.LocalDataInject;
+import com.fastlib.utils.local_data.LocalDataInject;
 import com.fastlib.utils.N;
 import com.fastlib.utils.PermissionHelper;
 import com.fastlib.utils.ViewInject;
 
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 

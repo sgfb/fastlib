@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.util.Log;
 
+import com.fastlib.BuildConfig;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,7 +20,7 @@ import java.io.OutputStream;
  */
 public class SaveUtil{
     public static final String TAG=SaveUtil.class.getSimpleName();
-    public static String sSpName="default"; //存入SharedPreferences时的默认名
+    public static String sSpName= BuildConfig.DEFAULT_DATA_FILE_NAME; //存入SharedPreferences时的默认名
 
     private SaveUtil(){
         //can't instance
