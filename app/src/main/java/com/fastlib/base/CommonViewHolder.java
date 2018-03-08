@@ -1,6 +1,5 @@
 package com.fastlib.base;
 
-import android.content.ClipboardManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -135,16 +134,24 @@ public class CommonViewHolder extends RecyclerView.ViewHolder{
 
     /**
      * 使用View Tag来缓存一些信息
-     * @param reuse tag使用回调
+     * @param tagValue tag使用回调
      * @param <T> 模板
      */
-    public <T> void useViewTagCache(ViewTagReuse<T> reuse){
+    public <T> void useViewTagCache(ViewTagReuse<T> tagValue){
         T t= (T) mConvertView.getTag();
-        T newT=reuse.reuse(t);
-        mConvertView.setTag(t);
+        T newT=tagValue.reuse(t);
+        mConvertView.setTag(newT);
     }
 
-    public interface ViewTagReuse<T>{
-        T reuse(T tag);
+    /**
+     * 使用View Tag来缓存一些信息
+     * @param tagValue tag回调
+     * @param id 指定id
+     * @param <T> 模板
+     */
+    public <T> void useViewTagCache(ViewTagReuse<T> tagValue,int id){
+        T t= (T) mConvertView.getTag(id);
+        T newT=tagValue.reuse(t);
+        mConvertView.setTag(id,newT);
     }
 }

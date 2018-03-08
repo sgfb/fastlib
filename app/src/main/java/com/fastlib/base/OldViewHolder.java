@@ -2,6 +2,8 @@ package com.fastlib.base;
 
 import android.content.Context;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
+import android.support.annotation.DrawableRes;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.SparseArray;
@@ -25,7 +27,6 @@ public class OldViewHolder{
 		this.mViews = new SparseArray<>();
 		this.mConvertView = LayoutInflater.from(context).inflate(layoutId, parent, false);
 		this.mLayoutId=layoutId;
-		mConvertView.setTag(this);
 	}
 
 	/**
@@ -101,6 +102,16 @@ public class OldViewHolder{
 		imageView.setImageBitmap(BitmapFactory.decodeFile(path));
 	}
 
+	public void setImageFromResource(int viewId, @DrawableRes int drawableId){
+		ImageView imageView=getView(viewId);
+		imageView.setImageResource(drawableId);
+	}
+
+	public void setImageFromDrawable(int viewId, Drawable drawable){
+		ImageView imageView=getView(viewId);
+		imageView.setImageDrawable(drawable);
+	}
+
 	/**
 	 * 设置文本到到指定textview后面
 	 * @param viewId 指定view的id
@@ -167,10 +178,33 @@ public class OldViewHolder{
 
 	/**
 	 * 指定某view的可操作性
-	 * @param viewId
-	 * @param enabled
+	 * @param viewId 视图id
+	 * @param enabled 是否可操作
      */
 	public void setEnabled(int viewId, boolean enabled){
 		getView(viewId).setEnabled(enabled);
+	}
+
+	/**
+	 * 使用View Tag来缓存一些信息
+	 * @param tagValue tag使用回调
+	 * @param <T> 模板
+	 */
+	public <T> void useViewTagCache(ViewTagReuse<T> tagValue){
+		T t= (T) (mConvertView.getTag());
+		T newT=tagValue.reuse(t);
+		mConvertView.setTag(newT);
+	}
+
+	/**
+	 * 使用View Tag来缓存一些信息
+	 * @param tagValue tag回调
+	 * @param id 指定id
+	 * @param <T> 模板
+	 */
+	public <T> void useViewTagCache(ViewTagReuse<T> tagValue, int id){
+		T t= (T) mConvertView.getTag(id);
+		T newT=tagValue.reuse(t);
+		mConvertView.setTag(id,newT);
 	}
 }

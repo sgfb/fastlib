@@ -3,6 +3,28 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
+    
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.fastlib.widget.TitleBar
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@android:color/white"/>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="wrap_content"/>
+        
+        <View
+            android:layout_width="0dp"
+            android:layout_height="?android:actionBarSize"
+            android:layout_weight="1"
+            android:background="@android:color/white"/>
+    </LinearLayout>
 
     <Button
         android:id="@+id/bt"
@@ -16,8 +38,8 @@
         android:layout_height="wrap_content"
         android:text="bt2"/>
 
-    <TextView
-        android:id="@+id/tv"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+    <ListView
+        android:id="@+id/list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 </LinearLayout>

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.util.AttributeSet;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -15,7 +16,7 @@ import com.fastlib.utils.DensityUtils;
 
 /**
  * Created by sgfb on 17/3/27.
- * 通用标题栏,建议使用?android:actionBarSize作为高度
+ * 通用标题栏,minHeight为?android:actionBarSize
  */
 public class TitleBar extends FrameLayout{
     private TextView mTitle;
@@ -71,6 +72,10 @@ public class TitleBar extends FrameLayout{
         addView(mLeftIcon);
         addView(mRightText);
         addView(mRightIcon);
+
+        TypedValue tv=new TypedValue();
+        getContext().getTheme().resolveAttribute(android.R.attr.actionBarSize,tv,true);
+        setMinimumHeight(getContext().getResources().getDimensionPixelSize(tv.resourceId));
     }
 
     private void init(AttributeSet attrs){

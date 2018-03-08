@@ -86,9 +86,10 @@ public class EventObserver {
      * @param subscribe 订阅者
      */
     public synchronized void unsubscribe(Context context,Object subscribe){
-        List<String> events= mSubscriberToEvent.get(subscribe);
-        if(events==null||events.size()<=0)
+        List<String> realEvents=mSubscriberToEvent.get(subscribe);
+        if(realEvents==null||realEvents.size()<=0)
             return;
+        List<String> events= new ArrayList<>(realEvents);
         for(String event:events)
             unsubscribe(context,subscribe,event);
     }

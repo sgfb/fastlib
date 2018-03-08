@@ -1,9 +1,12 @@
 package com.fastlib.bean;
 
+import android.app.ActivityManager;
+import android.content.Context;
 import android.os.Build;
 
 import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Database;
+import com.fastlib.utils.NetUtils;
 
 import java.io.Serializable;
 
@@ -25,6 +28,37 @@ public class CrashExceptionBean{
     public String projectName= BuildConfig.APPLICATION_ID;
     public String abi;
     public String extra;
+
+    public CrashExceptionBean(){}
+
+    public CrashExceptionBean(Context context){
+        baseInfoCollection(context);
+    }
+
+    /**
+     * 基本信息收集.注意申请权限
+     */
+    public void baseInfoCollection(Context context){
+        ActivityManager am= (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        ActivityManager.MemoryInfo memoryInfo=new ActivityManager.MemoryInfo();
+
+        am.getMemoryInfo(memoryInfo);
+        totalMemory= (int) (memoryInfo.totalMem/1024/1024);
+        useMemory= (int) ((memoryInfo.totalMem-memoryInfo.availMem)/1024/1024);
+        if(NetUtils.isConnected(context))
+            netStatus=NetUtils.isWifi(context)?"WIFI":"Remote";
+        else netStatus="No connect";
+        if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.LOLLIPOP){
+            String[] abis=Build.SUPPORTED_ABIS;
+            StringBuilder sb=new StringBuilder();
+            for(String abi:abis)
+                sb.append(abi).append(",");
+            if(sb.length()>0)
+                sb.deleteCharAt(sb.length());
+            this.abi=sb.toString();
+        }
+        else this.abi="ABI:"+ Build.CPU_ABI+" ABI2:"+Build.CPU_ABI2;
+    }
 
     @Override
     public String toString() {

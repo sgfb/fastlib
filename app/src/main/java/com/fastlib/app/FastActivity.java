@@ -195,7 +195,7 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
     /**
      * 开启相机获取照片并且指定存储位置
      * @param photoResultListener 照相成功后回调
-     * @param path 指定路径,这个路径的文件不能已被创建
+     * @param path 指定路径
      */
     protected void openCamera(final PhotoResultListener photoResultListener, final String path) {
         mPermissionHelper.requestPermission(this,new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, new Runnable() {
