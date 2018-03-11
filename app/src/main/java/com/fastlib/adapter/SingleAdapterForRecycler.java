@@ -1,12 +1,9 @@
 package com.fastlib.adapter;
 
-import android.content.Context;
 import android.support.annotation.LayoutRes;
-import android.support.v7.widget.RecyclerView;
-import android.view.LayoutInflater;
-import android.view.ViewGroup;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
-import com.fastlib.app.FastActivity;
 import com.fastlib.base.CommonViewHolder;
 import com.fastlib.base.Refreshable;
 import com.fastlib.net.Listener;
@@ -15,68 +12,60 @@ import com.fastlib.net.Request;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.List;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 单请求绑定适配器,将视图与服务器中的数据捆绑
  * @param <T> 数据类型
  * @param <R> 返回类型
  */
-public abstract class SingleAdapterForRecycler<T,R> extends RecyclerView.Adapter<CommonViewHolder>  implements Listener<R,Object,Object> {
+public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T>  implements Listener<R,Object,Object> {
     private boolean isRefresh,isLoading,isMore;
-    private List<T> mData;
     private Refreshable mRefreshLayout;
-    private ThreadPoolExecutor mThreadPool;
     private int mPerCount; //每次读取条数，默认为1
-    private int mLayoutId;
-    protected Context mContext;
     protected Request mRequest;
 
-    public abstract Request generateRequest();
-
     /**
-     * 数据绑定视图
-     * @param position
-     * @param data
-     * @param holder
+     * 生成网络请求
+     * @return 网络请求
      */
-    public abstract void binding(int position,T data,CommonViewHolder holder);
+    public abstract @NonNull Request generateRequest();
 
     /**
      * 返回的数据转换
-     * @param result
-     * @return
+     * @param result 接口返回的数据
+     * @return 转换后适配器绑定数据列表
      */
-    public abstract List<T> translate(R result);
+    public abstract @Nullable List<T> translate(R result);
 
     /**
      * 请求更多数据时的请求
-     * @param request
+     * @param request 网络请求
      */
-    public abstract void getMoreDataRequest(Request request);
+    public abstract void getMoreDataRequest(@NonNull Request request);
 
     /**
      * 刷新数据时的请求
-     * @param request
+     * @param request 网络请求
      */
-    public abstract void getRefreshDataRequest(Request request);
+    public abstract void getRefreshDataRequest(@NonNull Request request);
 
-    public SingleAdapterForRecycler(Context context, @LayoutRes int layoutId){
-        this(context,layoutId,true);
+    public SingleAdapterForRecycler(){
+        this(-1);
     }
 
-    public SingleAdapterForRecycler(Context context, @LayoutRes int layoutId, boolean startNow){
-        mContext=context;
+    public SingleAdapterForRecycler(@LayoutRes int layoutId){
+        this(layoutId,true);
+    }
+
+    public SingleAdapterForRecycler(@LayoutRes int layoutId, boolean startNow){
+        super(layoutId);
         mRequest= generateRequest();
         mPerCount=1;
         isRefresh=true;
         isMore=true;
         isLoading=false;
-        mLayoutId=layoutId;
         mRequest.setGenericType(new Type[]{getResponseType()});
         mRequest.setListener(this);
-        if(mContext instanceof FastActivity)
-            ((FastActivity)mContext).addRequest(mRequest);
         if(startNow)
             refresh();
     }
@@ -100,7 +89,7 @@ public abstract class SingleAdapterForRecycler<T,R> extends RecyclerView.Adapter
         isLoading=true;
         isRefresh=false;
         getMoreDataRequest(mRequest);
-        mRequest.setExecutor(mThreadPool).start(false);
+        mRequest.start(false);
     }
 
     public void refresh(){
@@ -109,12 +98,7 @@ public abstract class SingleAdapterForRecycler<T,R> extends RecyclerView.Adapter
         //刷新之后也许有更多数据？
         isMore=true;
         getRefreshDataRequest(mRequest);
-        mRequest.setExecutor(mThreadPool).start(true);
-    }
-
-    @Override
-    public CommonViewHolder onCreateViewHolder(ViewGroup parent, int viewType){
-        return new CommonViewHolder(LayoutInflater.from(mContext).inflate(mLayoutId,parent,false));
+        mRequest.start(true);
     }
 
     @Override
@@ -122,11 +106,6 @@ public abstract class SingleAdapterForRecycler<T,R> extends RecyclerView.Adapter
         if(position>=getItemCount()-1&&isMore&&!isLoading)
             loadMoreData();
         binding(position,mData.get(position),holder);
-    }
-
-    @Override
-    public int getItemCount(){
-        return mData==null?0:mData.size();
     }
 
     @Override
@@ -152,7 +131,6 @@ public abstract class SingleAdapterForRecycler<T,R> extends RecyclerView.Adapter
                 mData.addAll(list);
         }
         notifyDataSetChanged();
-//        notifyItemRangeInserted(getItemCount()-list.size(),list.size());
     }
 
     @Override
@@ -160,14 +138,6 @@ public abstract class SingleAdapterForRecycler<T,R> extends RecyclerView.Adapter
         if(mRefreshLayout!=null)
             mRefreshLayout.setRefreshStatus(false);
         isLoading=false;
-    }
-
-    public ThreadPoolExecutor getThreadPool() {
-        return mThreadPool;
-    }
-
-    public void setThreadPool(ThreadPoolExecutor threadPool) {
-        mThreadPool = threadPool;
     }
 
     public Refreshable getRefreshLayout() {

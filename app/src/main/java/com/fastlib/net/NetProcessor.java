@@ -64,8 +64,10 @@ public class NetProcessor implements Runnable {
         mListener = l;
         mResponsePoster = new Executor() {
             @Override
-            public void execute(@NonNull Runnable command) {
-                handler.post(command);
+            public void execute(@NonNull Runnable command){
+                if(!mRequest.isCallbackByWorkThread())
+                    handler.post(command);
+                else command.run();
             }
         };
     }

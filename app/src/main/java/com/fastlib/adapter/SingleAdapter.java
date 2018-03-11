@@ -2,6 +2,7 @@ package com.fastlib.adapter;
 
 import android.content.Context;
 import android.support.annotation.LayoutRes;
+import android.support.annotation.NonNull;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -36,7 +37,7 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 	private int mPerCount; //每次读取条数，默认为1
 	protected boolean isRefresh,isMore,isLoading;
 
-	public abstract Request generateRequest();
+	public abstract @NonNull Request generateRequest();
 
 	/**
 	 * 数据绑定视图
@@ -51,19 +52,19 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 	 * @param result
 	 * @return
 	 */
-	public abstract List<T> translate(R result);
+	public abstract @NonNull List<T> translate(R result);
 
 	/**
 	 * 请求更多数据时的请求
 	 * @param request
 	 */
-	public abstract void getMoreDataRequest(Request request);
+	public abstract void getMoreDataRequest(@NonNull Request request);
 
 	/**
 	 * 刷新数据时的请求
 	 * @param request
 	 */
-	public abstract void getRefreshDataRequest(Request request);
+	public abstract void getRefreshDataRequest(@NonNull Request request);
 
 	public SingleAdapter(Context context, @LayoutRes int resId){
 		this(context,resId,true);

@@ -1,40 +1,59 @@
 package com.fastlib.adapter;
 
-import android.content.Context;
+import android.support.annotation.LayoutRes;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
+import com.fastlib.annotation.ContentView;
 import com.fastlib.base.CommonViewHolder;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by sgfb on 17/2/22.
- * Recycler单类型列表适配器
+ * Created by sgfb on 18/3/9.
+ * 抽出公共功能的基本RecyclerView适配器.支持ContentView注解
  */
-public abstract class FastAdapterForRecycler<T> extends RecyclerView.Adapter<CommonViewHolder>{
-    private int mItemId;
-    private List<T> mData;
-    protected Context mContext;
+public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonViewHolder>{
+    protected int mItemId;
+    protected List<T> mData;
 
+    /**
+     * 数据绑定
+     * @param position 位置
+     * @param data 数据
+     * @param holder 视图持有者
+     */
     public abstract void binding(int position,T data,CommonViewHolder holder);
 
-    public FastAdapterForRecycler(Context context,int itemId){
-        this(context,itemId,null);
+    public BaseRecyAdapter(){
+        this(-1,null);
     }
 
-    public FastAdapterForRecycler(Context context,int itemId,List<T> data){
-        mItemId = itemId;
-        mData = data;
-        mContext = context;
-        if(mData==null)
-            mData=new ArrayList<>();
+    public BaseRecyAdapter(List<T> initList){
+        this(-1,initList);
     }
 
-    public T getItemAtPosition(int position){
-        return mData.get(position);
+    public BaseRecyAdapter(@LayoutRes int layoutId){
+        this(layoutId,null);
+    }
+
+    public BaseRecyAdapter(@LayoutRes int layoutId,List<T> initList){
+        //如果layoutId参数不标准的情况下尝试使用ContentView注解
+        if(layoutId>0) mItemId=layoutId;
+        else{
+            ContentView cv=getClass().getAnnotation(ContentView.class);
+            if(cv==null) throw new IllegalArgumentException("没有指定LayoutId和ContentView注解");
+            mItemId=cv.value();
+        }
+        if(initList==null) mData=new ArrayList<>();
+        else mData=initList;
+    }
+
+    @Override
+    public CommonViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        return new CommonViewHolder(LayoutInflater.from(parent.getContext()).inflate(mItemId,parent,false));
     }
 
     @Override
@@ -43,18 +62,34 @@ public abstract class FastAdapterForRecycler<T> extends RecyclerView.Adapter<Com
     }
 
     @Override
-    public CommonViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        return new CommonViewHolder(LayoutInflater.from(mContext).inflate(mItemId,null));
-    }
-
-    @Override
     public int getItemCount() {
         return mData==null?0:mData.size();
     }
 
+    /**
+     * 设置绑定数据列表
+     * @param list 数据列表
+     */
     public void setData(List<T> list){
         mData=list;
         notifyDataSetChanged();
+    }
+
+    /**
+     * 获取绑定数据列表
+     * @return 数据列表
+     */
+    public List<T> getData(){
+        return mData;
+    }
+
+    /**
+     * 获取指定位置数据
+     * @param position 指定位置
+     * @return 指定位置数据
+     */
+    public T getItemAtPosition(int position){
+        return mData.get(position);
     }
 
     /**
@@ -70,7 +105,7 @@ public abstract class FastAdapterForRecycler<T> extends RecyclerView.Adapter<Com
     }
 
     /**
-     * 插入到尾部，不开动画效果
+     * 插入到尾部，没有动画效果
      * @param data
      */
     public void addData(T data){
@@ -92,16 +127,16 @@ public abstract class FastAdapterForRecycler<T> extends RecyclerView.Adapter<Com
 
     /**
      * 插入数据到尾部，不显示动画效果
-     * @param data
+     * @param list 数据列表
      */
-    public void addData(List<T> data){
-        mData.addAll(data);
+    public void addData(List<T> list){
+        mData.addAll(list);
         notifyDataSetChanged();
     }
 
     /**
      * 删除某个数据，不显示动画效果
-     * @param data
+     * @param data 数据
      */
     public void remove(T data){
         mData.remove(data);
@@ -110,7 +145,7 @@ public abstract class FastAdapterForRecycler<T> extends RecyclerView.Adapter<Com
 
     /**
      * 删除某个位置的数据，不显示动画效果
-     * @param position
+     * @param position 指定删除位置
      */
     public void remove(int position){
         remove(position,false);
@@ -138,9 +173,5 @@ public abstract class FastAdapterForRecycler<T> extends RecyclerView.Adapter<Com
             mData.remove(position);
         if(anim) notifyItemRangeRemoved(position,count);
         else notifyDataSetChanged();
-    }
-
-    public List<T> getData(){
-        return mData;
     }
 }

@@ -3,6 +3,7 @@ package com.fastlib;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.fastlib.adapter.BaseRecyAdapter;
 import com.fastlib.adapter.FastAdapter;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.base.CommonViewHolder;
@@ -15,14 +16,10 @@ import java.util.List;
  * Created by sgfb on 18/3/7.
  */
 @ContentView(R.layout.item)
-public class MyAdapter extends FastAdapter<String>{
-
-    public MyAdapter(List<String> initData) {
-        super(initData);
-    }
+public class MyAdapter extends BaseRecyAdapter<String> {
 
     @Override
-    public void binding(int position, String data, final OldViewHolder holder) {
+    public void binding(int position, String data, final CommonViewHolder holder) {
         holder.setText(R.id.text,data);
         ((ImageView)holder.getView(R.id.image)).setImageResource(R.mipmap.ic_launcher);
         holder.setOnClickListener(R.id.image, new View.OnClickListener() {
@@ -40,5 +37,9 @@ public class MyAdapter extends FastAdapter<String>{
                 else return tag;
             }
         });
+    }
+
+    public MyAdapter(List<String> initData) {
+        super(initData);
     }
 }

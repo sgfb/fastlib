@@ -39,6 +39,7 @@ public class Request{
     private static Request sPool;
     private static int sPoolSize = 0;
 
+    private boolean isCallbackByWorkThread; //特殊情况下建议网络请求在工作线程回调
     private boolean isCancel;
     private boolean isSuppressWarning;  //压制警告
     private boolean isAcceptGlobalCallback; //是否接受全局回调监听.默认true
@@ -949,6 +950,14 @@ public class Request{
 
     public void reverseCancel(){
         isCancel=false;
+    }
+
+    public boolean isCallbackByWorkThread() {
+        return isCallbackByWorkThread;
+    }
+
+    public void setCallbackByWorkThread(boolean callbackByWorkThread) {
+        isCallbackByWorkThread = callbackByWorkThread;
     }
 
     /**
