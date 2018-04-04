@@ -8,18 +8,33 @@ import android.util.AttributeSet;
 import android.view.View;
 
 /**
- * 多页滚动时可以使用的底部圆点
+ * 适用于轮播底部圆点 特点：
+ * 1.默认除了mIndex的圆点其他圆点都是半透明
+ * 2.点居中,两边没有额外的间隙与圆间距相等
  */
 public class Indicator extends View{
+	private final int BASE_CIRCLE_SIZE=4; //基础大小 dp单位
+
 	//总共页数（圆点数）
-	private int mPageCount=0;
-	//默认除了mIndex的圆点其他圆点都是半透明
+	private int mCount=0;
 	private int mIndex=0;
+	private float mCircleRadius=BASE_CIRCLE_SIZE;
 	private Paint mSelectPaint;
 	private Paint mUnSelectPaint;
 	
 	public Indicator(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		init();
+	}
+	
+	public Indicator(Context context, int pageCount, int index){
+		super(context);
+		mIndex=index;
+		mCount =pageCount;
+		init();
+	}
+
+	private void init(){
 		mSelectPaint =new Paint();
 		mUnSelectPaint=new Paint();
 		//灰色，抗锯齿
@@ -30,28 +45,16 @@ public class Indicator extends View{
 		mUnSelectPaint.setAlpha(120);
 	}
 	
-	public Indicator(Context context, int pageCount, int index){
-		super(context);
-		mIndex=index;
-		mPageCount=pageCount;
-	}
-	
 	@Override
 	public void onDraw(Canvas canvas){
 		int width=canvas.getWidth();
 		int height=canvas.getHeight();
-		int circleDiameter=width/480*8;
-		int circleSpacing=circleDiameter*3;
-		//两边空隙,其中一边的长度
-		int doubleSpacing=(width-(mPageCount-1)*(circleDiameter+circleSpacing))/2;
-		Paint currentPaint;
+		float circleSpacing=width/(mCount+1); //圆心间隔
+		Paint currPaint;
 
-		for(int i=0;i<mPageCount;i++){
-			if(mPageCount-i-1!=mIndex)
-				currentPaint=mUnSelectPaint;
-			else
-				currentPaint=mSelectPaint;
-			canvas.drawCircle(width-doubleSpacing-(circleDiameter+circleSpacing)*i,height/2,circleDiameter,currentPaint);
+		for(int i=0;i<mCount;i++){
+			currPaint=(i==mIndex)?mSelectPaint:mUnSelectPaint;
+			canvas.drawCircle(circleSpacing*(i+1),height/2,mCircleRadius,currPaint);
 		}
 	}
 	
@@ -61,23 +64,32 @@ public class Indicator extends View{
 	}
 	
 	public void setItemCount(int count){
-		mPageCount=count;
+		mCount =count;
 		invalidate();
 	}
 
-	public void setSelectPaint(Paint paint){
+	public void setSelectColor(Paint paint){
 		mSelectPaint=paint;
 	}
 
-	public void setUnSelectPaint(Paint paint){
+	public void setUnSelectColor(Paint paint){
 		mUnSelectPaint=paint;
 	}
 
-	public void setSelectPaint(int color){
+	public void setSelectColor(int color){
 		mSelectPaint.setColor(color);
 	}
 
-	public void setUnSelectPaint(int color){
+	public void setUnSelectColor(int color){
 		mUnSelectPaint.setColor(color);
+	}
+
+	public void setCircleSize(float circleSize){
+		mCircleRadius=circleSize;
+		invalidate();
+	}
+
+	public float getCircleSize(){
+		return mCircleRadius;
 	}
 }

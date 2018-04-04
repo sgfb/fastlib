@@ -7,7 +7,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -16,10 +15,8 @@ import com.fastlib.db.ServerCache;
 import com.google.gson.Gson;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -63,7 +60,7 @@ public class Request{
     private Object mTag; //额外信息
     private Pair<String,String>[] mReceiveCookies; //留存的cookies
     //加入activity或者fragment可以提升安全性
-    private Activity mActivity;
+    private Context mContext;
     private Fragment mFragment;
     private Listener mListener;
     private Type[] mGenericType; //根据Listener生成的返回类类型存根
@@ -153,7 +150,7 @@ public class Request{
         mType = RequestType.DEFAULT;
         mTag = null;
         mReceiveCookies = null;
-        mActivity = null;
+        mContext = null;
         mFragment = null;
         mListener = null;
         mGenericType = null;
@@ -190,7 +187,7 @@ public class Request{
     }
 
     public void start(boolean forceRefresh, Activity activity)  {
-        mActivity = activity;
+        mContext = activity;
         start(forceRefresh);
     }
 
@@ -705,13 +702,12 @@ public class Request{
     }
 
     public Request setHost(Context context){
-        if (context instanceof Activity)
-            mActivity = (Activity) context;
+        mContext=context;
         return this;
     }
 
     public Request setHost(Activity activity) {
-        mActivity = activity;
+        mContext = activity;
         return this;
     }
 
@@ -865,8 +861,8 @@ public class Request{
     public Object getHost() {
         if (mFragment != null)
             return mFragment;
-        if (mActivity != null)
-            return mActivity;
+        if (mContext != null)
+            return mContext;
         return null;
     }
 

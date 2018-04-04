@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Parcelable;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
@@ -18,14 +17,13 @@ import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.LocalData;
 import com.fastlib.db.And;
-import com.fastlib.db.FastDatabase;
 import com.fastlib.db.Condition;
+import com.fastlib.db.FastDatabase;
 import com.fastlib.db.SaveUtil;
 import com.google.gson.Gson;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -44,6 +42,8 @@ public class LocalDataInject{
     private Activity mActivity;
     private Fragment mFragment;
     private List<Pair<Field,LocalData>> mChildActivityGiver = new ArrayList<>(); //子Activity返回时获取Intent中数据
+    private List<Pair<Method,LocalData>> mDelayToggleList=new ArrayList<>(); //延迟触发的本地数据注入方法
+    private List<Pair<Method,LocalData>> mChildToggle2=new ArrayList<>();  //子模块返回后触发的方法
     private SparseArray<Object[]> mToggleData = new SparseArray<>(); //触发后读取数据缓存点
     private Map<Class<? extends View>,LocalDataViewActive<?>> mLocalDataViewMap=new HashMap<>();
 
@@ -59,6 +59,25 @@ public class LocalDataInject{
         mLocalDataViewMap.put(cla,actives);
     }
 
+    public void toggleDelayLocalDataMethod(){
+        for(Pair<Method,LocalData> pair:mDelayToggleList){
+            LocalData ld=pair.second;
+            Object[] args=new Object[ld.value().length];
+            Bundle bundle=mActivity!=null?mActivity.getIntent().getExtras():mFragment.getArguments();
+            for(int i=0;i<args.length;i++){
+                String key=ld.value()[i];
+                args[i]=bundle.get(key);
+            }
+            try {
+                pair.first.invoke(getHost(),args);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     /**
      * 处理子Activity返回的Intent中包含所需的数据
      * @param data 数据包裹
@@ -70,6 +89,23 @@ public class LocalDataInject{
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
+        for(Pair<Method,LocalData> pair:mChildToggle2){
+            if(data==null) return;
+            LocalData ld=pair.second;
+            Object[] args=new Object[ld.value().length];
+            Bundle innerBundle=data.getExtras();
+            for(int i=0;i<ld.value().length;i++){
+                String key=ld.value()[i];
+                args[i]=innerBundle.get(key);
+            }
+            try {
+                pair.first.invoke(getHost(),args);
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -87,7 +123,7 @@ public class LocalDataInject{
                 if (lr == null)
                     continue;
                 try {
-                    switch (lr.from()[0]) {
+                    switch (lr.from()) {
                         case INTENT_PARENT:
                             loadLocalDataFromIntent(null,field, lr);
                             break;
@@ -120,42 +156,50 @@ public class LocalDataInject{
                 m.setAccessible(true);
                 final LocalData ld = m.getAnnotation(LocalData.class);
                 final Bind bind = m.getAnnotation(Bind.class);
-                if (ld != null && bind != null){
-                    View v = mActivity==null?mFragment.getView().findViewById(bind.value()[0]):mActivity.findViewById(bind.value()[0]);
-                    switch (bind.bindType()) {
-                        case CLICK:
-                            v.setOnClickListener(new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    invokeToggleCallback(v, m, ld, bind.bindType(), this, null, null, null);
-                                }
-                            });
-                            break;
-                        case LONG_CLICK:
-                            v.setOnLongClickListener(new View.OnLongClickListener() {
-                                @Override
-                                public boolean onLongClick(View v) {
-                                    invokeToggleCallback(v, m, ld, bind.bindType(), null, this, null, null);
-                                    return false;
-                                }
-                            });
-                            break;
-                        case ITEM_CLICK:
-                            ((AdapterView) v).setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                                @Override
-                                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                                    invokeToggleCallback(parent, m, ld, bind.bindType(), null, null, this, null);
-                                }
-                            });
-                            break;
-                        case ITEM_LONG_CLICK:
-                            ((AdapterView) v).setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-                                @Override
-                                public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                                    invokeToggleCallback(parent, m, ld, bind.bindType(), null, null, null, this);
-                                    return false;
-                                }
-                            });
+                if (ld != null){
+                    if(bind != null){ //视图触发
+                        View v = mActivity==null?mFragment.getView().findViewById(bind.value()[0]):mActivity.findViewById(bind.value()[0]);
+                        switch (bind.bindType()) {
+                            case CLICK:
+                                v.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        invokeToggleCallback(v, m, ld, bind.bindType(), this, null, null, null);
+                                    }
+                                });
+                                break;
+                            case LONG_CLICK:
+                                v.setOnLongClickListener(new View.OnLongClickListener() {
+                                    @Override
+                                    public boolean onLongClick(View v) {
+                                        invokeToggleCallback(v, m, ld, bind.bindType(), null, this, null, null);
+                                        return false;
+                                    }
+                                });
+                                break;
+                            case ITEM_CLICK:
+                                ((AdapterView) v).setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                    @Override
+                                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                                        invokeToggleCallback(parent, m, ld, bind.bindType(), null, null, this, null);
+                                    }
+                                });
+                                break;
+                            case ITEM_LONG_CLICK:
+                                ((AdapterView) v).setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+                                    @Override
+                                    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                                        invokeToggleCallback(parent, m, ld, bind.bindType(), null, null, null, this);
+                                        return false;
+                                    }
+                                });
+                        }
+                    }
+                    else{ //延迟或子模块触发
+                        if(ld.from()== LocalData.GiverType.INTENT_CHILD){
+                            mChildToggle2.add(Pair.create(m,ld));
+                        }
+                        else mDelayToggleList.add(Pair.create(m,ld));
                     }
                 }
             }
@@ -259,7 +303,7 @@ public class LocalDataInject{
     private Object[] loadLocalData(LocalData ld,Class<?>[] param) {
         Object[] datas = new Object[ld.value().length];
         for (int i = 0; i < datas.length; i++) {
-            switch (ld.from()[i]){
+            switch (ld.from()){
                 case INTENT_PARENT:
                     datas[i] = loadLocalDataFromIntent(i, ld);
                     break;
@@ -425,5 +469,9 @@ public class LocalDataInject{
             }
             else field.set(host,value);
         }
+    }
+
+    private Object getHost(){
+        return mActivity==null?mFragment:mActivity;
     }
 }

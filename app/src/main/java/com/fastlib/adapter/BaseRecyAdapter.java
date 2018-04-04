@@ -3,6 +3,7 @@ package com.fastlib.adapter;
 import android.support.annotation.LayoutRes;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import com.fastlib.annotation.ContentView;
@@ -16,8 +17,13 @@ import java.util.List;
  * 抽出公共功能的基本RecyclerView适配器.支持ContentView注解
  */
 public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonViewHolder>{
+    public static final int TYPE_HEAD=1;
+    public static final int TYPE_BOTTOM=2;
+
     protected int mItemId;
     protected List<T> mData;
+    protected CommonViewHolder mHeadViewHolder;
+    protected CommonViewHolder mBottomViewHolder;
 
     /**
      * 数据绑定
@@ -52,18 +58,48 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
     }
 
     @Override
-    public CommonViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public int getItemViewType(int position) {
+        if(position==0&&mHeadViewHolder!=null) return TYPE_HEAD;
+        else if(position==getItemCount()-1&&mBottomViewHolder!=null) return TYPE_BOTTOM;
+        return 0;
+    }
+
+    @Override
+    public CommonViewHolder onCreateViewHolder(ViewGroup parent, int viewType){
+        if(viewType==TYPE_HEAD) return mHeadViewHolder;
+        else if(viewType==TYPE_BOTTOM) return mBottomViewHolder;
         return new CommonViewHolder(LayoutInflater.from(parent.getContext()).inflate(mItemId,parent,false));
     }
 
     @Override
-    public void onBindViewHolder(CommonViewHolder holder, int position) {
-        binding(position,getItemAtPosition(position),holder);
+    public void onBindViewHolder(CommonViewHolder holder, int position){
+        int type=getItemViewType(position);
+        if(type!=TYPE_HEAD&&type!=TYPE_BOTTOM)
+            binding(position,getItemAtPosition(position),holder);
     }
 
     @Override
-    public int getItemCount() {
-        return mData==null?0:mData.size();
+    public int getItemCount(){
+        int extraItem=(mHeadViewHolder!=null?1:0)+(mBottomViewHolder!=null?1:0);
+        return mData==null?extraItem:mData.size()+extraItem;
+    }
+
+    /**
+     * 设置头部视图
+     * @param headView 头部视图
+     */
+    public void setHeadView(View headView){
+        mHeadViewHolder=new CommonViewHolder(headView);
+        notifyDataSetChanged();
+    }
+
+    /**
+     * 设置尾部视图
+     * @param bottomView 尾部视图
+     */
+    public void setBottomView(View bottomView){
+        mBottomViewHolder=new CommonViewHolder(bottomView);
+        notifyDataSetChanged();
     }
 
     /**
@@ -89,7 +125,8 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
      * @return 指定位置数据
      */
     public T getItemAtPosition(int position){
-        return mData.get(position);
+        if((mHeadViewHolder!=null&&position==0)||(mBottomViewHolder!=null&&position==getItemCount()-1)) return null;
+        return mData.get(mHeadViewHolder!=null?position-1:position);
     }
 
     /**

@@ -344,6 +344,7 @@ public abstract class FastFragment extends Fragment implements Deferrable{
                         }
                     }
                     alreadyPrepared();
+                    mLocalDataInject.toggleDelayLocalDataMethod();
                 }
             });
     }

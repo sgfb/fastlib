@@ -9,7 +9,7 @@ import android.widget.TextView;
 
 /**
  * Created by sgfb on 17/2/22.
- * Recycler通用ViewHolder。应只使用在单类型列表中
+ * Recycler通用ViewHolder.应只使用在单类型列表中
  */
 public class CommonViewHolder extends RecyclerView.ViewHolder{
     private SparseArray<View> mViews;
@@ -23,7 +23,7 @@ public class CommonViewHolder extends RecyclerView.ViewHolder{
 
     /**
      * 获取根View
-     * @return
+     * @return 根View
      */
     public View getConvertView() {
         return mConvertView;
@@ -31,8 +31,8 @@ public class CommonViewHolder extends RecyclerView.ViewHolder{
 
     /**
      * 获取子View
-     * @param viewId
-     * @return
+     * @param viewId 视图ID
+     * @return 对应id的子view
      */
     @SuppressWarnings("unchecked")
     public <V extends View> V getView(int viewId) {
@@ -46,8 +46,8 @@ public class CommonViewHolder extends RecyclerView.ViewHolder{
 
     /**
      * 绑定指定ID的文本信息
-     * @param viewId
-     * @param str
+     * @param viewId TextView视图ID
+     * @param str 填充字符
      */
     public void setText(int viewId, String str) {
         TextView textView = getView(viewId);

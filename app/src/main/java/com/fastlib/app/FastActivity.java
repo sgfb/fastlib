@@ -392,6 +392,7 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
                     alreadyPrepared();
                     if(isHadTransitionAnimation)
                         supportStartPostponedEnterTransition();
+                    mLocalDataInject.toggleDelayLocalDataMethod();
                 }
             });
     }

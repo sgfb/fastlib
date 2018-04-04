@@ -20,8 +20,8 @@ import java.util.List;
  */
 public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T>  implements Listener<R,Object,Object> {
     private boolean isRefresh,isLoading,isMore;
-    private Refreshable mRefreshLayout;
     private int mPerCount; //每次读取条数，默认为1
+    private Refreshable mRefreshLayout;
     protected Request mRequest;
 
     /**

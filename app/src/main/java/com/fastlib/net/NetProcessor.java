@@ -21,7 +21,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
@@ -240,7 +239,7 @@ public class NetProcessor implements Runnable {
      * @throws BreakoutException
      */
     private void checkBreakout() throws BreakoutException{
-        if(Thread.currentThread().isInterrupted()) throw new BreakoutException();
+        if(Thread.currentThread().isInterrupted()||mRequest.isCancel()) throw new BreakoutException();
     }
 
     /**
@@ -626,7 +625,7 @@ public class NetProcessor implements Runnable {
 
     public Context getHostContext() {
         Object host = mRequest.getHost();
-        if (host instanceof Activity) return (Context) host;
+        if (host instanceof Context) return (Context) host;
         else if (host instanceof Fragment) return ((Fragment) host).getContext();
         return null;
     }
