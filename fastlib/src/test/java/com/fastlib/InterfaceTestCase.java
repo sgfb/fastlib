@@ -1,8 +1,8 @@
-package com.fastlib.Bean;
+package com.fastlib;
 
 import android.text.TextUtils;
 
-import com.fastlib.InterfaceTest;
+import com.fastlib.Bean.Bean;
 import com.fastlib.net.Request;
 import com.fastlib.net.SimpleMockProcessor;
 import com.fastlib.utils.SessionCheck;
@@ -17,8 +17,8 @@ import org.junit.Assert;
 
 /**
  * Created by sgfb on 18/3/10.
+ * 顺序调起测试案例
  */
-
 public class InterfaceTestCase extends TestCase{
 
     public InterfaceTestCase(String name) {
@@ -72,6 +72,14 @@ public class InterfaceTestCase extends TestCase{
 
     private void interfaceTestExample(SimpleMockProcessor mock)throws Exception{
         interfaceTestExample(null,mock);
+        TestUtil.netInterfaceCheck(new Request("http://www.baidu.com"), new TypeToken<Bean>() {
+        },new SessionCheck<Bean>() {
+            @Override
+            public String check(Bean entity) {
+                //自定义业务逻辑检查
+                return null;
+            }
+        });
     }
 
     private void interfaceTestExample(String url,SimpleMockProcessor mock) throws Exception {
