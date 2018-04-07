@@ -16,6 +16,9 @@ import android.widget.WrapperListAdapter;
 
 import java.util.ArrayList;
 
+/**
+ * 来自谷歌开源库
+ */
 public class HeaderGridView extends GridView {
     private static final String TAG = "HeaderGridView";
     /**

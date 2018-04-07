@@ -1,11 +1,15 @@
 package com.fastlib.adapter;
 
 import android.support.annotation.LayoutRes;
+import android.support.v4.widget.Space;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.FrameLayout;
 
+import com.fastlib.R;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.base.CommonViewHolder;
 
@@ -24,6 +28,8 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
     protected List<T> mData;
     protected CommonViewHolder mHeadViewHolder;
     protected CommonViewHolder mBottomViewHolder;
+    protected OnItemClickListener<T> mItemClickListener;
+    private ExtraItemBean mHeadItemBean,mBottomItemBean;
 
     /**
      * 数据绑定
@@ -59,47 +65,91 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
 
     @Override
     public int getItemViewType(int position) {
-        if(position==0&&mHeadViewHolder!=null) return TYPE_HEAD;
-        else if(position==getItemCount()-1&&mBottomViewHolder!=null) return TYPE_BOTTOM;
+        if(position==0&&mHeadItemBean!=null) return TYPE_HEAD;
+        else if(position==getItemCount()-1&&mBottomItemBean!=null) return TYPE_BOTTOM;
         return 0;
     }
 
     @Override
     public CommonViewHolder onCreateViewHolder(ViewGroup parent, int viewType){
-        if(viewType==TYPE_HEAD) return mHeadViewHolder;
-        else if(viewType==TYPE_BOTTOM) return mBottomViewHolder;
-        return new CommonViewHolder(LayoutInflater.from(parent.getContext()).inflate(mItemId,parent,false));
+        if(viewType==TYPE_HEAD){
+            if(mHeadViewHolder==null) {
+                View headView = LayoutInflater.from(parent.getContext()).inflate(mHeadItemBean.layoutId, parent, false);
+                if(mHeadItemBean.callback!=null)
+                    mHeadItemBean.callback.extraItemCreated(headView);
+                mHeadViewHolder = new CommonViewHolder(headView);
+            }
+            return mHeadViewHolder;
+        }
+        else if(viewType==TYPE_BOTTOM){
+            if(mBottomViewHolder==null){
+                View bottomView=LayoutInflater.from(parent.getContext()).inflate(mBottomItemBean.layoutId,parent,false);
+                if(mBottomItemBean.callback!=null)
+                    mBottomItemBean.callback.extraItemCreated(bottomView);
+                mBottomViewHolder=new CommonViewHolder(bottomView);
+            }
+            return mBottomViewHolder;
+        }
+        View itemView=LayoutInflater.from(parent.getContext()).inflate(mItemId,parent,false);
+        return new CommonViewHolder(itemView);
     }
 
     @Override
-    public void onBindViewHolder(CommonViewHolder holder, int position){
+    public void onBindViewHolder(final CommonViewHolder holder, final int position){
         int type=getItemViewType(position);
-        if(type!=TYPE_HEAD&&type!=TYPE_BOTTOM)
-            binding(position,getItemAtPosition(position),holder);
+        if(type!=TYPE_HEAD&&type!=TYPE_BOTTOM) {
+            holder.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(mItemClickListener!=null) mItemClickListener.onItemClick(position,holder,getItemAtPosition(position));
+                }
+            });
+            binding(position, getItemAtPosition(position), holder);
+        }
     }
 
     @Override
     public int getItemCount(){
-        int extraItem=(mHeadViewHolder!=null?1:0)+(mBottomViewHolder!=null?1:0);
+        int extraItem=(mHeadItemBean!=null?1:0)+(mBottomItemBean!=null?1:0);
         return mData==null?extraItem:mData.size()+extraItem;
     }
 
     /**
      * 设置头部视图
-     * @param headView 头部视图
+     * @param layoutId 视图布局id
+     * @param callback 视图生成后回调
      */
-    public void setHeadView(View headView){
-        mHeadViewHolder=new CommonViewHolder(headView);
+    public void setHeadView(int layoutId,OnExtraItemCreateCallback callback){
+        mHeadItemBean=new ExtraItemBean(layoutId,callback);
         notifyDataSetChanged();
     }
 
     /**
      * 设置尾部视图
-     * @param bottomView 尾部视图
+     * @param layoutId 视图布局id
+     * @param callback 视图生成后回调
      */
-    public void setBottomView(View bottomView){
-        mBottomViewHolder=new CommonViewHolder(bottomView);
+    public void setBottomView(int layoutId,OnExtraItemCreateCallback callback){
+        mBottomItemBean=new ExtraItemBean(layoutId,callback);
         notifyDataSetChanged();
+    }
+
+    /**
+     * 获取头部视图
+     * @return 如果头部不为空返回头部视图，否则返回null
+     */
+    public View getHeadView(){
+        if(mHeadViewHolder!=null) return mHeadViewHolder.getConvertView();
+        return null;
+    }
+
+    /**
+     * 获取尾部视图
+     * @return 如果尾部视图不为空返回尾部视图，否则返回null
+     */
+    public View getBottomView(){
+        if(mBottomViewHolder!=null) return mBottomViewHolder.getConvertView();
+        return null;
     }
 
     /**
@@ -210,5 +260,39 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
             mData.remove(position);
         if(anim) notifyItemRangeRemoved(position,count);
         else notifyDataSetChanged();
+    }
+
+    /**
+     * 设置item点击监听
+     * @param listener item点击监听
+     */
+    public void setOnItemClickListener(OnItemClickListener<T> listener){
+        mItemClickListener=listener;
+        notifyDataSetChanged();
+    }
+
+    /**
+     * 头部和尾部额外视图生成后回调
+     */
+    public interface OnExtraItemCreateCallback{
+        void extraItemCreated(View view);
+    }
+
+    /**
+     * item点击回调
+     * @param <T> 跟随适配器泛型类
+     */
+    public interface OnItemClickListener<T>{
+        void onItemClick(int position,CommonViewHolder holder,T data);
+    }
+
+    class ExtraItemBean{
+        int layoutId;
+        OnExtraItemCreateCallback callback;
+
+        public ExtraItemBean(int layoutId, OnExtraItemCreateCallback callback) {
+            this.layoutId = layoutId;
+            this.callback = callback;
+        }
     }
 }
