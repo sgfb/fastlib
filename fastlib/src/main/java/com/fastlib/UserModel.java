@@ -1,30 +1,14 @@
 package com.fastlib;
 
-import com.fastlib.net.Request;
-import com.fastlib.net.SimpleListener;
 import com.processor.Net;
 import com.processor.Url;
 
 /**
- * Created by sgfb on 18/4/22.
+ * Created by Administrator on 2018/4/24.
  */
 @Net
-public class UserModel{
+public interface UserModel{
 
-    @Url("http://www.baidu.com")
-    String login(String name,String phone){
-        Request request=new Request("url");
-        request.setListener(new SimpleListener<String>(){
-
-            @Override
-            public void onResponseListener(Request r, String result) {
-                loginCallback(result);
-            }
-        });
-        return null;
-    }
-
-    void loginCallback(String result){
-
-    }
+    @Url("http://www.baidu2222.com")
+    String login(String phone,String pwd);
 }

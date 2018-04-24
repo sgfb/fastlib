@@ -10,14 +10,15 @@ import com.processor.Net;
  */
 @ContentView(R.layout.act_main)
 public class MainActivity extends FastActivity{
+    MainPresenter mPresenter;
 
     @Override
     protected void alreadyPrepared(){
-
+        mPresenter=new MainPresenter();
     }
 
     @Bind(R.id.bt)
     private void commit(){
-
+        mPresenter.login("1234","123");
     }
 }
