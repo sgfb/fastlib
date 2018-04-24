@@ -18,6 +18,10 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicBlur;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.View;
@@ -47,6 +51,29 @@ public class ImageUtil{
         mLastUri=uri;
         edit.putString(KEY_LAST_IMAGE, uri.toString());
         edit.apply();
+    }
+
+    /**
+     * 高斯模糊
+     * @param context 上下文
+     * @param bitmap 位图
+     * @param radius 高斯模糊等级 最高25
+     * @return 高斯模糊后的位图
+     */
+    @TargetApi(17)
+    public static Bitmap getBlueBitmap(Context context,Bitmap bitmap,int radius){
+        Bitmap blueBitmap=Bitmap.createBitmap(bitmap.getWidth(),bitmap.getHeight(),bitmap.getConfig());
+        RenderScript rs=RenderScript.create(context);
+        Allocation inAllocation=Allocation.createFromBitmap(rs,blueBitmap);
+        Allocation outAllocation=Allocation.createTyped(rs,inAllocation.getType());
+        ScriptIntrinsicBlur blue=ScriptIntrinsicBlur.create(rs, Element.U8_4(rs));
+
+        blue.setInput(inAllocation);
+        blue.setRadius(radius);
+        blue.forEach(outAllocation);
+        outAllocation.copyTo(blueBitmap);
+        rs.destroy();
+        return blueBitmap;
     }
 
     /**

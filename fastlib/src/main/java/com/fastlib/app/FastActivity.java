@@ -63,7 +63,6 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
     private boolean isHadTransitionAnimation=false;
     private LocalDataInject mLocalDataInject;
     private PhotoResultListener mPhotoResultListener;
-    private TaskLauncher mTaskLauncher;
     private LoadingDialog mLoading;
     private List<Request> mRequests = new ArrayList<>();
     private ViewStub mViewStub;
@@ -84,7 +83,6 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
         mPermissionHelper=new PermissionHelper();
         mLocalDataInject=new LocalDataInject(this);
         mThreadPool=generateThreadPool();
-        mTaskLauncher=new TaskLauncher(this,mThreadPool);
         checkTransitionInject();
         mThreadPool.execute(new Runnable(){
             @Override
@@ -155,8 +153,10 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
      * 开始线性任务
      * @param task 任务
      */
-    public void startTask(Task task){
-        mTaskLauncher.startTask(task);
+    public TaskLauncher startTask(Task task){
+        TaskLauncher taskLauncher=new TaskLauncher(this,mThreadPool);
+        taskLauncher.startTask(task);
+        return taskLauncher;
     }
 
     /**
@@ -165,11 +165,13 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
      * @param exceptionHandler 异常处理
      * @param lastAction 尾回调
      */
-    public void startTask(Task task, NoReturnAction<Throwable> exceptionHandler,EmptyAction lastAction){
-        mTaskLauncher
+    public TaskLauncher startTask(Task task, NoReturnAction<Throwable> exceptionHandler,EmptyAction lastAction){
+        TaskLauncher taskLauncher=new TaskLauncher(this,mThreadPool);
+        taskLauncher
                 .setExceptionHandler(exceptionHandler)
                 .setLastTask(lastAction)
                 .startTask(task);
+        return taskLauncher;
     }
 
     /**

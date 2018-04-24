@@ -1,1 +1,1 @@
-include ':fastlib'
+include ':fastlib', ':processor'
