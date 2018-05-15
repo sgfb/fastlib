@@ -82,8 +82,8 @@ public class ResponseJsonConvert{
      * @param entity
      *//*
 
-    private void prepareGenerateJsonEntity(String URL, JsonObject entity){
-        Uri uri=Uri.parse(URL);
+    private void prepareGenerateJsonEntity(String Url, JsonObject entity){
+        Uri uri=Uri.parse(Url);
         String fileName=joinFileName(uri);
         File file=new File(mSaveFolder,fileName.substring(0,1).toUpperCase()+fileName.substring(1));
         StringBuilder sb=new StringBuilder();

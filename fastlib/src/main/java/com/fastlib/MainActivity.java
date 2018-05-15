@@ -58,14 +58,4 @@ public class MainActivity extends FastActivity{
 //					}
 //				});
     }
-
-//    @Bind(R.id.commit)
-    public void onCommit(View view) {
-//		mTl=mTl.reboot(mTask);
-    }
-
-//    @Bind(R.id.cancel)
-    private void onCancel() {
-//		mTl.stopNow(true);
-    }
 }
