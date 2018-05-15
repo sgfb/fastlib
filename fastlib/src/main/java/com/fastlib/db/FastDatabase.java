@@ -1,22 +1,5 @@
 package com.fastlib.db;
 
-import java.io.File;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import com.fastlib.BuildConfig;
-import com.fastlib.annotation.Database;
-import com.fastlib.bean.DatabaseTable;
-import com.fastlib.net.NetManager;
-import com.fastlib.utils.Reflect;
-import com.google.gson.Gson;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -27,6 +10,23 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
+
+import com.fastlib.BuildConfig;
+import com.fastlib.annotation.Database;
+import com.fastlib.bean.DatabaseTable;
+import com.fastlib.net.NetManager;
+import com.fastlib.utils.Reflect;
+import com.google.gson.Gson;
+
+import java.io.File;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 封装一些与数据库交互的基本操作。非orm数据库。

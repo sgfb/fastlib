@@ -1,6 +1,8 @@
-package com.fastlib.net;
+package com.fastlib.net.bean;
 
 import android.support.v4.util.Pair;
+
+import com.fastlib.net.Request;
 
 import java.util.List;
 

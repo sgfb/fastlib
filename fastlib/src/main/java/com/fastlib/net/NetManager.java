@@ -7,6 +7,8 @@ import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.BuildConfig;
+import com.fastlib.net.bean.NetGlobalData;
+import com.fastlib.net.listener.GlobalListener;
 
 import java.io.IOException;
 import java.util.ArrayList;

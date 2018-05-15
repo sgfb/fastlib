@@ -1,12 +1,14 @@
-package com.fastlib.net;
+package com.fastlib.net.listener;
+
+import com.fastlib.net.Request;
 
 /**
  * Created by sgfb on 17/4/26.
  * 最少可以只重载一个onResponseListener就能使用的网络回调监听
  */
-public abstract class SimpleListener<T> implements Listener<T,Object,Object>{
+public abstract class SimpleListener<T> implements Listener<T,Object,Object> {
 
-    public abstract void onResponseListener(Request r,T result);
+    public abstract void onResponseListener(Request r, T result);
 
     @Override
     public void onRawData(Request r,byte[] data) {

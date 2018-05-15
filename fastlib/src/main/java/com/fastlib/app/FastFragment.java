@@ -18,20 +18,19 @@ import android.widget.FrameLayout;
 import com.fastlib.R;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.task.EmptyAction;
+import com.fastlib.app.task.NoReturnAction;
 import com.fastlib.app.task.Task;
 import com.fastlib.app.task.TaskLauncher;
 import com.fastlib.base.Deferrable;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
-import com.fastlib.utils.local_data.LocalDataInject;
 import com.fastlib.utils.N;
 import com.fastlib.utils.PermissionHelper;
 import com.fastlib.utils.ViewInject;
+import com.fastlib.utils.local_data.LocalDataInject;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -54,9 +53,7 @@ public abstract class FastFragment extends Fragment implements Deferrable{
     private boolean isFirstLoaded=false;
     private boolean isGatingPhoto; //是否正在获取图像
     private volatile int mPreparedTaskRemain=4; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
-    private List<Request> mRequests=new ArrayList<>();
     private LocalDataInject mLocalDataInject;
-    private TaskLauncher mTaskLauncher;
     private LoadingDialog mLoading;
     private PhotoResultListener mPhotoResultListener;
     private View mDeferView; //延迟加载预显示视图
@@ -77,7 +74,6 @@ public abstract class FastFragment extends Fragment implements Deferrable{
         mLocalDataInject = new LocalDataInject(this);
         mPermissionHelper = new PermissionHelper();
         mThreadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(THREAD_POOL_SIZE);
-        mTaskLauncher = new TaskLauncher(this, mThreadPool);
         mThreadPool.execute(new Runnable() {
             @Override
             public void run() {
@@ -209,17 +205,10 @@ public abstract class FastFragment extends Fragment implements Deferrable{
 
     /**
      * 启动网络请求
-     * @param request
+     * @param request 网络请求
      */
     protected void net(Request request){
-        if(!mRequests.contains(request))
-            mRequests.add(request);
         request.setHost(this).setExecutor(mThreadPool).start(false);
-    }
-
-    public void addRequest(Request request){
-        if(!mRequests.contains(request))
-            mRequests.add(request);
     }
 
     /**
@@ -231,11 +220,26 @@ public abstract class FastFragment extends Fragment implements Deferrable{
     }
 
     /**
-     * 启动线性任务
+     * 开始线性任务
      * @param task 任务
      */
-    protected void startTask(Task task){
-        mTaskLauncher.startTask(task);
+    public TaskLauncher startTask(Task task){
+        return startTask(task,null,null);
+    }
+
+    /**
+     * 开始线性任务，并且有异常处理和尾回调
+     * @param task 任务
+     * @param exceptionHandler 异常处理
+     * @param lastAction 尾回调
+     */
+    public TaskLauncher startTask(Task task, NoReturnAction<Throwable> exceptionHandler, EmptyAction lastAction){
+        TaskLauncher taskLauncher=new TaskLauncher.Builder(this,mThreadPool)
+                .setExceptionHandler(exceptionHandler)
+                .setLastTask(lastAction)
+                .build();
+        taskLauncher.startTask(task);
+        return taskLauncher;
     }
 
     /**
@@ -263,10 +267,6 @@ public abstract class FastFragment extends Fragment implements Deferrable{
                 if(mThreadPool!=null){
                     mThreadPool.shutdownNow();
                     mThreadPool.purge();
-                }
-                if(mRequests!=null){
-                    for(Request request:mRequests)
-                        request.clear();
                 }
             }
         });

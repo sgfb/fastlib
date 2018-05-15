@@ -5,7 +5,6 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.fastlib.net.NetManager;
-import com.fastlib.test.UrlImage.processing_state.StateDownloadImageIfExpire;
 import com.fastlib.test.UrlImage.processing_state.StateCheckImagePrepare;
 import com.fastlib.test.UrlImage.processing_state.StateLoadImageOnResource;
 import com.fastlib.test.UrlImage.processing_state.StateLoadNewImageOnDisk;

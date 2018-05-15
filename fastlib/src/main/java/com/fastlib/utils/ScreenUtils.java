@@ -9,7 +9,6 @@ import android.graphics.Rect;
 import android.support.v4.util.Pair;
 import android.util.DisplayMetrics;
 import android.view.View;
-import android.view.WindowManager;
 
 /**
  * 屏幕相关工具集

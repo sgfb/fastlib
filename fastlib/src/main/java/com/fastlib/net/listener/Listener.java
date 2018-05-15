@@ -1,4 +1,6 @@
-package com.fastlib.net;
+package com.fastlib.net.listener;
+
+import com.fastlib.net.Request;
 
 /**
  * Created by sgfb on 16/12/28.
@@ -10,7 +12,7 @@ public interface Listener<T,T2,R>{
      * 原始字节数据回调
      * @param data 源字节
      */
-    void onRawData(Request r,byte[] data);
+    void onRawData(Request r, byte[] data);
 
     /**
      * 数据解析成字符串时回调,这个方法运行在子线程中,可以进行一些耗时操作(在Request中可以命令返回原始字节,那么这个方法将不会被回调)

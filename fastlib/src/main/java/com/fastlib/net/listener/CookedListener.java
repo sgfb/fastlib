@@ -1,4 +1,6 @@
-package com.fastlib.net;
+package com.fastlib.net.listener;
+
+import com.fastlib.net.Request;
 
 /**
  * Created by sgfb on 17/8/14.
@@ -6,9 +8,9 @@ package com.fastlib.net;
  * @param <T> 接口返回实体
  * @param <R> 处理后实体
  */
-public abstract class CookedListener<T,R> implements Listener<T,Object,R>{
+public abstract class CookedListener<T,R> implements Listener<T,Object,R> {
 
-    public abstract void onResponseListener(Request r,T rawResult,R doneResult);
+    public abstract void onResponseListener(Request r, T rawResult, R doneResult);
 
     @Override
     public void onRawData(Request r, byte[] data){

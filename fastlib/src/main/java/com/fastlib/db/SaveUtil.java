@@ -156,14 +156,33 @@ public class SaveUtil{
 
     /**
      * 简单存储数据到指定文件中
-     * @param file 指定文件
+     * @param target 指定文件
      * @param data 要存储的数据
+     * @param append 是否接入到文件尾部
      * @throws IOException
      */
-    public static void saveToFile(File file,byte[] data,boolean append)throws IOException{
-        OutputStream out=new FileOutputStream(file,append);
+    public static void saveToFile(File target,byte[] data,boolean append)throws IOException{
+        OutputStream out=new FileOutputStream(target,append);
         out.write(data);
         out.close();
+    }
+
+    /**
+     * 数据流存储到指定文件中
+     * @param target 存储文件
+     * @param inputStream 输入流
+     * @param append 是否接入到文件尾
+     * @throws IOException
+     */
+    public static void saveToFile(File target,InputStream inputStream,boolean append)throws IOException{
+        int len;
+        byte[] data=new byte[4096];
+        OutputStream out=new FileOutputStream(target,append);
+
+        while((len=inputStream.read(data))!=-1)
+            out.write(data,0,len);
+        out.close();
+        inputStream.close();
     }
 
     /**

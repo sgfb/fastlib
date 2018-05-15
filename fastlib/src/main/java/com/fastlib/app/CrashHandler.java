@@ -7,15 +7,12 @@ import android.os.Debug;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
-import com.fastlib.app.UploadUncaughtException;
 import com.fastlib.bean.CrashExceptionBean;
-import com.fastlib.db.SaveUtil;
 import com.fastlib.net.Request;
 import com.fastlib.utils.NetUtils;
 import com.google.gson.Gson;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.io.OutputStream;
 

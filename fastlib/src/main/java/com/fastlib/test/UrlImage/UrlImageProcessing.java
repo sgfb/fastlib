@@ -3,7 +3,6 @@ package com.fastlib.test.UrlImage;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
-import android.os.Looper;
 import android.support.annotation.CallSuper;
 import android.support.v4.app.Fragment;
 

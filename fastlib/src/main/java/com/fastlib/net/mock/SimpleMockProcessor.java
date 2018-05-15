@@ -1,10 +1,11 @@
-package com.fastlib.net;
+package com.fastlib.net.mock;
 
 import android.content.res.AssetManager;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.db.SaveUtil;
+import com.fastlib.net.Request;
 
 import java.io.File;
 import java.io.IOException;

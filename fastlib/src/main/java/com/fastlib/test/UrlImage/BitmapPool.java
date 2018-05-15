@@ -3,13 +3,9 @@ package com.fastlib.test.UrlImage;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.support.v4.util.Pair;
 import android.widget.ImageView;
 
-import com.fastlib.utils.zip.ZipFileEntity;
-
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

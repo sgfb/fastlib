@@ -1,15 +1,11 @@
 package com.fastlib.adapter;
 
 import android.support.annotation.LayoutRes;
-import android.support.v4.widget.Space;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.FrameLayout;
 
-import com.fastlib.R;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.base.CommonViewHolder;
 

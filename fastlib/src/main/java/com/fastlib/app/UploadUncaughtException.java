@@ -2,11 +2,10 @@ package com.fastlib.app;
 
 import android.os.Looper;
 import android.support.annotation.NonNull;
-import android.support.v4.util.Pair;
 
-import com.fastlib.net.Listener;
 import com.fastlib.net.Request;
-import com.fastlib.net.SimpleListener;
+import com.fastlib.net.listener.Listener;
+import com.fastlib.net.listener.SimpleListener;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -105,14 +104,12 @@ public abstract class UploadUncaughtException implements Thread.UncaughtExceptio
                 public void onResponseListener(Request r, String result) {
                     logFile.delete();
                     if(listener!=null) listener.onResponseListener(r,result,null,null);
-                    r.clear();
                 }
 
                 @Override
                 public void onErrorListener(Request r, String error) {
                     super.onErrorListener(r, error);
                     if(listener!=null) listener.onErrorListener(r,error);
-                    r.clear();
                 }
             });
             request.start();

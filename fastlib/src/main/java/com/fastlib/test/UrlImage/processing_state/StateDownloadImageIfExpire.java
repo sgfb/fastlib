@@ -10,12 +10,12 @@ import com.fastlib.db.DatabaseNoDataResultCallback;
 import com.fastlib.db.FastDatabase;
 import com.fastlib.net.DefaultDownload;
 import com.fastlib.net.Request;
-import com.fastlib.net.SimpleListener;
+import com.fastlib.net.listener.SimpleListener;
 import com.fastlib.test.UrlImage.BitmapWrapper;
-import com.fastlib.test.UrlImage.request.BitmapRequest;
 import com.fastlib.test.UrlImage.ImageDispatchCallback;
 import com.fastlib.test.UrlImage.ImageProcessManager;
 import com.fastlib.test.UrlImage.UrlImageProcessing;
+import com.fastlib.test.UrlImage.request.BitmapRequest;
 import com.fastlib.test.UrlImage.request.UrlBitmapRequest;
 
 import java.util.List;

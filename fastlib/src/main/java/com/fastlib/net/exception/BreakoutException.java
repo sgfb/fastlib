@@ -1,4 +1,4 @@
-package com.fastlib.net;
+package com.fastlib.net.exception;
 
 /**
  * Created by sgfb on 18/1/23.
@@ -7,6 +7,6 @@ package com.fastlib.net;
 public class BreakoutException extends NetException{
 
     public BreakoutException() {
-        super("请求中断");
+        super("手动中断网络请求");
     }
 }

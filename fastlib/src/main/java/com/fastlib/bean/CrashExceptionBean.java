@@ -5,10 +5,7 @@ import android.content.Context;
 import android.os.Build;
 
 import com.fastlib.BuildConfig;
-import com.fastlib.annotation.Database;
 import com.fastlib.utils.NetUtils;
-
-import java.io.Serializable;
 
 /**
  * Created by sgfb on 17/2/16.

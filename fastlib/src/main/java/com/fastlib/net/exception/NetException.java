@@ -1,4 +1,4 @@
-package com.fastlib.net;
+package com.fastlib.net.exception;
 
 import java.io.IOException;
 

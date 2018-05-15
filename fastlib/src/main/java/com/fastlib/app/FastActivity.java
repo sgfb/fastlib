@@ -8,13 +8,11 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.AppCompatTextView;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.widget.FrameLayout;
-import android.widget.TextView;
 
 import com.fastlib.R;
 import com.fastlib.annotation.ContentView;
@@ -27,16 +25,12 @@ import com.fastlib.base.Deferrable;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
-import com.fastlib.utils.local_data.AppcompatTextViewDataActive;
-import com.fastlib.utils.local_data.LocalDataInject;
 import com.fastlib.utils.N;
 import com.fastlib.utils.PermissionHelper;
 import com.fastlib.utils.ViewInject;
-import com.fastlib.utils.local_data.TextViewDataActive;
+import com.fastlib.utils.local_data.LocalDataInject;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -64,7 +58,6 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
     private LocalDataInject mLocalDataInject;
     private PhotoResultListener mPhotoResultListener;
     private LoadingDialog mLoading;
-    private List<Request> mRequests = new ArrayList<>();
     private ViewStub mViewStub;
     private View mDeferView;
 
@@ -135,18 +128,7 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
      * @param request 网络请求
      */
     protected void net(Request request) {
-        if (!mRequests.contains(request))
-            mRequests.add(request);
         request.setHost(this).setExecutor(mThreadPool).start(false);
-    }
-
-    /**
-     * 增加网络请求到列表中，但是不立即请求
-     * @param request 网络请求
-     */
-    public void addRequest(Request request) {
-        if (!mRequests.contains(request))
-            mRequests.add(request);
     }
 
     /**
@@ -154,9 +136,7 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
      * @param task 任务
      */
     public TaskLauncher startTask(Task task){
-        TaskLauncher taskLauncher=new TaskLauncher(this,mThreadPool);
-        taskLauncher.startTask(task);
-        return taskLauncher;
+        return startTask(task,null,null);
     }
 
     /**
@@ -165,12 +145,12 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
      * @param exceptionHandler 异常处理
      * @param lastAction 尾回调
      */
-    public TaskLauncher startTask(Task task, NoReturnAction<Throwable> exceptionHandler,EmptyAction lastAction){
-        TaskLauncher taskLauncher=new TaskLauncher(this,mThreadPool);
-        taskLauncher
+    public TaskLauncher startTask(Task task, NoReturnAction<Throwable> exceptionHandler, EmptyAction lastAction){
+        TaskLauncher taskLauncher=new TaskLauncher.Builder(this,mThreadPool)
                 .setExceptionHandler(exceptionHandler)
                 .setLastTask(lastAction)
-                .startTask(task);
+                .build();
+        taskLauncher.startTask(task);
         return taskLauncher;
     }
 
@@ -290,12 +270,6 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
                     mThreadPool.shutdownNow();
                     mThreadPool.purge();
                     mThreadPool=null;
-                }
-                if(mRequests!=null){
-                    for (Request request : mRequests)
-                        request.clear();
-                    mRequests.clear();
-                    mRequests=null;
                 }
             }
         });

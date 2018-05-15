@@ -14,8 +14,8 @@ public class Task<R>{
     private Task mPrevious;
     private Task mNext;
     private Task mCycler;
-    private R[] mCycleData; //循环参数
     private NoReturnAction<Throwable> mExceptionHandler; //异常处理器
+    private R[] mCycleData; //循环参数
     private List mCycleResult=new ArrayList(); //循环任务返回的临时存储空间
 
     /**
@@ -128,7 +128,7 @@ public class Task<R>{
      * @param <T> 参数
      * @return 下一个任务
      */
-    public <T> Task<T> next(Action<R,T> action){
+    public <T> Task<T> next(Action<? super R,T> action){
         return next(action,ThreadType.WORK);
     }
 
@@ -139,7 +139,7 @@ public class Task<R>{
      * @param <T> 参数
      * @return 下一个任务
      */
-    public <T> Task<T> next(Action<R,T> action, ThreadType whichThread){
+    public <T> Task<T> next(Action<? super R,T> action, ThreadType whichThread){
         mNext=new Task();
         mNext.mAction=action;
         mNext.mAction.setThreadType(whichThread);
@@ -288,6 +288,18 @@ public class Task<R>{
         if(task.mNext==null||task.mNext.mCycleIndex==-2) //如果下一个任务存在并且是跳出循环类型
             return task.mCycler!=null?task.mCycler:task.mNext;
         return task.mNext;
+    }
+
+    public void clean(){
+        Task task=this;
+
+        while(task.mPrevious!=null)
+            task=task.mPrevious;
+        while(task!=null){
+            task.mCycleData=null;
+            task.mCycleResult.clear();
+            task=task.mNext;
+        }
     }
 
     /**

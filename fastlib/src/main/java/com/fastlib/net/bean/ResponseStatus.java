@@ -1,4 +1,4 @@
-package com.fastlib.net;
+package com.fastlib.net.bean;
 
 /**
  * Created by sgfb on 17/6/13.

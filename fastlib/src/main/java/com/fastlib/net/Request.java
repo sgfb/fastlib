@@ -6,13 +6,13 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
-import android.view.View;
-import android.widget.Spinner;
-import android.widget.TextView;
 
 import com.fastlib.db.FastDatabase;
 import com.fastlib.db.ServerCache;
-import com.google.gson.Gson;
+import com.fastlib.net.bean.ResponseStatus;
+import com.fastlib.net.listener.Listener;
+import com.fastlib.net.mock.MockProcess;
+import com.fastlib.net.param_parse.ParamParserManager;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
@@ -31,11 +31,6 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 每个任务都是不同的，{@link NetManager}会根据属性来配置请求，调整请求开始完成或失败后不同的事件
  */
 public class Request{
-    private static final Object sLock = new Object();
-    private static final int MAX_POOL_SIZE =15; //池中最大保存数
-    private static Request sPool;
-    private static int sPoolSize = 0;
-
     private boolean isCallbackByWorkThread; //特殊情况下建议网络请求在工作线程回调
     private boolean isCancel;
     private boolean isSuppressWarning;  //压制警告
@@ -66,33 +61,10 @@ public class Request{
     private Type[] mGenericType; //根据Listener生成的返回类类型存根
     private ServerCache mCacheManager; //缓存这个请求的数据管理
     private ThreadPoolExecutor mExecutor; //运行在指定线程池中,如果未指定默认在公共的线程池中
-    private Request mNext;
     private MockProcess mMock; //模拟数据
     private ResponseStatus mResponseStatus=new ResponseStatus(); //返回包裹信息，尽量不要置null
     private Thread mThread;
-
-    public static Request obtain() {
-        return obtain("");
-    }
-
-    public static Request obtain(String url) {
-        return obtain("POST", url);
-    }
-
-    public static Request obtain(String method, String url) {
-        synchronized (sLock){
-            if (sPool != null){
-                Request r = sPool;
-                sPool = r.mNext;
-                r.mNext = null;
-                sPoolSize--;
-                r.setUrl(url);
-                r.setMethod(method);
-                return r;
-            }
-        }
-        return new Request(method,url);
-    }
+    private ParamParserManager mParamParserManager;
 
     public Request() {
         this("");
@@ -122,50 +94,7 @@ public class Request{
         mParams = new ArrayList<>();
         mFiles = new ArrayList<>();
         mSendHeadExtra = new ArrayList<>();
-    }
-
-    /**
-     * 清理这个请求以便重复使用.建议在子线程中清理不再使用的请求已提高效率
-     */
-    public void clear() {
-        isCancel=false;
-        mThread=null;
-        isSuppressWarning=false;
-        mIntervalSendFileTransferEvent=1000;
-        isReplaceChinese=true;
-        useFactory = true;
-        hadRootAddress = false;
-        isSendGzip = false;
-        isReceiveGzip = false;
-        method = null;
-        mUrl = null;
-        mSendCookies = null;
-        mDownloadable = null;
-        if(mSendHeadExtra!=null)
-            mSendHeadExtra.clear();
-        if(mParams!=null)
-            mParams.clear();
-        if(mFiles!=null)
-            mFiles.clear();
-        mType = RequestType.DEFAULT;
-        mTag = null;
-        mReceiveCookies = null;
-        mContext = null;
-        mFragment = null;
-        mListener = null;
-        mGenericType = null;
-        mCacheManager = null;
-        mExecutor = null;
-        mMock=null;
-        isAcceptGlobalCallback=true;
-        mResponseStatus.clear();
-        synchronized (sLock) {
-            if (sPoolSize < MAX_POOL_SIZE) {
-                mNext = sPool;
-                sPool = this;
-                sPoolSize++;
-            }
-        }
+        mParamParserManager=new ParamParserManager();
     }
 
     @Override
@@ -195,6 +124,10 @@ public class Request{
         if (mCacheManager != null)
             mCacheManager.refresh(forceRefresh);
         else NetManager.getInstance().netRequest(this);
+    }
+
+    public ParamParserManager getParamParserManager(){
+        return mParamParserManager;
     }
 
     /**
@@ -306,7 +239,9 @@ public class Request{
      * @return
      */
     public Request add(String key,Object obj){
-        return add(key,new Gson().toJson(obj));
+        mParamParserManager.parserParam(true,this,key,obj);
+        return this;
+//        return add(key,new Gson().toJson(obj));
     }
 
     /**
@@ -324,13 +259,13 @@ public class Request{
         return this;
     }
 
-    public Request put(String key,View view){
-        if(view instanceof TextView)
-            return put(key,((TextView)view).getText().toString());
-        else if(view instanceof Spinner)
-            return put(key,((Spinner)view).getSelectedItem());
-        throw new IllegalArgumentException("不支持的view类型");
-    }
+//    public Request put(String key,View view){
+//        if(view instanceof TextView)
+//            return put(key,((TextView)view).getText().toString());
+//        else if(view instanceof Spinner)
+//            return put(key,((Spinner)view).getSelectedItem());
+//        throw new IllegalArgumentException("不支持的view类型");
+//    }
 
 
     /**
@@ -386,11 +321,18 @@ public class Request{
     /**
      * 添加json对象,如果存在,覆盖第一个
      * @param key
-     * @param jsonObj
+     * @param obj
      * @return
      */
-    public Request put(String key,Object jsonObj){
-        return put(key,new Gson().toJson(jsonObj));
+    public Request put(String key,Object obj){
+        mParamParserManager.parserParam(false,this,key,obj);
+        return this;
+//        return put(key,new Gson().toJson(jsonObj));
+    }
+
+    public Request put(Object obj){
+        put(null,obj);
+        return this;
     }
 
     /**
@@ -488,7 +430,6 @@ public class Request{
 
     /**
      * 获取类型索引
-     *
      * @param sb
      * @return
      */
@@ -590,8 +531,8 @@ public class Request{
     public void cancel(){
         isCancel=true;
         if(mThread!=null) mThread.interrupt();
-//        if(mListener != null)
-//            mListener.onErrorListener(this, "取消请求 " + mUrl);
+        if(mListener != null)
+            mListener.onErrorListener(this, "手动取消网络请求 " + mUrl);
     }
 
     /**

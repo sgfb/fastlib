@@ -11,6 +11,11 @@ import android.text.TextUtils;
 import com.fastlib.app.EventObserver;
 import com.fastlib.bean.EventDownloading;
 import com.fastlib.bean.EventUploading;
+import com.fastlib.net.bean.ResponseStatus;
+import com.fastlib.net.exception.BreakoutException;
+import com.fastlib.net.exception.NetException;
+import com.fastlib.net.listener.GlobalListener;
+import com.fastlib.net.listener.Listener;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 

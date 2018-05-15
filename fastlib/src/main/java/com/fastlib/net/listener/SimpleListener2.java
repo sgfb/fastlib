@@ -1,12 +1,14 @@
-package com.fastlib.net;
+package com.fastlib.net.listener;
+
+import com.fastlib.net.Request;
 
 /**
  * Created by sgfb on 17/5/25.
  * 覆写双猜想实体返回
  */
-public abstract class SimpleListener2<T1,T2> implements Listener<T1,T2,Object>{
+public abstract class SimpleListener2<T1,T2> implements Listener<T1,T2,Object> {
 
-    public abstract void onResponseListener(Request r,T1 result,T2 result2);
+    public abstract void onResponseListener(Request r, T1 result, T2 result2);
 
     @Override
     public void onRawData(Request r, byte[] data) {

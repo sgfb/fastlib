@@ -12,32 +12,13 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 启动线性Task必要的启动器
  */
 public class TaskLauncher{
-    private Object mHost;
-    private ThreadPoolExecutor mThreadPool;
     private volatile boolean mStopFlag;
+    private ThreadPoolExecutor mThreadPool;
     private NoReturnAction<Throwable> mExceptionHandler; //一个全局的异常处理器,如果Task有对应异常处理器则不调用此处理器
     private EmptyAction mCompleteAction;
+    private Object mHost;
 
-    public TaskLauncher(Activity activity, ThreadPoolExecutor threadPool) {
-        mHost = activity;
-        mThreadPool = threadPool;
-    }
-
-    public TaskLauncher(Fragment fragment,ThreadPoolExecutor threadPool){
-        mHost=fragment;
-        mThreadPool=threadPool;
-    }
-
-    /**
-     * 开始线性任务
-     * @param task
-     */
-    public void startTask(Task task){
-        Task firstTask=task;
-        while(firstTask.getPrevious()!=null)
-            firstTask=firstTask.getPrevious();
-        threadDispatch(firstTask);
-    }
+    private TaskLauncher(){}
 
     /**
      * 线性任务线程调度
@@ -118,15 +99,6 @@ public class TaskLauncher{
         }
     }
 
-    public Activity getHostActivity(){
-        if(mHost instanceof Activity) return (Activity) mHost;
-        else return ((Fragment)mHost).getActivity();
-    }
-
-    private boolean checkStopStatus(Task task){
-        return hostIsFinish()||task.isStopNow()||mStopFlag;
-    }
-
     /**
      * 宿主是否已结束生命周期
      * @return true已结束（不继续任务事件）
@@ -142,27 +114,83 @@ public class TaskLauncher{
         }
     }
 
+    private boolean checkStopStatus(Task task){
+        return hostIsFinish()||task.isStopNow()||mStopFlag;
+    }
+
+    /**
+     * 开始线性任务
+     * @param task
+     */
+    public void startTask(Task task){
+        Task firstTask=task;
+        firstTask.clean();
+        while(firstTask.getPrevious()!=null)
+            firstTask=firstTask.getPrevious();
+        threadDispatch(firstTask);
+    }
+
+    public Activity getHostActivity(){
+        if(mHost instanceof Activity) return (Activity) mHost;
+        else return ((Fragment)mHost).getActivity();
+    }
+
     public void stopNow(boolean stopFlag){
         mStopFlag = stopFlag;
     }
 
-    /**
-     * 这次线性任务全局异常处理
-     * @param handler 异常处理器
-     * @return 线性任务启动器
-     */
-    public TaskLauncher setExceptionHandler(NoReturnAction<Throwable> handler){
-        mExceptionHandler=handler;
-        return this;
+    public TaskLauncher reboot(Task task){
+        if(task==null) return null;
+        mStopFlag=true;
+
+        TaskLauncher launcher=new TaskLauncher();
+        launcher.mHost=mHost;
+        launcher.mThreadPool=mThreadPool;
+        launcher.mExceptionHandler=mExceptionHandler;
+        launcher.mCompleteAction=mCompleteAction;
+        launcher.startTask(task);
+        return launcher;
     }
 
-    /**
-     * 无论是正常流程结束还是异常结束，最后都调用这个方法，如果存在的话
-     * @param action 结尾任务
-     * @return 线性任务启动器
-     */
-    public TaskLauncher setLastTask(EmptyAction action){
-        mCompleteAction=action;
-        return this;
+    public static class Builder{
+        private TaskLauncher launcher;
+
+        public Builder(Activity activity,ThreadPoolExecutor threadPool){
+            init(activity,threadPool);
+        }
+
+        public Builder(Fragment fragment,ThreadPoolExecutor threadPool){
+            init(fragment,threadPool);
+        }
+
+        private void init(Object host,ThreadPoolExecutor threadPoolExecutor){
+            launcher=new TaskLauncher();
+            launcher.mHost=host;
+            launcher.mThreadPool=threadPoolExecutor;
+        }
+
+        /**
+         * 这次线性任务全局异常处理
+         * @param handler 异常处理器
+         * @return 线性任务启动器
+         */
+        public Builder setExceptionHandler(NoReturnAction<Throwable> handler){
+            launcher.mExceptionHandler=handler;
+            return this;
+        }
+
+        /**
+         * 无论是正常流程结束还是异常结束，最后都调用这个事件，如果存在的话
+         * @param action 结尾任务
+         * @return 线性任务启动器
+         */
+        public Builder setLastTask(EmptyAction action){
+            launcher.mCompleteAction=action;
+            return this;
+        }
+
+        public TaskLauncher build(){
+            return launcher;
+        }
     }
 }

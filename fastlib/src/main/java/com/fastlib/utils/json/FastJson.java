@@ -5,7 +5,6 @@ import android.util.JsonToken;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

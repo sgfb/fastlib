@@ -3,14 +3,8 @@ package com.fastlib.utils;
 import android.util.Log;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * 使反射变得更简单容易

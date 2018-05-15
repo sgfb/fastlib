@@ -1,7 +1,6 @@
 package com.fastlib.utils;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.content.Context;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;

@@ -1,4 +1,6 @@
-package com.fastlib.net;
+package com.fastlib.net.mock;
+
+import com.fastlib.net.Request;
 
 /**
  * Created by sgfb on 17/2/6.

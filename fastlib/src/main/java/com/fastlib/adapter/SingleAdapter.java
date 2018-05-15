@@ -7,12 +7,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
-import com.fastlib.app.FastActivity;
 import com.fastlib.base.AdapterViewState;
 import com.fastlib.base.OldViewHolder;
 import com.fastlib.base.Refreshable;
-import com.fastlib.net.Listener;
 import com.fastlib.net.Request;
+import com.fastlib.net.listener.Listener;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -80,8 +79,6 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 		isLoading=false;
 		mRequest.setGenericType(new Type[]{getResponseType()});
 		mRequest.setListener(this);
-		if(mContext instanceof FastActivity)
-			((FastActivity)mContext).addRequest(mRequest);
 		if(startNow)
 		    refresh();
 	}

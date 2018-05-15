@@ -3,7 +3,7 @@ package com.fastlib.utils;
 import android.text.TextUtils;
 
 import com.fastlib.net.Request;
-import com.fastlib.net.SimpleListener;
+import com.fastlib.net.listener.SimpleListener;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;

@@ -1,4 +1,6 @@
-package com.fastlib.net;
+package com.fastlib.net.listener;
+
+import com.fastlib.net.Request;
 
 /**
  * Created by sgfb on 17/7/31.
@@ -11,7 +13,7 @@ public class GlobalListener{
      * data 源字节
      * @return 处理后的源字节
      */
-    public byte[] onRawData(Request r,byte[] data){
+    public byte[] onRawData(Request r, byte[] data){
         return data;
     }
 

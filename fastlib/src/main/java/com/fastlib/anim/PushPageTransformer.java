@@ -3,8 +3,6 @@ package com.fastlib.anim;
 import android.support.v4.view.ViewPager;
 import android.view.View;
 
-import com.fastlib.R;
-
 /**
  * Created by sgfb on 17/2/6.
  * 推入页面动画

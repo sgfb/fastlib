@@ -1,11 +1,9 @@
 package com.fastlib.utils;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
-import android.net.ConnectivityManager.OnNetworkActiveListener;
 import android.net.NetworkInfo;
 
 /**

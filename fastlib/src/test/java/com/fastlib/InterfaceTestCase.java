@@ -4,7 +4,7 @@ import android.text.TextUtils;
 
 import com.fastlib.Bean.Bean;
 import com.fastlib.net.Request;
-import com.fastlib.net.SimpleMockProcessor;
+import com.fastlib.net.mock.SimpleMockProcessor;
 import com.fastlib.utils.SessionCheck;
 import com.fastlib.utils.TestUtil;
 import com.google.gson.reflect.TypeToken;
