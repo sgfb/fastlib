@@ -171,6 +171,10 @@ public class Request{
         return this;
     }
 
+    public Request add(String key,boolean value){
+        return add(key,Boolean.toString(value));
+    }
+
     /**
      * 添加整数
      * @param key
@@ -266,6 +270,10 @@ public class Request{
 //            return put(key,((Spinner)view).getSelectedItem());
 //        throw new IllegalArgumentException("不支持的view类型");
 //    }
+
+    public Request put(String key,boolean value){
+        return put(key,Boolean.toString(value));
+    }
 
 
     /**

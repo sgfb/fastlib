@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.fastlib">
 
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application android:label="fastlib"
         android:theme="@style/AppTheme"
         android:logo="@mipmap/ic_launcher">
