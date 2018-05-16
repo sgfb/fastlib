@@ -59,6 +59,11 @@ public class PrimitiveParamParser implements NetParamParser{
         return true;
     }
 
+    @Override
+    public int priority() {
+        return -1;
+    }
+
     private boolean isPrimitiveType(Object obj){
         Class cla=obj.getClass();
         return cla==byte.class||cla==short.class||cla==int.class||cla==long.class||

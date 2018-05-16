@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.net;
 
 import junit.framework.TestFailure;
 import junit.framework.TestResult;

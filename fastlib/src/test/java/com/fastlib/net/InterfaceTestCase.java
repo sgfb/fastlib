@@ -1,9 +1,8 @@
-package com.fastlib;
+package com.fastlib.net;
 
 import android.text.TextUtils;
 
-import com.fastlib.Bean.Bean;
-import com.fastlib.net.Request;
+import com.fastlib.bean.InterfaceCheckTestBean;
 import com.fastlib.net.mock.SimpleMockProcessor;
 import com.fastlib.utils.SessionCheck;
 import com.fastlib.utils.TestUtil;
@@ -72,10 +71,10 @@ public class InterfaceTestCase extends TestCase{
 
     private void interfaceTestExample(SimpleMockProcessor mock)throws Exception{
         interfaceTestExample(null,mock);
-        TestUtil.netInterfaceCheck(new Request("http://www.baidu.com"), new TypeToken<Bean>() {
-        },new SessionCheck<Bean>() {
+        TestUtil.netInterfaceCheck(new Request("http://www.baidu.com"), new TypeToken<InterfaceCheckTestBean>() {
+        },new SessionCheck<InterfaceCheckTestBean>() {
             @Override
-            public String check(Bean entity) {
+            public String check(InterfaceCheckTestBean entity) {
                 //自定义业务逻辑检查
                 return null;
             }
@@ -83,10 +82,10 @@ public class InterfaceTestCase extends TestCase{
     }
 
     private void interfaceTestExample(String url,SimpleMockProcessor mock) throws Exception {
-        String testResult = TestUtil.netInterfaceCheck(mock==null?new Request("get", url):new Request(mock), new TypeToken<Bean>() {
-        }, new SessionCheck<Bean>() {
+        String testResult = TestUtil.netInterfaceCheck(mock==null?new Request("get", url):new Request(mock), new TypeToken<InterfaceCheckTestBean>() {
+        }, new SessionCheck<InterfaceCheckTestBean>() {
             @Override
-            public String check(Bean entity) {
+            public String check(InterfaceCheckTestBean entity) {
                 return entity.id > 1 ? null : "业务层错误";
             }
         });

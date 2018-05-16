@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
+import com.fastlib.net.listener.GlobalListener;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 
@@ -20,71 +21,93 @@ import java.lang.reflect.Type;
 public abstract class NetAction<P,R> extends Action<Request,R>{
     private static final Object mLock=new Object();
     private Object mResponseObj;
+    private Object mCookedData;
     private R mReturnValue;
+
+    /**
+     * 是否支持全局回调处理后的“熟”数据
+     * @return true支持，false不支持
+     */
+    protected boolean isCookResultData(){
+        return false;
+    }
 
     protected abstract R executeAdapt(P r,Request request);
 
     @Override
-    protected R execute(final Request param) throws IOException {
+    protected R execute(final Request param){
+        GlobalListener globalListener=NetManager.getInstance().getGlobalListener();
         Method[] methods=getClass().getDeclaredMethods();
         Type rType=Object.class;
-        byte[] response=NetManager.getInstance().netRequestPromptlyBack(param);
-
-        for(Method m:methods){
-            if("executeAdapt".equals(m.getName())){
-                Type[] paramsType=m.getGenericParameterTypes();
-                for(Type paramType:paramsType)
-                    if(paramType!=Object.class&&paramType!=Request.class){
-                        rType=paramType;
-                        break;
-                    }
+        try {
+            byte[] response = NetManager.getInstance().netRequestPromptlyBack(param);
+            for(Method m:methods){
+                if("executeAdapt".equals(m.getName())){
+                    Type[] paramsType=m.getGenericParameterTypes();
+                    for(Type paramType:paramsType)
+                        if(paramType!=Object.class&&paramType!=Request.class){
+                            rType=paramType;
+                            break;
+                        }
+                }
+                if(rType!=Object.class) break;
             }
-            if(rType!=Object.class) break;
-        }
-        if(response!=null){
-            if(rType==Object.class||rType==byte[].class||rType==byte.class)
-                mResponseObj = response;
-            else if(rType==String.class)
-                mResponseObj =new String(response);
-            else {
-                Gson gson=new Gson();
-                try{
-                    mResponseObj =gson.fromJson(new String(response),rType);
-                }catch (JsonParseException e){
-                    e.printStackTrace();
-                    stopTask(); //如果异常了，停止任务链
+            if(response!=null){
+                String responseStr=new String(response);
+                if(globalListener!=null){
+                    response=globalListener.onRawData(param,response);
+                    responseStr=globalListener.onTranslateJson(param,responseStr);
+                }
+                if(rType==Object.class||rType==byte[].class||rType==byte.class)
+                    mResponseObj = response;
+                else if(rType==String.class)
+                    mResponseObj =responseStr;
+                else {
+                    Gson gson=new Gson();
+                    try{
+                        mResponseObj =gson.fromJson(responseStr,rType);
+                        mCookedData=globalListener.onResponseListener(param,mResponseObj,null);
+                    }catch (JsonParseException e){
+                        globalListener.onErrorListener(param,"请求:" + param + "\n解析时出现异常:" + e.getMessage() + "\njson字符串:" + responseStr);
+                        stopTask(); //如果异常了，停止任务链
+                    }
                 }
             }
-        }
-        checkNetBackStatus(param);
+            checkNetBackStatus(param);
 
-        if(mThreadType==ThreadType.MAIN){
-            Handler handler=new Handler(Looper.getMainLooper());
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Thread.sleep(1);
-                        mReturnValue=executeAdapt((P) mResponseObj,param);
-                        synchronized (mLock){
-                            mLock.notifyAll();
+            if(mThreadType==ThreadType.MAIN){
+                Handler handler=new Handler(Looper.getMainLooper());
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(1);
+                            mReturnValue=executeAdapt(isCookResultData()? (P) mCookedData :(P) mResponseObj,param);
+                            synchronized (mLock){
+                                mLock.notifyAll();
+                            }
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
                         }
+                    }
+                });
+                synchronized (mLock){
+                    try {
+                        mLock.wait();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-            });
-            synchronized (mLock){
-                try {
-                    mLock.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                return mReturnValue;
             }
-            return mReturnValue;
+            else
+                return executeAdapt(isCookResultData()? (P) mCookedData :(P) mResponseObj,param);
+        } catch (IOException e) {
+            e.printStackTrace();
+            stopTask();
+            globalListener.onErrorListener(param,e.toString());
+            return null;
         }
-        else
-            return executeAdapt((P) mResponseObj,param);
     }
 
     private void checkNetBackStatus(Request request){

@@ -29,4 +29,9 @@ public class MapParamParser implements NetParamParser {
         }
         return true;
     }
+
+    @Override
+    public int priority() {
+        return 0;
+    }
 }

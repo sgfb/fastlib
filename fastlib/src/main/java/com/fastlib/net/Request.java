@@ -40,6 +40,7 @@ public class Request{
     private boolean useFactory; //是否使用预设值
     private boolean isSendGzip; //指定这次请求发送时是否压缩成gzip流
     private boolean isReceiveGzip; //指定这次请求是否使用gzip解码
+    private boolean isUseGlobalParamParser;
     private byte[] mByteStream; //原始字节流，如果这个值存在就不会发送mParams参数了.如果存在但是长度为0发送mParams参数json化数据
     private long mResourceExpire; //资源过期时间
     private long mIntervalSendFileTransferEvent=1000; //间隔多久发送上传和下载文件广播
@@ -91,6 +92,7 @@ public class Request{
         isSendGzip=false;
         isReceiveGzip=false;
         useFactory = true;
+        isUseGlobalParamParser=true;
         mParams = new ArrayList<>();
         mFiles = new ArrayList<>();
         mSendHeadExtra = new ArrayList<>();
@@ -171,6 +173,10 @@ public class Request{
         return this;
     }
 
+    public Request add(String key,CharSequence charSequence){
+        return add(key,charSequence.toString());
+    }
+
     public Request add(String key,boolean value){
         return add(key,Boolean.toString(value));
     }
@@ -243,9 +249,9 @@ public class Request{
      * @return
      */
     public Request add(String key,Object obj){
+        if(isUseGlobalParamParser) NetManager.getInstance().getGlobalParamParserManager().parserParam(true,this,key,obj);
         mParamParserManager.parserParam(true,this,key,obj);
         return this;
-//        return add(key,new Gson().toJson(obj));
     }
 
     /**
@@ -253,7 +259,7 @@ public class Request{
      * @param key
      * @param value
      */
-    public Request put(String key, String value) {
+    public Request put(String key,String value) {
         if (mParams == null)
             mParams = new ArrayList<>();
         int index=paramsIndexOf(key);
@@ -263,13 +269,9 @@ public class Request{
         return this;
     }
 
-//    public Request put(String key,View view){
-//        if(view instanceof TextView)
-//            return put(key,((TextView)view).getText().toString());
-//        else if(view instanceof Spinner)
-//            return put(key,((Spinner)view).getSelectedItem());
-//        throw new IllegalArgumentException("不支持的view类型");
-//    }
+    public Request put(String key,CharSequence charSequence){
+        return put(key,charSequence.toString());
+    }
 
     public Request put(String key,boolean value){
         return put(key,Boolean.toString(value));
@@ -333,9 +335,9 @@ public class Request{
      * @return
      */
     public Request put(String key,Object obj){
+        if(isUseGlobalParamParser) NetManager.getInstance().getGlobalParamParserManager().parserParam(false,this,key,obj);
         mParamParserManager.parserParam(false,this,key,obj);
         return this;
-//        return put(key,new Gson().toJson(jsonObj));
     }
 
     public Request put(Object obj){

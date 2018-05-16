@@ -161,6 +161,11 @@ public class NetProcessor implements Runnable {
                 }
                 out.close();
             }
+            String redirect=checkRedirect(connection);
+            if(!TextUtils.isEmpty(redirect)){
+                run();
+                return;
+            }
             checkErrorStream(connection, connectionTimer); //判断返回码是否200.不是的话做额外处理
             if (needBody) {
                 Context context = getHostContext();
@@ -224,8 +229,7 @@ public class NetProcessor implements Runnable {
             saveResponseStatus(connection.getResponseCode(),computeRequestTime(connection,connectionTimer),connection.getResponseMessage());
             toggleCallback();
         } catch (IOException e){
-            if(e instanceof IOException)
-                mException= (IOException) e;
+            mException=e;
             if(!mRequest.getSuppressWarning())
                 e.printStackTrace();
             isSuccess = false;
@@ -354,6 +358,12 @@ public class NetProcessor implements Runnable {
         mRequest.getResponseStatus().time = System.currentTimeMillis() - requestTime;
     }
 
+    private String checkRedirect(HttpURLConnection connection) throws IOException {
+        if(connection.getResponseCode()>=300||connection.getResponseCode()<400)
+            return connection.getHeaderField("Location");
+        return null;
+    }
+
     /**
      * 检测错误流
      * @param connection
@@ -362,7 +372,7 @@ public class NetProcessor implements Runnable {
      */
     private void checkErrorStream(HttpURLConnection connection, long requestTime) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        if (connection.getResponseCode() < HttpURLConnection.HTTP_OK||connection.getResponseCode()>=300){
+        if (connection.getResponseCode() < HttpURLConnection.HTTP_OK||connection.getResponseCode()>=400){
             byte[] errbyte = new byte[4096];
             int len;
             if(connection.getErrorStream()!=null)

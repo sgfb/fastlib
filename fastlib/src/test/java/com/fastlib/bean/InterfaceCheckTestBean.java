@@ -1,10 +1,12 @@
-package com.fastlib.Bean;
+package com.fastlib.bean;
+
+import com.fastlib.annotation.NetBeanWrapper;
 
 /**
  * Created by sgfb on 18/3/9.
  */
-
-public class Bean{
+@NetBeanWrapper
+public class InterfaceCheckTestBean{
     public int id;
     public String name;
 

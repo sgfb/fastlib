@@ -27,4 +27,10 @@ public interface NetParamParser{
      * @return true解析成功，false解析失败
      */
     boolean parseParam(boolean duplication,Request request,String key,Object obj);
+
+    /**
+     * 优先级，影响执行顺序,越小越早执行
+     * @return 优先级
+     */
+    int priority();
 }

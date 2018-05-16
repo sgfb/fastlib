@@ -35,4 +35,9 @@ public class NetBeanWrapperParser implements NetParamParser{
         }
         return true;
     }
+
+    @Override
+    public int priority() {
+        return 0;
+    }
 }
