@@ -1,8 +1,8 @@
-package com.fastlib.test.UrlImage;
+package com.fastlib.url_image.callback;
 
 import android.graphics.Bitmap;
 
-import com.fastlib.test.UrlImage.request.BitmapRequest;
+import com.fastlib.url_image.request.BitmapRequest;
 
 /**
  * Created by sgfb on 18/1/22.

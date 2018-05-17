@@ -1,4 +1,4 @@
-package com.fastlib.test.UrlImage;
+package com.fastlib.url_image.lifecycle;
 
 import android.support.v4.app.Fragment;
 

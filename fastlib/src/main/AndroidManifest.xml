@@ -3,11 +3,12 @@
           package="com.fastlib">
 
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
     <application android:label="fastlib"
         android:theme="@style/AppTheme"
         android:logo="@mipmap/ic_launcher">
-
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

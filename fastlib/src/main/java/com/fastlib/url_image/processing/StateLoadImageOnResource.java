@@ -1,13 +1,12 @@
-package com.fastlib.test.UrlImage.processing_state;
+package com.fastlib.url_image.processing;
 
 import android.graphics.BitmapFactory;
 import android.support.v4.util.Pair;
 
-import com.fastlib.test.UrlImage.BitmapWrapper;
-import com.fastlib.test.UrlImage.ImageDispatchCallback;
-import com.fastlib.test.UrlImage.ImageProcessManager;
-import com.fastlib.test.UrlImage.UrlImageProcessing;
-import com.fastlib.test.UrlImage.request.BitmapRequest;
+import com.fastlib.url_image.ImageProcessManager;
+import com.fastlib.url_image.bean.BitmapWrapper;
+import com.fastlib.url_image.callback.ImageDispatchCallback;
+import com.fastlib.url_image.request.BitmapRequest;
 import com.fastlib.utils.ScreenUtils;
 
 /**

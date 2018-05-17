@@ -1,4 +1,4 @@
-package com.fastlib.test.UrlImage.processing_state;
+package com.fastlib.url_image.processing;
 
 import android.content.Context;
 import android.text.TextUtils;
@@ -11,12 +11,11 @@ import com.fastlib.db.FastDatabase;
 import com.fastlib.net.DefaultDownload;
 import com.fastlib.net.Request;
 import com.fastlib.net.listener.SimpleListener;
-import com.fastlib.test.UrlImage.BitmapWrapper;
-import com.fastlib.test.UrlImage.ImageDispatchCallback;
-import com.fastlib.test.UrlImage.ImageProcessManager;
-import com.fastlib.test.UrlImage.UrlImageProcessing;
-import com.fastlib.test.UrlImage.request.BitmapRequest;
-import com.fastlib.test.UrlImage.request.UrlBitmapRequest;
+import com.fastlib.url_image.ImageProcessManager;
+import com.fastlib.url_image.bean.BitmapWrapper;
+import com.fastlib.url_image.callback.ImageDispatchCallback;
+import com.fastlib.url_image.request.BitmapRequest;
+import com.fastlib.url_image.request.UrlBitmapRequest;
 
 import java.util.List;
 
@@ -28,7 +27,7 @@ import java.util.List;
 public class StateDownloadImageIfExpire extends UrlImageProcessing{
     private Request mNetRequest;
 
-    public StateDownloadImageIfExpire(BitmapRequest request,ImageDispatchCallback callback){
+    public StateDownloadImageIfExpire(BitmapRequest request, ImageDispatchCallback callback){
         super(request, callback);
     }
 
@@ -67,12 +66,7 @@ public class StateDownloadImageIfExpire extends UrlImageProcessing{
 
             @Override
             public void onErrorListener(Request r, String error){
-                if(r.getResponseStatus().code==304)
-                    processingManager.imageProcessStateConvert(true,StateDownloadImageIfExpire.this,new StateLoadNewImageOnDisk(br,mCallback));
-                else {
-                    saveDownloadErrorImageInfo(br.getContext(), br.getKey());
-                    mCallback.complete(StateDownloadImageIfExpire.this,mRequest,new BitmapWrapper());
-                }
+                processingManager.imageProcessStateConvert(true,StateDownloadImageIfExpire.this,new StateLoadNewImageOnDisk(br,mCallback));
                 requestList.remove(br);
             }
         });

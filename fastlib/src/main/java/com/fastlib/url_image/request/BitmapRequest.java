@@ -1,6 +1,7 @@
-package com.fastlib.test.UrlImage.request;
+package com.fastlib.url_image.request;
 
 import android.app.Activity;
+import android.app.Application;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
@@ -8,9 +9,14 @@ import android.support.v4.app.Fragment;
 import android.view.View;
 import android.widget.ImageView;
 
-import com.fastlib.test.UrlImage.BitmapRequestCallback;
-import com.fastlib.test.UrlImage.FastImage;
-import com.fastlib.test.UrlImage.FastImageConfig;
+import com.fastlib.url_image.ImageTarget;
+import com.fastlib.url_image.Target;
+import com.fastlib.url_image.callback.BitmapRequestCallback;
+import com.fastlib.url_image.FastImage;
+import com.fastlib.url_image.bean.FastImageConfig;
+import com.fastlib.url_image.lifecycle.ActivityLifecycleCallbacksAdapter;
+import com.fastlib.url_image.lifecycle.HostLifecycle;
+import com.fastlib.url_image.lifecycle.LifecycleControlFragment;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -21,10 +27,9 @@ import java.lang.ref.WeakReference;
  * 如果指定宽高.按照指定宽高的centerCrop读取
  * 如果没有指定宽高(width和height都是0),则尝试读取ImageView宽高,如果ImageView宽高也读取不到，载入一个小于屏幕尺寸的图像.
  * 如果指定宽高为(-1,-1),读取原图宽高到内存中
- *
  * @param <T> 图像请求源
  */
-public abstract class BitmapRequest<T> {
+public abstract class BitmapRequest<T> implements HostLifecycle{
     protected T mResource;
     protected int mRequestWidth;
     protected int mRequestHeight;
@@ -32,7 +37,7 @@ public abstract class BitmapRequest<T> {
     protected File mSpecifiedStoreFile; //指定下载位置
     protected Bitmap.Config mBitmapConfig = Bitmap.Config.RGB_565;
     protected WeakReference<Object> mHost;  //宿主，可能是Activity或者Fragment
-    protected ImageView mImageView;
+    protected Target mTarget;
     protected Drawable mReplaceDrawable; //占位图
     protected Drawable mErrorDrawable; //错误提示图
     protected ViewAnimator mAnimator = new ViewAnimator() {
@@ -59,13 +64,13 @@ public abstract class BitmapRequest<T> {
     public abstract File indicateSaveFile();
 
     public BitmapRequest(T from, Activity activity) {
-        mHost = new WeakReference<>((Object) activity);
         mResource = from;
+        setHost(activity);
     }
 
     public BitmapRequest(T from, Fragment fragment) {
-        mHost = new WeakReference<>((Object) fragment);
         mResource = from;
+        setHost(fragment);
     }
 
     public int getRequestWidth() {
@@ -119,6 +124,7 @@ public abstract class BitmapRequest<T> {
 
     public BitmapRequest setHost(Object host) {
         mHost = new WeakReference<>(host);
+        registerLifecycle();
         return this;
     }
 
@@ -132,25 +138,14 @@ public abstract class BitmapRequest<T> {
     }
 
     public BitmapRequest setImageView(ImageView imageView) {
-        //判断是强制宽高还是上一个ImageView的宽高
-        if (mImageView != null && mImageView.getWidth() == mRequestWidth && mImageView.getHeight() == mRequestHeight) {
-            mRequestWidth = 0;
-            mRequestHeight = 0;
-        }
-        mImageView = imageView;
-        //优先强制宽高
-        if (mImageView == null) {
-            mRequestWidth = 0;
-            mRequestHeight = 0;
-        } else if (mRequestWidth == 0 && mRequestHeight == 0) {
-            mRequestWidth = mImageView.getWidth();
-            mRequestHeight = mImageView.getHeight();
-        }
+        mRequestWidth=imageView.getWidth();
+        mRequestHeight=imageView.getHeight();
+        mTarget = new ImageTarget(imageView,getKey());
         return this;
     }
 
-    public ImageView getImageView() {
-        return mImageView;
+    public Target getTarget() {
+        return mTarget;
     }
 
     public BitmapRequest setCallback(BitmapRequestCallback callback) {
@@ -175,17 +170,19 @@ public abstract class BitmapRequest<T> {
         return this;
     }
 
+    public Drawable getErrorDrawable(){
+        return mErrorDrawable;
+    }
+
     /**
      * 完结请求逻辑
-     *
      * @param wrapper 位图
      */
     public void completeRequest(Bitmap wrapper) {
-        if (mImageView != null) {
+        if (mTarget != null) {
             if (wrapper != null) {
-                mImageView.setImageBitmap(wrapper);
-                if (mAnimator != null) mAnimator.animator(mImageView);
-            } else mImageView.setImageDrawable(mErrorDrawable);
+                mTarget.success(this,wrapper);
+            } else mTarget.failure(this);
         }
         if (mCallback != null) {
             if (wrapper != null)
@@ -196,7 +193,6 @@ public abstract class BitmapRequest<T> {
 
     /**
      * 根据全局和单请求配置返回存储位置(部分类型不适用)
-     *
      * @return 存储位置
      */
     public File getSaveFile() {
@@ -213,12 +209,6 @@ public abstract class BitmapRequest<T> {
         return null;
     }
 
-    public int computeMaxSampleSize(int originWidth, int originHeight) {
-        float widthRadio = (float) originWidth / (float) mRequestWidth;
-        float heightRadio = (float) originHeight / (float) mRequestHeight;
-        return (int) Math.ceil(Math.max(widthRadio, heightRadio));
-    }
-
     public void start() {
         FastImage.getInstance().startRequest(this);
     }
@@ -231,12 +221,90 @@ public abstract class BitmapRequest<T> {
             return getKey().equals(other.getKey()) &&
                     other.getRequestWidth() == mRequestWidth &&
                     other.getRequestHeight() == mRequestHeight &&
-                    (getImageView() != null && other.getImageView() != null) &&
-                    other.getImageView() == other.getImageView();
+                    (getTarget() != null && other.getTarget() != null) &&
+                    other.getTarget() == other.getTarget();
         } else return false;
     }
 
     public interface ViewAnimator {
         void animator(View v);
     }
+
+    @Override
+    public void onStart(Context context) {
+
+    }
+
+    @Override
+    public void onPause(Context context) {
+
+    }
+
+    @Override
+    public void onDestroy(Context context) {
+        FastImage.getInstance().getTargetReference().remove(mTarget);
+        unregisterLifecycle();
+        mTarget=null;
+    }
+
+    /**
+     * 注册宿主生命周期
+     */
+    public void registerLifecycle(){
+        Object host=getHost();
+        if(host!=null){
+            if(host instanceof Activity){
+                Activity activity= (Activity)host;
+                activity.getApplication().registerActivityLifecycleCallbacks(mActivityLifecycleCallbacks);
+            }
+            else if(host instanceof Fragment){
+                Fragment fragment= (Fragment)host;
+                LifecycleControlFragment controlFragment=new LifecycleControlFragment();
+                controlFragment.setHostLifecycle(this);
+                fragment.getChildFragmentManager()
+                        .beginTransaction()
+                        .add(controlFragment,"lifecycleControl")
+                        .commit();
+            }
+        }
+    }
+
+    /**
+     * 解注册宿主生命周期
+     */
+    public void unregisterLifecycle(){
+        Object host=getHost();
+
+        if(host!=null){
+            if(host instanceof Activity){
+                Activity activity= (Activity) host;
+                activity.getApplication().unregisterActivityLifecycleCallbacks(mActivityLifecycleCallbacks);
+            }
+            else if(host instanceof Fragment){
+                Fragment fragment=(Fragment)host;
+                fragment.getFragmentManager()
+                        .beginTransaction()
+                        .remove(fragment)
+                        .commit();
+            }
+        }
+    }
+
+    private Application.ActivityLifecycleCallbacks mActivityLifecycleCallbacks=new ActivityLifecycleCallbacksAdapter(){
+
+        @Override
+        public void onActivityResumed(Activity activity) {
+            onStart(activity);
+        }
+
+        @Override
+        public void onActivityPaused(Activity activity) {
+            onPause(activity);
+        }
+
+        @Override
+        public void onActivityDestroyed(Activity activity){
+            onDestroy(activity);
+        }
+    };
 }

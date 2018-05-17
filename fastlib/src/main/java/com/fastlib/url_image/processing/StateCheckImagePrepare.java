@@ -1,20 +1,17 @@
-package com.fastlib.test.UrlImage.processing_state;
+package com.fastlib.url_image.processing;
 
 import android.graphics.BitmapFactory;
-import android.support.v4.util.Pair;
 import android.text.TextUtils;
-import android.widget.ImageView;
 
 import com.fastlib.bean.ImageFileInfo;
 import com.fastlib.db.And;
 import com.fastlib.db.Condition;
 import com.fastlib.db.FastDatabase;
-import com.fastlib.test.UrlImage.BitmapWrapper;
-import com.fastlib.test.UrlImage.ImageDispatchCallback;
-import com.fastlib.test.UrlImage.ImageProcessManager;
-import com.fastlib.test.UrlImage.UrlImageProcessing;
-import com.fastlib.test.UrlImage.request.BitmapRequest;
-import com.fastlib.utils.ScreenUtils;
+import com.fastlib.url_image.ImageProcessManager;
+import com.fastlib.url_image.Target;
+import com.fastlib.url_image.bean.BitmapWrapper;
+import com.fastlib.url_image.callback.ImageDispatchCallback;
+import com.fastlib.url_image.request.BitmapRequest;
 
 import java.io.File;
 
@@ -34,16 +31,10 @@ public class StateCheckImagePrepare extends UrlImageProcessing{
     public void handle(ImageProcessManager processingManager){
         System.out.println("发起网络请求前预处理图像信息:"+mRequest.getResource());
         File file=mRequest.getSaveFile();
+        Target target=mRequest.getTarget();
         if(!file.exists()||file.length()<=0||!checkDownloadComplete()){
-            final ImageView imageView=mRequest.getImageView();
-            if(imageView!=null){
-                imageView.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        imageView.setImageDrawable(mRequest.getReplaceDrawable());
-                    }
-                });
-            }
+            if(target!=null)
+                target.prepareLoad(mRequest);
             processingManager.imageProcessStateConvert(false,this,new StateDownloadImageIfExpire(mRequest,mCallback));
             return;
         }
@@ -53,25 +44,8 @@ public class StateCheckImagePrepare extends UrlImageProcessing{
         justDecodeBoundOptions.inJustDecodeBounds=true;
         BitmapFactory.decodeFile(file.getAbsolutePath(),justDecodeBoundOptions);
         //如果请求宽高非0,尝试读取指定宽高中的最低值等比缩小.非0则尝试读取比手机屏幕小的尺寸
-        if(mRequest.getRequestWidth()!=0&&mRequest.getRequestHeight()!=0){
-            float widthRadio=(float)justDecodeBoundOptions.outWidth/(float)mRequest.getRequestWidth();
-            float heightRadio=(float)justDecodeBoundOptions.outHeight/(float)mRequest.getRequestHeight();
-            int maxRadio= (int) Math.ceil(Math.max(widthRadio,heightRadio));
-
-            if(maxRadio>1)
-                options.inSampleSize=maxRadio;
-        }
-        else{
-            Pair<Integer,Integer> screenSize= ScreenUtils.getScreenSize();
-
-            if(justDecodeBoundOptions.outWidth>screenSize.first||justDecodeBoundOptions.outHeight>screenSize.second){
-                float widthRadio=justDecodeBoundOptions.outWidth/screenSize.first;
-                float heightRadio=justDecodeBoundOptions.outHeight/screenSize.second;
-                float maxRadio=Math.max(widthRadio,heightRadio);
-
-                options.inSampleSize= (int) maxRadio;
-            }
-        }
+        options.inSampleSize=BitmapWrapper.getLocalImageScale(mRequest.getRequestWidth(),mRequest.getRequestHeight(),
+                justDecodeBoundOptions.outWidth,justDecodeBoundOptions.outHeight);
         options.inPreferredConfig=mRequest.getBitmapConfig();
         BitmapWrapper wrapper=new BitmapWrapper();
 
@@ -79,6 +53,12 @@ public class StateCheckImagePrepare extends UrlImageProcessing{
         wrapper.originHeight=justDecodeBoundOptions.outHeight;
         wrapper.sampleSize =options.inSampleSize;
         wrapper.bitmap =BitmapFactory.decodeFile(file.getAbsolutePath(),options);
+        if(wrapper.bitmap==null){ //如果本地图像加载失败尝试重新下载
+            if(target!=null)
+                target.prepareLoad(mRequest);
+            processingManager.imageProcessStateConvert(false,this,new StateDownloadImageIfExpire(mRequest,mCallback));
+            return;
+        }
         mCallback.complete(this,mRequest,wrapper);
         if(!TextUtils.isEmpty((String)mRequest.getResource()))
             processingManager.imageProcessStateConvert(false,this,new StateDownloadImageIfExpire(mRequest,mCallback));

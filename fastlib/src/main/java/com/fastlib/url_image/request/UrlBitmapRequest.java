@@ -1,9 +1,9 @@
-package com.fastlib.test.UrlImage.request;
+package com.fastlib.url_image.request;
 
 import android.app.Activity;
 import android.support.v4.app.Fragment;
 
-import com.fastlib.test.UrlImage.FastImage;
+import com.fastlib.url_image.FastImage;
 import com.fastlib.utils.Utils;
 
 import java.io.File;
@@ -29,6 +29,6 @@ public class UrlBitmapRequest extends BitmapRequest<String>{
 
     @Override
     public File indicateSaveFile() {
-        return new File(FastImage.getConfig().mSaveFolder,getKey());
+        return new File(FastImage.getInstance().getConfig().mSaveFolder,getKey());
     }
 }

@@ -1,17 +1,19 @@
-package com.fastlib.test.UrlImage;
+package com.fastlib.url_image;
 
 import android.support.annotation.NonNull;
 
-import com.fastlib.test.UrlImage.request.BitmapRequest;
+import com.fastlib.url_image.bean.FastImageConfig;
+import com.fastlib.url_image.pool.TargetReference;
+import com.fastlib.url_image.request.BitmapRequest;
 
 /**
  * Created by sgfb on 2017/11/5.
  * 图像加载工具包起点
  */
 public class FastImage{
-    private static FastImageConfig mConfig; //全局配置
     private static FastImage mInstance;
-    private BitmapReferenceManager mBitmapReferenceManager;
+    private FastImageConfig mConfig; //全局配置
+    private TargetReference mTargetReference;
     private ImageProcessManager mProcessingManager;
 
     private FastImage(){
@@ -31,9 +33,9 @@ public class FastImage{
         Object host=request.getHost();
 
         if(host==null) throw new IllegalArgumentException("BitmapRequest's host must not be null!");
-        if(mBitmapReferenceManager==null){
-            mBitmapReferenceManager=new BitmapReferenceManager(request.getContext());
-            mProcessingManager=new ImageProcessManager(mBitmapReferenceManager);
+        if(mTargetReference ==null){
+            mTargetReference =new TargetReference(request.getContext());
+            mProcessingManager=new ImageProcessManager(mTargetReference);
         }
         mProcessingManager.addBitmapRequest(request);
     }
@@ -42,11 +44,15 @@ public class FastImage{
      * 清理内存中的引用
      */
     public void clearMemory(){
-        if(mBitmapReferenceManager!=null)
-        mBitmapReferenceManager.clear();
+        if(mTargetReference !=null)
+        mTargetReference.clear();
     }
 
-    public static @NonNull FastImageConfig getConfig(){
+    public TargetReference getTargetReference(){
+        return mTargetReference;
+    }
+
+    public @NonNull FastImageConfig getConfig(){
         try {
             return mConfig.clone();
         } catch (CloneNotSupportedException e) {

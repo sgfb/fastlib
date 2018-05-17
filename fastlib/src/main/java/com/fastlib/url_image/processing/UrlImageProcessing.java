@@ -1,4 +1,4 @@
-package com.fastlib.test.UrlImage;
+package com.fastlib.url_image.processing;
 
 import android.app.Activity;
 import android.app.Application;
@@ -6,16 +6,21 @@ import android.content.Context;
 import android.support.annotation.CallSuper;
 import android.support.v4.app.Fragment;
 
-import com.fastlib.test.UrlImage.request.BitmapRequest;
+import com.fastlib.url_image.ImageProcessManager;
+import com.fastlib.url_image.callback.ImageDispatchCallback;
+import com.fastlib.url_image.lifecycle.ActivityLifecycleCallbacksAdapter;
+import com.fastlib.url_image.lifecycle.HostLifecycle;
+import com.fastlib.url_image.lifecycle.LifecycleControlFragment;
+import com.fastlib.url_image.request.BitmapRequest;
 
 /**
  * Created by sgfb on 18/1/15.
  * 一个具有状态的网络图像处理
  */
-public abstract class UrlImageProcessing implements HostLifecycle{
+public abstract class UrlImageProcessing implements HostLifecycle {
     protected BitmapRequest mRequest;
     protected ImageDispatchCallback mCallback;
-    private Application.ActivityLifecycleCallbacks mActivityLifecycleCallbacks=new AdapterActivityLifecycleCallbacks(){
+    private Application.ActivityLifecycleCallbacks mActivityLifecycleCallbacks=new ActivityLifecycleCallbacksAdapter(){
 
         @Override
         public void onActivityResumed(Activity activity) {

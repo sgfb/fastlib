@@ -1,6 +1,8 @@
-package com.fastlib.test.UrlImage;
+package com.fastlib.url_image.callback;
 
-import com.fastlib.test.UrlImage.request.BitmapRequest;
+import com.fastlib.url_image.bean.BitmapWrapper;
+import com.fastlib.url_image.processing.UrlImageProcessing;
+import com.fastlib.url_image.request.BitmapRequest;
 
 /**
  * Created by sgfb on 2017/11/5.

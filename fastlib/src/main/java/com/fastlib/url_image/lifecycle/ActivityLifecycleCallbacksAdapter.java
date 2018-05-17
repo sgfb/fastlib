@@ -1,4 +1,4 @@
-package com.fastlib.test.UrlImage;
+package com.fastlib.url_image.lifecycle;
 
 import android.app.Activity;
 import android.app.Application;
@@ -8,7 +8,7 @@ import android.os.Bundle;
  * Created by sgfb on 18/1/15.
  * Activity生命周期适配
  */
-public class AdapterActivityLifecycleCallbacks implements Application.ActivityLifecycleCallbacks{
+public class ActivityLifecycleCallbacksAdapter implements Application.ActivityLifecycleCallbacks{
 
     @Override
     public void onActivityCreated(Activity activity, Bundle savedInstanceState) {

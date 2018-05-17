@@ -1,4 +1,4 @@
-package com.fastlib.test.UrlImage.request;
+package com.fastlib.url_image.request;
 
 import android.app.Activity;
 import android.support.v4.app.Fragment;

@@ -1,17 +1,22 @@
-package com.fastlib.test.UrlImage;
+package com.fastlib.url_image;
 
 import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Looper;
 
 import com.fastlib.net.NetManager;
-import com.fastlib.test.UrlImage.processing_state.StateCheckImagePrepare;
-import com.fastlib.test.UrlImage.processing_state.StateLoadImageOnResource;
-import com.fastlib.test.UrlImage.processing_state.StateLoadNewImageOnDisk;
-import com.fastlib.test.UrlImage.request.BitmapRequest;
-import com.fastlib.test.UrlImage.request.DiskBitmapRequest;
-import com.fastlib.test.UrlImage.request.ResourceBitmapRequest;
-import com.fastlib.test.UrlImage.request.UrlBitmapRequest;
+import com.fastlib.url_image.bean.BitmapWrapper;
+import com.fastlib.url_image.bean.FastImageConfig;
+import com.fastlib.url_image.callback.ImageDispatchCallback;
+import com.fastlib.url_image.pool.TargetReference;
+import com.fastlib.url_image.processing.StateCheckImagePrepare;
+import com.fastlib.url_image.processing.StateLoadImageOnResource;
+import com.fastlib.url_image.processing.StateLoadNewImageOnDisk;
+import com.fastlib.url_image.processing.UrlImageProcessing;
+import com.fastlib.url_image.request.BitmapRequest;
+import com.fastlib.url_image.request.DiskBitmapRequest;
+import com.fastlib.url_image.request.ResourceBitmapRequest;
+import com.fastlib.url_image.request.UrlBitmapRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,17 +30,15 @@ import java.util.concurrent.BlockingQueue;
  * 1.接到{@link BitmapRequest}时判断本地资源是否过期,根据缓存策略判断内存和硬盘缓存来决定使用是否下载,移入内存使用
  * 2.下载中监听到中断生命回调则暂停下载，监听到销毁生命回调移除任务
  * 3.下载和硬盘中图像读取到内存中线程调度
- * //TODO 内存池中已有但是有更大尺寸请求时又重复的发起了过期验证
- * //TODO RequestList如果有第二个ImageView请求将不会有正确逻辑
  */
 public class ImageProcessManager {
-    private BitmapReferenceManager mBitmapReferenceManager;
+    private TargetReference mImageViewReference;
     private List<BitmapRequest> mRequestList=new ArrayList<>();
     private BlockingQueue<UrlImageProcessing> mDiskLoaderQueue=new ArrayBlockingQueue<>(3);
     private BlockingQueue<UrlImageProcessing> mNetDownloaderQueue=new ArrayBlockingQueue<>(3);
 
-    public ImageProcessManager(BitmapReferenceManager bitmapReferenceManager){
-        mBitmapReferenceManager=bitmapReferenceManager;
+    public ImageProcessManager(TargetReference imageViewReference){
+        mImageViewReference = imageViewReference;
         //长期占用两根线程作为服务器中数据下载到本地和本地读取到内存中处理工作(后期改为工作线程调度)
         NetManager.sRequestPool.execute(new Runnable() {
             @Override
@@ -104,8 +107,8 @@ public class ImageProcessManager {
                 Handler handler=new Handler(Looper.getMainLooper());
                 if(wrapper.bitmap!=null){
                     //根据策略来是否存储到内存池，和缓存在磁盘上
-                    if((request.getStoreStrategy()&FastImageConfig.STRATEGY_STORE_SAVE_MEMORY)!=0)
-                        mBitmapReferenceManager.addBitmapReference(request,wrapper,request.getImageView());
+                    if((request.getStoreStrategy()& FastImageConfig.STRATEGY_STORE_SAVE_MEMORY)!=0)
+                        mImageViewReference.addBitmapReference(request,wrapper,request.getTarget());
                     else if(((request.getStoreStrategy()&FastImageConfig.STRATEGY_STORE_SAVE_DISK)==0)&&request.getSaveFile()!=null)
                         request.getSaveFile().delete();
                 }
@@ -130,11 +133,11 @@ public class ImageProcessManager {
     /**
      * 增加图像请求.最初过滤，如果图片存在内存中直接取内存
      * 如果存在磁盘中调起{@link StateCheckImagePrepare}
-     * 否则直接调起{@link com.fastlib.test.UrlImage.processing_state.StateDownloadImageIfExpire}
+     * 否则直接调起{@link com.fastlib.url_image.processing.StateDownloadImageIfExpire}
      * @param request 图像请求
      */
     private void internalAddBitmapRequest(final BitmapRequest request,final UrlImageProcessing urlImageProcessing){
-        Bitmap bitmapOnMemory=mBitmapReferenceManager.getFromMemory(request);
+        Bitmap bitmapOnMemory= mImageViewReference.getFromMemory(request);
         if(bitmapOnMemory!=null){
             System.out.println("从内存中获取Bitmap:"+request.getResource());
             request.completeRequest(bitmapOnMemory);
@@ -143,7 +146,7 @@ public class ImageProcessManager {
         else{
             if(!mRequestList.contains(request)){
                 mRequestList.add(request);
-                NetManager.sRequestPool.execute(new Runnable() {
+                NetManager.sRequestPool.execute(new Runnable(){
                     @Override
                     public void run() {
                         try{
