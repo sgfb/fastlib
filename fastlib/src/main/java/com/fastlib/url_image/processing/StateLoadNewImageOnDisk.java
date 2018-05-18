@@ -6,7 +6,7 @@ import android.support.v4.util.Pair;
 import com.fastlib.url_image.ImageProcessManager;
 import com.fastlib.url_image.bean.BitmapWrapper;
 import com.fastlib.url_image.callback.ImageDispatchCallback;
-import com.fastlib.url_image.request.BitmapRequest;
+import com.fastlib.url_image.request.ImageRequest;
 import com.fastlib.utils.ScreenUtils;
 
 import java.io.File;
@@ -17,7 +17,7 @@ import java.io.File;
  */
 public class StateLoadNewImageOnDisk extends UrlImageProcessing{
 
-    public StateLoadNewImageOnDisk(BitmapRequest request, ImageDispatchCallback callback) {
+    public StateLoadNewImageOnDisk(ImageRequest request, ImageDispatchCallback callback) {
         super(request, callback);
     }
 

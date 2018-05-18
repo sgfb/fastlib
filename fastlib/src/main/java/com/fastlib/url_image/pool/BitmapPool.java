@@ -1,13 +1,14 @@
 package com.fastlib.url_image.pool;
 
-import android.app.ActivityManager;
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.support.v4.util.Pair;
+import android.text.TextUtils;
 
+import com.fastlib.db.SaveUtil;
 import com.fastlib.url_image.Target;
 import com.fastlib.url_image.bean.BitmapWrapper;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,12 +23,11 @@ public class BitmapPool {
     private Map<String,BitmapWrapper> mPool; //键自定义key 值Bitmap包裹
     private TargetReference mImageViewReference;
 
-    BitmapPool(Context context,TargetReference imageViewReference){
-        ActivityManager am= (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+    BitmapPool(TargetReference imageViewReference){
         mPool=new HashMap<>();
         mImageViewReference = imageViewReference;
 
-        mPoolSize=mPoolRemain=am.getMemoryClass()*1024*1024/5;  //可用内存的5分之1
+        mPoolSize=mPoolRemain=getMemoryClass()*1024*1024/5;  //可用内存的5分之1
         System.out.println("生成Bitmap池 池总容量:"+(mPoolSize/1024)+"KB");
     }
 
@@ -67,12 +67,8 @@ public class BitmapPool {
         if(mPool.containsKey(key))
             removeBitmap(key);
         mPool.put(key,wrapper);
-        mPoolRemain-=bitmap.getByteCount();
-        System.out.println("Bitmap入池 申请"+(bitmap.getByteCount()/1024)+"KB 剩余池容量:"+(mPoolRemain/1024)+"KB");
-    }
-
-    public boolean containBitmap(String key){
-        return mPool.containsKey(key);
+        mPoolRemain-=bitmap==null?wrapper.compressData.length:bitmap.getByteCount();
+        System.out.println("Bitmap入池 申请"+(bitmap==null?wrapper.compressData.length/1024:bitmap.getByteCount()/1024)+" 剩余池容量:"+(mPoolRemain/1024)+"KB");
     }
 
     public long getRemainSize(){
@@ -142,5 +138,26 @@ public class BitmapPool {
                 pair=Pair.create(entry.getKey(),imageViewSize);
         }
         return pair.first;
+    }
+
+    /**
+     * 绕过ActivityManager获取每个App能使用的最大内存(未开启large heap)
+     * @return 单app使用最大内存，MB单位
+     */
+    private int getMemoryClass(){
+        try {
+            final String HEAPLIMIT="dalvik.vm.heapgrowthlimit=";
+            String prop= new String(SaveUtil.loadFile("/system/build.prop"));
+            int heaplimitIndex=prop.indexOf(HEAPLIMIT);
+            int heaplimitLineLastIndex=prop.indexOf("\n",heaplimitIndex);
+            if(heaplimitIndex!=-1&&heaplimitLineLastIndex!=-1){
+                String heaplimitStr=prop.substring(heaplimitIndex+HEAPLIMIT.length(),heaplimitLineLastIndex);
+                if(!TextUtils.isEmpty(heaplimitStr)&&heaplimitStr.length()>1)
+                    return Integer.parseInt(heaplimitStr.substring(0,heaplimitStr.length()-1));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 }

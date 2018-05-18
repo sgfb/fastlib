@@ -9,13 +9,13 @@ import java.io.File;
  * Created by sgfb on 18/1/23.
  * 来自资源库的图像请求
  */
-public class ResourceBitmapRequest extends BitmapRequest<Integer>{
+public class ResourceImageRequest extends ImageRequest<Integer> {
 
-    public ResourceBitmapRequest(Integer from, Activity activity) {
+    public ResourceImageRequest(Integer from, Activity activity) {
         super(from, activity);
     }
 
-    public ResourceBitmapRequest(Integer from, Fragment fragment) {
+    public ResourceImageRequest(Integer from, Fragment fragment) {
         super(from, fragment);
     }
 

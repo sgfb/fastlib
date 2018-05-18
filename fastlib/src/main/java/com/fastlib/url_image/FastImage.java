@@ -4,7 +4,7 @@ import android.support.annotation.NonNull;
 
 import com.fastlib.url_image.bean.FastImageConfig;
 import com.fastlib.url_image.pool.TargetReference;
-import com.fastlib.url_image.request.BitmapRequest;
+import com.fastlib.url_image.request.ImageRequest;
 
 /**
  * Created by sgfb on 2017/11/5.
@@ -20,48 +20,49 @@ public class FastImage{
         mConfig=new FastImageConfig();
     }
 
-    public static synchronized FastImage getInstance(){
+    private static void checkInstance(){
         if(mInstance==null) mInstance=new FastImage();
-        return mInstance;
     }
 
     /**
      * 发起一个图像请求
      * @param request 图像请求
      */
-    public void startRequest(BitmapRequest request){
-        Object host=request.getHost();
-
-        if(host==null) throw new IllegalArgumentException("BitmapRequest's host must not be null!");
-        if(mTargetReference ==null){
-            mTargetReference =new TargetReference(request.getContext());
-            mProcessingManager=new ImageProcessManager(mTargetReference);
+    public static synchronized void request(ImageRequest request){
+        checkInstance();
+        if(mInstance.mTargetReference ==null){
+            mInstance.mTargetReference =new TargetReference();
+            mInstance.mProcessingManager=new ImageProcessManager(mInstance.mTargetReference);
         }
-        mProcessingManager.addBitmapRequest(request);
+        mInstance.mProcessingManager.addBitmapRequest(request);
     }
 
     /**
      * 清理内存中的引用
      */
-    public void clearMemory(){
-        if(mTargetReference !=null)
-        mTargetReference.clear();
+    public static void clearMemory(){
+        checkInstance();
+        if(mInstance.mTargetReference !=null)
+        mInstance.mTargetReference.clear();
     }
 
-    public TargetReference getTargetReference(){
-        return mTargetReference;
+    public static TargetReference getTargetReference(){
+        checkInstance();
+        return mInstance.mTargetReference;
     }
 
-    public @NonNull FastImageConfig getConfig(){
+    public static  @NonNull FastImageConfig getConfig(){
+        checkInstance();
         try {
-            return mConfig.clone();
+            return mInstance.mConfig.clone();
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();
         }
         return new FastImageConfig();
     }
 
-    public void setConfig(@NonNull FastImageConfig config){
-        mConfig=config;
+    public static void setConfig(@NonNull FastImageConfig config){
+        checkInstance();
+        mInstance.mConfig=config;
     }
 }

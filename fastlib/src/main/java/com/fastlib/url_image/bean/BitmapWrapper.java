@@ -1,9 +1,14 @@
 package com.fastlib.url_image.bean;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.v4.util.Pair;
 
 import com.fastlib.utils.ScreenUtils;
+import com.fastlib.utils.zip.ZipFileEntity;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 /**
  * Created by sgfb on 18/1/6.
@@ -25,6 +30,36 @@ public class BitmapWrapper{
         int thumbWidth=bitmapWidth/minRadio;
         int thumbHeight=bitmapHeight/minRadio;
         return Bitmap.createScaledBitmap(bitmap,thumbWidth,thumbHeight,false);
+    }
+
+    public Bitmap getBitmap(){
+        if(bitmap==null&&compressData!=null) uncompress();
+        return bitmap;
+    }
+
+    public void compress(){
+        ByteArrayOutputStream baos=new ByteArrayOutputStream();
+
+        try {
+            bitmap.compress(Bitmap.CompressFormat.JPEG,100,baos);
+            compressData= ZipFileEntity.memCompress(baos.toByteArray());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        bitmap.recycle();
+        bitmap=null;
+    }
+
+    public void uncompress(){
+        BitmapFactory.Options options=new BitmapFactory.Options();
+        options.inPreferredConfig= Bitmap.Config.RGB_565;
+        try {
+            byte[] uncompress=ZipFileEntity.memUncompress(compressData);
+            bitmap=BitmapFactory.decodeByteArray(uncompress,0,uncompress.length,options);
+            compressData=null;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

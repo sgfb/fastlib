@@ -9,13 +9,13 @@ import java.io.File;
  * Created by sgfb on 18/1/23.
  * 图像来自磁盘的图像请求
  */
-public class DiskBitmapRequest extends BitmapRequest<File>{
+public class DiskImageRequest extends ImageRequest<File> {
 
-    public DiskBitmapRequest(File from, Activity activity) {
+    public DiskImageRequest(File from, Activity activity) {
         super(from, activity);
     }
 
-    public DiskBitmapRequest(File from, Fragment fragment) {
+    public DiskImageRequest(File from, Fragment fragment) {
         super(from, fragment);
     }
 

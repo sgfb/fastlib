@@ -13,10 +13,11 @@ import com.fastlib.url_image.processing.StateCheckImagePrepare;
 import com.fastlib.url_image.processing.StateLoadImageOnResource;
 import com.fastlib.url_image.processing.StateLoadNewImageOnDisk;
 import com.fastlib.url_image.processing.UrlImageProcessing;
-import com.fastlib.url_image.request.BitmapRequest;
-import com.fastlib.url_image.request.DiskBitmapRequest;
-import com.fastlib.url_image.request.ResourceBitmapRequest;
-import com.fastlib.url_image.request.UrlBitmapRequest;
+import com.fastlib.url_image.request.ImageRequest;
+import com.fastlib.url_image.request.DiskImageRequest;
+import com.fastlib.url_image.request.ResourceImageRequest;
+import com.fastlib.url_image.request.ResponseStatus;
+import com.fastlib.url_image.request.UrlImageRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,15 +26,15 @@ import java.util.concurrent.BlockingQueue;
 
 /**
  * Created by sgfb on 18/1/4.
- * 持有正在处理和待处理的{@link BitmapRequest}
+ * 持有正在处理和待处理的{@link ImageRequest}
  * 监听对应Activity和Fragment的生命周期回调
- * 1.接到{@link BitmapRequest}时判断本地资源是否过期,根据缓存策略判断内存和硬盘缓存来决定使用是否下载,移入内存使用
+ * 1.接到{@link ImageRequest}时判断本地资源是否过期,根据缓存策略判断内存和硬盘缓存来决定使用是否下载,移入内存使用
  * 2.下载中监听到中断生命回调则暂停下载，监听到销毁生命回调移除任务
  * 3.下载和硬盘中图像读取到内存中线程调度
  */
 public class ImageProcessManager {
     private TargetReference mImageViewReference;
-    private List<BitmapRequest> mRequestList=new ArrayList<>();
+    private List<ImageRequest> mRequestList=new ArrayList<>();
     private BlockingQueue<UrlImageProcessing> mDiskLoaderQueue=new ArrayBlockingQueue<>(3);
     private BlockingQueue<UrlImageProcessing> mNetDownloaderQueue=new ArrayBlockingQueue<>(3);
 
@@ -78,7 +79,6 @@ public class ImageProcessManager {
      */
     public void imageProcessStateConvert(boolean diskState,UrlImageProcessing oldProcessing,UrlImageProcessing newProcessing){
         try{
-            newProcessing.stateConvert(oldProcessing);
             if(diskState) mDiskLoaderQueue.put(newProcessing);
             else mNetDownloaderQueue.put(newProcessing);
         } catch (InterruptedException e){
@@ -90,7 +90,7 @@ public class ImageProcessManager {
      * 试图增加一个网络请求到队列
      * @param request 网络请求
      */
-    public void addBitmapRequest(BitmapRequest request){
+    public void addBitmapRequest(ImageRequest request){
         final UrlImageProcessing urlImageProcessing=generateFirstImageProcessing(request);
         internalAddBitmapRequest(request,urlImageProcessing);
     }
@@ -100,10 +100,10 @@ public class ImageProcessManager {
      * @param request 图像请求
      * @return 图像请求处理器
      */
-    private UrlImageProcessing generateFirstImageProcessing(BitmapRequest request){
+    private UrlImageProcessing generateFirstImageProcessing(ImageRequest request){
         ImageDispatchCallback callback=new ImageDispatchCallback() {
             @Override
-            public void complete(UrlImageProcessing processing, final BitmapRequest request, final BitmapWrapper wrapper){
+            public void complete(UrlImageProcessing processing, final ImageRequest request, final BitmapWrapper wrapper){
                 Handler handler=new Handler(Looper.getMainLooper());
                 if(wrapper.bitmap!=null){
                     //根据策略来是否存储到内存池，和缓存在磁盘上
@@ -115,17 +115,17 @@ public class ImageProcessManager {
                 handler.post(new Runnable() {
                     @Override
                     public void run(){
-                        request.completeRequest(wrapper.bitmap);
+                        request.completeRequest(wrapper.getBitmap());
                     }
                 });
             }
         };
         //先检查是否请求内部,文件是否存在磁盘上
-        if(request instanceof ResourceBitmapRequest)
+        if(request instanceof ResourceImageRequest)
             return new StateLoadImageOnResource(request,callback);
-        else if(request instanceof DiskBitmapRequest)
+        else if(request instanceof DiskImageRequest)
             return new StateLoadNewImageOnDisk(request,callback);
-        else if(request instanceof UrlBitmapRequest)
+        else if(request instanceof UrlImageRequest)
             return new StateCheckImagePrepare(request,callback);
         else return null;
     }
@@ -136,12 +136,14 @@ public class ImageProcessManager {
      * 否则直接调起{@link com.fastlib.url_image.processing.StateDownloadImageIfExpire}
      * @param request 图像请求
      */
-    private void internalAddBitmapRequest(final BitmapRequest request,final UrlImageProcessing urlImageProcessing){
+    private void internalAddBitmapRequest(final ImageRequest request, final UrlImageProcessing urlImageProcessing){
         Bitmap bitmapOnMemory= mImageViewReference.getFromMemory(request);
         if(bitmapOnMemory!=null){
             System.out.println("从内存中获取Bitmap:"+request.getResource());
+            ResponseStatus status=request.getResponseStatus();
+            status.setFromMemory(true);
+            request.setResponseStatus(status);
             request.completeRequest(bitmapOnMemory);
-            urlImageProcessing.unregisterLifecycle();
         }
         else{
             if(!mRequestList.contains(request)){
@@ -150,7 +152,7 @@ public class ImageProcessManager {
                     @Override
                     public void run() {
                         try{
-                            if(request instanceof UrlBitmapRequest&&(request.getSaveFile()==null||!request.getSaveFile().exists()))
+                            if(request instanceof UrlImageRequest &&(request.getSaveFile()==null||!request.getSaveFile().exists()))
                                 mNetDownloaderQueue.put(urlImageProcessing);
                             else
                                 mDiskLoaderQueue.put(urlImageProcessing);
@@ -168,7 +170,7 @@ public class ImageProcessManager {
      * 返回图像请求列表
      * @return 图像请求列表
      */
-    public List<BitmapRequest> getRequestList(){
+    public List<ImageRequest> getRequestList(){
         return mRequestList;
     }
 }

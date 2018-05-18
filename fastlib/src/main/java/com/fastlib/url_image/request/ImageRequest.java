@@ -1,7 +1,6 @@
 package com.fastlib.url_image.request;
 
 import android.app.Activity;
-import android.app.Application;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
@@ -14,9 +13,6 @@ import com.fastlib.url_image.Target;
 import com.fastlib.url_image.callback.BitmapRequestCallback;
 import com.fastlib.url_image.FastImage;
 import com.fastlib.url_image.bean.FastImageConfig;
-import com.fastlib.url_image.lifecycle.ActivityLifecycleCallbacksAdapter;
-import com.fastlib.url_image.lifecycle.HostLifecycle;
-import com.fastlib.url_image.lifecycle.LifecycleControlFragment;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -29,8 +25,9 @@ import java.lang.ref.WeakReference;
  * 如果指定宽高为(-1,-1),读取原图宽高到内存中
  * @param <T> 图像请求源
  */
-public abstract class BitmapRequest<T> implements HostLifecycle{
+public abstract class ImageRequest<T>{
     protected T mResource;
+    protected boolean isCompressInMemory;
     protected int mRequestWidth;
     protected int mRequestHeight;
     protected int mStoreStrategy = FastImageConfig.STRATEGY_STORE_SAVE_MEMORY | FastImageConfig.STRATEGY_STORE_SAVE_DISK;
@@ -48,6 +45,7 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
         }
     };
     protected BitmapRequestCallback mCallback;
+    protected ResponseStatus mResponseStatus=new ResponseStatus();
 
     /**
      * 唯一键值来区别与其它图像
@@ -63,12 +61,12 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
      */
     public abstract File indicateSaveFile();
 
-    public BitmapRequest(T from, Activity activity) {
+    public ImageRequest(T from, Activity activity) {
         mResource = from;
         setHost(activity);
     }
 
-    public BitmapRequest(T from, Fragment fragment) {
+    public ImageRequest(T from, Fragment fragment) {
         mResource = from;
         setHost(fragment);
     }
@@ -77,7 +75,7 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
         return mRequestWidth;
     }
 
-    public BitmapRequest setRequestWidth(int requestWidth) {
+    public ImageRequest setRequestWidth(int requestWidth) {
         mRequestWidth = requestWidth;
         return this;
     }
@@ -86,7 +84,7 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
         return mRequestHeight;
     }
 
-    public BitmapRequest setRequestHeight(int requestHeight) {
+    public ImageRequest setRequestHeight(int requestHeight) {
         mRequestHeight = requestHeight;
         return this;
     }
@@ -95,7 +93,7 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
         return mSpecifiedStoreFile;
     }
 
-    public BitmapRequest setSpecifiedStoreFile(File specifiedStoreFile) {
+    public ImageRequest setSpecifiedStoreFile(File specifiedStoreFile) {
         mSpecifiedStoreFile = specifiedStoreFile;
         return this;
     }
@@ -104,7 +102,7 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
         return mBitmapConfig;
     }
 
-    public BitmapRequest setBitmapConfig(Bitmap.Config bitmapConfig) {
+    public ImageRequest setBitmapConfig(Bitmap.Config bitmapConfig) {
         mBitmapConfig = bitmapConfig;
         return this;
     }
@@ -113,7 +111,7 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
         return mStoreStrategy;
     }
 
-    public BitmapRequest setStoreStrategy(int storeStrategy) {
+    public ImageRequest setStoreStrategy(int storeStrategy) {
         mStoreStrategy = storeStrategy;
         return this;
     }
@@ -122,13 +120,12 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
         return mHost != null ? mHost.get() : null;
     }
 
-    public BitmapRequest setHost(Object host) {
+    public ImageRequest setHost(Object host) {
         mHost = new WeakReference<>(host);
-        registerLifecycle();
         return this;
     }
 
-    public BitmapRequest setReplaceDrawable(Drawable drawable){
+    public ImageRequest setReplaceDrawable(Drawable drawable){
         mReplaceDrawable=drawable;
         return this;
     }
@@ -137,7 +134,7 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
         return mReplaceDrawable;
     }
 
-    public BitmapRequest setImageView(ImageView imageView) {
+    public ImageRequest setImageView(ImageView imageView) {
         mRequestWidth=imageView.getWidth();
         mRequestHeight=imageView.getHeight();
         mTarget = new ImageTarget(imageView,getKey());
@@ -148,7 +145,7 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
         return mTarget;
     }
 
-    public BitmapRequest setCallback(BitmapRequestCallback callback) {
+    public ImageRequest setCallback(BitmapRequestCallback callback) {
         mCallback = callback;
         return this;
     }
@@ -165,13 +162,31 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
         return mAnimator;
     }
 
-    public BitmapRequest setAnimator(ViewAnimator mAnimator) {
+    public ImageRequest setAnimator(ViewAnimator mAnimator) {
         this.mAnimator = mAnimator;
         return this;
     }
 
     public Drawable getErrorDrawable(){
         return mErrorDrawable;
+    }
+
+    public ResponseStatus getResponseStatus() {
+        return mResponseStatus;
+    }
+
+    public ImageRequest<T> setResponseStatus(ResponseStatus mResponseStatus) {
+        this.mResponseStatus = mResponseStatus;
+        return this;
+    }
+
+    public ImageRequest<T> setCompressInMemory(boolean compressInMemory){
+        isCompressInMemory=compressInMemory;
+        return this;
+    }
+
+    public boolean isCompressInMemory(){
+        return isCompressInMemory;
     }
 
     /**
@@ -189,6 +204,8 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
                 mCallback.success(this, wrapper);
             else mCallback.failure(this);
         }
+        mHost.clear();
+        mHost=null;
     }
 
     /**
@@ -210,14 +227,14 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
     }
 
     public void start() {
-        FastImage.getInstance().startRequest(this);
+        FastImage.request(this);
     }
 
     @Override
     public boolean equals(Object o) {
         if (o == this) return true;
-        if (o instanceof BitmapRequest) {
-            BitmapRequest other = (BitmapRequest) o;
+        if (o instanceof ImageRequest) {
+            ImageRequest other = (ImageRequest) o;
             return getKey().equals(other.getKey()) &&
                     other.getRequestWidth() == mRequestWidth &&
                     other.getRequestHeight() == mRequestHeight &&
@@ -226,85 +243,19 @@ public abstract class BitmapRequest<T> implements HostLifecycle{
         } else return false;
     }
 
+    public static RequestFactory host(Context context){
+        return RequestFactory.host(context);
+    }
+
+    public static RequestFactory host(Activity activity){
+        return RequestFactory.host(activity);
+    }
+
+    public static RequestFactory host(Fragment fragment){
+        return RequestFactory.host(fragment);
+    }
+
     public interface ViewAnimator {
         void animator(View v);
     }
-
-    @Override
-    public void onStart(Context context) {
-
-    }
-
-    @Override
-    public void onPause(Context context) {
-
-    }
-
-    @Override
-    public void onDestroy(Context context) {
-        FastImage.getInstance().getTargetReference().remove(mTarget);
-        unregisterLifecycle();
-        mTarget=null;
-    }
-
-    /**
-     * 注册宿主生命周期
-     */
-    public void registerLifecycle(){
-        Object host=getHost();
-        if(host!=null){
-            if(host instanceof Activity){
-                Activity activity= (Activity)host;
-                activity.getApplication().registerActivityLifecycleCallbacks(mActivityLifecycleCallbacks);
-            }
-            else if(host instanceof Fragment){
-                Fragment fragment= (Fragment)host;
-                LifecycleControlFragment controlFragment=new LifecycleControlFragment();
-                controlFragment.setHostLifecycle(this);
-                fragment.getChildFragmentManager()
-                        .beginTransaction()
-                        .add(controlFragment,"lifecycleControl")
-                        .commit();
-            }
-        }
-    }
-
-    /**
-     * 解注册宿主生命周期
-     */
-    public void unregisterLifecycle(){
-        Object host=getHost();
-
-        if(host!=null){
-            if(host instanceof Activity){
-                Activity activity= (Activity) host;
-                activity.getApplication().unregisterActivityLifecycleCallbacks(mActivityLifecycleCallbacks);
-            }
-            else if(host instanceof Fragment){
-                Fragment fragment=(Fragment)host;
-                fragment.getFragmentManager()
-                        .beginTransaction()
-                        .remove(fragment)
-                        .commit();
-            }
-        }
-    }
-
-    private Application.ActivityLifecycleCallbacks mActivityLifecycleCallbacks=new ActivityLifecycleCallbacksAdapter(){
-
-        @Override
-        public void onActivityResumed(Activity activity) {
-            onStart(activity);
-        }
-
-        @Override
-        public void onActivityPaused(Activity activity) {
-            onPause(activity);
-        }
-
-        @Override
-        public void onActivityDestroyed(Activity activity){
-            onDestroy(activity);
-        }
-    };
 }

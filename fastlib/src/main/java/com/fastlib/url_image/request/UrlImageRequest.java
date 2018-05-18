@@ -12,13 +12,13 @@ import java.io.File;
  * Created by sgfb on 18/1/23.
  * 图像来自远程服务器的图像请求
  */
-public class UrlBitmapRequest extends BitmapRequest<String>{
+public class UrlImageRequest extends ImageRequest<String> {
 
-    public UrlBitmapRequest(String from, Activity activity) {
+    public UrlImageRequest(String from, Activity activity) {
         super(from, activity);
     }
 
-    public UrlBitmapRequest(String from, Fragment fragment) {
+    public UrlImageRequest(String from, Fragment fragment) {
         super(from, fragment);
     }
 
@@ -29,6 +29,6 @@ public class UrlBitmapRequest extends BitmapRequest<String>{
 
     @Override
     public File indicateSaveFile() {
-        return new File(FastImage.getInstance().getConfig().mSaveFolder,getKey());
+        return new File(FastImage.getConfig().mSaveFolder,getKey());
     }
 }

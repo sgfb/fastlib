@@ -2,7 +2,7 @@ package com.fastlib.url_image.callback;
 
 import android.graphics.Bitmap;
 
-import com.fastlib.url_image.request.BitmapRequest;
+import com.fastlib.url_image.request.ImageRequest;
 
 /**
  * Created by sgfb on 18/1/22.
@@ -15,11 +15,11 @@ public interface BitmapRequestCallback{
      * @param request 图像请求
      * @param bitmap 位图
      */
-    void success(BitmapRequest request, Bitmap bitmap);
+    void success(ImageRequest request, Bitmap bitmap);
 
     /**
      * 图像请求失败回调方法
      * @param request 图像请求
      */
-    void failure(BitmapRequest request);
+    void failure(ImageRequest request);
 }

@@ -11,7 +11,7 @@ import com.fastlib.url_image.ImageProcessManager;
 import com.fastlib.url_image.Target;
 import com.fastlib.url_image.bean.BitmapWrapper;
 import com.fastlib.url_image.callback.ImageDispatchCallback;
-import com.fastlib.url_image.request.BitmapRequest;
+import com.fastlib.url_image.request.ImageRequest;
 
 import java.io.File;
 
@@ -23,7 +23,7 @@ import java.io.File;
  */
 public class StateCheckImagePrepare extends UrlImageProcessing{
 
-    public StateCheckImagePrepare(BitmapRequest request, ImageDispatchCallback callback) {
+    public StateCheckImagePrepare(ImageRequest request, ImageDispatchCallback callback) {
         super(request, callback);
     }
 
@@ -59,7 +59,7 @@ public class StateCheckImagePrepare extends UrlImageProcessing{
             processingManager.imageProcessStateConvert(false,this,new StateDownloadImageIfExpire(mRequest,mCallback));
             return;
         }
-        mCallback.complete(this,mRequest,wrapper);
+//        mCallback.complete(this,mRequest,wrapper);
         if(!TextUtils.isEmpty((String)mRequest.getResource()))
             processingManager.imageProcessStateConvert(false,this,new StateDownloadImageIfExpire(mRequest,mCallback));
     }

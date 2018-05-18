@@ -12,10 +12,9 @@ import com.fastlib.net.DefaultDownload;
 import com.fastlib.net.Request;
 import com.fastlib.net.listener.SimpleListener;
 import com.fastlib.url_image.ImageProcessManager;
-import com.fastlib.url_image.bean.BitmapWrapper;
 import com.fastlib.url_image.callback.ImageDispatchCallback;
-import com.fastlib.url_image.request.BitmapRequest;
-import com.fastlib.url_image.request.UrlBitmapRequest;
+import com.fastlib.url_image.request.ImageRequest;
+import com.fastlib.url_image.request.UrlImageRequest;
 
 import java.util.List;
 
@@ -27,14 +26,14 @@ import java.util.List;
 public class StateDownloadImageIfExpire extends UrlImageProcessing{
     private Request mNetRequest;
 
-    public StateDownloadImageIfExpire(BitmapRequest request, ImageDispatchCallback callback){
+    public StateDownloadImageIfExpire(ImageRequest request, ImageDispatchCallback callback){
         super(request, callback);
     }
 
     @Override
     public void handle(final ImageProcessManager processingManager){
-        final UrlBitmapRequest br= (UrlBitmapRequest) mRequest;
-        final List<BitmapRequest> requestList=processingManager.getRequestList();
+        final UrlImageRequest br= (UrlImageRequest) mRequest;
+        final List<ImageRequest> requestList=processingManager.getRequestList();
         mNetRequest=new Request("get",br.getResource());
         DefaultDownload dd=new DefaultDownload(br.getSaveFile()).setSupportBreak(true);
         //如果文件存在再从数据库取过期时间
@@ -66,8 +65,8 @@ public class StateDownloadImageIfExpire extends UrlImageProcessing{
 
             @Override
             public void onErrorListener(Request r, String error){
-                processingManager.imageProcessStateConvert(true,StateDownloadImageIfExpire.this,new StateLoadNewImageOnDisk(br,mCallback));
-                requestList.remove(br);
+                boolean removeFlag=requestList.remove(br);
+                if(removeFlag) processingManager.imageProcessStateConvert(true,StateDownloadImageIfExpire.this,new StateLoadNewImageOnDisk(br,mCallback));
             }
         });
         mNetRequest.start();

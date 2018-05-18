@@ -23,7 +23,7 @@ public class BitmapPoolTest{
 
     @Before
     public void setUp() throws Exception {
-        mPool=new BitmapPool(ShadowApplication.getInstance().getApplicationContext(),new TargetReference(ShadowApplication.getInstance().getApplicationContext()));
+        mPool=new BitmapPool(new TargetReference());
     }
 
     /**

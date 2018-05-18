@@ -2,18 +2,17 @@ package com.fastlib.url_image.pool;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.widget.ImageView;
 
+import com.fastlib.url_image.LifecycleManager;
 import com.fastlib.url_image.Target;
 import com.fastlib.url_image.bean.BitmapWrapper;
-import com.fastlib.url_image.request.BitmapRequest;
+import com.fastlib.url_image.lifecycle.HostLifecycle;
+import com.fastlib.url_image.request.ImageRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by sgfb on 2017/11/4.
@@ -23,9 +22,9 @@ public class TargetReference {
     private Map<String,List<Target>> mReference;
     private BitmapPool mBitmapPool;
 
-    public TargetReference(Context context){
+    public TargetReference(){
         mReference=new HashMap<>();
-        mBitmapPool=new BitmapPool(context,this);
+        mBitmapPool=new BitmapPool(this);
     }
 
     /**
@@ -35,7 +34,7 @@ public class TargetReference {
      * @param request 图像请求
      * @return true存在内存中，false不存在内存中
      */
-    public boolean checkContainImage(BitmapRequest request){
+    public boolean checkContainImage(ImageRequest request){
         if(mReference.containsKey(request.getKey())) {
             BitmapWrapper wrapper = mBitmapPool.getBitmapWrapper(request.getKey());
 
@@ -50,7 +49,7 @@ public class TargetReference {
      * @param request 图像请求
      * @return 如果存在返回Bitmap否则返回null
      */
-    public Bitmap getFromMemory(BitmapRequest request){
+    public Bitmap getFromMemory(ImageRequest request){
         if(checkContainImage(request)){
             BitmapWrapper wrapper=mBitmapPool.getBitmapWrapper(request.getKey());
             int requestWidth=request.getRequestWidth();
@@ -61,6 +60,8 @@ public class TargetReference {
             //图像一定大于等于请求尺寸，所以只判断是否需要返回缩小的图像(等比缩放)
             if(requestWidth!=0&&requestHeight!=0&&(requestWidth<bitmapWidth||requestHeight<bitmapHeight))
                 return wrapper.getThumbBitmap(requestWidth,requestHeight);
+            if(wrapper.bitmap==null)
+                wrapper.uncompress();
             return wrapper.bitmap;
         }
         return null;
@@ -70,27 +71,46 @@ public class TargetReference {
      * 增加图像引用.间接将图像载入内存中持有
      * @param request 图像请求
      * @param wrapper 图像包裹
-     * @param imageView 视图引用
+     * @param target 对象引用
      */
-    public void addBitmapReference(BitmapRequest request,BitmapWrapper wrapper,Target imageView){
-        if(wrapper==null||imageView==null) return;
+    public void addBitmapReference(ImageRequest request, BitmapWrapper wrapper, final Target target){
+        if(wrapper==null||target==null) return;
         //先判断是否引用了其它的url再判断当前url的ImageView列表中是否存在
         for(Map.Entry<String,List<Target>> entry:mReference.entrySet()){
             List<Target> imageViewList=entry.getValue();
-            if(imageViewList.contains(imageView)){
-                imageViewList.remove(imageView);
+            if(imageViewList.contains(target)){
+                imageViewList.remove(target);
                 break;
             }
         }
         List<Target> list=mReference.get(request.getKey());
 
         if(list==null) {
-            list=new Vector<>();
+            list=new ArrayList<>();
             mReference.put(request.getKey(),list);
-
         }
-        if(!list.contains(imageView))
-            list.add(imageView);
+        if(!list.contains(target)){
+            final List<Target> finalList = list;
+            LifecycleManager.registerLifecycle(request.getHost(), new HostLifecycle() {
+                @Override
+                public void onStart(Context context) {
+
+                }
+
+                @Override
+                public void onPause(Context context) {
+
+                }
+
+                @Override
+                public void onDestroy(Context context) {
+                    finalList.remove(target);
+                }
+            });
+            list.add(target);
+        }
+        if(request.isCompressInMemory())
+            wrapper.compress();
         mBitmapPool.addBitmap(request.getKey(),wrapper);  //不判断该url是否已有Bitmap在池中，因为服务器的图像资源也可能会被修改
     }
 

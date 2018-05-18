@@ -2,7 +2,7 @@ package com.fastlib.url_image.callback;
 
 import com.fastlib.url_image.bean.BitmapWrapper;
 import com.fastlib.url_image.processing.UrlImageProcessing;
-import com.fastlib.url_image.request.BitmapRequest;
+import com.fastlib.url_image.request.ImageRequest;
 
 /**
  * Created by sgfb on 2017/11/5.
@@ -16,5 +16,5 @@ public interface ImageDispatchCallback{
      * @param request 图像请求
      * @param wrapper bitmap和扩展属性
      */
-    void complete(UrlImageProcessing processing, BitmapRequest request, BitmapWrapper wrapper);
+    void complete(UrlImageProcessing processing, ImageRequest request, BitmapWrapper wrapper);
 }

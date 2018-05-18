@@ -6,7 +6,7 @@ import android.support.v4.util.Pair;
 import com.fastlib.url_image.ImageProcessManager;
 import com.fastlib.url_image.bean.BitmapWrapper;
 import com.fastlib.url_image.callback.ImageDispatchCallback;
-import com.fastlib.url_image.request.BitmapRequest;
+import com.fastlib.url_image.request.ImageRequest;
 import com.fastlib.utils.ScreenUtils;
 
 /**
@@ -15,7 +15,7 @@ import com.fastlib.utils.ScreenUtils;
  */
 public class StateLoadImageOnResource extends UrlImageProcessing{
 
-    public StateLoadImageOnResource(BitmapRequest request, ImageDispatchCallback callback) {
+    public StateLoadImageOnResource(ImageRequest request, ImageDispatchCallback callback) {
         super(request,callback);
     }
 
