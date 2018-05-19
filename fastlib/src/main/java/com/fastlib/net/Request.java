@@ -54,7 +54,6 @@ public class Request{
     private List<Pair<String,String>> mParams;
     private RequestType mType = RequestType.DEFAULT;
     private Object mTag; //额外信息
-    private Pair<String,String>[] mReceiveCookies; //留存的cookies
     //加入activity或者fragment可以提升安全性
     private Context mContext;
     private Fragment mFragment;
@@ -665,14 +664,6 @@ public class Request{
     public Request setHost(Fragment fragment) {
         mFragment = fragment;
         return this;
-    }
-
-    public Pair<String,String>[] getReceiveCookies() {
-        return mReceiveCookies;
-    }
-
-    public void setReceiveCookies(Pair<String,String>[] receiveCookies) {
-        mReceiveCookies = receiveCookies;
     }
 
     public void setCurrThread(){

@@ -59,6 +59,7 @@ public class NetProcessor implements Runnable {
     private byte[] mResponse;
     private Request mRequest;
     private String mMessage = null;
+    private String mRedirectUrl;
     private OnCompleteListener mListener;
     private Executor mResponsePoster;
     private IOException mException; //留存的异常
@@ -97,7 +98,7 @@ public class NetProcessor implements Runnable {
             File downloadFile = null;
             InputStream in;
             OutputStream out;
-            URL url = new URL(isPost ? mRequest.getUrl() : splicingGetUrl());
+            URL url = new URL(TextUtils.isEmpty(mRedirectUrl)?isPost ? mRequest.getUrl() : splicingGetUrl():mRedirectUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
             if (isPost && (mRequest.getFiles() != null && mRequest.getFiles().size() > 0))
@@ -161,9 +162,10 @@ public class NetProcessor implements Runnable {
                 }
                 out.close();
             }
-            String redirect=checkRedirect(connection);
-            if(!TextUtils.isEmpty(redirect)){
+            mRedirectUrl=checkRedirect(connection);
+            if(!TextUtils.isEmpty(mRedirectUrl)){
                 run();
+                mListener=null;
                 return;
             }
             checkErrorStream(connection, connectionTimer); //判断返回码是否200.不是的话做额外处理
@@ -414,16 +416,6 @@ public class NetProcessor implements Runnable {
         for (Map.Entry<String, List<String>> entry : connection.getHeaderFields().entrySet())
             map.put(entry.getKey(), entry.getValue());
         mRequest.setReceiveHeader(map);
-        Map<String, List<String>> cookiesMap = mRequest.getReceiveHeader();
-        List<String> cookies = cookiesMap.remove("Set-Cookie");
-        if (cookies != null && !cookies.isEmpty()) {
-            Pair<String, String>[] cookieArray = new Pair[cookies.size()];
-            for (int i = 0; i < cookies.size(); i++) {
-                String cookie = cookies.get(i);
-                cookieArray[i] = Pair.create(cookie.substring(0, cookie.indexOf('=')), cookie.substring(cookie.indexOf('=') + 1, cookie.indexOf(';')));
-            }
-            mRequest.setReceiveCookies(cookieArray);
-        }
     }
 
     /**

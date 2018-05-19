@@ -1,5 +1,6 @@
 package com.fastlib;
 
+import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.PersistableBundle;
@@ -15,6 +16,8 @@ import com.fastlib.app.task.NetAction;
 import com.fastlib.app.task.NoReturnAction;
 import com.fastlib.app.task.Task;
 import com.fastlib.app.task.TaskLauncher;
+import com.fastlib.db.DatabaseGetCallback;
+import com.fastlib.db.FastDatabase;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.net.listener.GlobalListener;
@@ -35,44 +38,12 @@ public class MainActivity extends FastActivity{
 
     @Override
     protected void alreadyPrepared(){
-        NetManager.getInstance().setGlobalListener(new GlobalListener(){
-            @Override
-            public byte[] onRawData(Request r, byte[] data) {
-                System.out.println("global raw:"+data.length);
-                return super.onRawData(r, data);
-            }
 
-            @Override
-            public String onTranslateJson(Request r, String json) {
-                System.out.println("global json:"+json);
-                return super.onTranslateJson(r, json);
-            }
-
-            @Override
-            public Object onResponseListener(Request r, Object result, Object result2) {
-                System.out.println("global response:"+result);
-                return super.onResponseListener(r, result, result2);
-            }
-
-            @Override
-            public String onErrorListener(Request r, String error) {
-                System.out.println("global error:"+error);
-                return super.onErrorListener(r, error);
-            }
-        });
     }
 
     @Bind(R.id.bt)
     private void commit(){
-        startTask(Task.begin(new Request("http://www.baidu.com"))
-        .next(new NetAction<String,String>(){
-
-            @Override
-            protected String executeAdapt(String r, Request request){
-                System.out.println("result:"+r);
-                return r;
-            }
-        }));
+        WebViewActivity.start(this,"http://www.baidu.com");
     }
 
     @Bind(R.id.bt2)
