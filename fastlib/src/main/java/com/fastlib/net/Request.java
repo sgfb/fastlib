@@ -538,6 +538,7 @@ public class Request{
      * 取消网络请求
      */
     public void cancel(){
+        if(isCancel) return;
         isCancel=true;
         if(mThread!=null) mThread.interrupt();
         if(mListener != null)
