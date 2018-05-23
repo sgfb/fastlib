@@ -1,61 +1,31 @@
 package com.fastlib;
 
-import android.graphics.drawable.ColorDrawable;
-import android.view.View;
-import android.widget.ImageView;
-import android.widget.ToggleButton;
-
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.FastActivity;
-import com.fastlib.app.task.Task;
-import com.fastlib.app.task.TaskLauncher;
+import com.fastlib.net.Request;
+import com.fastlib.net.listener.SimpleListener;
 
+import android.view.View;
 
 @ContentView(R.layout.act_main)
 public class MainActivity extends FastActivity{
-    final int DURATION_CHANGE_COLOR=20;
-    long mTimer;
-    TaskLauncher mTl;
-    Task mTask;
-    @Bind(R.id.toggleButton)
-    ToggleButton mToggleButton;
-    @Bind(R.id.imageView)
-    ImageView mImageView;
-    ColorDrawable mColorDrawable;
 
-    @Override
-    protected void alreadyPrepared(){
-        mColorDrawable=new ColorDrawable();
-//		final StringBuilder sb=new StringBuilder();
-//		mTl=new TaskLauncher.Builder(this,mThreadPool).setExceptionHandler(new NoReturnAction<Throwable>() {
-//			@Override
-//			public void executeAdapt(Throwable param) {
-//				param.printStackTrace();
-//			}
-//		}).build();
-//		mTask=Task.begin(20)
-//				.cycleList(new Action<Integer,List<Request>>(){
-//
-//					@Override
-//					protected List<Request> execute(Integer param) throws Throwable{
-//						List<Request> list=new ArrayList<>();
-//						for(int i=0;i<param;i++) list.add(new Request("http://www.baidu.com"));
-//						return list;
-//					}
-//				})
-//				.next(new Action<Request,String>(){
-//
-//					@Override
-//					protected String execute(Request param) throws Throwable {
-//						return new String(NetManager.getInstance().netRequestPromptlyBack(param));
-//					}
-//				})
-//				.again(new NoReturnAction<List<String>>() {
-//					@Override
-//					public void executeAdapt(List<String> param) {
-//						System.out.println("ending task result length:"+param.size());
-//					}
-//				});
-    }
+	@Override
+	protected void alreadyPrepared(){
+
+	}
+
+	@Bind(R.id.bt)
+	public void onBt(View view){
+		Request request=new Request("put","http://192.168.2.111:8080/FastProject/Test");
+		request.setListener(new SimpleListener<String>(){
+
+			@Override
+			public void onResponseListener(Request r, String result) {
+				System.out.println("result:"+result);
+			}
+		});
+		request.start();
+	}
 }
