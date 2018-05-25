@@ -24,36 +24,20 @@ public class NetBeanWrapperParser implements NetParamParser{
 
         try{
             for(Field field:fields){
-                field.setAccessible(true);
                 String realKey=field.getName();
+                Object realValue=field.get(obj);
 
-                if(duplication) {
-                    if(field.getType()==int.class)
-                        request.add(realKey,field.getInt(obj));
-                    else if(field.getType()==float.class)
-                        request.add(realKey,field.getFloat(obj));
-                    else if(field.getType()==String.class){
-                        String value= (String) field.get(obj);
-                        if(value==null) continue;
-                        request.add(realKey,value);
-                    }
-                }
-                else{
-                    if(field.getType()==int.class)
-                        request.put(realKey,field.getInt(obj));
-                    else if(field.getType()==float.class)
-                        request.put(realKey,field.getFloat(obj));
-                    else if(field.getType()==String.class){
-                        String value= (String) field.get(obj);
-                        if(value==null) continue;
-                        request.put(realKey,value);
-                    }
-                }
+                if(duplication) request.add(realKey,realValue);
+                else request.put(realKey,realValue);
             }
         } catch (IllegalAccessException e) {
             e.printStackTrace();
-            return false;
         }
         return true;
+    }
+
+    @Override
+    public int priority() {
+        return 0;
     }
 }

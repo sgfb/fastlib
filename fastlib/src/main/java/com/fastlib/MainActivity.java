@@ -1,31 +1,33 @@
 package com.fastlib;
 
+import android.animation.ObjectAnimator;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.view.View;
+import android.widget.ImageView;
+
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.FastActivity;
-import com.fastlib.net.Request;
-import com.fastlib.net.listener.SimpleListener;
+import com.fastlib.utils.ScreenUtils;
 
-import android.view.View;
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 
 @ContentView(R.layout.act_main)
 public class MainActivity extends FastActivity{
 
 	@Override
 	protected void alreadyPrepared(){
+	}
+
+	@Bind(value = R.id.bt)
+	public void onBt(View view){
 
 	}
 
-	@Bind(R.id.bt)
-	public void onBt(View view){
-		Request request=new Request("put","http://192.168.2.111:8080/FastProject/Test");
-		request.setListener(new SimpleListener<String>(){
+	@Bind(value = R.id.bt2,runOnWorkThread = true)
+	private void onBt2(View v){
 
-			@Override
-			public void onResponseListener(Request r, String result) {
-				System.out.println("result:"+result);
-			}
-		});
-		request.start();
 	}
 }

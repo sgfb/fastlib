@@ -298,6 +298,7 @@ public class Task<R>{
         while(task!=null){
             task.mCycleData=null;
             task.mCycleResult.clear();
+            if(task.mCycleIndex>=0) task.mCycleIndex=0;
             task=task.mNext;
         }
     }

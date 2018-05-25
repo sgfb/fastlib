@@ -1,55 +1,57 @@
 package com.fastlib.net.param_parse;
 
+import android.support.annotation.NonNull;
+
 import com.fastlib.net.Request;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Created by sgfb on 18/5/2.
  * 参数解析管理器
  */
 public class ParamParserManager{
-    private ParamParserNode mNode;
-    private NetParamParser mLastParser;
+    Map<NetParamParserClass,NetParamParser> mNetParamParserMap =new TreeMap<>();
 
-    public void addParser(NetParamParser parser){
-        ParamParserNode newNode=new ParamParserNode();
-
-        newNode.parser=parser;
-        if(mNode==null)
-            mNode=newNode;
-        else{
-            ParamParserNode nextNode=mNode.next;
-
-            mNode.next=newNode;
-            newNode.next=nextNode;
-        }
+    public void putParser(NetParamParser paramParser){
+        mNetParamParserMap.put(new NetParamParserClass(paramParser.priority(),paramParser.getClass()),paramParser);
     }
 
-    /**
-     * 增加末尾参数解析器
-     * @param lastParser 参数解析器
-     */
-    public void setParserLast(NetParamParser lastParser){
-        if(mLastParser!=null)
-            addParser(mLastParser);
-        mLastParser=lastParser;
+    public void removeParser(NetParamParser paramParser){
+        mNetParamParserMap.remove(new NetParamParserClass(paramParser.priority(),paramParser.getClass()));
     }
 
     public void parserParam(boolean duplication,Request request,String key,Object obj){
-        ParamParserNode node=mNode;
-        boolean handled=false;
 
-        while (node!=null){
-            if(node.parser.canParse(request,key,obj)&& node.parser.parseParam(duplication,request,key,obj)) {
-                handled=true;
+        for(Map.Entry<NetParamParserClass,NetParamParser> entry: mNetParamParserMap.entrySet()){
+            NetParamParser paramParser=entry.getValue();
+            if(paramParser.canParse(request,key,obj)&&paramParser.parseParam(duplication,request,key,obj)){
                 break;
             }
-            else node=node.next;
         }
-        if(!handled&&mLastParser!=null) mLastParser.parseParam(duplication,request,key,obj);
     }
 
-    class ParamParserNode{
-        NetParamParser parser;
-        ParamParserNode next;
+    class NetParamParserClass implements Comparable<NetParamParserClass>{
+        int mPriority;
+        Class<? extends NetParamParser> mCla;
+
+        public NetParamParserClass(int mPriority, Class<? extends NetParamParser> mCla) {
+            this.mPriority = mPriority;
+            this.mCla = mCla;
+        }
+
+        @Override
+        public int compareTo(@NonNull NetParamParserClass another) {
+            if(mPriority==another.mPriority) return 0;
+            if(mPriority<another.mPriority) return -1;
+            else return 1;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof NetParamParserClass&&((NetParamParserClass)o).mCla==mCla;
+        }
     }
 }

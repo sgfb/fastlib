@@ -22,6 +22,7 @@ import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicBlur;
+import android.support.annotation.IntRange;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.View;
@@ -61,19 +62,18 @@ public class ImageUtil{
      * @return 高斯模糊后的位图
      */
     @TargetApi(17)
-    public static Bitmap getBlueBitmap(Context context,Bitmap bitmap,int radius){
-        Bitmap blueBitmap=Bitmap.createBitmap(bitmap.getWidth(),bitmap.getHeight(),bitmap.getConfig());
+    public static Bitmap getBlueBitmap(Context context,Bitmap bitmap,@IntRange(from = 0,to = 25) int radius){
         RenderScript rs=RenderScript.create(context);
-        Allocation inAllocation=Allocation.createFromBitmap(rs,blueBitmap);
+        Allocation inAllocation=Allocation.createFromBitmap(rs, bitmap);
         Allocation outAllocation=Allocation.createTyped(rs,inAllocation.getType());
         ScriptIntrinsicBlur blue=ScriptIntrinsicBlur.create(rs, Element.U8_4(rs));
 
         blue.setInput(inAllocation);
         blue.setRadius(radius);
         blue.forEach(outAllocation);
-        outAllocation.copyTo(blueBitmap);
+        outAllocation.copyTo(bitmap);
         rs.destroy();
-        return blueBitmap;
+        return bitmap;
     }
 
     /**

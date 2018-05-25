@@ -21,10 +21,12 @@ public class OldViewHolder{
 	private View mConvertView;
 	private int mLayoutId;
 
-	private OldViewHolder(Context context, ViewGroup parent, int layoutId){
+	private OldViewHolder(Context context, ViewGroup parent,View layoutView,int layoutId){
 		this.mViews = new SparseArray<>();
-		this.mConvertView = LayoutInflater.from(context).inflate(layoutId, parent, false);
 		this.mLayoutId=layoutId;
+		if(layoutView==null)
+			this.mConvertView = LayoutInflater.from(context).inflate(layoutId, parent, false);
+		else mConvertView=layoutView;
 	}
 
 	/**
@@ -50,11 +52,11 @@ public class OldViewHolder{
 	 */
 	public static OldViewHolder get(Context context, View convertView, ViewGroup parent, int layoutId){
 		if (convertView == null)
-			return new OldViewHolder(context, parent, layoutId);
+			return new OldViewHolder(context, parent,null,layoutId);
 		else if (convertView.getTag() instanceof OldViewHolder&&((OldViewHolder)convertView.getTag()).mLayoutId==layoutId)
 			return(OldViewHolder)convertView.getTag();
 		else
-			return new OldViewHolder(context,parent,layoutId);
+			return new OldViewHolder(context,parent,convertView,layoutId);
 	}
 
 	/**

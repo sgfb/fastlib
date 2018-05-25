@@ -3,7 +3,6 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 23
     buildToolsVersion "23.0.3"
-
     defaultConfig {
         minSdkVersion 16
         targetSdkVersion 23
@@ -12,9 +11,7 @@ android {
         buildConfigField("String","DEFAULT_DATA_FILE_NAME","\"fastlib\"") //sp和数据库默认存储名
         buildConfigField("boolean","isShowLog","true") //打印库中的log信息
     }
-    lintOptions{
-        abortOnError false
-    }
+    lintOptions.abortOnError=false
 }
 
 dependencies {

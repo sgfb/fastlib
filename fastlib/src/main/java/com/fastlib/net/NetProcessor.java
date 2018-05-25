@@ -59,6 +59,7 @@ public class NetProcessor implements Runnable {
     private byte[] mResponse;
     private Request mRequest;
     private String mMessage = null;
+    private String mRedirectUrl;
     private OnCompleteListener mListener;
     private Executor mResponsePoster;
     private IOException mException; //留存的异常
@@ -97,7 +98,7 @@ public class NetProcessor implements Runnable {
             File downloadFile = null;
             InputStream in;
             OutputStream out;
-            URL url = new URL(isPost ? mRequest.getUrl() : splicingGetUrl());
+            URL url = new URL(TextUtils.isEmpty(mRedirectUrl)?isPost ? mRequest.getUrl() : splicingGetUrl():mRedirectUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
             if (isPost && (mRequest.getFiles() != null && mRequest.getFiles().size() > 0))
@@ -160,6 +161,12 @@ public class NetProcessor implements Runnable {
                     }
                 }
                 out.close();
+            }
+            mRedirectUrl=checkRedirect(connection);
+            if(!TextUtils.isEmpty(mRedirectUrl)){
+                run();
+                mListener=null;
+                return;
             }
             checkErrorStream(connection, connectionTimer); //判断返回码是否200.不是的话做额外处理
             if (needBody) {
@@ -224,8 +231,7 @@ public class NetProcessor implements Runnable {
             saveResponseStatus(connection.getResponseCode(),computeRequestTime(connection,connectionTimer),connection.getResponseMessage());
             toggleCallback();
         } catch (IOException e){
-            if(e instanceof IOException)
-                mException= (IOException) e;
+            mException=e;
             if(!mRequest.getSuppressWarning())
                 e.printStackTrace();
             isSuccess = false;
@@ -354,6 +360,12 @@ public class NetProcessor implements Runnable {
         mRequest.getResponseStatus().time = System.currentTimeMillis() - requestTime;
     }
 
+    private String checkRedirect(HttpURLConnection connection) throws IOException {
+        if(connection.getResponseCode()>=300||connection.getResponseCode()<400)
+            return connection.getHeaderField("Location");
+        return null;
+    }
+
     /**
      * 检测错误流
      * @param connection
@@ -362,7 +374,7 @@ public class NetProcessor implements Runnable {
      */
     private void checkErrorStream(HttpURLConnection connection, long requestTime) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        if (connection.getResponseCode() < HttpURLConnection.HTTP_OK||connection.getResponseCode()>=300){
+        if (connection.getResponseCode() < HttpURLConnection.HTTP_OK||connection.getResponseCode()>=400){
             byte[] errbyte = new byte[4096];
             int len;
             if(connection.getErrorStream()!=null)
@@ -404,16 +416,6 @@ public class NetProcessor implements Runnable {
         for (Map.Entry<String, List<String>> entry : connection.getHeaderFields().entrySet())
             map.put(entry.getKey(), entry.getValue());
         mRequest.setReceiveHeader(map);
-        Map<String, List<String>> cookiesMap = mRequest.getReceiveHeader();
-        List<String> cookies = cookiesMap.remove("Set-Cookie");
-        if (cookies != null && !cookies.isEmpty()) {
-            Pair<String, String>[] cookieArray = new Pair[cookies.size()];
-            for (int i = 0; i < cookies.size(); i++) {
-                String cookie = cookies.get(i);
-                cookieArray[i] = Pair.create(cookie.substring(0, cookie.indexOf('=')), cookie.substring(cookie.indexOf('=') + 1, cookie.indexOf(';')));
-            }
-            mRequest.setReceiveCookies(cookieArray);
-        }
     }
 
     /**
