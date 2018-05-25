@@ -86,7 +86,7 @@ public class ScreenUtils {
 	 * @param activity
 	 * @return
 	 */
-	public static Bitmap snapShotWithStatusBar(Activity activity) {
+	public static Bitmap snapshotWithStatusBar(Activity activity) {
 		View view = activity.getWindow().getDecorView();
 		view.setDrawingCacheEnabled(true);
 		view.buildDrawingCache();
@@ -106,7 +106,7 @@ public class ScreenUtils {
 	 * @param activity
 	 * @return
 	 */
-	public static Bitmap snapShotWithoutStatusBar(Activity activity) {
+	public static Bitmap snapshotWithoutStatusBar(Activity activity) {
 		View view = activity.getWindow().getDecorView();
 		view.setDrawingCacheEnabled(true);
 		view.buildDrawingCache();

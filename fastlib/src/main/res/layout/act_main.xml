@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android">
     <data class="com.fastlib.LauncherBinding">
+        <variable name="ctrl" type="com.fastlib.LauncherActivity"/>
         <variable name="bean" type="com.fastlib.Bean"/>
-        <variable name="n" type="java.lang.String"/>
     </data>
     <LinearLayout
         android:orientation="vertical"
@@ -14,5 +14,17 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@{bean.name}"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="bt"
+            android:onClick="@{ctrl.captureView}"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="stop"
+            android:onClick="@{ctrl.stop}"/>
     </LinearLayout>
 </layout>
