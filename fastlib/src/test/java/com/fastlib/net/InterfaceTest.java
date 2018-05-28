@@ -6,17 +6,13 @@ import com.fastlib.utils.SessionCheck;
 import com.fastlib.utils.TestUtil;
 import com.google.gson.reflect.TypeToken;
 
-import junit.framework.TestFailure;
-import junit.framework.TestResult;
-import junit.framework.TestSuite;
+import junit.framework.Assert;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import java.net.ConnectException;
-import java.util.Enumeration;
 
 /**
  * Created by sgfb on 18/3/9.
@@ -34,7 +30,7 @@ public class InterfaceTest{
     @Test
     public void testConnectionError() throws Exception{
         try{
-            String result=interfaceTestExample("http://192.168.1.1/");
+            String result=interfaceTestExample("http://127.0.0.1");
             if(!TestUtil.ERROR_HARD_LAYER.equals(result)) throw new Exception("其他错误");
         }catch (ConnectException e){
             String message=e.toString().toLowerCase();
@@ -68,7 +64,8 @@ public class InterfaceTest{
      */
     @Test
     public void testNormalInterface() throws Exception {
-        interfaceTestExample(new SimpleMockProcessor("{\"id\":10,\"name\":\"sgfb\"}"));
+        String result=interfaceTestExample(new SimpleMockProcessor("{\"id\":10,\"name\":\"sgfb\"}"));
+        Assert.assertTrue(result.isEmpty());
     }
 
     private String interfaceTestExample(String url)throws Exception{
@@ -76,15 +73,7 @@ public class InterfaceTest{
     }
 
     private String interfaceTestExample(SimpleMockProcessor mock)throws Exception{
-        interfaceTestExample(null,mock);
-        return TestUtil.netInterfaceCheck(new Request("http://www.baidu.com"), new TypeToken<InterfaceCheckTestBean>() {
-        },new SessionCheck<InterfaceCheckTestBean>() {
-            @Override
-            public String check(InterfaceCheckTestBean entity) {
-                //自定义业务逻辑检查
-                return null;
-            }
-        });
+        return interfaceTestExample(null,mock);
     }
 
     private String interfaceTestExample(String url,SimpleMockProcessor mock) throws Exception {
