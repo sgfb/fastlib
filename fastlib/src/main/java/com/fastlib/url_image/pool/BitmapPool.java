@@ -8,6 +8,7 @@ import com.fastlib.db.SaveUtil;
 import com.fastlib.url_image.Target;
 import com.fastlib.url_image.bean.BitmapWrapper;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -145,19 +146,23 @@ public class BitmapPool {
      * @return 单app使用最大内存，MB单位
      */
     private int getMemoryClass(){
+        final int fDefaultLimit=30;
         try {
-            final String HEAPLIMIT="dalvik.vm.heapgrowthlimit=";
-            String prop= new String(SaveUtil.loadFile("/system/build.prop"));
-            int heaplimitIndex=prop.indexOf(HEAPLIMIT);
+            File file=new File("/system/build.prop");
+
+            if(!file.exists()) return fDefaultLimit;
+            final String fHeapLimit="dalvik.vm.heapgrowthlimit=";
+            String prop= new String(SaveUtil.loadFile(file.getAbsolutePath()));
+            int heaplimitIndex=prop.indexOf(fHeapLimit);
             int heaplimitLineLastIndex=prop.indexOf("\n",heaplimitIndex);
             if(heaplimitIndex!=-1&&heaplimitLineLastIndex!=-1){
-                String heaplimitStr=prop.substring(heaplimitIndex+HEAPLIMIT.length(),heaplimitLineLastIndex);
+                String heaplimitStr=prop.substring(heaplimitIndex+fHeapLimit.length(),heaplimitLineLastIndex);
                 if(!TextUtils.isEmpty(heaplimitStr)&&heaplimitStr.length()>1)
                     return Integer.parseInt(heaplimitStr.substring(0,heaplimitStr.length()-1));
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return 0;
+        return fDefaultLimit;
     }
 }

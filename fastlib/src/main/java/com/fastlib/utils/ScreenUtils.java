@@ -52,6 +52,11 @@ public class ScreenUtils {
 		return outMetrics.heightPixels;
 	}
 
+	public static int getDensityDpi(){
+		DisplayMetrics outMetrics =Resources.getSystem().getDisplayMetrics();
+		return outMetrics.densityDpi;
+	}
+
 	/**
 	 * 获取屏幕尺寸
 	 * @return 屏幕宽高
@@ -93,8 +98,7 @@ public class ScreenUtils {
 		Bitmap bmp = view.getDrawingCache();
 		int width = getScreenWidth();
 		int height = getScreenHeight();
-		Bitmap bp = null;
-		bp = Bitmap.createBitmap(bmp, 0, 0, width, height);
+		Bitmap bp =Bitmap.createBitmap(bmp, 0, 0, width, height);
 		view.destroyDrawingCache();
 		return bp;
 

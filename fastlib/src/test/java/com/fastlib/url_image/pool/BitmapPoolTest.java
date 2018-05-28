@@ -1,7 +1,5 @@
 package com.fastlib.url_image.pool;
 
-import android.app.ActivityManager;
-import android.content.Context;
 import android.graphics.Bitmap;
 
 import com.fastlib.url_image.bean.BitmapWrapper;
@@ -12,7 +10,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
-import org.robolectric.shadows.ShadowApplication;
 
 /**
  * Created by Administrator on 2018/5/17.
@@ -31,8 +28,7 @@ public class BitmapPoolTest{
      */
     @Test
     public void remainTest(){
-        ActivityManager am= (ActivityManager) ShadowApplication.getInstance().getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
-        long expectSize=am.getMemoryClass()*1024*1024/5;
+        long expectSize=30*1024*1024/5;
         Assert.assertEquals(expectSize,mPool.getRemainSize());
 
         mPool.setPoolSize(expectSize=1024*1024);

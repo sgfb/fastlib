@@ -34,13 +34,13 @@ import java.util.Map;
  * @author sgfb
  */
 public class FastDatabase{
-    private static final String DEFAULT_DATABASE_NAME = "default";
+    private static final String DEFAULT_DATABASE_NAME = BuildConfig.DEFAULT_DATA_FILE_NAME;
     private static DatabaseConfig sConfig=new DatabaseConfig();
 
     private CustomUpdate mCustomUpdate;
     private Context mContext;
     private RuntimeAttribute mAttribute;
-    private Map<String,FunctionCommand> mFunctionCommand; //数据库函数与各字段映射
+    private Map<String,FunctionCommand> mFunctionCommand; //字段-->函数
 
     private FastDatabase(Context context){
         mContext = context.getApplicationContext();
@@ -70,21 +70,6 @@ public class FastDatabase{
     }
 
     /**
-     * 异步删除数据库中数据
-     * @param cla 对象类
-     * @param callback 结束后回调
-     */
-    public void deleteAsync(final Class<?> cla, final DatabaseNoDataResultCallback callback){
-        NetManager.sRequestPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                if(callback!=null)
-                    callback.onResult(delete(cla));
-            }
-        });
-    }
-
-    /**
      * 异步存或修改数据
      * @param obj 对象类
      * @param callback 结束后回调
@@ -102,6 +87,21 @@ public class FastDatabase{
                             callback.onResult(success);
                         }
                     });
+            }
+        });
+    }
+
+    /**
+     * 异步删除数据库中数据
+     * @param cla 对象类
+     * @param callback 结束后回调
+     */
+    public void deleteAsync(final Class<?> cla, final DatabaseNoDataResultCallback callback){
+        NetManager.sRequestPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                if(callback!=null)
+                    callback.onResult(delete(cla));
             }
         });
     }

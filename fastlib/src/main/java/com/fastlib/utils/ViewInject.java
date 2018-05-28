@@ -63,6 +63,8 @@ public class ViewInject{
                             e.printStackTrace();
                         }
                     } catch (IllegalAccessException e) {
+                        if(BuildConfig.isShowLog) e.printStackTrace();
+                    }catch (IllegalArgumentException e){
                         try {
                             m.invoke(mHost,objs);
                         } catch (IllegalAccessException e1) {
