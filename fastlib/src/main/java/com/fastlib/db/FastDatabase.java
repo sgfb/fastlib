@@ -843,7 +843,6 @@ public class FastDatabase{
 
     /**
      * 取数据时根据主键排序
-     *
      * @param asc
      * @return current database
      */
@@ -869,11 +868,11 @@ public class FastDatabase{
      * 取数据时行限制
      *
      * @param start
-     * @param end
+     * @param size
      * @return current database
      */
-    public FastDatabase limit(int start, int end) {
-        mAttribute.limit(start, end);
+    public FastDatabase limit(int start, int size) {
+        mAttribute.limit(start, size);
         return this;
     }
 

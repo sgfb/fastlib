@@ -20,4 +20,6 @@ public class DBInnerBean{
         if (Float.compare(innerBean.score, score) != 0) return false;
         return name.equals(innerBean.name);
     }
+
+
 }

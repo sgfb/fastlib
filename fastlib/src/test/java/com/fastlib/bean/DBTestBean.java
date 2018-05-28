@@ -8,7 +8,7 @@ import java.util.List;
  * Created by sgfb on 2018/5/27.
  * 数据库测试用数据模型(学生数据)
  */
-public class DBTestBean{
+public class DBTestBean implements Cloneable{
     @Database(keyPrimary = true,autoincrement = true)
     public int id;
     public int age;
@@ -36,5 +36,15 @@ public class DBTestBean{
             return true;
         }
         return false;
+    }
+
+    @Override
+    public DBTestBean clone(){
+        try {
+            return (DBTestBean) super.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
