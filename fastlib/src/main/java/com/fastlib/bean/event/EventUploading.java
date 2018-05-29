@@ -1,4 +1,4 @@
-package com.fastlib.bean;
+package com.fastlib.bean.event;
 
 /**
  * Created by sgfb on 16/10/10.

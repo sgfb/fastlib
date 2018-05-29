@@ -1,4 +1,4 @@
-package com.fastlib.bean;
+package com.fastlib.bean.event;
 
 import com.fastlib.net.Request;
 

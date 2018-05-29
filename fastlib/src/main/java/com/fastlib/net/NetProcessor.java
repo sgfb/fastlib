@@ -9,8 +9,8 @@ import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.app.EventObserver;
-import com.fastlib.bean.EventDownloading;
-import com.fastlib.bean.EventUploading;
+import com.fastlib.bean.event.EventDownloading;
+import com.fastlib.bean.event.EventUploading;
 import com.fastlib.net.bean.ResponseStatus;
 import com.fastlib.net.exception.BreakoutException;
 import com.fastlib.net.exception.NetException;
