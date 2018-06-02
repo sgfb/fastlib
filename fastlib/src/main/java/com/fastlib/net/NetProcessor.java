@@ -180,8 +180,11 @@ public class NetProcessor implements Runnable {
                     String disposition = connection.getHeaderField("Content-Disposition");
                     if (!TextUtils.isEmpty(disposition) && disposition.length() > 9 && mRequest.getDownloadable().changeIfHadName()) {
                         String filename = URLDecoder.decode(disposition.substring(disposition.indexOf("filename=") + 9), "UTF-8");
-                        if (!TextUtils.isEmpty(filename))
-                            downloadFile.renameTo(new File(downloadFile.getParent() + File.separator + filename));
+                        if (!TextUtils.isEmpty(filename)){
+                            File changedFile=new File(downloadFile.getParent(),filename);
+                            boolean changeSuccess=downloadFile.renameTo(changedFile);
+                            if(changeSuccess) mRequest.getDownloadable().setFinalFile(changedFile);
+                        }
                     }
                     int maxCount = connection.getContentLength(); //如果流大小为－1说明是未知大小的流
                     int speed = 0;

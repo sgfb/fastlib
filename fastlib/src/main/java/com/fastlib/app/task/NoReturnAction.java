@@ -4,7 +4,7 @@ package com.fastlib.app.task;
  * Created by sgfb on 17/9/7.
  * 没有返回的事件
  */
-public abstract class NoReturnAction<P> extends Action<P,Object>{
+public abstract class NoReturnAction<P> extends Action<P,Void>{
 
     /**
      * 适配没有返回的调起事件
@@ -13,7 +13,7 @@ public abstract class NoReturnAction<P> extends Action<P,Object>{
     public abstract void executeAdapt(P param);
 
     @Override
-    protected Object execute(P param){
+    protected Void execute(P param){
         executeAdapt(param);
         return null;
     }

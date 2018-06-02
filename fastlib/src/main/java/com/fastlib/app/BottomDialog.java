@@ -82,7 +82,8 @@ public abstract class BottomDialog extends Fragment{
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
-                    getFragmentManager().beginTransaction().remove(BottomDialog.this).commit();
+                    if(getActivity()!=null)
+                        getFragmentManager().beginTransaction().remove(BottomDialog.this).commit();
                 }
             });
             mBgAnimation.reverse();

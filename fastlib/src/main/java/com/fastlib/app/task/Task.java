@@ -152,6 +152,12 @@ public class Task<R>{
         return mNext;
     }
 
+    public Task<Void> infinite(NoReturnAction<? super R> action,ThreadType whichThread){
+        mNext=next(action,whichThread);
+        mNext.mNext=this;
+        return mNext;
+    }
+
     public <T> Task<T> next(Task<T> task){
         return next(task,ThreadType.WORK);
     }
