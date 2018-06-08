@@ -148,7 +148,6 @@ public class TaskLauncher{
         launcher.mThreadPool=mThreadPool;
         launcher.mExceptionHandler=mExceptionHandler;
         launcher.mCompleteAction=mCompleteAction;
-        launcher.startTask(task);
         return launcher;
     }
 

@@ -16,4 +16,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="stop"/>
+
+    <com.fastlib.FastSortView
+        android:id="@+id/fastSort"
+        android:layout_width="match_parent"
+        android:layout_height="220px"/>
 </LinearLayout>

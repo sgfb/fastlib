@@ -31,6 +31,10 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 每个任务都是不同的，{@link NetManager}会根据属性来配置请求，调整请求开始完成或失败后不同的事件
  */
 public class Request{
+    public static final int CHUNK_TYPE_AUTO=1;
+    public static final int CHUNK_TYPE_OPEN=2;
+    public static final int CHUNK_TYPE_CLOSE=3;
+
     private boolean isCallbackByWorkThread; //特殊情况下建议网络请求在工作线程回调
     private boolean isCancel;
     private boolean isSuppressWarning;  //压制警告
@@ -42,6 +46,7 @@ public class Request{
     private boolean isReceiveGzip; //指定这次请求是否使用gzip解码
     private boolean isUseGlobalParamParser;
     private byte[] mByteStream; //原始字节流，如果这个值存在就不会发送mParams参数了.如果存在但是长度为0发送mParams参数json化数据
+    private int mChunkType =CHUNK_TYPE_AUTO;
     private long mResourceExpire; //资源过期时间
     private long mIntervalSendFileTransferEvent=1000; //间隔多久发送上传和下载文件广播
     private String method;
@@ -853,6 +858,14 @@ public class Request{
 
     public boolean isCancel(){
         return isCancel;
+    }
+
+    public void setChunkType(int chunkType){
+        mChunkType=chunkType;
+    }
+
+    public int getChunkType(){
+        return mChunkType;
     }
 
     @Override

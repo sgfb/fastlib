@@ -13,6 +13,7 @@ import com.fastlib.bean.event.EventDownloading;
 import com.fastlib.bean.event.EventUploading;
 import com.fastlib.net.bean.ResponseStatus;
 import com.fastlib.net.exception.BreakoutException;
+import com.fastlib.net.exception.DiscardException;
 import com.fastlib.net.exception.NetException;
 import com.fastlib.net.listener.GlobalListener;
 import com.fastlib.net.listener.Listener;
@@ -126,7 +127,8 @@ public class NetProcessor implements Runnable {
             if (isPost) {
                 connection.setDoOutput(true);
                 if (isMulti) {
-                    connection.setChunkedStreamingMode(CHUNK_BLOCK_LENGTH);
+                    if(mRequest.getChunkType()==Request.CHUNK_TYPE_OPEN)
+                        connection.setChunkedStreamingMode(CHUNK_BLOCK_LENGTH);
                     connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
                     connection.setUseCaches(false);
                 }
@@ -560,7 +562,16 @@ public class NetProcessor implements Runnable {
                             .append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
                     out.write(sb.toString().getBytes());
                     Tx += sb.toString().getBytes().length;
-                    copyFileToStream(pair.second, out);
+                    try{
+                        copyFileToStream(pair.second, out);
+                    }catch (OutOfMemoryError outOfMemoryError){
+                        if(mRequest.getChunkType()==Request.CHUNK_TYPE_AUTO){
+                            mRequest.setChunkType(Request.CHUNK_TYPE_OPEN);
+                            mRequest.start();
+                            throw new DiscardException("未分块溢出,丢弃重试");
+                        }
+                        else throw outOfMemoryError;
+                    }
                     out.write(CRLF.getBytes());
                 }
             }
@@ -574,8 +585,9 @@ public class NetProcessor implements Runnable {
      * @param file 上传的文件
      * @param out 输出流
      * @throws IOException
+     * @throws OutOfMemoryError
      */
-    private void copyFileToStream(File file, OutputStream out) throws IOException {
+    private void copyFileToStream(File file, OutputStream out) throws IOException,OutOfMemoryError{
         if (file == null || !file.exists())
             return;
         InputStream fileIn = new FileInputStream(file);
