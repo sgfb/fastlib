@@ -22,6 +22,7 @@ import java.io.File;
 @ContentView(R.layout.act_main)
 public class MainActivity extends FastActivity{
 
+
 	@Override
 	protected void alreadyPrepared(){
 

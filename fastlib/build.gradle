@@ -15,6 +15,12 @@ android {
     lintOptions.abortOnError=false
 }
 
+task showSourceSets{
+    sourceSets.each{
+        println it
+    }
+}
+
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
