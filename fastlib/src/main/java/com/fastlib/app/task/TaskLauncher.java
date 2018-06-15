@@ -2,7 +2,6 @@ package com.fastlib.app.task;
 
 import android.app.Activity;
 import android.os.Build;
-import android.os.Looper;
 import android.support.v4.app.Fragment;
 
 import java.util.concurrent.ThreadPoolExecutor;
@@ -25,27 +24,26 @@ public class TaskLauncher{
      * @param task
      */
     private void threadDispatch(final Task task){
-        if(task.getOnWhichThread()== ThreadType.MAIN){
-            if(Looper.myLooper()==Looper.getMainLooper())
-                processTask(task);
-            else getHostActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    processTask(task);
+        mThreadPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    if(task.getDelay()>0)
+                        Thread.sleep(task.getDelay());
+                    if(task.getOnWhichThread()==ThreadType.MAIN)
+                        getHostActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                processTask(task);
+                            }
+                        });
+                    else processTask(task);
+                }catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            });
-        }
-        else{
-            if(Looper.myLooper()==Looper.getMainLooper())
-                mThreadPool.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        processTask(task);
-                    }
-                });
-            else
-                processTask(task);
-        }
+
+            }
+        });
     }
 
     /**
@@ -84,6 +82,7 @@ public class TaskLauncher{
                 if(mCompleteAction!=null)
                     mCompleteAction.execute(null);
             }
+            if(task.isInfiniteTask()) reset(task).startTask(task);
         }catch (Throwable throwable){
             //优先处理任务中存在的异常处理器，如果没有再尝试运行全局异常处理器
             boolean handled=false;
@@ -139,7 +138,7 @@ public class TaskLauncher{
         mStopFlag = stopFlag;
     }
 
-    public TaskLauncher reboot(Task task){
+    public TaskLauncher reset(Task task){
         if(task==null) return null;
         mStopFlag=true;
 

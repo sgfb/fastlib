@@ -10,6 +10,7 @@ import java.util.List;
 public class Task<R>{
     private boolean isFilterTask=false; //是否是过滤任务
     private int mCycleIndex=-1; //默认往左移。如果是循环移到0,如果是跳出式任务为-2
+    private long mDelay=0;
     private Action mAction;
     private Task mPrevious;
     private Task mNext;
@@ -152,12 +153,6 @@ public class Task<R>{
         return mNext;
     }
 
-    public Task<Void> infinite(NoReturnAction<? super R> action,ThreadType whichThread){
-        mNext=next(action,whichThread);
-        mNext.mNext=this;
-        return mNext;
-    }
-
     public <T> Task<T> next(Task<T> task){
         return next(task,ThreadType.WORK);
     }
@@ -232,6 +227,20 @@ public class Task<R>{
     }
 
     /**
+     * 延迟执行
+     * @param delay 延迟时间，ms长度
+     * @return 自身
+     */
+    public Task<R> setDelay(long delay){
+        mDelay=delay;
+        return this;
+    }
+
+    public long getDelay(){
+        return mDelay;
+    }
+
+    /**
      * 行为执行完毕后的返回
      * @return 指定返回
      */
@@ -299,13 +308,20 @@ public class Task<R>{
     public void clean(){
         Task task=this;
 
-        while(task.mPrevious!=null)
-            task=task.mPrevious;
+        List<Task> list=new ArrayList<>(); //查重，重复后跳出
+        list.add(task);
+        while(task.mPrevious!=null) {
+            task = task.mPrevious;
+            if(list.contains(task)) break;
+            else list.add(task);
+        }
         while(task!=null){
             task.mCycleData=null;
             task.mCycleResult.clear();
             if(task.mCycleIndex>=0) task.mCycleIndex=0;
             task=task.mNext;
+            if(list.contains(task)) break;
+            else list.add(task);
         }
     }
 
@@ -339,6 +355,10 @@ public class Task<R>{
 
     public boolean isFilterTask(){
         return isFilterTask;
+    }
+
+    public boolean isInfiniteTask(){
+        return mAction instanceof InfiniteAction;
     }
 
     public Task getCycler(){
