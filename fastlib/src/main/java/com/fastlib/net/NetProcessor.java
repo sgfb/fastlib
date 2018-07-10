@@ -88,6 +88,7 @@ public class NetProcessor implements Runnable {
                 mListener.onComplete(this);
             return;
         }
+        mRequest.refreshVisibility(true);
         long connectionTimer = System.currentTimeMillis(); //优先使用X-Android-Received-Millis和X-Android-Sent_Millis来作为与服务器交互的时间,这个作为备用
         try {
             if(mRequest.isCancel())
@@ -230,7 +231,7 @@ public class NetProcessor implements Runnable {
                 }
             }
             connection.disconnect();
-            mRequest.setmResourceExpire(connection.getExpiration());
+            mRequest.setResourceExpire(connection.getExpiration());
             mMessage = connection.getResponseMessage();
             saveExtraToRequest(connection);
             saveResponseStatus(connection.getResponseCode(),computeRequestTime(connection,connectionTimer),connection.getResponseMessage());
@@ -245,6 +246,7 @@ public class NetProcessor implements Runnable {
                 saveErrorNetStatus(e.getMessage(), connectionTimer);
             toggleCallback();
         } finally {
+            mRequest.refreshVisibility(false);
             if (mListener != null)
                 mListener.onComplete(this);
         }

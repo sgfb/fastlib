@@ -22,7 +22,7 @@ public class RefreshLayout extends SwipeRefreshLayout implements Refreshable{
     }
 
     @Override
-    public void setRefreshCallback(final RefreshCallback callback) {
+    public void setRefreshCallback(final OnRefreshCallback callback) {
         setOnRefreshListener(new OnRefreshListener() {
             @Override
             public void onRefresh() {

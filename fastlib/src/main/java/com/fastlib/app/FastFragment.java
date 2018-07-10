@@ -284,18 +284,15 @@ public abstract class FastFragment extends Fragment implements Deferrable{
      * @param hint 进度提示
      */
     public void loading(final String hint){
-        if(mLoading==null) {
+        if(mLoading==null)
             mLoading=new LoadingDialog();
-            mLoading.show(getFragmentManager(),false);
-        }
-        if(Looper.getMainLooper()!=Looper.myLooper()){
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mLoading.setHint(hint);
-                }
-            });
-        }
+        runOnMainThread(new Runnable() {
+            @Override
+            public void run() {
+                mLoading.show(getChildFragmentManager());
+                mLoading.setHint(hint);
+            }
+        });
     }
 
     /**
@@ -303,9 +300,19 @@ public abstract class FastFragment extends Fragment implements Deferrable{
      */
     public void dismissLoading(){
         if(mLoading!=null){
-            mLoading.dismiss();
-            mLoading=null;
+            runOnMainThread(new Runnable() {
+                @Override
+                public void run() {
+                    mLoading.dismiss();
+                }
+            });
         }
+    }
+
+    private void runOnMainThread(Runnable runnable){
+        if(Looper.getMainLooper()!=Looper.myLooper())
+            getActivity().runOnUiThread(runnable);
+        else runnable.run();
     }
 
     /**

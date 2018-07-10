@@ -7,6 +7,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
+import com.fastlib.base.Refreshable;
 import com.fastlib.db.FastDatabase;
 import com.fastlib.db.ServerCache;
 import com.fastlib.net.bean.ResponseStatus;
@@ -35,41 +36,42 @@ public class Request{
     public static final int CHUNK_TYPE_OPEN=2;
     public static final int CHUNK_TYPE_CLOSE=3;
 
-    private boolean isCallbackByWorkThread; //特殊情况下建议网络请求在工作线程回调
+    private boolean isCallbackByWorkThread;         //特殊情况下建议网络请求在工作线程回调
     private boolean isCancel;
-    private boolean isSuppressWarning;  //压制警告
-    private boolean isAcceptGlobalCallback; //是否接受全局回调监听.默认true
-    private boolean isReplaceChinese; //是否替换中文url,默认为true
-    private boolean hadRootAddress; //是否已加入根地址
-    private boolean useFactory; //是否使用预设值
-    private boolean isSendGzip; //指定这次请求发送时是否压缩成gzip流
-    private boolean isReceiveGzip; //指定这次请求是否使用gzip解码
+    private boolean isSuppressWarning;              //压制警告
+    private boolean isAcceptGlobalCallback;         //是否接受全局回调监听.默认true
+    private boolean isReplaceChinese;               //是否替换中文url,默认为true
+    private boolean hadRootAddress;                 //是否已加入根地址
+    private boolean useFactory;                     //是否使用预设值
+    private boolean isSendGzip;                     //指定这次请求发送时是否压缩成gzip流
+    private boolean isReceiveGzip;                  //指定这次请求是否使用gzip解码
     private boolean isUseGlobalParamParser;
-    private byte[] mByteStream; //原始字节流，如果这个值存在就不会发送mParams参数了.如果存在但是长度为0发送mParams参数json化数据
+    private byte[] mByteStream;                     //原始字节流，如果这个值存在就不会发送mParams参数了.如果存在但是长度为0发送mParams参数json化数据
     private int mChunkType =CHUNK_TYPE_AUTO;
-    private long mResourceExpire; //资源过期时间
-    private long mIntervalSendFileTransferEvent=1000; //间隔多久发送上传和下载文件广播
+    private long mResourceExpire;                   //资源过期时间
+    private long mIntervalSendFileTransferEvent=1000;//间隔多久发送上传和下载文件广播
     private String method;
     private String mUrl;
     private List<Pair<String, String>> mSendCookies;
     private Downloadable mDownloadable;
     private Map<String,List<String>> mReceiveHeader;
-    private List<ExtraHeader> mSendHeadExtra; //额外发送的头部信息
+    private List<ExtraHeader> mSendHeadExtra;       //额外发送的头部信息
     private List<Pair<String,File>> mFiles;
     private List<Pair<String,String>> mParams;
     private RequestType mType = RequestType.DEFAULT;
-    private Object mTag; //额外信息
+    private Object mTag;                            //额外信息
     //加入activity或者fragment可以提升安全性
     private Context mContext;
     private Fragment mFragment;
     private Listener mListener;
-    private Type[] mGenericType; //根据Listener生成的返回类类型存根
-    private ServerCache mCacheManager; //缓存这个请求的数据管理
-    private ThreadPoolExecutor mExecutor; //运行在指定线程池中,如果未指定默认在公共的线程池中
-    private MockProcess mMock; //模拟数据
+    private Type[] mGenericType;                    //根据Listener生成的返回类类型存根
+    private ServerCache mCacheManager;              //缓存这个请求的数据管理
+    private ThreadPoolExecutor mExecutor;           //运行在指定线程池中,如果未指定默认在公共的线程池中
+    private MockProcess mMock;                      //模拟数据
     private ResponseStatus mResponseStatus=new ResponseStatus(); //返回包裹信息，尽量不要置null
     private Thread mThread;
     private ParamParserManager mParamParserManager;
+    private Refreshable mRefresh;
 
     public Request() {
         this("");
@@ -767,8 +769,9 @@ public class Request{
         return this;
     }
 
-    public void setSendHeader(List<ExtraHeader> headers){
+    public Request setSendHeader(List<ExtraHeader> headers){
         mSendHeadExtra=headers;
+        return this;
     }
 
     public List<ExtraHeader> getSendHeadExtra() {
@@ -801,9 +804,10 @@ public class Request{
         return mIntervalSendFileTransferEvent;
     }
 
-    public void setIntervalSendFileTransferEvent(long intervalSendFileTransferEvent) {
+    public Request setIntervalSendFileTransferEvent(long intervalSendFileTransferEvent) {
         if(intervalSendFileTransferEvent<0) intervalSendFileTransferEvent=0;
         mIntervalSendFileTransferEvent = intervalSendFileTransferEvent;
+        return this;
     }
 
     public Object getHost() {
@@ -818,33 +822,37 @@ public class Request{
         return mResponseStatus;
     }
 
-    public void setResponseStatus(ResponseStatus responseStatus){
+    public Request setResponseStatus(ResponseStatus responseStatus){
         if(responseStatus==null) mResponseStatus.clear();
         else mResponseStatus = responseStatus;
+        return this;
     }
 
     public Map<String, List<String>> getReceiveHeader() {
         return mReceiveHeader;
     }
 
-    public void setReceiveHeader(Map<String, List<String>> receiveHeader) {
+    public Request setReceiveHeader(Map<String, List<String>> receiveHeader) {
         mReceiveHeader = receiveHeader;
+        return this;
     }
 
     public boolean isReplaceChinese() {
         return isReplaceChinese;
     }
 
-    public void setReplaceChinese(boolean replaceChinese) {
+    public Request setReplaceChinese(boolean replaceChinese) {
         isReplaceChinese = replaceChinese;
+        return this;
     }
 
     public boolean isAcceptGlobalCallback() {
         return isAcceptGlobalCallback;
     }
 
-    public void setAcceptGlobalCallback(boolean acceptGlobalCallback) {
+    public Request setAcceptGlobalCallback(boolean acceptGlobalCallback) {
         isAcceptGlobalCallback = acceptGlobalCallback;
+        return this;
     }
 
     public Request setSuppressWarning(boolean suppressWarning){
@@ -896,20 +904,35 @@ public class Request{
         return mResourceExpire;
     }
 
-    public void setmResourceExpire(long mResourceExpire) {
-        this.mResourceExpire = mResourceExpire;
+    public void setResourceExpire(long resourceExpire) {
+        this.mResourceExpire = resourceExpire;
     }
 
-    public void reverseCancel(){
+    public Request reverseCancel(){
         isCancel=false;
+        return this;
     }
 
     public boolean isCallbackByWorkThread() {
         return isCallbackByWorkThread;
     }
 
-    public void setCallbackByWorkThread(boolean callbackByWorkThread) {
+    public Request setCallbackByWorkThread(boolean callbackByWorkThread) {
         isCallbackByWorkThread = callbackByWorkThread;
+        return this;
+    }
+
+    public Request setRefreshable(Refreshable refreshable){
+        mRefresh=refreshable;
+        return this;
+    }
+
+    /**
+     * 是否显示刷新
+     * @param status true显示 false不显示
+     */
+    public void refreshVisibility(boolean status){
+        if(mRefresh!=null) mRefresh.setRefreshStatus(status);
     }
 
     /**

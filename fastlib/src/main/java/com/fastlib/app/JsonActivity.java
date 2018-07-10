@@ -18,15 +18,12 @@ import java.util.Set;
 
 /**
  * Created by sgfb on 16/9/21.
+ * TODO
  * 数据填充来自 1.Intent数据传递 2.服务器 3.特殊
  */
 public abstract class JsonActivity extends FastActivity{
     protected JsonViewBinder mJsonViewBinder;
     protected OldViewHolder mViewHolder;
-
-    public JsonActivity(){
-        mPreparedTaskRemain++;
-    }
 
     public Pair<JsonViewBinder.ViewResolve,Class<? extends View>>[] generateViewResolves(){
         return null;
@@ -52,7 +49,7 @@ public abstract class JsonActivity extends FastActivity{
         .next(new Action<Integer,Integer>(){
             @Override
             protected Integer execute(Integer param){
-                prepareTask();
+//                prepareTaskStep();
                 return 0;
             }
         }, ThreadType.MAIN)

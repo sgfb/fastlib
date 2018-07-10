@@ -8,17 +8,17 @@ public interface Refreshable{
 
     /**
      * 设置刷新状态
-     * @param status
+     * @param status true开始刷新false关闭刷新
      */
     void setRefreshStatus(boolean status);
 
     /**
-     * 设置开始刷新回调
-     * @param callback
+     * 设置刷新被触发回调
+     * @param callback 刷新触发回调
      */
-    void setRefreshCallback(RefreshCallback callback);
+    void setRefreshCallback(OnRefreshCallback callback);
 
-    interface RefreshCallback{
+    interface OnRefreshCallback {
         void startRefresh();
     }
 }

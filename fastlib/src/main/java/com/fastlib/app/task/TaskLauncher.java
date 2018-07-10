@@ -12,6 +12,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class TaskLauncher{
     private volatile boolean mStopFlag;
+    private boolean mForceMainThreadFlag;  //强制在主线程中运行
     private ThreadPoolExecutor mThreadPool;
     private NoReturnAction<Throwable> mExceptionHandler; //一个全局的异常处理器,如果Task有对应异常处理器则不调用此处理器
     private EmptyAction mCompleteAction;
@@ -24,26 +25,35 @@ public class TaskLauncher{
      * @param task
      */
     private void threadDispatch(final Task task){
-        mThreadPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                try{
-                    if(task.getDelay()>0)
-                        Thread.sleep(task.getDelay());
-                    if(task.getOnWhichThread()==ThreadType.MAIN)
-                        getHostActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                processTask(task);
-                            }
-                        });
-                    else processTask(task);
-                }catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
+        if(mForceMainThreadFlag){
+            try {
+                processTask(task);
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();
             }
-        });
+        }
+        else{
+            mThreadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try{
+                        if(task.getDelay()>0)
+                            Thread.sleep(task.getDelay());
+                        if(task.getOnWhichThread()==ThreadType.MAIN)
+                            getHostActivity().runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    processTask(task);
+                                }
+                            });
+                        else processTask(task);
+                    }catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            });
+        }
     }
 
     /**
@@ -184,6 +194,16 @@ public class TaskLauncher{
          */
         public Builder setLastTask(EmptyAction action){
             launcher.mCompleteAction=action;
+            return this;
+        }
+
+        /**
+         * 强制运行在主线程中，抛弃线程调度
+         * @param forceOnMainThread true运行在主线程中，false无限制
+         * @return 线性任务启动器
+         */
+        public Builder setForceOnMainThread(boolean forceOnMainThread){
+            launcher.mForceMainThreadFlag=forceOnMainThread;
             return this;
         }
 

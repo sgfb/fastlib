@@ -21,7 +21,9 @@ import com.fastlib.app.task.EmptyAction;
 import com.fastlib.app.task.NoReturnAction;
 import com.fastlib.app.task.Task;
 import com.fastlib.app.task.TaskLauncher;
+import com.fastlib.app.task.ThreadType;
 import com.fastlib.base.Deferrable;
+import com.fastlib.base.Refreshable;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
@@ -38,23 +40,22 @@ import java.util.concurrent.ThreadPoolExecutor;
  * Created by sgfb on 16/9/5.
  * Activity基本封装.
  * 1.ContentView注解，Bind视图注解.
- * 2.全局事件注册和解注册(EventObserver)
- * 3.线程池及顺序任务列辅助方法(mThreadPool和startTasks(Task))
- * 4.本地数据辅助（LocalData）
- * 5.相机相册调取（openAlbum(PhotoResultListener)和openCamera(PhotoResultListener))
- * 6.6.0权限获取辅助(mPermissionHelper)
+ * 2.全局事件注册和解注册 {@link EventObserver}
+ * 3.线程池及顺序任务列辅助方法 {@link #mThreadPool}和{@link #startTask(Task)}
+ * 4.本地数据辅助 {@link com.fastlib.annotation.LocalData}
+ * 5.相机相册调取 {@link #openAlbum(PhotoResultListener)}和{@link #openCamera(PhotoResultListener)}
+ * 6.6.0权限获取辅助 {@link PermissionHelper}
  * 7.延时启动优化
  */
-public abstract class FastActivity extends AppCompatActivity implements Deferrable{
-    private static final int THREAD_POOL_SIZE =Runtime.getRuntime().availableProcessors()/2+1;
+public abstract class FastActivity extends AppCompatActivity implements Deferrable,Refreshable{
+    private static final int THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors() / 2 + 1;
 
     protected ThreadPoolExecutor mThreadPool;
     protected PermissionHelper mPermissionHelper;
-    protected volatile int mPreparedTaskRemain=3; //剩余初始化异步任务，当初始化异步任务全部结束时调用alreadyPrepared
 
-    private boolean isFirstLoaded=false;
+    private boolean isFirstLoaded = false;
     private boolean isGatingPhoto; //是否正在获取图像
-    private boolean isHadTransitionAnimation=false;
+    private boolean isHadTransitionAnimation = false;
     private LocalDataInject mLocalDataInject;
     private PhotoResultListener mPhotoResultListener;
     private LoadingDialog mLoading;
@@ -64,58 +65,50 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
     protected abstract void alreadyPrepared(); //所有初始化任务结束
 
     @Override
-    protected void onCreate(Bundle savedInstanceState){
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mDeferView= generateDeferLoadingView();
-        if(mDeferView==null)
+        mDeferView = generateDeferLoadingView();
+        if (mDeferView == null)
             init();
         checkContentViewInject();
     }
 
-    private void init(){
-        mPermissionHelper=new PermissionHelper();
-        mLocalDataInject=new LocalDataInject(this);
-        mThreadPool=generateThreadPool();
+    private void init() {
+        mPermissionHelper = new PermissionHelper();
+        mLocalDataInject = new LocalDataInject(this);
+        mThreadPool = generateThreadPool();
         checkTransitionInject();
-        mThreadPool.execute(new Runnable(){
-            @Override
-            public void run() {
-                EventObserver.getInstance().subscribe(FastActivity.this,FastActivity.this);
-                prepareTask();
-            }
-        });
-        startInternalPrepareTask();
     }
 
     /**
      * 后期绑定mThreadPool增加灵活性
      * @return 线程池
      */
-    protected ThreadPoolExecutor generateThreadPool(){
+    protected ThreadPoolExecutor generateThreadPool() {
         return (ThreadPoolExecutor) Executors.newFixedThreadPool(THREAD_POOL_SIZE);
     }
 
     /**
      * 查看是否有共享元素动画
      */
-    private void checkTransitionInject(){
-        TransitionAnimation ta=getClass().getAnnotation(TransitionAnimation.class);
-        if(ta!=null){
+    private void checkTransitionInject() {
+        TransitionAnimation ta = getClass().getAnnotation(TransitionAnimation.class);
+        if (ta != null) {
             supportPostponeEnterTransition(); //暂停共享元素动画
-            isHadTransitionAnimation=true;
+            isHadTransitionAnimation = true;
         }
     }
 
     /**
      * ContentView注入，如果存在的话
      */
-    private void checkContentViewInject(){
-        ContentView cv=getClass().getAnnotation(ContentView.class);
-        if(cv!=null){
-            if(mDeferView==null) setContentView(cv.value());
-            else{
-                FrameLayout frameLayout=new FrameLayout(this);
-                mViewStub=new ViewStub(this,cv.value());
+    private void checkContentViewInject() {
+        ContentView cv = getClass().getAnnotation(ContentView.class);
+        if (cv != null) {
+            if (mDeferView == null) setContentView(cv.value());
+            else {
+                FrameLayout frameLayout = new FrameLayout(this);
+                mViewStub = new ViewStub(this, cv.value());
                 frameLayout.addView(mViewStub);
                 frameLayout.addView(mDeferView);
                 setContentView(frameLayout);
@@ -128,25 +121,27 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
      * @param request 网络请求
      */
     protected void net(Request request) {
-        request.setHost(this).setExecutor(mThreadPool).start(false);
+        request.setHost(this)
+               .setExecutor(mThreadPool)
+               .start(false);
     }
 
     /**
      * 开始线性任务
      * @param task 任务
      */
-    public TaskLauncher startTask(Task task){
-        return startTask(task,null,null);
+    public TaskLauncher startTask(Task task) {
+        return startTask(task, null, null);
     }
 
     /**
      * 开始线性任务，并且有异常处理和尾回调
-     * @param task 任务
+     * @param task             任务
      * @param exceptionHandler 异常处理
-     * @param lastAction 尾回调
+     * @param lastAction       尾回调
      */
-    public TaskLauncher startTask(Task task, NoReturnAction<Throwable> exceptionHandler, EmptyAction lastAction){
-        TaskLauncher taskLauncher=new TaskLauncher.Builder(this,mThreadPool)
+    public TaskLauncher startTask(Task task, NoReturnAction<Throwable> exceptionHandler, EmptyAction lastAction) {
+        TaskLauncher taskLauncher = new TaskLauncher.Builder(this, mThreadPool)
                 .setExceptionHandler(exceptionHandler)
                 .setLastTask(lastAction)
                 .build();
@@ -159,7 +154,7 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
      * @param photoResultListener 取相册中相片回调
      */
     protected void openAlbum(final PhotoResultListener photoResultListener) {
-        mPermissionHelper.requestPermission(this,new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, new Runnable() {
+        mPermissionHelper.requestPermission(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, new Runnable() {
             @Override
             public void run() {
                 isGatingPhoto = true;
@@ -177,13 +172,13 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
     /**
      * 开启相机获取照片并且指定存储位置
      * @param photoResultListener 照相成功后回调
-     * @param path 指定路径
+     * @param path                指定路径
      */
     protected void openCamera(final PhotoResultListener photoResultListener, final String path) {
-        mPermissionHelper.requestPermission(this,new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, new Runnable() {
+        mPermissionHelper.requestPermission(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, new Runnable() {
             @Override
             public void run() {
-                mPermissionHelper.requestPermission(FastActivity.this,new String[]{Manifest.permission.CAMERA}, new Runnable() {
+                mPermissionHelper.requestPermission(FastActivity.this, new String[]{Manifest.permission.CAMERA}, new Runnable() {
                     @Override
                     public void run() {
                         isGatingPhoto = true;
@@ -191,7 +186,7 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
                         if (TextUtils.isEmpty(path))
                             ImageUtil.openCamera(FastActivity.this);
                         else
-                            ImageUtil.openCamera(FastActivity.this,Uri.fromFile(new File(path)));
+                            ImageUtil.openCamera(FastActivity.this, Uri.fromFile(new File(path)));
                     }
                 }, new Runnable() {
                     @Override
@@ -237,7 +232,7 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        mPermissionHelper.permissionResult(requestCode,permissions,grantResults);
+        mPermissionHelper.permissionResult(requestCode, permissions, grantResults);
     }
 
     @Override
@@ -265,11 +260,11 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
         NetManager.sRequestPool.execute(new Runnable() {
             @Override
             public void run() {
-                EventObserver.getInstance().unsubscribe(FastActivity.this,FastActivity.this);
-                if(mThreadPool!=null){
+                EventObserver.getInstance().unsubscribe(FastActivity.this, FastActivity.this);
+                if (mThreadPool != null) {
                     mThreadPool.shutdownNow();
                     mThreadPool.purge();
-                    mThreadPool=null;
+                    mThreadPool = null;
                 }
             }
         });
@@ -279,17 +274,9 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
      * 在设置布局后视图注解和局部数据注解
      * @param waitDeferTask 是否等待延迟任务
      */
-    protected void afterSetContentView(boolean waitDeferTask){
-        if(!waitDeferTask||mDeferView==null){
-            mThreadPool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    ViewInject.inject(FastActivity.this,findViewById(android.R.id.content),mThreadPool);
-                    mLocalDataInject.localDataInject();
-                    prepareTask();
-                }
-            });
-        }
+    protected void afterSetContentView(boolean waitDeferTask) {
+        if (!waitDeferTask || mDeferView == null)
+            startInternalPrepareTask();
     }
 
     /**
@@ -302,97 +289,76 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
 
     /**
      * 快捷启动一个Activity并且获取返回
-     * @param cla 启动的Activity类
+     * @param cla         启动的Activity类
      * @param requestCode 请求码
      */
-    public void startActivityForResult(Class<? extends Activity> cla,int requestCode){
-        startActivityForResult(new Intent(this,cla),requestCode);
+    public void startActivityForResult(Class<? extends Activity> cla, int requestCode) {
+        startActivityForResult(new Intent(this, cla), requestCode);
     }
 
     /**
      * 获取权限辅助工具
      * @return 权限辅助工具
      */
-    public PermissionHelper getPermissionHelper(){
+    public PermissionHelper getPermissionHelper() {
         return mPermissionHelper;
     }
 
     /**
      * 显示进度条
      */
-    public void loading(){
+    public void loading() {
         loading(getString(R.string.loading));
     }
 
     /**
-     * 显示无限进度
+     * 显示无限进度条
      * @param hint 进度提示
      */
-    public void loading(final String hint){
-        if(mLoading==null) {
-            mLoading=new LoadingDialog();
-            mLoading.show(getSupportFragmentManager());
-        }
-        if(Looper.getMainLooper()!=Looper.myLooper()){
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mLoading.setHint(hint);
-                }
-            });
-        }
+    public void loading(final String hint) {
+        if (mLoading == null)
+            mLoading = new LoadingDialog();
+        runOnMainThread(new Runnable() {
+            @Override
+            public void run() {
+                mLoading.show(getSupportFragmentManager());
+                mLoading.setHint(hint);
+            }
+        });
     }
 
     /**
      * 关闭进度条
      */
-    public void dismissLoading(){
-        if(mLoading!=null)
-            mLoading.dismiss();
-    }
-
-    /**
-     * 其中一个异步任务完成
-     */
-    protected synchronized void prepareTask(){
-        if(--mPreparedTaskRemain<=0)
-            runOnUiThread(new Runnable(){
+    public void dismissLoading() {
+        if (mLoading != null) {
+            runOnMainThread(new Runnable() {
                 @Override
                 public void run() {
-                    if(mDeferView!=null) {
-                        if(mDeferView.getParent() instanceof ViewGroup){
-                            ViewGroup parent= (ViewGroup) mDeferView.getParent();
-                            parent.removeView(mDeferView);
-                        }
-                    }
-                    alreadyPrepared();
-                    if(isHadTransitionAnimation)
-                        supportStartPostponedEnterTransition();
-                    mLocalDataInject.toggleDelayLocalDataMethod();
+                    mLoading.dismiss();
                 }
             });
+        }
+    }
+
+    private void runOnMainThread(Runnable runnable) {
+        if (Looper.getMainLooper() != Looper.myLooper())
+            runOnUiThread(runnable);
+        else runnable.run();
     }
 
     /**
      * 延迟加载视图，如果不为空，使用延迟加载策略
-     * @return  延迟加载视图
+     * @return 延迟加载视图
      */
-    protected View generateDeferLoadingView(){
-        return null;
-    }
-
-    /**
-     * 内部预任务
-     * @return 额外的预任务
-     */
-    protected Task internalPrepare(){
+    protected View generateDeferLoadingView() {
         return null;
     }
 
     @Override
-    public void firstLoad(){
-        if(!isFirstLoaded&&mViewStub!=null){
-            isFirstLoaded=true;
+    public void firstLoad() {
+        if (!isFirstLoaded && mViewStub != null) {
+            isFirstLoaded = true;
             mViewStub.inflate();
             init();
             afterSetContentView(false);
@@ -401,20 +367,72 @@ public abstract class FastActivity extends AppCompatActivity implements Deferrab
     }
 
     /**
+     * 内部任务运行线程
+     * @return true强制在主线程中运行预任务, false无限制
+     */
+    protected boolean prepareOnMainThread() {
+        return false;
+    }
+
+    /**
+     * 内部预任务
+     * @return 额外的预任务
+     */
+    protected Task genPrepareTaskList() {
+        return Task.begin(new EmptyAction() {
+            @Override
+            protected void executeAdapt() {
+                ViewInject.inject(FastActivity.this, findViewById(android.R.id.content), mThreadPool);
+                mLocalDataInject.localDataInject();
+                EventObserver.getInstance().subscribe(FastActivity.this, FastActivity.this);
+            }
+        });
+    }
+
+    /**
      * 开始内部任务加载
      */
-    private void startInternalPrepareTask(){
-        Task task=internalPrepare();
-        if(task==null)
-            prepareTask();
-        else{
+    private void startInternalPrepareTask() {
+        Task task = genPrepareTaskList();
+        if (task == null)
+            endInternalPrepareTask();
+        else {
             task.again(new EmptyAction() {
                 @Override
                 protected void executeAdapt() {
-                    prepareTask();
+                    endInternalPrepareTask();
                 }
-            });
-            startTask(task,null,null);
+            }, ThreadType.MAIN);
+            if (prepareOnMainThread()) {
+                new TaskLauncher.Builder(this, mThreadPool)
+                        .setForceOnMainThread(true)
+                        .build()
+                        .startTask(task);
+            } else startTask(task);
         }
+    }
+
+    private void endInternalPrepareTask() {
+        if (mDeferView != null) {
+            if (mDeferView.getParent() instanceof ViewGroup) {
+                ViewGroup parent = (ViewGroup) mDeferView.getParent();
+                parent.removeView(mDeferView);
+            }
+        }
+        alreadyPrepared();
+        if (isHadTransitionAnimation)
+            supportStartPostponedEnterTransition();
+        mLocalDataInject.toggleDelayLocalDataMethod();
+    }
+
+    @Override
+    public void setRefreshStatus(boolean status) {
+        if(status) loading();
+        else dismissLoading();
+    }
+
+    @Override
+    public void setRefreshCallback(OnRefreshCallback callback) {
+        //Activity的loading不会被手动触发
     }
 }
