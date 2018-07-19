@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Database;
@@ -35,6 +36,7 @@ import java.util.Map;
  * @author sgfb
  */
 public class FastDatabase{
+    private static final String SAVE_INT_DB_VERSION="dbVersion";
     private static final String DEFAULT_DATABASE_NAME = BuildConfig.DEFAULT_DATA_FILE_NAME;
     private static DatabaseConfig sConfig=new DatabaseConfig();
 
@@ -702,18 +704,6 @@ public class FastDatabase{
             }
         }
         return true;
-    }
-
-    private FastDatabase genNewVersionDb(){
-        //升级数据库版本
-        int newVersion=SaveUtil.getFromSp(mContext,"dbVersion",1)+1;
-        SaveUtil.saveToSp(mContext,"dbVersion",newVersion);
-        sConfig.mVersion=newVersion;
-
-        //复制当前数据库属性生成新数据库辅助
-        FastDatabase newDb=FastDatabase.getInstance(mContext,mAttribute.getWhichDatabase());
-        newDb.mAttribute=mAttribute;
-        return newDb;
     }
 
     /**
@@ -1454,6 +1444,22 @@ public class FastDatabase{
     }
 
     /**
+     * 升级数据版本（仅外部标记版本），并且生成新数据库控制
+     * @return 数据库控制
+     */
+    private FastDatabase genNewVersionDb(){
+        //升级数据库版本
+        int newVersion=SaveUtil.getFromSp(mContext,SAVE_INT_DB_VERSION,1)+1;
+        SaveUtil.saveToSp(mContext,SAVE_INT_DB_VERSION,newVersion);
+        sConfig.mVersion=newVersion;
+
+        //复制当前数据库属性生成新数据库辅助
+        FastDatabase newDb=FastDatabase.getInstance(mContext,mAttribute.getWhichDatabase());
+        newDb.mAttribute=mAttribute;
+        return newDb;
+    }
+
+    /**
      * 指定操作的数据库,直到程序重新运行或者再调用此方法转换操作数据库对象
      * @param databaseName
      */
@@ -1484,7 +1490,7 @@ public class FastDatabase{
          * 数据库名＝default.db
          */
         private DatabaseConfig(){
-            mVersion = SaveUtil.getFromSp(ContextHolder.getContext(),"dbVersion",1);
+            mVersion = SaveUtil.getFromSp(ContextHolder.getContext(),SAVE_INT_DB_VERSION,1);
             mCurrentDatabase = getDefaultDatabaseName() + ".db";
         }
 
@@ -1501,10 +1507,14 @@ public class FastDatabase{
             return mCurrentDatabase;
         }
 
-        public void setVersion(int version) {
-            if (version < mVersion)
-                throw new IllegalArgumentException("设置的版本小于等于当前版本");
+        public void setVersion(Context context,int version) {
+            //丢弃小于当前版本的数据库版本
+            if (version < mVersion){
+                Log.w(FastDatabase.class.getSimpleName(),"设置的版本小于等于当前版本");
+                return;
+            }
             mVersion = version;
+            SaveUtil.saveToSp(context,SAVE_INT_DB_VERSION,version);
         }
 
         public int getVersion() {
