@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.SparseArray;
@@ -30,17 +32,21 @@ public class PermissionHelper{
 
     /**
      * 6.0后发起请求权限
+     * @param activity 上下文
+     * @param fragments fragment上下文
      * @param permission 权限名
      * @param grantedAfterProcess 成功后回调
      * @param deniedAfterProcess 失败后回调
      */
-    public void requestPermission(Activity activity, String[] permission, Runnable grantedAfterProcess, Runnable deniedAfterProcess) {
+    public void requestPermission(Activity activity, Fragment fragments, String[] permission, Runnable grantedAfterProcess, Runnable deniedAfterProcess){
         if (Build.VERSION.SDK_INT<Build.VERSION_CODES.M||checkPermissionGranted(activity,permission))   //小于6.0或之前已获取过权限，直接运行
             grantedAfterProcess.run();
         else {
             int requestCode = mPermissionMap.size() + 1;
             mPermissionMap.put(requestCode, new PermissionRequest(requestCode, grantedAfterProcess, deniedAfterProcess));
-            ActivityCompat.requestPermissions(activity,permission, requestCode);
+            if(fragments!=null)
+                fragments.requestPermissions(permission,requestCode);
+            else ActivityCompat.requestPermissions(activity,permission, requestCode);
         }
     }
 
@@ -87,7 +93,7 @@ public class PermissionHelper{
      * @param obj 有实现有PermissionInterface注解的接口的对象
      * @return 小于6.0返回obj对象本体否则返回代理类
      */
-    public Object permissionGuard(final Activity activity,final Object obj){
+    public Object permissionGuard(final Activity activity,final Fragment fragment,final Object obj){
         if(Build.VERSION.SDK_INT<Build.VERSION_CODES.M) return obj;
         Class<?>[] interfaces=obj.getClass().getInterfaces();
 
@@ -99,7 +105,7 @@ public class PermissionHelper{
                     public Object invoke(Object proxy, final Method method, final Object[] args) throws Throwable{
                         final Permission permissionInject=method.getAnnotation(Permission.class);
                         if(permissionInject!=null)
-                            requestPermission(activity, permissionInject.value(), new Runnable() {
+                            requestPermission(activity, fragment,permissionInject.value(), new Runnable() {
                                 @Override
                                 public void run() {
                                     try {

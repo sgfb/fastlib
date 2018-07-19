@@ -28,7 +28,7 @@ public class NetManager{
     private static NetManager mOwer;
     public int mRequestCount=0;
     public long Tx,Rx;
-    public static ThreadPoolExecutor sRequestPool =(ThreadPoolExecutor) Executors.newFixedThreadPool(6); //公共网络请求池
+    public static ThreadPoolExecutor sRequestPool =(ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()); //公共网络请求池
     private String mRootAddress;
     private Config mConfig;
     private NetGlobalData mGlobalData;

@@ -16,10 +16,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 
-import com.fastlib.annotation.LocalData;
-import com.fastlib.app.FastActivity;
-
-import java.io.UnsupportedEncodingException;
+import com.fastlib.app.module.FastActivity;
 
 /**
  * Created by sgfb on 16/9/29.
@@ -41,7 +38,7 @@ public abstract class AbsWebViewActivity extends FastActivity{
     public abstract void webTitle(String title);
 
     @Override
-    protected void alreadyPrepared(){
+    public void alreadyPrepared(){
         mWebView= (WebView) findViewById(getIntent().getIntExtra(ARG_INT_WEBVIEW_ID,0));
         mProgress= (ProgressBar) findViewById(getIntent().getIntExtra(ARG_INT_PROGRESS_BAR_ID,0));
         mUrl = getIntent().getStringExtra(ARG_STR_URL);

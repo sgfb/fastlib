@@ -1,8 +1,6 @@
 package com.fastlib.utils;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
-import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.view.View;
@@ -11,7 +9,6 @@ import android.widget.AdapterView;
 import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.LocalData;
-import com.fastlib.annotation.TransitionAnimation;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -24,7 +21,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class ViewInject{
     private ThreadPoolExecutor mThreadPool;
-    private Object mHost; //host仅为Activity或Fragment
+    private Object mHost;
     private View mRoot;
 
     private ViewInject(Object host, @NonNull View root, ThreadPoolExecutor threadPool){
@@ -193,57 +190,12 @@ public class ViewInject{
                             View view=mRoot.findViewById(ids[0]);
                             field.setAccessible(true);
                             field.set(mHost,view);
-                            checkTransitionAnimationInject(view,field);
                         } catch (IllegalAccessException e) {
                             if(BuildConfig.isShowLog)
                             System.out.println(e.getMessage());
                         }
                     }
-//                    else{
-//                        //如果视图id是空的，尝试根据属性名绑定对应视图
-//                        String name=field.getName();
-//                        int viewId;
-//                        try{
-//                            if((viewId=mRoot.getResources().getIdentifier(name,"id",mRoot.getContext().getPackageName()))!=0){
-//                                View view=mRoot.findViewById(viewId);
-//                                field.setAccessible(true);
-//                                field.set(mHost,view);
-//                            }
-//                        }catch(IllegalAccessException e){
-//                            if(Fastlib.isShowLog())
-//                                System.out.println(e.getMessage());
-//                        }
-//                    }
                 }
             }
-    }
-
-    /**
-     * 检查是否有元素分享动画注解，如果有将分享名注入
-     */
-    @TargetApi(21)
-    private void checkTransitionAnimationInject(View view, Field field){
-        if(Build.VERSION.SDK_INT<Build.VERSION_CODES.LOLLIPOP) //小于5.0不检查
-            return;
-        if(view==null){
-            if(BuildConfig.isShowLog)
-                System.out.println("视图为空，不可使用共享动画名注入");
-            return;
-        }
-        TransitionAnimation ta=field.getAnnotation(TransitionAnimation.class);
-        if(ta!=null)
-            view.setTransitionName(getHostParams(ta.value()));
-    }
-
-    /**
-     * 获取宿主字符串参数，Activity为Intent.getString,Fragment为Bundle.getString
-     * @param key
-     * @return
-     */
-    private String getHostParams(String key){
-        if(mHost instanceof Activity)
-            return ((Activity)mHost).getIntent().getStringExtra(key);
-        else
-            return ((Fragment)mHost).getArguments().getString(key);
     }
 }

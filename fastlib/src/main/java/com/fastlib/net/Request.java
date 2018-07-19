@@ -1,12 +1,11 @@
 package com.fastlib.net;
 
-import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
+import com.fastlib.app.module.ModuleLife;
 import com.fastlib.base.Refreshable;
 import com.fastlib.db.FastDatabase;
 import com.fastlib.db.ServerCache;
@@ -60,9 +59,6 @@ public class Request{
     private List<Pair<String,String>> mParams;
     private RequestType mType = RequestType.DEFAULT;
     private Object mTag;                            //额外信息
-    //加入activity或者fragment可以提升安全性
-    private Context mContext;
-    private Fragment mFragment;
     private Listener mListener;
     private Type[] mGenericType;                    //根据Listener生成的返回类类型存根
     private ServerCache mCacheManager;              //缓存这个请求的数据管理
@@ -72,6 +68,7 @@ public class Request{
     private Thread mThread;
     private ParamParserManager mParamParserManager;
     private Refreshable mRefresh;
+    private ModuleLife mHostLife;
 
     public Request() {
         this("");
@@ -116,16 +113,6 @@ public class Request{
 
     public void start()  {
         start(false);
-    }
-
-    public void start(boolean forceRefresh, Fragment fragment)  {
-        mFragment = fragment;
-        start(forceRefresh);
-    }
-
-    public void start(boolean forceRefresh, Activity activity)  {
-        mContext = activity;
-        start(forceRefresh);
     }
 
     public void start(boolean forceRefresh) {
@@ -659,21 +646,6 @@ public class Request{
         return mDownloadable != null && mDownloadable.getTargetFile() != null && mDownloadable.getTargetFile().exists();
     }
 
-    public Request setHost(Context context){
-        mContext=context;
-        return this;
-    }
-
-    public Request setHost(Activity activity) {
-        mContext = activity;
-        return this;
-    }
-
-    public Request setHost(Fragment fragment) {
-        mFragment = fragment;
-        return this;
-    }
-
     public void setCurrThread(){
         mThread=Thread.currentThread();
     }
@@ -810,14 +782,6 @@ public class Request{
         return this;
     }
 
-    public Object getHost() {
-        if (mFragment != null)
-            return mFragment;
-        if (mContext != null)
-            return mContext;
-        return null;
-    }
-
     public ResponseStatus getResponseStatus() {
         return mResponseStatus;
     }
@@ -924,6 +888,15 @@ public class Request{
 
     public Request setRefreshable(Refreshable refreshable){
         mRefresh=refreshable;
+        return this;
+    }
+
+    public ModuleLife getHostLify() {
+        return mHostLife;
+    }
+
+    public Request setHostLifecycle(ModuleLife mHostLifecycle) {
+        this.mHostLife = mHostLifecycle;
         return this;
     }
 

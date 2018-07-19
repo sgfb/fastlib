@@ -1,35 +1,32 @@
 package com.fastlib;
 
-import android.widget.ImageView;
+import android.os.Bundle;
+import android.view.View;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
-import com.fastlib.annotation.Event;
-import com.fastlib.annotation.LocalData;
-import com.fastlib.app.EventObserver;
-import com.fastlib.app.FastActivity;
-import com.fastlib.app.task.EmptyAction;
-import com.fastlib.app.task.Task;
-import com.fastlib.app.task.ThreadType;
-import com.fastlib.net.Request;
-
-import java.util.Random;
+import com.fastlib.app.module.FastActivity;
+import com.fastlib.db.FastDatabase;
 
 @ContentView(R.layout.act_main)
 public class MainActivity extends FastActivity{
 
 	@Override
-	protected void alreadyPrepared() {
+	public void alreadyPrepared(){
 
 	}
 
 	@Bind(R.id.bt)
-	private void bt(){
-		net(new Request("http://www.baidu.com"));
+	private void commit(){
+		Student student=new Student();
+		student.id=1;
+		student.a="bao";
+		FastDatabase.getDefaultInstance(MainActivity.this).saveOrUpdateAsync(student,null);
 	}
 
 	@Bind(R.id.bt2)
-	private void bt2(){
-
+	private void commit2(){
+		Student student=FastDatabase.getDefaultInstance(this).getFirst(Student.class);
+		System.out.println(student);
 	}
 }

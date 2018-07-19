@@ -1,9 +1,12 @@
 package com.fastlib.app.task;
 
-import android.app.Activity;
-import android.os.Build;
-import android.support.v4.app.Fragment;
+import android.os.Handler;
+import android.os.Looper;
+import android.support.annotation.NonNull;
 
+import com.fastlib.app.module.ModuleLife;
+
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -16,9 +19,26 @@ public class TaskLauncher{
     private ThreadPoolExecutor mThreadPool;
     private NoReturnAction<Throwable> mExceptionHandler; //一个全局的异常处理器,如果Task有对应异常处理器则不调用此处理器
     private EmptyAction mCompleteAction;
-    private Object mHost;
+    private ModuleLife mHostLife;
+    private Executor mChildThreadExecutor;
+    private Executor mMainThreadExecutor;
+    private Handler mHandle;
 
-    private TaskLauncher(){}
+    private TaskLauncher(){
+        mHandle=new Handler(Looper.getMainLooper());
+        mChildThreadExecutor=new Executor() {
+            @Override
+            public void execute(@NonNull Runnable command) {
+                mThreadPool.execute(command);
+            }
+        };
+        mMainThreadExecutor=new Executor() {
+            @Override
+            public void execute(@NonNull Runnable command) {
+                mHandle.post(command);
+            }
+        };
+    }
 
     /**
      * 线性任务线程调度
@@ -33,14 +53,14 @@ public class TaskLauncher{
             }
         }
         else{
-            mThreadPool.execute(new Runnable() {
+            mChildThreadExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
                     try{
                         if(task.getDelay()>0)
                             Thread.sleep(task.getDelay());
                         if(task.getOnWhichThread()==ThreadType.MAIN)
-                            getHostActivity().runOnUiThread(new Runnable() {
+                            mMainThreadExecutor.execute(new Runnable() {
                                 @Override
                                 public void run() {
                                     processTask(task);
@@ -50,7 +70,6 @@ public class TaskLauncher{
                     }catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-
                 }
             });
         }
@@ -64,7 +83,7 @@ public class TaskLauncher{
         try{
             task.process(); //执行事件后才有返回
             if(checkStopStatus(task)){ //中断任务事件
-                if(mCompleteAction!=null) mCompleteAction.executeAdapt();
+                runLastAction();
                 return;
             }
             Object obj=task.getReturn();
@@ -89,8 +108,7 @@ public class TaskLauncher{
                 threadDispatch(nextTask);
             }
             else{
-                if(mCompleteAction!=null)
-                    mCompleteAction.execute(null);
+                runLastAction();
             }
             if(task.isInfiniteTask()) reset(task).startTask(task);
         }catch (Throwable throwable){
@@ -103,28 +121,41 @@ public class TaskLauncher{
                     handled=true;
                 }
             }
-            if(mExceptionHandler!=null&&!handled) mExceptionHandler.execute(throwable);
-            if(mCompleteAction!=null) mCompleteAction.execute(null);
+            if(!handled) runExceptionHandler(throwable);
+            runLastAction();
         }
     }
 
-    /**
-     * 宿主是否已结束生命周期
-     * @return true已结束（不继续任务事件）
-     */
-    private boolean hostIsFinish(){
-        if(mHost instanceof Activity){
-            Activity activity= (Activity) mHost;
-            return activity.isFinishing()||(Build.VERSION.SDK_INT>=17&&activity.isDestroyed());
+    private void runExceptionHandler(final Throwable throwable){
+        if(mExceptionHandler!=null){
+            Runnable runnable=new Runnable() {
+                @Override
+                public void run() {
+                    mExceptionHandler.execute(throwable);
+                }
+            };
+            if(mExceptionHandler.getThreadType()==ThreadType.MAIN)
+                mMainThreadExecutor.execute(runnable);
+            else mChildThreadExecutor.execute(runnable);
         }
-        else {
-            Fragment fragment= (Fragment) mHost;
-            return fragment.isRemoving()||fragment.isDetached();
+    }
+
+    private void runLastAction(){
+        if(mCompleteAction!=null){
+            Runnable runnable=new Runnable() {
+                @Override
+                public void run() {
+                    mCompleteAction.executeAdapt();
+                }
+            };
+            if(mCompleteAction.getThreadType()==ThreadType.MAIN)
+                mMainThreadExecutor.execute(runnable);
+            else mChildThreadExecutor.execute(runnable);
         }
     }
 
     private boolean checkStopStatus(Task task){
-        return hostIsFinish()||task.isStopNow()||mStopFlag;
+        return mHostLife.flag== ModuleLife.LIFE_DESTROYED||task.isStopNow()||mStopFlag;
     }
 
     /**
@@ -139,11 +170,6 @@ public class TaskLauncher{
         threadDispatch(firstTask);
     }
 
-    public Activity getHostActivity(){
-        if(mHost instanceof Activity) return (Activity) mHost;
-        else return ((Fragment)mHost).getActivity();
-    }
-
     public void stopNow(boolean stopFlag){
         mStopFlag = stopFlag;
     }
@@ -153,7 +179,6 @@ public class TaskLauncher{
         mStopFlag=true;
 
         TaskLauncher launcher=new TaskLauncher();
-        launcher.mHost=mHost;
         launcher.mThreadPool=mThreadPool;
         launcher.mExceptionHandler=mExceptionHandler;
         launcher.mCompleteAction=mCompleteAction;
@@ -163,17 +188,9 @@ public class TaskLauncher{
     public static class Builder{
         private TaskLauncher launcher;
 
-        public Builder(Activity activity,ThreadPoolExecutor threadPool){
-            init(activity,threadPool);
-        }
-
-        public Builder(Fragment fragment,ThreadPoolExecutor threadPool){
-            init(fragment,threadPool);
-        }
-
-        private void init(Object host,ThreadPoolExecutor threadPoolExecutor){
+        public Builder(ModuleLife life,ThreadPoolExecutor threadPoolExecutor){
             launcher=new TaskLauncher();
-            launcher.mHost=host;
+            launcher.mHostLife =life;
             launcher.mThreadPool=threadPoolExecutor;
         }
 

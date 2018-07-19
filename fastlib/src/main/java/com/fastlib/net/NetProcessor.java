@@ -1,14 +1,13 @@
 package com.fastlib.net;
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.app.EventObserver;
+import com.fastlib.app.module.ModuleLife;
 import com.fastlib.bean.event.EventDownloading;
 import com.fastlib.bean.event.EventUploading;
 import com.fastlib.net.bean.ResponseStatus;
@@ -17,6 +16,7 @@ import com.fastlib.net.exception.DiscardException;
 import com.fastlib.net.exception.NetException;
 import com.fastlib.net.listener.GlobalListener;
 import com.fastlib.net.listener.Listener;
+import com.fastlib.utils.ContextHolder;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 
@@ -173,7 +173,7 @@ public class NetProcessor implements Runnable {
             }
             checkErrorStream(connection, connectionTimer); //判断返回码是否200.不是的话做额外处理
             if (needBody) {
-                Context context = getHostContext();
+                Context context = ContextHolder.getContext();
                 in = mRequest.isReceiveGzip() ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream();
                 int len;
                 byte[] data = new byte[BUFF_LENGTH];
@@ -285,17 +285,7 @@ public class NetProcessor implements Runnable {
         final Listener l = mRequest.getListener();
         if (l == null || Thread.currentThread().isInterrupted())
             return;
-        Object host = mRequest.getHost();
-        boolean hostAvailable = true; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为在安全环境
-        if (host instanceof Fragment) {
-            Fragment fragment = (Fragment) host;
-            if ((fragment.isRemoving() || fragment.isDetached()))
-                hostAvailable = false;
-        } else if (host instanceof Activity) {
-            Activity activity = (Activity) host;
-            if (activity.isFinishing())
-                hostAvailable = false;
-        }
+        boolean hostAvailable =mRequest.getHostLify().flag!= ModuleLife.LIFE_DESTROYED; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为在安全环境
         if (hostAvailable) {
             mResponse = globalListener.onRawData(mRequest, mResponse);
             l.onRawData(mRequest, mResponse);
@@ -599,7 +589,7 @@ public class NetProcessor implements Runnable {
         long count = 0;
         int speed = 0;
 
-        Context context = getHostContext();
+        Context context = ContextHolder.getContext();
         boolean needEndSend=false; //保证在文件结尾处发送一次上传广播
         while ((len = fileIn.read(data)) != -1) {
             checkBreakout();
@@ -645,13 +635,6 @@ public class NetProcessor implements Runnable {
             }
         }
         return sb.toString().replace(" ", "%20"); //最后空格置换
-    }
-
-    public Context getHostContext() {
-        Object host = mRequest.getHost();
-        if (host instanceof Context) return (Context) host;
-        else if (host instanceof Fragment) return ((Fragment) host).getContext();
-        return null;
     }
 
     @Override

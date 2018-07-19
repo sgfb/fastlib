@@ -15,6 +15,7 @@ import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Database;
 import com.fastlib.bean.DatabaseTable;
 import com.fastlib.net.NetManager;
+import com.fastlib.utils.ContextHolder;
 import com.fastlib.utils.Reflect;
 import com.google.gson.Gson;
 
@@ -336,8 +337,7 @@ public class FastDatabase{
                 list.add(obj);
                 cursor.moveToNext();
             } catch (Exception e) {
-                if (BuildConfig.isShowLog)
-                    System.out.println("数据库在取数据时发生异常:" + e.toString());
+                System.out.println("数据库在取数据时发生异常:" + e.toString());
                 database.close();
                 return null;
             }
@@ -542,6 +542,7 @@ public class FastDatabase{
             }
         }
 
+        boolean noColumnError=false;
         try {
             //削掉前面的where
             filter = filter.substring(6, filter.length());
@@ -551,12 +552,16 @@ public class FastDatabase{
             if (BuildConfig.isShowLog)
                 System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabaseComplete()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabaseComplete()) + "<--u-" + count + "- " + tableName);
         } catch (SQLiteException e) {
-            if (BuildConfig.isShowLog)
-                System.out.println("更新数据失败，异常：" + e.toString());
+            if(!TextUtils.isEmpty(e.getMessage())&&e.getMessage().contains("no such column"))
+                noColumnError=true;
+            else System.out.println("更新数据失败，异常：" + e.toString());
             return false;
         } finally {
             database.endTransaction();
             database.close();
+            if(noColumnError){
+                genNewVersionDb().update(obj);
+            }
         }
         return true;
     }
@@ -567,6 +572,7 @@ public class FastDatabase{
      * @return 如果存储成功返回true，否则为false
      */
     private boolean save(Object[] array){
+        boolean noColumnError=false;
         if (array == null || array.length <= 0)
             return false; //没什么对象可存应该返回false吗？
         Object availableObj = null;
@@ -665,7 +671,7 @@ public class FastDatabase{
                     }
                 }
                 //对自动增长的主键
-                long rowId=db.insert("'" + tableName + "'", null, cv);
+                long rowId=db.insertWithOnConflict("'" + tableName + "'", null, cv,SQLiteDatabase.CONFLICT_NONE);
                 if(rowId!=-1&&autoIncreKeyField!=null){
                     try{
                         if(autoIncreKeyField.getType()==int.class||autoIncreKeyField.getType()==Integer.class)
@@ -683,14 +689,31 @@ public class FastDatabase{
                 System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabaseComplete()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabaseComplete()) + "<--"+array.length+"--" + tableName);
             db.setTransactionSuccessful();
         } catch (SQLiteException e){
-            if (BuildConfig.isShowLog)
+            if(!TextUtils.isEmpty(e.getMessage())&&e.getMessage().contains("no column"))
+                noColumnError=true;
+            else
                 System.out.println("更新数据失败:"+e.getMessage());
             return false;
         } finally {
             db.endTransaction();
             db.close();
+            if(noColumnError){
+                genNewVersionDb().saveOrUpdate(array);
+            }
         }
         return true;
+    }
+
+    private FastDatabase genNewVersionDb(){
+        //升级数据库版本
+        int newVersion=SaveUtil.getFromSp(mContext,"dbVersion",1)+1;
+        SaveUtil.saveToSp(mContext,"dbVersion",newVersion);
+        sConfig.mVersion=newVersion;
+
+        //复制当前数据库属性生成新数据库辅助
+        FastDatabase newDb=FastDatabase.getInstance(mContext,mAttribute.getWhichDatabase());
+        newDb.mAttribute=mAttribute;
+        return newDb;
     }
 
     /**
@@ -1456,12 +1479,12 @@ public class FastDatabase{
 
         /**
          * 默认的数据库配置为
-         * 版本＝1
+         * 版本＝从Sp中获取
          * 日志输出＝true
          * 数据库名＝default.db
          */
-        private DatabaseConfig() {
-            mVersion = 1;
+        private DatabaseConfig(){
+            mVersion = SaveUtil.getFromSp(ContextHolder.getContext(),"dbVersion",1);
             mCurrentDatabase = getDefaultDatabaseName() + ".db";
         }
 
