@@ -72,7 +72,6 @@ public class ScreenUtils {
 	 * @return
 	 */
 	public static int getStatusHeight(Context context) {
-
 		int statusHeight = -1;
 		try {
 			Class<?> clazz = Class.forName("com.android.internal.R$dimen");
@@ -125,7 +124,5 @@ public class ScreenUtils {
 		bp = Bitmap.createBitmap(bmp, 0, statusBarHeight, width, height - statusBarHeight);
 		view.destroyDrawingCache();
 		return bp;
-
 	}
-
 }

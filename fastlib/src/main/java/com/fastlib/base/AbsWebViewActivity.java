@@ -11,6 +11,8 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -19,7 +21,13 @@ import android.widget.ProgressBar;
 import com.fastlib.annotation.LocalData;
 import com.fastlib.app.FastActivity;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 /**
  * Created by sgfb on 16/9/29.
@@ -99,6 +107,31 @@ public abstract class AbsWebViewActivity extends FastActivity{
     }
 
     protected class WebClient extends WebViewClient {
+
+        @Override
+        public WebResourceResponse shouldInterceptRequest(WebView view, String url){
+            if(url.endsWith("content.css")) {
+                try {
+                    HttpURLConnection connection= (HttpURLConnection) new URL(url).openConnection();
+                    InputStream in=connection.getInputStream();
+                    byte[] buffer=new byte[4096];
+                    int len;
+                    ByteArrayOutputStream baos=new ByteArrayOutputStream();
+
+                    while((len=in.read(buffer))!=-1)
+                        baos.write(buffer,0,len);
+                    in.close();
+                    connection.disconnect();
+
+                    String cssText=new String(baos.toByteArray());
+                    cssText=cssText.replace("line-height: 0.2rem","line-height:0.4rem");
+                    return new WebResourceResponse("text/css", "UTF-8", new ByteArrayInputStream(cssText.getBytes()));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return super.shouldInterceptRequest(view,url);
+        }
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {

@@ -11,21 +11,17 @@ public class AlphaPageTransformer implements ViewPager.PageTransformer{
 
     @Override
     public void transformPage(View page, float position){
-        if(position<-1){
-            page.setAlpha(1);
-            page.setTranslationX(0);
-        }
-        else if(position<0){
+        if(position>-1&&position<0){
             page.setAlpha(1-Math.abs(position));
             page.setTranslationX(page.getWidth()*Math.abs(position));
         }
-        else if(position<1){
+        else if(position>0&&position<1){
             page.setAlpha(1);
             page.setTranslationX(page.getWidth()*position*-1);
         }
         else{
-            page.setTranslationX(0);
             page.setAlpha(1);
+            page.setTranslationX(0);
         }
     }
 }

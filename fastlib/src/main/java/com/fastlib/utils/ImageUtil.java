@@ -405,7 +405,6 @@ public class ImageUtil{
      * @param uri
      */
     private static String getImagePathForOldSdk(Context context,Uri uri) {
-
         String[] projection = { MediaStore.MediaColumns.DATA };
         Cursor cursor = context.getContentResolver().query(uri, projection, null, null, null);
         if (cursor != null) {
@@ -466,11 +465,11 @@ public class ImageUtil{
     }
 
     /**
-     * mp4文件取首帧
+     * 视频文件取首帧
      * @param filePath
      * @return
      */
-    private static Bitmap getVideoFirstFrame(String filePath) {
+    public static Bitmap getVideoFirstFrame(String filePath) {
         Bitmap bitmap;
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         retriever.setDataSource(filePath);
