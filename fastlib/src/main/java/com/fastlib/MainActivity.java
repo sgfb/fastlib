@@ -15,7 +15,10 @@ import com.fastlib.utils.ImageUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Enumeration;
 
+import dalvik.system.DexFile;
+import dalvik.system.PathClassLoader;
 import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -27,10 +30,9 @@ import okio.BufferedSink;
 import okio.Okio;
 import okio.Source;
 
+@Module("aa")
 @ContentView(R.layout.act_main)
 public class MainActivity extends FastActivity{
-    @Bind(R.id.keyboard)
-    MyKeyboard mKeyboard;
 
     @Override
     protected void alreadyPrepared() {
@@ -39,8 +41,11 @@ public class MainActivity extends FastActivity{
 
     @Bind(R.id.bt)
     private void bt() {
-        mKeyboard.setKeyboard(new Keyboard(this,R.xml.keyboard));
-        mKeyboard.setPreviewEnabled(false);
-        mKeyboard.setVisibility(View.VISIBLE);
+        ModuleLauncher.getInstance().init(this);
+    }
+
+    @Bind(R.id.bt2)
+    private void bt2(){
+        ModuleLauncher.getInstance().start(this,"bb");
     }
 }

@@ -1,1 +1,2 @@
-include ':fastlib'
+include ':fastlib', ':mylibrary'
+include ':modulelaunchercompile'
