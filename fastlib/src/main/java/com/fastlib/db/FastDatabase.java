@@ -507,6 +507,8 @@ public class FastDatabase{
                 continue;
             if (columnName.contains("$"))
                 continue;
+            if("serialVersionUID".equals(columnName))
+                continue;
             try {
                 if(type==boolean.class) cv.put(columnName,field.getBoolean(obj));
                 else if(type==short.class) cv.put(columnName,field.getShort(obj));
@@ -630,6 +632,8 @@ public class FastDatabase{
                         if (columnName.contains("this"))
                             continue;
                         if (columnName.contains("$"))
+                            continue;
+                        if("serialVersionUID".equals(columnName))
                             continue;
                         if(type==boolean.class)
                             cv.put(columnName,field.getBoolean(obj));

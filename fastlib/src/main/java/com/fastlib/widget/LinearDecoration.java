@@ -11,9 +11,9 @@ import android.view.View;
 
 /**
  * Created by sgfb on 16/8/23.
- * RecyclerView间隔
+ * RecyclerView的垂直间隔
  */
-public class DividerItemDecoration extends RecyclerView.ItemDecoration{
+public class LinearDecoration extends RecyclerView.ItemDecoration{
     private final int[] ATTRS=new int[]{
             android.R.attr.listDivider
     };
@@ -26,7 +26,7 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration{
     private int mDividerHeight=-1;
     private int mDividerWidth=-1;
 
-    public DividerItemDecoration(Context context,int orientation){
+    public LinearDecoration(Context context, int orientation){
         final TypedArray a=context.obtainStyledAttributes(ATTRS);
         mDivider=a.getDrawable(0);
         a.recycle();
