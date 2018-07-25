@@ -45,7 +45,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 6.6.0权限获取辅助 {@link PermissionHelper}
  * 7.延时启动优化
  */
-public class ModuleDelegate implements Module{
+public class ModuleDelegate implements ModuleInterface {
     private static final int THREAD_POOL_SIZE =2;
 
     protected ThreadPoolExecutor mThreadPool;
@@ -61,14 +61,14 @@ public class ModuleDelegate implements Module{
     private View mDeferView;
     private FragmentActivity mContext;
     private Fragment mFragmentContext;
-    private Module mHost;
+    private ModuleInterface mHost;
 
-    public ModuleDelegate(Module host,Fragment fragment){
+    public ModuleDelegate(ModuleInterface host, Fragment fragment){
         this(host,fragment.getActivity());
         mFragmentContext=fragment;
     }
 
-    public ModuleDelegate(Module host,FragmentActivity context){
+    public ModuleDelegate(ModuleInterface host, FragmentActivity context){
         mHost=host;
         mContext=context;
     }

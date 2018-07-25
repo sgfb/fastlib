@@ -25,8 +25,6 @@ public class ViewInject{
     private View mRoot;
 
     private ViewInject(Object host, @NonNull View root, ThreadPoolExecutor threadPool){
-        if(!(host instanceof Activity)&&!(host instanceof Fragment))
-            throw new IllegalArgumentException("host 必须是Activity或者Fragment");
         mThreadPool = threadPool;
         mHost=host;
         mRoot=root;
@@ -166,7 +164,8 @@ public class ViewInject{
                 m.setAccessible(true);
                 Bind vi=m.getAnnotation(Bind.class);
                 LocalData ld=m.getAnnotation(LocalData.class);
-                if(vi!=null&&ld==null){
+                Deprecated deprecated=m.getAnnotation(Deprecated.class);
+                if(vi!=null&&ld==null&&deprecated==null){
                     int[] ids=vi.value();
                     if(ids.length>0){
                         for(int id:ids){
@@ -183,7 +182,8 @@ public class ViewInject{
         if(fields!=null&&fields.length>0)
             for(Field field:fields){
                 Bind vi=field.getAnnotation(Bind.class);
-                if(vi!=null){
+                Deprecated deprecated=field.getAnnotation(Deprecated.class);
+                if(vi!=null&&deprecated==null){
                     int[] ids=vi.value();
                     if(ids.length>0){
                         try{

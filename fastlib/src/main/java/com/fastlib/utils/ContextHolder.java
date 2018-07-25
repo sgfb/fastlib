@@ -64,7 +64,6 @@ public class ContextHolder {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            throw new IllegalStateException("ContextHolder is not initialed, it is recommend to init with application context.");
         }
         return APPLICATION_CONTEXT;
     }

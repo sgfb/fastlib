@@ -230,10 +230,6 @@ public class ImageUtil{
     @TargetApi(18)
     public static void openAlbum(Activity activity,Fragment fragment,boolean multiChoose){
         Intent intent = new Intent();
-//        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT)
-//            intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
-//        else
-//            intent.setAction(Intent.ACTION_GET_CONTENT);
         intent.setAction(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         intent.putExtra(Intent.CATEGORY_OPENABLE, true);
@@ -470,7 +466,7 @@ public class ImageUtil{
      * @param filePath
      * @return
      */
-    private static Bitmap getVideoFirstFrame(String filePath) {
+    public static Bitmap getVideoFirstFrame(String filePath) {
         Bitmap bitmap;
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         retriever.setDataSource(filePath);

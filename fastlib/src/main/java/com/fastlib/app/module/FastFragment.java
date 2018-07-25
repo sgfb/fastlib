@@ -16,7 +16,6 @@ import com.fastlib.app.task.EmptyAction;
 import com.fastlib.app.task.NoReturnAction;
 import com.fastlib.app.task.Task;
 import com.fastlib.app.task.TaskLauncher;
-import com.fastlib.base.Refreshable;
 import com.fastlib.net.Request;
 
 import java.util.concurrent.ThreadPoolExecutor;
@@ -32,7 +31,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 6.6.0权限获取辅助(mPermissionHelper)
  * 7.延时启动优化
  */
-public abstract class FastFragment extends Fragment implements Module{
+public abstract class FastFragment extends Fragment implements ModuleInterface {
     private ModuleDelegate mDelegate;
     private Pair<Integer,View> mContentView;
 

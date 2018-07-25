@@ -22,7 +22,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * Created by sgfb on 16/9/5.
  * Activity基本封装.
  */
-public abstract class FastActivity extends AppCompatActivity implements Module{
+public abstract class FastActivity extends AppCompatActivity implements ModuleInterface {
     private ModuleDelegate mDelegate=new ModuleDelegate(this,this);
 
     //----------------------------继承自Activity系列-------------------------------------//

@@ -19,9 +19,8 @@
         android:layout_height="wrap_content"
         android:text="stop"/>
 
-    <Button
-        android:id="@+id/bt3"
+    <ImageView
+        android:id="@+id/image"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="bt3"/>
+        android:layout_height="wrap_content"/>
 </LinearLayout>

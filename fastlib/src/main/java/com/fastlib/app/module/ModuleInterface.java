@@ -25,7 +25,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 6.线程池和Task系列封装
  * 7.6.0运行时权限请求
  */
-public interface Module extends Deferrable,Refreshable,ModuleLifecycle{
+public interface ModuleInterface extends Deferrable,Refreshable,ModuleLifecycle{
 
     void alreadyContentView(@LayoutRes int layoutId);
 

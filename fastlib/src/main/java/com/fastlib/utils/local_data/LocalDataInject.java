@@ -124,7 +124,8 @@ public class LocalDataInject{
             for (Field field : fields) {
                 field.setAccessible(true);
                 LocalData lr = field.getAnnotation(LocalData.class);
-                if (lr == null)
+                Deprecated deprecated=field.getAnnotation(Deprecated.class);
+                if (lr == null||deprecated!=null)
                     continue;
                 try {
                     switch (lr.from()) {
@@ -169,7 +170,9 @@ public class LocalDataInject{
                 m.setAccessible(true);
                 final LocalData ld = m.getAnnotation(LocalData.class);
                 final Bind bind = m.getAnnotation(Bind.class);
-                if (ld != null){
+                Deprecated deprecated=m.getAnnotation(Deprecated.class);
+
+                if (ld != null&&deprecated==null){
                     if(bind != null){ //视图触发
                         View v = rootView.findViewById(bind.value()[0]);
                         switch (bind.bindType()) {
@@ -477,12 +480,6 @@ public class LocalDataInject{
      * @throws IllegalAccessException
      */
     private void loadLocalDataFromIntent(@Nullable Intent childIntent, Field field, LocalData lr) throws IllegalAccessException{
-//        Object host=mActivity==null?mFragment:mActivity;
-//        Intent intent=childIntent;
-//        Bundle bundle=mFragment!=null?mFragment.getArguments():null;
-//        if(intent==null)
-//            intent=mActivity!=null?mActivity.getIntent():null;
-
         Bundle bundle=null;
 
         if(childIntent!=null) bundle=childIntent.getExtras();
