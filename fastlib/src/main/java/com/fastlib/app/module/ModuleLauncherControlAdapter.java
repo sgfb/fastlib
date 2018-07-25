@@ -3,7 +3,7 @@ package com.fastlib.app.module;
 import android.content.Context;
 
 /**
- * Created by Administrator on 2018/7/25.
+ * Created by sgfb on 2018/7/25.
  * 模块启动控制器适配
  */
 public class ModuleLauncherControlAdapter implements ModuleLauncherControl{

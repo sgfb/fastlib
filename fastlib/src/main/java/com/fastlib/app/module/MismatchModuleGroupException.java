@@ -3,7 +3,7 @@ package com.fastlib.app.module;
 import java.util.List;
 
 /**
- * Created by Administrator on 2018/7/25.
+ * Created by sgfb on 2018/7/25.
  * 当有相同module name但是group不匹配时抛出这个异常
  */
 public class MismatchModuleGroupException extends Exception{

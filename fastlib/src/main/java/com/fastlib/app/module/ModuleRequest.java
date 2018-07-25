@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by Administrator on 2018/7/25.
+ * Created by sgfb on 2018/7/25.
  * 模块跳转请求.主要中转模块跳转一些参数
  */
 public class ModuleRequest{

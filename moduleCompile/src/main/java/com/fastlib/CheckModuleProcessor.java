@@ -21,7 +21,7 @@ import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 
 /**
- * Created by Administrator on 2018/7/24.
+ * Created by sgfb on 2018/7/24.
  * 提取Module注解参数存储到生成的类中。这个处理过程作为一个优化存在，避免了对所有class进行遍历
  */
 @SupportedAnnotationTypes("com.fastlib.Module")

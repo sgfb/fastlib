@@ -3,7 +3,7 @@ package com.fastlib.app.module;
 import android.content.Context;
 
 /**
- * Created by Administrator on 2018/7/25.
+ * Created by sgfb on 2018/7/25.
  * 模块启动控制器.对模块启动器{@link ModuleLauncher}全局监听并且修改控制参数.其中{@link #error(Exception)}和{@link #success(ModuleRequest)}
  * 必定会回调一个
  */

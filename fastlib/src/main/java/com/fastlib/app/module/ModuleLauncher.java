@@ -1,14 +1,14 @@
 package com.fastlib.app.module;
 
 import android.app.Activity;
-import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+
+import com.fastlib.CheckModuleProcessor;
 
 import java.io.File;
 import java.io.IOException;
