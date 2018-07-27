@@ -7,10 +7,19 @@ import java.lang.annotation.Target;
 
 /**
  * Created by sgfb on 18/4/22.
+ * 接口请求基本参数注解
  */
 @Target(ElementType.METHOD)
-@Retention(RetentionPolicy.SOURCE)
-public @interface UrlWithMethod{
-    String value();
+@Retention(RetentionPolicy.CLASS)
+public @interface BaseParam {
+
+    String url();
+
     String method() default "post";
+
+    /**
+     * 自定义Request
+     * @return 自定义Request类
+     */
+    String customerRequest() default "";
 }

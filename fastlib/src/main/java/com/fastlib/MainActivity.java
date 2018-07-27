@@ -7,9 +7,12 @@ import com.fastlib.annotation.ContentView;
 import com.fastlib.app.module.FastActivity;
 import com.fastlib.app.task.NetAction;
 import com.fastlib.app.task.Task;
+import com.fastlib.net.Request;
+import com.fastlib.net.listener.SimpleListener;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.Enumeration;
 
 import dalvik.system.DexClassLoader;
@@ -27,7 +30,7 @@ public class MainActivity extends FastActivity{
     }
 
     @Bind(R.id.bt)
-    private void loadDex(){
+    private void bt(){
 
     }
 }
