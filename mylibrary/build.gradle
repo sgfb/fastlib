@@ -30,3 +30,39 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile project(':moduleCompile')
 }
+
+/**
+ * 编译classes成jar
+ */
+task makeJar(dependsOn: ['compileDebugSources'], type: Jar) {
+    from 'build/intermediates/classes/debug'
+    exclude 'android/**'
+    exclude '**/R\$*.class'
+    exclude '**/R.class'
+    exclude '**/BuildConfig.class'
+    exclude '**/BuildConfig\$*.class'
+}
+
+/**
+ * 编译普通jar成dex并且放到主项目录中
+ */
+task makeDex(dependsOn: ['makeJar'], type: Exec) {
+    def dexFile = new File('D://Android_SDK/build-tools/27.0.3/dx.bat')
+    def sourceFile = file('/build/libs/mylibrary.jar')
+    def outFile = file("../fastlib/src/main/assets/mylibdex.jar")
+
+    executable = dexFile
+    args = [
+            "--dex",
+            "--output=" + outFile,
+            sourceFile
+    ]
+}
+
+/**
+ * 当compileDebugSources运行后启动热更新项目部署task组
+ */
+project.tasks.whenTaskAdded { task ->
+    if (task.name == 'compileDebugSources')
+        task.finalizedBy makeDex
+}
