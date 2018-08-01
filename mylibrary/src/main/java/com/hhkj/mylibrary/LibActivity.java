@@ -17,13 +17,6 @@ public class LibActivity extends AppCompatActivity{
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        TextView tv=new TextView(this);
-        tv.setText("lib module age:"+getIntent().getIntExtra("age",-1)+",name:"+getIntent().getStringExtra("name"));
-        tv.setTextSize(16);
-        tv.setPadding(10,10,10,10);
-        setContentView(tv);
-        Intent intent=new Intent();
-        intent.putExtra("key","value");
-        setResult(RESULT_OK,intent);
+        setContentView(R.layout.mylib_act_main);
     }
 }

@@ -7,13 +7,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <EditText
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-
     <Button
         android:id="@+id/bt"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="bt"/>
+        android:text="增加红色view"/>
+
+    <Button
+        android:id="@+id/bt2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="增加绿色view"/>
 </LinearLayout>

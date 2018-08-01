@@ -11,7 +11,6 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
     }
     buildTypes {
         release {
@@ -19,6 +18,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+
 }
 
 dependencies {
@@ -35,11 +36,10 @@ dependencies {
  * 编译classes成jar
  */
 task makeJar(dependsOn: ['compileDebugSources'], type: Jar) {
-    from 'build/intermediates/classes/debug'
+    from file('/build/intermediates/classes/debug')
     exclude 'android/**'
     exclude '**/R\$*.class'
     exclude '**/R.class'
-    exclude '**/BuildConfig.class'
     exclude '**/BuildConfig\$*.class'
 }
 
@@ -65,4 +65,13 @@ task makeDex(dependsOn: ['makeJar'], type: Exec) {
 project.tasks.whenTaskAdded { task ->
     if (task.name == 'compileDebugSources')
         task.finalizedBy makeDex
+    else if(task.name=='mergeDebugResources'){
+        task.doFirst {
+            def layoutDir=file('/src/main/res/layout')
+            layoutDir.eachFile { childFile->
+                if(!childFile.name.startsWith('mylib_'))
+                    childFile.renameTo(file("$layoutDir/mylib_$childFile.name"))
+            }
+        }
+    }
 }

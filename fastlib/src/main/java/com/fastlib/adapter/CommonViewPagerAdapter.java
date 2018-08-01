@@ -44,4 +44,9 @@ public class CommonViewPagerAdapter extends PagerAdapter {
     public CharSequence getPageTitle(int position) {
         return mPages.get(position).first;
     }
+
+    public void addPage(Pair<String,View> page){
+        mPages.add(page);
+        notifyDataSetChanged();
+    }
 }

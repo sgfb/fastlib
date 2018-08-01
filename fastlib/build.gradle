@@ -25,4 +25,5 @@ dependencies {
     compile 'com.google.code.gson:gson:2.2.4'
     compile project(path: ':moduleCompile')
     compile project(path: ':netAssistCompile')
+    compile project(path: ':mylibrary')
 }
