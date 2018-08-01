@@ -167,8 +167,18 @@ public class ViewInject{
                 Deprecated deprecated=m.getAnnotation(Deprecated.class);
                 if(vi!=null&&ld==null&&deprecated==null){
                     int[] ids=vi.value();
+                    String[] idNames=vi.idNames();
+
                     if(ids.length>0){
                         for(int id:ids){
+                            View v=mRoot.findViewById(id);
+                            if(v!=null)
+                                bindListener(m,v,vi);
+                        }
+                    }
+                    if(idNames.length>0){
+                        for(String idName:idNames){
+                            int id=mRoot.getContext().getResources().getIdentifier(idName,"id",mRoot.getContext().getPackageName());
                             View v=mRoot.findViewById(id);
                             if(v!=null)
                                 bindListener(m,v,vi);
@@ -185,6 +195,7 @@ public class ViewInject{
                 Deprecated deprecated=field.getAnnotation(Deprecated.class);
                 if(vi!=null&&deprecated==null){
                     int[] ids=vi.value();
+                    String[] idNames=vi.idNames();
                     if(ids.length>0){
                         try{
                             View view=mRoot.findViewById(ids[0]);
@@ -193,6 +204,17 @@ public class ViewInject{
                         } catch (IllegalAccessException e) {
                             if(BuildConfig.isShowLog)
                             System.out.println(e.getMessage());
+                        }
+                    }
+                    if(idNames.length>0){
+                        try{
+                            int id=mRoot.getContext().getResources().getIdentifier(idNames[0],"id",mRoot.getContext().getPackageName());
+                            View view=mRoot.findViewById(id);
+                            field.setAccessible(true);
+                            field.set(mHost,view);
+                        } catch (IllegalAccessException e) {
+                            if(BuildConfig.isShowLog)
+                                System.out.println(e.getMessage());
                         }
                     }
                 }

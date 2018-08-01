@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
@@ -7,13 +7,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <EditText
+    <ListView
+        android:id="@+id/listview"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="match_parent"/>
 
-    <Button
-        android:id="@+id/bt"
-        android:layout_width="wrap_content"
+    <EditText
+        android:id="@+id/edittext"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="bt"/>
-</LinearLayout>
+        android:layout_gravity="bottom"
+        android:visibility="gone"
+        android:hint="input data"/>
+</FrameLayout>
