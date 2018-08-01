@@ -1,27 +1,11 @@
 package com.fastlib;
 
 import android.content.Intent;
-import android.os.Environment;
-import android.support.v4.util.Pair;
-import android.support.v4.view.ViewPager;
-import android.view.View;
 
-import com.fastlib.adapter.CommonViewPagerAdapter;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.module.FastActivity;
-import com.fastlib.app.task.NetAction;
-import com.fastlib.app.task.Task;
 import com.hhkj.mylibrary.LibActivity;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-
-import dalvik.system.DexClassLoader;
-import dalvik.system.DexFile;
 
 /**
  * Created by sgfb on 2018/7/25.
@@ -42,6 +26,5 @@ public class MainActivity extends FastActivity{
 
     @Bind(R.id.bt2)
     private void bt2(){
-
     }
 }
