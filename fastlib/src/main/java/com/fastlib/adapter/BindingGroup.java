@@ -3,10 +3,9 @@ package com.fastlib.adapter;
 import android.support.annotation.NonNull;
 import android.support.v4.widget.SwipeRefreshLayout;
 
-import com.fastlib.adapter.MultiTypeAdapter;
 import com.fastlib.base.CommonViewHolder;
-import com.fastlib.net.Listener;
 import com.fastlib.net.Request;
+import com.fastlib.net.listener.Listener;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;

@@ -4,8 +4,8 @@ import android.content.Context;
 
 import com.fastlib.bean.NetFlow;
 import com.fastlib.db.And;
-import com.fastlib.db.FastDatabase;
 import com.fastlib.db.Condition;
+import com.fastlib.db.FastDatabase;
 import com.fastlib.db.FunctionCommand;
 import com.fastlib.net.NetManager;
 import com.fastlib.utils.TimeUtil;

@@ -1,1 +1,3 @@
 include ':fastlib'
+include ':moduleCompile'
+include ':netAssistCompile'

@@ -7,6 +7,10 @@ import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.BuildConfig;
+import com.fastlib.net.bean.NetGlobalData;
+import com.fastlib.net.listener.GlobalListener;
+import com.fastlib.net.param_parse.NetParamParser;
+import com.fastlib.net.param_parse.ParamParserManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,14 +28,16 @@ public class NetManager{
     private static NetManager mOwer;
     public int mRequestCount=0;
     public long Tx,Rx;
-    public static ThreadPoolExecutor sRequestPool =(ThreadPoolExecutor) Executors.newFixedThreadPool(6); //公共网络请求池
+    public static ThreadPoolExecutor sRequestPool =(ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()); //公共网络请求池
+    private String mRootAddress;
     private Config mConfig;
     private NetGlobalData mGlobalData;
-    private String mRootAddress;
     private GlobalListener mGlobalListener; //一个全局的事件回调监听，所有网络回调给具体回调之前做一次回调
+    private ParamParserManager mGlobalParamParserManager;
 
     private NetManager(){
         mConfig=new Config();
+        mGlobalParamParserManager=new ParamParserManager();
     }
 
     public static synchronized NetManager getInstance(){
@@ -208,6 +214,18 @@ public class NetManager{
 
     public void setGlobalListener(GlobalListener globalListener) {
         mGlobalListener = globalListener;
+    }
+
+    public void putParamParser(NetParamParser netParamParser){
+        mGlobalParamParserManager.putParser(netParamParser);
+    }
+
+    public void removeParamParser(NetParamParser netParamParser){
+        mGlobalParamParserManager.removeParser(netParamParser);
+    }
+
+    public ParamParserManager getGlobalParamParserManager(){
+        return mGlobalParamParserManager;
     }
 
     public static class Config implements Cloneable{

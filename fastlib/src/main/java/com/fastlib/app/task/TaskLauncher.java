@@ -1,10 +1,12 @@
 package com.fastlib.app.task;
 
-import android.app.Activity;
-import android.os.Build;
+import android.os.Handler;
 import android.os.Looper;
-import android.support.v4.app.Fragment;
+import android.support.annotation.NonNull;
 
+import com.fastlib.app.module.ModuleLife;
+
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -12,31 +14,30 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 启动线性Task必要的启动器
  */
 public class TaskLauncher{
-    private Object mHost;
-    private ThreadPoolExecutor mThreadPool;
     private volatile boolean mStopFlag;
+    private boolean mForceMainThreadFlag;  //强制在主线程中运行
+    private ThreadPoolExecutor mThreadPool;
     private NoReturnAction<Throwable> mExceptionHandler; //一个全局的异常处理器,如果Task有对应异常处理器则不调用此处理器
     private EmptyAction mCompleteAction;
+    private ModuleLife mHostLife;
+    private Executor mChildThreadExecutor;
+    private Executor mMainThreadExecutor;
+    private Handler mHandle;
 
-    public TaskLauncher(Activity activity, ThreadPoolExecutor threadPool) {
-        mHost = activity;
-        mThreadPool = threadPool;
-    }
-
-    public TaskLauncher(Fragment fragment,ThreadPoolExecutor threadPool){
-        mHost=fragment;
-        mThreadPool=threadPool;
-    }
-
-    /**
-     * 开始线性任务
-     * @param task
-     */
-    public void startTask(Task task){
-        Task firstTask=task;
-        while(firstTask.getPrevious()!=null)
-            firstTask=firstTask.getPrevious();
-        threadDispatch(firstTask);
+    private TaskLauncher(){
+        mHandle=new Handler(Looper.getMainLooper());
+        mChildThreadExecutor=new Executor() {
+            @Override
+            public void execute(@NonNull Runnable command) {
+                mThreadPool.execute(command);
+            }
+        };
+        mMainThreadExecutor=new Executor() {
+            @Override
+            public void execute(@NonNull Runnable command) {
+                mHandle.post(command);
+            }
+        };
     }
 
     /**
@@ -44,26 +45,33 @@ public class TaskLauncher{
      * @param task
      */
     private void threadDispatch(final Task task){
-        if(task.getOnWhichThread()== ThreadType.MAIN){
-            if(Looper.myLooper()==Looper.getMainLooper())
+        if(mForceMainThreadFlag){
+            try {
                 processTask(task);
-            else getHostActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    processTask(task);
-                }
-            });
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();
+            }
         }
         else{
-            if(Looper.myLooper()==Looper.getMainLooper())
-                mThreadPool.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        processTask(task);
+            mChildThreadExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try{
+                        if(task.getDelay()>0)
+                            Thread.sleep(task.getDelay());
+                        if(task.getOnWhichThread()==ThreadType.MAIN)
+                            mMainThreadExecutor.execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    processTask(task);
+                                }
+                            });
+                        else processTask(task);
+                    }catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
-                });
-            else
-                processTask(task);
+                }
+            });
         }
     }
 
@@ -75,7 +83,7 @@ public class TaskLauncher{
         try{
             task.process(); //执行事件后才有返回
             if(checkStopStatus(task)){ //中断任务事件
-                if(mCompleteAction!=null) mCompleteAction.executeAdapt();
+                runLastAction();
                 return;
             }
             Object obj=task.getReturn();
@@ -100,9 +108,9 @@ public class TaskLauncher{
                 threadDispatch(nextTask);
             }
             else{
-                if(mCompleteAction!=null)
-                    mCompleteAction.execute(null);
+                runLastAction();
             }
+            if(task.isInfiniteTask()) reset(task).startTask(task);
         }catch (Throwable throwable){
             //优先处理任务中存在的异常处理器，如果没有再尝试运行全局异常处理器
             boolean handled=false;
@@ -113,56 +121,111 @@ public class TaskLauncher{
                     handled=true;
                 }
             }
-            if(mExceptionHandler!=null&&!handled) mExceptionHandler.execute(throwable);
-            if(mCompleteAction!=null) mCompleteAction.execute(null);
+            if(!handled) runExceptionHandler(throwable);
+            runLastAction();
         }
     }
 
-    public Activity getHostActivity(){
-        if(mHost instanceof Activity) return (Activity) mHost;
-        else return ((Fragment)mHost).getActivity();
+    private void runExceptionHandler(final Throwable throwable){
+        if(mExceptionHandler!=null){
+            Runnable runnable=new Runnable() {
+                @Override
+                public void run() {
+                    mExceptionHandler.execute(throwable);
+                }
+            };
+            if(mExceptionHandler.getThreadType()==ThreadType.MAIN)
+                mMainThreadExecutor.execute(runnable);
+            else mChildThreadExecutor.execute(runnable);
+        }
+    }
+
+    private void runLastAction(){
+        if(mCompleteAction!=null){
+            Runnable runnable=new Runnable() {
+                @Override
+                public void run() {
+                    mCompleteAction.executeAdapt();
+                }
+            };
+            if(mCompleteAction.getThreadType()==ThreadType.MAIN)
+                mMainThreadExecutor.execute(runnable);
+            else mChildThreadExecutor.execute(runnable);
+        }
     }
 
     private boolean checkStopStatus(Task task){
-        return hostIsFinish()||task.isStopNow()||mStopFlag;
+        return mHostLife.flag== ModuleLife.LIFE_DESTROYED||task.isStopNow()||mStopFlag;
     }
 
     /**
-     * 宿主是否已结束生命周期
-     * @return true已结束（不继续任务事件）
+     * 开始线性任务
+     * @param task
      */
-    private boolean hostIsFinish(){
-        if(mHost instanceof Activity){
-            Activity activity= (Activity) mHost;
-            return activity.isFinishing()||(Build.VERSION.SDK_INT>=17&&activity.isDestroyed());
-        }
-        else {
-            Fragment fragment= (Fragment) mHost;
-            return fragment.isRemoving()||fragment.isDetached();
-        }
+    public void startTask(Task task){
+        Task firstTask=task;
+        firstTask.clean();
+        while(firstTask.getPrevious()!=null)
+            firstTask=firstTask.getPrevious();
+        threadDispatch(firstTask);
     }
 
     public void stopNow(boolean stopFlag){
         mStopFlag = stopFlag;
     }
 
-    /**
-     * 这次线性任务全局异常处理
-     * @param handler 异常处理器
-     * @return 线性任务启动器
-     */
-    public TaskLauncher setExceptionHandler(NoReturnAction<Throwable> handler){
-        mExceptionHandler=handler;
-        return this;
+    public TaskLauncher reset(Task task){
+        if(task==null) return null;
+        mStopFlag=true;
+
+        TaskLauncher launcher=new TaskLauncher();
+        launcher.mThreadPool=mThreadPool;
+        launcher.mExceptionHandler=mExceptionHandler;
+        launcher.mCompleteAction=mCompleteAction;
+        return launcher;
     }
 
-    /**
-     * 无论是正常流程结束还是异常结束，最后都调用这个方法，如果存在的话
-     * @param action 结尾任务
-     * @return 线性任务启动器
-     */
-    public TaskLauncher setLastTask(EmptyAction action){
-        mCompleteAction=action;
-        return this;
+    public static class Builder{
+        private TaskLauncher launcher;
+
+        public Builder(ModuleLife life,ThreadPoolExecutor threadPoolExecutor){
+            launcher=new TaskLauncher();
+            launcher.mHostLife =life;
+            launcher.mThreadPool=threadPoolExecutor;
+        }
+
+        /**
+         * 这次线性任务全局异常处理
+         * @param handler 异常处理器
+         * @return 线性任务启动器
+         */
+        public Builder setExceptionHandler(NoReturnAction<Throwable> handler){
+            launcher.mExceptionHandler=handler;
+            return this;
+        }
+
+        /**
+         * 无论是正常流程结束还是异常结束，最后都调用这个事件，如果存在的话
+         * @param action 结尾任务
+         * @return 线性任务启动器
+         */
+        public Builder setLastTask(EmptyAction action){
+            launcher.mCompleteAction=action;
+            return this;
+        }
+
+        /**
+         * 强制运行在主线程中，抛弃线程调度
+         * @param forceOnMainThread true运行在主线程中，false无限制
+         * @return 线性任务启动器
+         */
+        public Builder setForceOnMainThread(boolean forceOnMainThread){
+            launcher.mForceMainThreadFlag=forceOnMainThread;
+            return this;
+        }
+
+        public TaskLauncher build(){
+            return launcher;
+        }
     }
 }

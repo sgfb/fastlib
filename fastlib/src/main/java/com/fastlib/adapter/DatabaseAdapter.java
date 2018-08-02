@@ -4,7 +4,6 @@ import android.support.annotation.LayoutRes;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.fastlib.R;
 import com.fastlib.base.OldViewHolder;
 import com.fastlib.base.Refreshable;
 import com.fastlib.db.DatabaseListGetCallback;

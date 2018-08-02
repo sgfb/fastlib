@@ -7,6 +7,8 @@ import java.io.File;
  */
 public interface Downloadable{
 
+    void setFinalFile(File finalFile);
+
     /**
      * 获取下载目标文件位置
      * @return 目标文件

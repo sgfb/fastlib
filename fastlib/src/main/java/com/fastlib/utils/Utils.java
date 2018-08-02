@@ -1,14 +1,12 @@
 package com.fastlib.utils;
 
-import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
+import android.support.annotation.ColorInt;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
-
-import com.fastlib.R;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,6 +15,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -34,22 +33,27 @@ public class Utils{
         //no instance
     }
 
+    /**
+     * 元素合并为集合
+     * @param values 零散元素
+     * @param <T> 元素类型
+     * @return 元素集合
+     */
     public static <T> List<T> listOf(T... values){
         List<T> list=new ArrayList<>();
         if(values==null)
             return list;
-        for(int i=0;i<values.length;i++)
-            list.add(values[i]);
+        Collections.addAll(list, values);
         return list;
     }
 
     /**
      * 安全转换字符串为整型
-     * @param value
-     * @param defValue
-     * @return 转换失败返回默认值
+     * @param value 字符串
+     * @param defValue 默认值
+     * @return 如果成功返回字符串转换后的整形，失败则返回默认值
      */
-    public static int safeToString(String value,int defValue){
+    public static int safeValueOf(String value, int defValue){
         try{
             return Integer.parseInt(value);
         }catch (NumberFormatException e){
@@ -59,11 +63,11 @@ public class Utils{
 
     /**
      * 安全转换字符串为长整型
-     * @param value
-     * @param defValue
+     * @param value 字符串
+     * @param defValue 默认值
      * @return 转换失败返回默认值
      */
-    public static long safeToString(String value,long defValue){
+    public static long safeValueOf(String value, long defValue){
         try{
             return Long.parseLong(value);
         }catch (NumberFormatException e){
@@ -73,11 +77,11 @@ public class Utils{
 
     /**
      * 安全转换字符串为单精浮点型
-     * @param value
-     * @param defValue
+     * @param value 字符串
+     * @param defValue 默认值
      * @return 转换失败返回默认值
      */
-    public static float safeToString(String value,float defValue){
+    public static float safeValueOf(String value, float defValue){
         try{
             return Float.parseFloat(value);
         }catch (NumberFormatException e){
@@ -87,11 +91,11 @@ public class Utils{
 
     /**
      * 安全转换字符串为双精浮点型
-     * @param value
-     * @param defValue
+     * @param value 字符串
+     * @param defValue 默认值
      * @return 转换失败返回默认值
      */
-    public static double safeToString(String value,double defValue){
+    public static double safeValueOf(String value, double defValue){
         try{
             return Double.parseDouble(value);
         }catch (NumberFormatException e){
@@ -101,11 +105,11 @@ public class Utils{
 
     /**
      * Drawable染色
-     * @param src
-     * @param color
-     * @return
+     * @param src 原始Drawable
+     * @param color 染色
+     * @return 染色后的Drawable
      */
-    public static Drawable tintDrawable(Drawable src,int color){
+    public static Drawable tintDrawable(Drawable src,@ColorInt int color){
         Drawable wrapDrawable= DrawableCompat.wrap(src.mutate());
         DrawableCompat.setTint(wrapDrawable,color);
         return wrapDrawable;
@@ -132,13 +136,13 @@ public class Utils{
         }
 
         byte[] byteArray = messageDigest.digest();
-        StringBuffer md5StrBuff = new StringBuffer();
+        StringBuilder md5StrBuff = new StringBuilder();
 
-        for (int i = 0; i < byteArray.length; i++) {
-            if (Integer.toHexString(0xFF & byteArray[i]).length() == 1)
-                md5StrBuff.append("0").append(Integer.toHexString(0xFF & byteArray[i]));
+        for (byte aByteArray : byteArray) {
+            if (Integer.toHexString(0xFF & aByteArray).length() == 1)
+                md5StrBuff.append("0").append(Integer.toHexString(0xFF & aByteArray));
             else
-                md5StrBuff.append(Integer.toHexString(0xFF & byteArray[i]));
+                md5StrBuff.append(Integer.toHexString(0xFF & aByteArray));
         }
         if(is16bits)
             return md5StrBuff.substring(8, 24).toUpperCase(Locale.getDefault()); //16位加密，从第9位到25位

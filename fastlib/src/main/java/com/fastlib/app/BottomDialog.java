@@ -69,7 +69,7 @@ public abstract class BottomDialog extends Fragment{
             @Override
             public void run(){
                 mStartAnimator=ObjectAnimator.ofFloat(mView,"translationY",mView.getTranslationY(),ScreenUtils.getScreenHeight()-ScreenUtils.getStatusHeight(getContext())-mView.getHeight()).setDuration(220);
-                mBgAnimation=ObjectAnimator.ofFloat(mBg,"alpha",0,1,220);
+                mBgAnimation=ObjectAnimator.ofFloat(mBg,"alpha",0,1).setDuration(220);
                 mStartAnimator.start();
                 mBgAnimation.start();
             }
@@ -82,7 +82,8 @@ public abstract class BottomDialog extends Fragment{
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
-                    getFragmentManager().beginTransaction().remove(BottomDialog.this).commit();
+                    if(getActivity()!=null)
+                        getFragmentManager().beginTransaction().remove(BottomDialog.this).commit();
                 }
             });
             mBgAnimation.reverse();

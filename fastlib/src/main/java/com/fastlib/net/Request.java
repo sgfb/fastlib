@@ -1,18 +1,18 @@
 package com.fastlib.net;
 
-import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
-import android.view.View;
-import android.widget.Spinner;
-import android.widget.TextView;
 
+import com.fastlib.app.module.ModuleLife;
+import com.fastlib.base.Refreshable;
 import com.fastlib.db.FastDatabase;
 import com.fastlib.db.ServerCache;
-import com.google.gson.Gson;
+import com.fastlib.net.bean.ResponseStatus;
+import com.fastlib.net.listener.Listener;
+import com.fastlib.net.mock.MockProcess;
+import com.fastlib.net.param_parse.ParamParserManager;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
@@ -31,68 +31,44 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 每个任务都是不同的，{@link NetManager}会根据属性来配置请求，调整请求开始完成或失败后不同的事件
  */
 public class Request{
-    private static final Object sLock = new Object();
-    private static final int MAX_POOL_SIZE =15; //池中最大保存数
-    private static Request sPool;
-    private static int sPoolSize = 0;
+    public static final int CHUNK_TYPE_AUTO=1;
+    public static final int CHUNK_TYPE_OPEN=2;
+    public static final int CHUNK_TYPE_CLOSE=3;
 
-    private boolean isCallbackByWorkThread; //特殊情况下建议网络请求在工作线程回调
+    private boolean isCallbackByWorkThread;         //特殊情况下建议网络请求在工作线程回调
     private boolean isCancel;
-    private boolean isSuppressWarning;  //压制警告
-    private boolean isAcceptGlobalCallback; //是否接受全局回调监听.默认true
-    private boolean isReplaceChinese; //是否替换中文url,默认为true
-    private boolean hadRootAddress; //是否已加入根地址
-    private boolean useFactory; //是否使用预设值
-    private boolean isSendGzip; //指定这次请求发送时是否压缩成gzip流
-    private boolean isReceiveGzip; //指定这次请求是否使用gzip解码
-    private byte[] mByteStream; //原始字节流，如果这个值存在就不会发送mParams参数了.如果存在但是长度为0发送mParams参数json化数据
-    private long mResourceExpire; //资源过期时间
-    private long mIntervalSendFileTransferEvent=1000; //间隔多久发送上传和下载文件广播
+    private boolean isSuppressWarning;              //压制警告
+    private boolean isAcceptGlobalCallback;         //是否接受全局回调监听.默认true
+    private boolean isReplaceChinese;               //是否替换中文url,默认为true
+    private boolean hadRootAddress;                 //是否已加入根地址
+    private boolean useFactory;                     //是否使用预设值
+    private boolean isSendGzip;                     //指定这次请求发送时是否压缩成gzip流
+    private boolean isReceiveGzip;                  //指定这次请求是否使用gzip解码
+    private boolean isUseGlobalParamParser;
+    private byte[] mByteStream;                     //原始字节流，如果这个值存在就不会发送mParams参数了.如果存在但是长度为0发送mParams参数json化数据
+    private int mChunkType =CHUNK_TYPE_AUTO;
+    private long mResourceExpire;                   //资源过期时间
+    private long mIntervalSendFileTransferEvent=1000;//间隔多久发送上传和下载文件广播
     private String method;
     private String mUrl;
     private List<Pair<String, String>> mSendCookies;
     private Downloadable mDownloadable;
     private Map<String,List<String>> mReceiveHeader;
-    private List<ExtraHeader> mSendHeadExtra; //额外发送的头部信息
+    private List<ExtraHeader> mSendHeadExtra;       //额外发送的头部信息
     private List<Pair<String,File>> mFiles;
     private List<Pair<String,String>> mParams;
     private RequestType mType = RequestType.DEFAULT;
-    private Object mTag; //额外信息
-    private Pair<String,String>[] mReceiveCookies; //留存的cookies
-    //加入activity或者fragment可以提升安全性
-    private Context mContext;
-    private Fragment mFragment;
+    private Object mTag;                            //额外信息
     private Listener mListener;
-    private Type[] mGenericType; //根据Listener生成的返回类类型存根
-    private ServerCache mCacheManager; //缓存这个请求的数据管理
-    private ThreadPoolExecutor mExecutor; //运行在指定线程池中,如果未指定默认在公共的线程池中
-    private Request mNext;
-    private MockProcess mMock; //模拟数据
+    private Type[] mGenericType;                    //根据Listener生成的返回类类型存根
+    private ServerCache mCacheManager;              //缓存这个请求的数据管理
+    private ThreadPoolExecutor mExecutor;           //运行在指定线程池中,如果未指定默认在公共的线程池中
+    private MockProcess mMock;                      //模拟数据
     private ResponseStatus mResponseStatus=new ResponseStatus(); //返回包裹信息，尽量不要置null
     private Thread mThread;
-
-    public static Request obtain() {
-        return obtain("");
-    }
-
-    public static Request obtain(String url) {
-        return obtain("POST", url);
-    }
-
-    public static Request obtain(String method, String url) {
-        synchronized (sLock){
-            if (sPool != null){
-                Request r = sPool;
-                sPool = r.mNext;
-                r.mNext = null;
-                sPoolSize--;
-                r.setUrl(url);
-                r.setMethod(method);
-                return r;
-            }
-        }
-        return new Request(method,url);
-    }
+    private ParamParserManager mParamParserManager;
+    private Refreshable mRefresh;
+    private ModuleLife mHostLife;
 
     public Request() {
         this("");
@@ -119,53 +95,11 @@ public class Request{
         isSendGzip=false;
         isReceiveGzip=false;
         useFactory = true;
+        isUseGlobalParamParser=true;
         mParams = new ArrayList<>();
         mFiles = new ArrayList<>();
         mSendHeadExtra = new ArrayList<>();
-    }
-
-    /**
-     * 清理这个请求以便重复使用.建议在子线程中清理不再使用的请求已提高效率
-     */
-    public void clear() {
-        isCancel=false;
-        mThread=null;
-        isSuppressWarning=false;
-        mIntervalSendFileTransferEvent=1000;
-        isReplaceChinese=true;
-        useFactory = true;
-        hadRootAddress = false;
-        isSendGzip = false;
-        isReceiveGzip = false;
-        method = null;
-        mUrl = null;
-        mSendCookies = null;
-        mDownloadable = null;
-        if(mSendHeadExtra!=null)
-            mSendHeadExtra.clear();
-        if(mParams!=null)
-            mParams.clear();
-        if(mFiles!=null)
-            mFiles.clear();
-        mType = RequestType.DEFAULT;
-        mTag = null;
-        mReceiveCookies = null;
-        mContext = null;
-        mFragment = null;
-        mListener = null;
-        mGenericType = null;
-        mCacheManager = null;
-        mExecutor = null;
-        mMock=null;
-        isAcceptGlobalCallback=true;
-        mResponseStatus.clear();
-        synchronized (sLock) {
-            if (sPoolSize < MAX_POOL_SIZE) {
-                mNext = sPool;
-                sPool = this;
-                sPoolSize++;
-            }
-        }
+        mParamParserManager=new ParamParserManager();
     }
 
     @Override
@@ -181,20 +115,14 @@ public class Request{
         start(false);
     }
 
-    public void start(boolean forceRefresh, Fragment fragment)  {
-        mFragment = fragment;
-        start(forceRefresh);
-    }
-
-    public void start(boolean forceRefresh, Activity activity)  {
-        mContext = activity;
-        start(forceRefresh);
-    }
-
     public void start(boolean forceRefresh) {
         if (mCacheManager != null)
             mCacheManager.refresh(forceRefresh);
         else NetManager.getInstance().netRequest(this);
+    }
+
+    public ParamParserManager getParamParserManager(){
+        return mParamParserManager;
     }
 
     /**
@@ -236,6 +164,14 @@ public class Request{
             mParams=new ArrayList<>();
         mParams.add(Pair.create(key,value));
         return this;
+    }
+
+    public Request add(String key,CharSequence charSequence){
+        return add(key,charSequence.toString());
+    }
+
+    public Request add(String key,boolean value){
+        return add(key,Boolean.toString(value));
     }
 
     /**
@@ -306,7 +242,9 @@ public class Request{
      * @return
      */
     public Request add(String key,Object obj){
-        return add(key,new Gson().toJson(obj));
+        if(isUseGlobalParamParser) NetManager.getInstance().getGlobalParamParserManager().parserParam(true,this,key,obj);
+        mParamParserManager.parserParam(true,this,key,obj);
+        return this;
     }
 
     /**
@@ -314,7 +252,7 @@ public class Request{
      * @param key
      * @param value
      */
-    public Request put(String key, String value) {
+    public Request put(String key,String value) {
         if (mParams == null)
             mParams = new ArrayList<>();
         int index=paramsIndexOf(key);
@@ -324,12 +262,12 @@ public class Request{
         return this;
     }
 
-    public Request put(String key,View view){
-        if(view instanceof TextView)
-            return put(key,((TextView)view).getText().toString());
-        else if(view instanceof Spinner)
-            return put(key,((Spinner)view).getSelectedItem());
-        throw new IllegalArgumentException("不支持的view类型");
+    public Request put(String key,CharSequence charSequence){
+        return put(key,charSequence.toString());
+    }
+
+    public Request put(String key,boolean value){
+        return put(key,Boolean.toString(value));
     }
 
 
@@ -386,11 +324,18 @@ public class Request{
     /**
      * 添加json对象,如果存在,覆盖第一个
      * @param key
-     * @param jsonObj
+     * @param obj
      * @return
      */
-    public Request put(String key,Object jsonObj){
-        return put(key,new Gson().toJson(jsonObj));
+    public Request put(String key,Object obj){
+        if(isUseGlobalParamParser) NetManager.getInstance().getGlobalParamParserManager().parserParam(false,this,key,obj);
+        mParamParserManager.parserParam(false,this,key,obj);
+        return this;
+    }
+
+    public Request put(Object obj){
+        put(null,obj);
+        return this;
     }
 
     /**
@@ -488,7 +433,6 @@ public class Request{
 
     /**
      * 获取类型索引
-     *
      * @param sb
      * @return
      */
@@ -588,10 +532,11 @@ public class Request{
      * 取消网络请求
      */
     public void cancel(){
+        if(isCancel) return;
         isCancel=true;
         if(mThread!=null) mThread.interrupt();
-//        if(mListener != null)
-//            mListener.onErrorListener(this, "取消请求 " + mUrl);
+        if(mListener != null)
+            mListener.onErrorListener(this, "手动取消网络请求 " + mUrl);
     }
 
     /**
@@ -701,29 +646,6 @@ public class Request{
         return mDownloadable != null && mDownloadable.getTargetFile() != null && mDownloadable.getTargetFile().exists();
     }
 
-    public Request setHost(Context context){
-        mContext=context;
-        return this;
-    }
-
-    public Request setHost(Activity activity) {
-        mContext = activity;
-        return this;
-    }
-
-    public Request setHost(Fragment fragment) {
-        mFragment = fragment;
-        return this;
-    }
-
-    public Pair<String,String>[] getReceiveCookies() {
-        return mReceiveCookies;
-    }
-
-    public void setReceiveCookies(Pair<String,String>[] receiveCookies) {
-        mReceiveCookies = receiveCookies;
-    }
-
     public void setCurrThread(){
         mThread=Thread.currentThread();
     }
@@ -819,8 +741,9 @@ public class Request{
         return this;
     }
 
-    public void setSendHeader(List<ExtraHeader> headers){
+    public Request setSendHeader(List<ExtraHeader> headers){
         mSendHeadExtra=headers;
+        return this;
     }
 
     public List<ExtraHeader> getSendHeadExtra() {
@@ -853,50 +776,47 @@ public class Request{
         return mIntervalSendFileTransferEvent;
     }
 
-    public void setIntervalSendFileTransferEvent(long intervalSendFileTransferEvent) {
+    public Request setIntervalSendFileTransferEvent(long intervalSendFileTransferEvent) {
         if(intervalSendFileTransferEvent<0) intervalSendFileTransferEvent=0;
         mIntervalSendFileTransferEvent = intervalSendFileTransferEvent;
-    }
-
-    public Object getHost() {
-        if (mFragment != null)
-            return mFragment;
-        if (mContext != null)
-            return mContext;
-        return null;
+        return this;
     }
 
     public ResponseStatus getResponseStatus() {
         return mResponseStatus;
     }
 
-    public void setResponseStatus(ResponseStatus responseStatus){
+    public Request setResponseStatus(ResponseStatus responseStatus){
         if(responseStatus==null) mResponseStatus.clear();
         else mResponseStatus = responseStatus;
+        return this;
     }
 
     public Map<String, List<String>> getReceiveHeader() {
         return mReceiveHeader;
     }
 
-    public void setReceiveHeader(Map<String, List<String>> receiveHeader) {
+    public Request setReceiveHeader(Map<String, List<String>> receiveHeader) {
         mReceiveHeader = receiveHeader;
+        return this;
     }
 
     public boolean isReplaceChinese() {
         return isReplaceChinese;
     }
 
-    public void setReplaceChinese(boolean replaceChinese) {
+    public Request setReplaceChinese(boolean replaceChinese) {
         isReplaceChinese = replaceChinese;
+        return this;
     }
 
     public boolean isAcceptGlobalCallback() {
         return isAcceptGlobalCallback;
     }
 
-    public void setAcceptGlobalCallback(boolean acceptGlobalCallback) {
+    public Request setAcceptGlobalCallback(boolean acceptGlobalCallback) {
         isAcceptGlobalCallback = acceptGlobalCallback;
+        return this;
     }
 
     public Request setSuppressWarning(boolean suppressWarning){
@@ -910,6 +830,14 @@ public class Request{
 
     public boolean isCancel(){
         return isCancel;
+    }
+
+    public void setChunkType(int chunkType){
+        mChunkType=chunkType;
+    }
+
+    public int getChunkType(){
+        return mChunkType;
     }
 
     @Override
@@ -940,20 +868,44 @@ public class Request{
         return mResourceExpire;
     }
 
-    public void setmResourceExpire(long mResourceExpire) {
-        this.mResourceExpire = mResourceExpire;
+    public void setResourceExpire(long resourceExpire) {
+        this.mResourceExpire = resourceExpire;
     }
 
-    public void reverseCancel(){
+    public Request reverseCancel(){
         isCancel=false;
+        return this;
     }
 
     public boolean isCallbackByWorkThread() {
         return isCallbackByWorkThread;
     }
 
-    public void setCallbackByWorkThread(boolean callbackByWorkThread) {
+    public Request setCallbackByWorkThread(boolean callbackByWorkThread) {
         isCallbackByWorkThread = callbackByWorkThread;
+        return this;
+    }
+
+    public Request setRefreshable(Refreshable refreshable){
+        mRefresh=refreshable;
+        return this;
+    }
+
+    public ModuleLife getHostLify() {
+        return mHostLife;
+    }
+
+    public Request setHostLifecycle(ModuleLife mHostLifecycle) {
+        this.mHostLife = mHostLifecycle;
+        return this;
+    }
+
+    /**
+     * 是否显示刷新
+     * @param status true显示 false不显示
+     */
+    public void refreshVisibility(boolean status){
+        if(mRefresh!=null) mRefresh.setRefreshStatus(status);
     }
 
     /**

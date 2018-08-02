@@ -1,22 +1,5 @@
 package com.fastlib.db;
 
-import java.io.File;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import com.fastlib.BuildConfig;
-import com.fastlib.annotation.Database;
-import com.fastlib.bean.DatabaseTable;
-import com.fastlib.net.NetManager;
-import com.fastlib.utils.Reflect;
-import com.google.gson.Gson;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -27,6 +10,25 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
+import android.util.Log;
+
+import com.fastlib.BuildConfig;
+import com.fastlib.annotation.Database;
+import com.fastlib.bean.DatabaseTable;
+import com.fastlib.net.NetManager;
+import com.fastlib.utils.ContextHolder;
+import com.fastlib.utils.Reflect;
+import com.google.gson.Gson;
+
+import java.io.File;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 封装一些与数据库交互的基本操作。非orm数据库。
@@ -34,13 +36,14 @@ import android.text.TextUtils;
  * @author sgfb
  */
 public class FastDatabase{
-    private static final String DEFAULT_DATABASE_NAME = "default";
+    private static final String SAVE_INT_DB_VERSION="dbVersion";
+    private static final String DEFAULT_DATABASE_NAME = BuildConfig.DEFAULT_DATA_FILE_NAME;
     private static DatabaseConfig sConfig=new DatabaseConfig();
 
     private CustomUpdate mCustomUpdate;
     private Context mContext;
     private RuntimeAttribute mAttribute;
-    private Map<String,FunctionCommand> mFunctionCommand; //数据库函数与各字段映射
+    private Map<String,FunctionCommand> mFunctionCommand; //字段-->函数
 
     private FastDatabase(Context context){
         mContext = context.getApplicationContext();
@@ -70,21 +73,6 @@ public class FastDatabase{
     }
 
     /**
-     * 异步删除数据库中数据
-     * @param cla 对象类
-     * @param callback 结束后回调
-     */
-    public void deleteAsync(final Class<?> cla, final DatabaseNoDataResultCallback callback){
-        NetManager.sRequestPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                if(callback!=null)
-                    callback.onResult(delete(cla));
-            }
-        });
-    }
-
-    /**
      * 异步存或修改数据
      * @param obj 对象类
      * @param callback 结束后回调
@@ -102,6 +90,21 @@ public class FastDatabase{
                             callback.onResult(success);
                         }
                     });
+            }
+        });
+    }
+
+    /**
+     * 异步删除数据库中数据
+     * @param cla 对象类
+     * @param callback 结束后回调
+     */
+    public void deleteAsync(final Class<?> cla, final DatabaseNoDataResultCallback callback){
+        NetManager.sRequestPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                if(callback!=null)
+                    callback.onResult(delete(cla));
             }
         });
     }
@@ -336,8 +339,7 @@ public class FastDatabase{
                 list.add(obj);
                 cursor.moveToNext();
             } catch (Exception e) {
-                if (BuildConfig.isShowLog)
-                    System.out.println("数据库在取数据时发生异常:" + e.toString());
+                System.out.println("数据库在取数据时发生异常:" + e.toString());
                 database.close();
                 return null;
             }
@@ -505,6 +507,8 @@ public class FastDatabase{
                 continue;
             if (columnName.contains("$"))
                 continue;
+            if("serialVersionUID".equals(columnName))
+                continue;
             try {
                 if(type==boolean.class) cv.put(columnName,field.getBoolean(obj));
                 else if(type==short.class) cv.put(columnName,field.getShort(obj));
@@ -542,6 +546,7 @@ public class FastDatabase{
             }
         }
 
+        boolean noColumnError=false;
         try {
             //削掉前面的where
             filter = filter.substring(6, filter.length());
@@ -551,12 +556,16 @@ public class FastDatabase{
             if (BuildConfig.isShowLog)
                 System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabaseComplete()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabaseComplete()) + "<--u-" + count + "- " + tableName);
         } catch (SQLiteException e) {
-            if (BuildConfig.isShowLog)
-                System.out.println("更新数据失败，异常：" + e.toString());
+            if(!TextUtils.isEmpty(e.getMessage())&&e.getMessage().contains("no such column"))
+                noColumnError=true;
+            else System.out.println("更新数据失败，异常：" + e.toString());
             return false;
         } finally {
             database.endTransaction();
             database.close();
+            if(noColumnError){
+                genNewVersionDb().update(obj);
+            }
         }
         return true;
     }
@@ -567,6 +576,7 @@ public class FastDatabase{
      * @return 如果存储成功返回true，否则为false
      */
     private boolean save(Object[] array){
+        boolean noColumnError=false;
         if (array == null || array.length <= 0)
             return false; //没什么对象可存应该返回false吗？
         Object availableObj = null;
@@ -623,6 +633,8 @@ public class FastDatabase{
                             continue;
                         if (columnName.contains("$"))
                             continue;
+                        if("serialVersionUID".equals(columnName))
+                            continue;
                         if(type==boolean.class)
                             cv.put(columnName,field.getBoolean(obj));
                         else if(type==int.class)
@@ -665,7 +677,7 @@ public class FastDatabase{
                     }
                 }
                 //对自动增长的主键
-                long rowId=db.insert("'" + tableName + "'", null, cv);
+                long rowId=db.insertWithOnConflict("'" + tableName + "'", null, cv,SQLiteDatabase.CONFLICT_NONE);
                 if(rowId!=-1&&autoIncreKeyField!=null){
                     try{
                         if(autoIncreKeyField.getType()==int.class||autoIncreKeyField.getType()==Integer.class)
@@ -683,12 +695,17 @@ public class FastDatabase{
                 System.out.println((TextUtils.isEmpty(mAttribute.getWhichDatabaseComplete()) ? sConfig.getDatabaseName() : mAttribute.getWhichDatabaseComplete()) + "<--"+array.length+"--" + tableName);
             db.setTransactionSuccessful();
         } catch (SQLiteException e){
-            if (BuildConfig.isShowLog)
+            if(!TextUtils.isEmpty(e.getMessage())&&e.getMessage().contains("no column"))
+                noColumnError=true;
+            else
                 System.out.println("更新数据失败:"+e.getMessage());
             return false;
         } finally {
             db.endTransaction();
             db.close();
+            if(noColumnError){
+                genNewVersionDb().saveOrUpdate(array);
+            }
         }
         return true;
     }
@@ -843,7 +860,6 @@ public class FastDatabase{
 
     /**
      * 取数据时根据主键排序
-     *
      * @param asc
      * @return current database
      */
@@ -869,11 +885,11 @@ public class FastDatabase{
      * 取数据时行限制
      *
      * @param start
-     * @param end
+     * @param size
      * @return current database
      */
-    public FastDatabase limit(int start, int end) {
-        mAttribute.limit(start, end);
+    public FastDatabase limit(int start, int size) {
+        mAttribute.limit(start, size);
         return this;
     }
 
@@ -1432,6 +1448,22 @@ public class FastDatabase{
     }
 
     /**
+     * 升级数据版本（仅外部标记版本），并且生成新数据库控制
+     * @return 数据库控制
+     */
+    private FastDatabase genNewVersionDb(){
+        //升级数据库版本
+        int newVersion=SaveUtil.getFromSp(mContext,SAVE_INT_DB_VERSION,1)+1;
+        SaveUtil.saveToSp(mContext,SAVE_INT_DB_VERSION,newVersion);
+        sConfig.mVersion=newVersion;
+
+        //复制当前数据库属性生成新数据库辅助
+        FastDatabase newDb=FastDatabase.getInstance(mContext,mAttribute.getWhichDatabase());
+        newDb.mAttribute=mAttribute;
+        return newDb;
+    }
+
+    /**
      * 指定操作的数据库,直到程序重新运行或者再调用此方法转换操作数据库对象
      * @param databaseName
      */
@@ -1457,12 +1489,12 @@ public class FastDatabase{
 
         /**
          * 默认的数据库配置为
-         * 版本＝1
+         * 版本＝从Sp中获取
          * 日志输出＝true
          * 数据库名＝default.db
          */
-        private DatabaseConfig() {
-            mVersion = 1;
+        private DatabaseConfig(){
+            mVersion = SaveUtil.getFromSp(ContextHolder.getContext(),SAVE_INT_DB_VERSION,1);
             mCurrentDatabase = getDefaultDatabaseName() + ".db";
         }
 
@@ -1479,10 +1511,14 @@ public class FastDatabase{
             return mCurrentDatabase;
         }
 
-        public void setVersion(int version) {
-            if (version < mVersion)
-                throw new IllegalArgumentException("设置的版本小于等于当前版本");
+        public void setVersion(Context context,int version) {
+            //丢弃小于当前版本的数据库版本
+            if (version < mVersion){
+                Log.w(FastDatabase.class.getSimpleName(),"设置的版本小于等于当前版本");
+                return;
+            }
             mVersion = version;
+            SaveUtil.saveToSp(context,SAVE_INT_DB_VERSION,version);
         }
 
         public int getVersion() {

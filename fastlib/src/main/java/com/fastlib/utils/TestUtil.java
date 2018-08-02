@@ -3,7 +3,7 @@ package com.fastlib.utils;
 import android.text.TextUtils;
 
 import com.fastlib.net.Request;
-import com.fastlib.net.SimpleListener;
+import com.fastlib.net.listener.SimpleListener;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
@@ -14,6 +14,8 @@ import com.google.gson.reflect.TypeToken;
  */
 public class TestUtil{
     public static final Object sLock=new Object();
+    public static final String ERROR_MODEL_UNMATCH="数据模型不符合";
+    public static final String ERROR_HARD_LAYER="物理层异常";
 
     /**
      * 接口测试
@@ -32,7 +34,6 @@ public class TestUtil{
      */
     public static <T> String netInterfaceCheck(Request request, final TypeToken<T> typeToken, final SessionCheck<T> checker)throws Exception{
         final StringBuilder sb=new StringBuilder();
-        sb.append("接口:").append(request).append("\n");
         request.setCallbackByWorkThread(true);
         request.setListener(new SimpleListener<String>(){
 
@@ -45,7 +46,7 @@ public class TestUtil{
                     if(TextUtils.isEmpty(testResult)) sb.setLength(0);
                     else sb.append(testResult);
                 }catch (JsonParseException e){
-                    sb.append("数据模型不符合");
+                    sb.append(ERROR_MODEL_UNMATCH);
                 }finally {
                     synchronized (sLock){
                         sLock.notifyAll();
@@ -56,7 +57,7 @@ public class TestUtil{
             @Override
             public void onErrorListener(Request r, String error) {
                 super.onErrorListener(r, error);
-                sb.append("物理层异常");
+                sb.append(ERROR_HARD_LAYER);
                 synchronized (sLock){
                     sLock.notifyAll();
                 }

@@ -1,9 +1,6 @@
 package com.fastlib.adapter;
 
 import android.content.Context;
-import android.graphics.Point;
-import android.support.v4.util.Pair;
-import android.util.SparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;

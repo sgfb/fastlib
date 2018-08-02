@@ -9,7 +9,6 @@ import android.graphics.Rect;
 import android.support.v4.util.Pair;
 import android.util.DisplayMetrics;
 import android.view.View;
-import android.view.WindowManager;
 
 /**
  * 屏幕相关工具集
@@ -53,6 +52,11 @@ public class ScreenUtils {
 		return outMetrics.heightPixels;
 	}
 
+	public static int getDensityDpi(){
+		DisplayMetrics outMetrics =Resources.getSystem().getDisplayMetrics();
+		return outMetrics.densityDpi;
+	}
+
 	/**
 	 * 获取屏幕尺寸
 	 * @return 屏幕宽高
@@ -68,7 +72,6 @@ public class ScreenUtils {
 	 * @return
 	 */
 	public static int getStatusHeight(Context context) {
-
 		int statusHeight = -1;
 		try {
 			Class<?> clazz = Class.forName("com.android.internal.R$dimen");
@@ -87,15 +90,14 @@ public class ScreenUtils {
 	 * @param activity
 	 * @return
 	 */
-	public static Bitmap snapShotWithStatusBar(Activity activity) {
+	public static Bitmap snapshotWithStatusBar(Activity activity) {
 		View view = activity.getWindow().getDecorView();
 		view.setDrawingCacheEnabled(true);
 		view.buildDrawingCache();
 		Bitmap bmp = view.getDrawingCache();
 		int width = getScreenWidth();
 		int height = getScreenHeight();
-		Bitmap bp = null;
-		bp = Bitmap.createBitmap(bmp, 0, 0, width, height);
+		Bitmap bp =Bitmap.createBitmap(bmp, 0, 0, width, height);
 		view.destroyDrawingCache();
 		return bp;
 
@@ -107,7 +109,7 @@ public class ScreenUtils {
 	 * @param activity
 	 * @return
 	 */
-	public static Bitmap snapShotWithoutStatusBar(Activity activity) {
+	public static Bitmap snapshotWithoutStatusBar(Activity activity) {
 		View view = activity.getWindow().getDecorView();
 		view.setDrawingCacheEnabled(true);
 		view.buildDrawingCache();
@@ -122,7 +124,5 @@ public class ScreenUtils {
 		bp = Bitmap.createBitmap(bmp, 0, statusBarHeight, width, height - statusBarHeight);
 		view.destroyDrawingCache();
 		return bp;
-
 	}
-
 }

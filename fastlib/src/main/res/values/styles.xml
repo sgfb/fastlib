@@ -16,7 +16,7 @@
     <style name="AppTheme" parent="Theme.AppCompat">
     </style>
 
-    <style name="MaterialTheme" parent="Theme.AppCompat">
+    <style name="MaterialTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>

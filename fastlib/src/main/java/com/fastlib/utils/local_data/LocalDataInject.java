@@ -4,8 +4,10 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.annotation.IdRes;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
@@ -20,6 +22,7 @@ import com.fastlib.db.And;
 import com.fastlib.db.Condition;
 import com.fastlib.db.FastDatabase;
 import com.fastlib.db.SaveUtil;
+import com.fastlib.utils.ContextHolder;
 import com.google.gson.Gson;
 
 import java.io.File;
@@ -39,20 +42,16 @@ import java.util.Set;
  * 本地数据注入
  */
 public class LocalDataInject{
-    private Activity mActivity;
-    private Fragment mFragment;
     private List<Pair<Field,LocalData>> mChildActivityGiver = new ArrayList<>(); //子Activity返回时获取Intent中数据
     private List<Pair<Method,LocalData>> mDelayToggleList=new ArrayList<>(); //延迟触发的本地数据注入方法
     private List<Pair<Method,LocalData>> mChildToggle2=new ArrayList<>();  //子模块返回后触发的方法
     private SparseArray<Object[]> mToggleData = new SparseArray<>(); //触发后读取数据缓存点
     private Map<Class<? extends View>,LocalDataViewActive<?>> mLocalDataViewMap=new HashMap<>();
+    private Object mHost;
 
-    public LocalDataInject(Activity activity){
-        mActivity=activity;
-    }
-
-    public LocalDataInject(Fragment fragment){
-        mFragment=fragment;
+    public LocalDataInject(@Nullable Object host){
+        if(host!=null)
+            mHost=host;
     }
 
     public <V extends View> void putLocalDataViewActive(LocalDataViewActive<V> actives, Class<V> cla){
@@ -60,16 +59,24 @@ public class LocalDataInject{
     }
 
     public void toggleDelayLocalDataMethod(){
+        Bundle bundle=null;
+
+        if(mHost instanceof Activity)
+            bundle=((Activity)mHost).getIntent().getExtras();
+        else if(mHost instanceof Fragment)
+            bundle=((Fragment)mHost).getArguments();
+        if(bundle==null) return;    //如果bundle为空说明当前host不支持这个方法
+
         for(Pair<Method,LocalData> pair:mDelayToggleList){
             LocalData ld=pair.second;
             Object[] args=new Object[ld.value().length];
-            Bundle bundle=mActivity!=null?mActivity.getIntent().getExtras():mFragment.getArguments();
+
             for(int i=0;i<args.length;i++){
                 String key=ld.value()[i];
                 args[i]=bundle.get(key);
             }
             try {
-                pair.first.invoke(getHost(),args);
+                pair.first.invoke(mHost,args);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             } catch (InvocationTargetException e) {
@@ -99,7 +106,7 @@ public class LocalDataInject{
                 args[i]=innerBundle.get(key);
             }
             try {
-                pair.first.invoke(getHost(),args);
+                pair.first.invoke(mHost,args);
             } catch (InvocationTargetException e) {
                 e.printStackTrace();
             } catch (IllegalAccessException e) {
@@ -112,15 +119,14 @@ public class LocalDataInject{
      * 本地数据注入
      */
     public void localDataInject(){
-        Object host=mActivity==null?mFragment:mActivity;
-        Field[] fields = host.getClass().getDeclaredFields();
-        Method[] methods = host.getClass().getDeclaredMethods();
+        Field[] fields = mHost.getClass().getDeclaredFields();
         //属性注入
         if (fields != null && fields.length > 0) {
             for (Field field : fields) {
                 field.setAccessible(true);
                 LocalData lr = field.getAnnotation(LocalData.class);
-                if (lr == null)
+                Deprecated deprecated=field.getAnnotation(Deprecated.class);
+                if (lr == null||deprecated!=null)
                     continue;
                 try {
                     switch (lr.from()) {
@@ -150,15 +156,29 @@ public class LocalDataInject{
                 }
             }
         }
+
+        View rootView=null;
+
+        if(mHost instanceof Activity)
+            rootView=((Activity)mHost).findViewById(android.R.id.content);
+        else if(mHost instanceof Fragment)
+            rootView=((Fragment)mHost).getView();
+        if(rootView==null) return;
+        Method[] methods = mHost.getClass().getDeclaredMethods();
         //"触发数据"注入
         if (methods != null && methods.length > 0) {
             for (final Method m : methods) {
                 m.setAccessible(true);
                 final LocalData ld = m.getAnnotation(LocalData.class);
                 final Bind bind = m.getAnnotation(Bind.class);
-                if (ld != null){
+                Deprecated deprecated=m.getAnnotation(Deprecated.class);
+
+                if (ld != null&&deprecated==null){
                     if(bind != null){ //视图触发
-                        View v = mActivity==null?mFragment.getView().findViewById(bind.value()[0]):mActivity.findViewById(bind.value()[0]);
+                        @IdRes final int id=bind.value().length==0?
+                                rootView.getContext().getResources().getIdentifier(bind.idNames()[0],"id",rootView.getContext().getPackageName()):
+                                bind.value()[0];
+                        View v = rootView.findViewById(id);
                         switch (bind.bindType()) {
                             case CLICK:
                                 v.setOnClickListener(new View.OnClickListener() {
@@ -258,36 +278,35 @@ public class LocalDataInject{
     }
 
     private void flatInvoke(Method m, View v, Object[] data) throws InvocationTargetException, IllegalAccessException {
-        Object host=mActivity==null?mFragment:mActivity;
         switch (data.length){
             case 1:
-                m.invoke(host, v, data[0]);
+                m.invoke(mHost, v, data[0]);
                 break;
             case 2:
-                m.invoke(host, v, data[0], data[1]);
+                m.invoke(mHost, v, data[0], data[1]);
                 break;
             case 3:
-                m.invoke(host, v, data[0], data[1], data[2]);
+                m.invoke(mHost, v, data[0], data[1], data[2]);
                 break;
             case 4:
-                m.invoke(host, v, data[0], data[1], data[2], data[3]);
+                m.invoke(mHost, v, data[0], data[1], data[2], data[3]);
                 break;
             case 5:
-                m.invoke(host, v, data[0], data[1], data[2], data[3], data[4]);
+                m.invoke(mHost, v, data[0], data[1], data[2], data[3], data[4]);
                 break;
             case 6:
-                m.invoke(host, v, data[0], data[1], data[2], data[3], data[4], data[5]);
+                m.invoke(mHost, v, data[0], data[1], data[2], data[3], data[4], data[5]);
                 break;
             case 7:
-                m.invoke(host, v, data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
+                m.invoke(mHost, v, data[0], data[1], data[2], data[3], data[4], data[5], data[6]);
                 break;
             case 8:
-                m.invoke(host, v, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+                m.invoke(mHost, v, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
                 break;
             case 9:
-                m.invoke(host, v, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]);
+                m.invoke(mHost, v, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]);
             case 10:
-                m.invoke(host, v, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9]);
+                m.invoke(mHost, v, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9]);
                 break;
             default:
                 break;
@@ -332,8 +351,7 @@ public class LocalDataInject{
      * @return
      */
     private Object loadLocalDataFromDatabase(int position, LocalData ld, Class<?> paramsType){
-        Context host=mActivity==null?mFragment.getActivity():mActivity;
-        return FastDatabase.getDefaultInstance(host).setFilter(And.condition(Condition.equal(ld.value()[position]))).getFirst(paramsType);
+        return FastDatabase.getDefaultInstance(ContextHolder.getContext(mHost)).setFilter(And.condition(Condition.equal(ld.value()[position]))).getFirst(paramsType);
     }
 
     /**
@@ -345,9 +363,15 @@ public class LocalDataInject{
      * @return
      */
     private Object loadLocalDataFromFile(int position, LocalData ld, Class<?> paramsType, boolean fromAssets){
+        AssetManager am=null;
+
+        if(mHost instanceof Activity) am=((Activity)mHost).getAssets();
+        else if(mHost instanceof Fragment) am=((Fragment)mHost).getActivity().getAssets();
+        if(am==null) return null;
+
         try {
             Gson gson = new Gson();
-            byte[] data = fromAssets ? SaveUtil.loadAssetsFile(mActivity==null?mFragment.getActivity().getAssets():mActivity.getAssets(), ld.value()[position]) : SaveUtil.loadFile(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + ld.value()[0]);
+            byte[] data = fromAssets ? SaveUtil.loadAssetsFile(am,ld.value()[position]) : SaveUtil.loadFile(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + ld.value()[0]);
             if (paramsType == byte[].class)
                 return data;
             else if (paramsType == String.class)
@@ -368,8 +392,8 @@ public class LocalDataInject{
      * @return
      */
     private Object loadLocalDataFromSp(int position, LocalData ld, Class<?> paramType) {
-        Activity host=mActivity==null?mFragment.getActivity():mActivity;
-        SharedPreferences sp = host.getSharedPreferences(BuildConfig.DEFAULT_DATA_FILE_NAME,Context.MODE_PRIVATE);
+        Context context=ContextHolder.getContext(mHost);
+        SharedPreferences sp = context.getSharedPreferences(BuildConfig.DEFAULT_DATA_FILE_NAME,Context.MODE_PRIVATE);
         if (paramType == boolean.class || paramType == Boolean.class)
             return sp.getBoolean(ld.value()[position], false);
         else if (paramType == int.class || paramType == Integer.class)
@@ -393,9 +417,12 @@ public class LocalDataInject{
      * @return 对应包裹里数据
      */
     private Object loadLocalDataFromIntent(int position, LocalData ld){
-        Intent intent=mActivity!=null?mActivity.getIntent():null;
-        Bundle bundle=mActivity==null?mFragment.getArguments():null;
-        return intent!=null?intent.getExtras().get(ld.value()[position]):bundle.get(ld.value()[position]);
+        Bundle bundle=null;
+
+        if(mHost instanceof Activity) bundle=((Activity)mHost).getIntent().getExtras();
+        else if(mHost instanceof Fragment) bundle=((Fragment)mHost).getArguments();
+        if(bundle==null) return null;
+        return bundle.get(ld.value()[position]);
     }
 
     /**
@@ -405,10 +432,9 @@ public class LocalDataInject{
      * @throws IllegalAccessException
      */
     private void loadLocalDataFromDatabase(Field field, LocalData lr) throws IllegalAccessException{
-        Context host=mActivity==null?mFragment.getActivity():mActivity;
         Class<?> type = field.getType();
-        Object obj = FastDatabase.getDefaultInstance(host).setFilter(And.condition(Condition.equal(lr.value()[0]))).getFirst(type);
-        field.set(host,obj);
+        Object obj = FastDatabase.getDefaultInstance(ContextHolder.getContext(mHost)).setFilter(And.condition(Condition.equal(lr.value()[0]))).getFirst(type);
+        field.set(mHost,obj);
     }
 
     /**
@@ -418,9 +444,8 @@ public class LocalDataInject{
      * @throws IllegalAccessException
      */
     private void loadLocalDataFromSp(Field field, LocalData lr) throws IllegalAccessException{
-        Activity host=mActivity==null?mFragment.getActivity():mActivity;
-        SharedPreferences sp =host.getSharedPreferences(BuildConfig.DEFAULT_DATA_FILE_NAME,Context.MODE_PRIVATE);
-        field.set(host,sp.getAll().get(lr.value()[0]));
+        SharedPreferences sp =ContextHolder.getContext(mHost).getSharedPreferences(BuildConfig.DEFAULT_DATA_FILE_NAME,Context.MODE_PRIVATE);
+        field.set(mHost,sp.getAll().get(lr.value()[0]));
     }
 
     /**
@@ -432,18 +457,23 @@ public class LocalDataInject{
      * @throws IllegalAccessException
      */
     private void loadLocalDataFromFile(Field field, LocalData lr, boolean fromAssets) throws IOException, IllegalAccessException{
-        Activity host=mActivity==null?mFragment.getActivity():mActivity;
-        byte[] data = fromAssets ? SaveUtil.loadAssetsFile(host.getAssets(), lr.value()[0]) : SaveUtil.loadFile(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + lr.value());
+        AssetManager am=null;
+
+        if(mHost instanceof Activity) am=((Activity)mHost).getAssets();
+        else if(mHost instanceof Fragment) am=((Fragment)mHost).getActivity().getAssets();
+        if(am==null&&fromAssets) return;
+
+        byte[] data = fromAssets ? SaveUtil.loadAssetsFile(am, lr.value()[0]) : SaveUtil.loadFile(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + lr.value());
         if (data == null)
             return;
         Class<?> type = field.getType();
         if (type == byte[].class)
-            field.set(host, data);
+            field.set(mHost, data);
         else if (type == String.class)
-            field.set(host, new String(data));
+            field.set(mHost, new String(data));
         else {
             Gson gson = new Gson();
-            field.set(host, gson.fromJson(new String(data), type));
+            field.set(mHost, gson.fromJson(new String(data), type));
         }
     }
 
@@ -454,24 +484,21 @@ public class LocalDataInject{
      * @throws IllegalAccessException
      */
     private void loadLocalDataFromIntent(@Nullable Intent childIntent, Field field, LocalData lr) throws IllegalAccessException{
-        Object host=mActivity==null?mFragment:mActivity;
-        Intent intent=childIntent;
-        Bundle bundle=mFragment!=null?mFragment.getArguments():null;
-        if(intent==null)
-            intent=mActivity!=null?mActivity.getIntent():null;
+        Bundle bundle=null;
 
-        Object value=intent!=null?intent.getExtras().get(lr.value()[0]):bundle.get(lr.value()[0]);
+        if(childIntent!=null) bundle=childIntent.getExtras();
+        else if(mHost instanceof Activity) bundle=((Activity)mHost).getIntent().getExtras();
+        else if(mHost instanceof Fragment) bundle=((Fragment)mHost).getArguments();
+        if(bundle==null) return;
+
+        Object value=bundle.get(lr.value()[0]);
         if (value != null) {
             LocalDataViewActive active=mLocalDataViewMap.get(field.getType());
             if(active!=null){
-                View view= (View) field.get(host);
+                View view= (View) field.get(mHost);
                 LocalDataViewActiveImpl.inflaterData(active,view,value);
             }
-            else field.set(host,value);
+            else field.set(mHost,value);
         }
-    }
-
-    private Object getHost(){
-        return mActivity==null?mFragment:mActivity;
     }
 }

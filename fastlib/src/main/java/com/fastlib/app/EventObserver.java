@@ -193,8 +193,9 @@ public class EventObserver {
         if(allMethod==null||allMethod.length==0)
             return null;
         for(Method m:allMethod){
-            Annotation eventAnnotation=m.getAnnotation(Event.class);
-            if(eventAnnotation!=null){
+            Event eventAnnotation=m.getAnnotation(Event.class);
+            Deprecated deprecated=m.getAnnotation(Deprecated.class);
+            if(eventAnnotation!=null&&deprecated==null){
                 Class<?>[] params=m.getParameterTypes();
                 if(params!=null&&params.length>0) //判断广播接收事件参数是否正常
                     eventMethods.add(m);

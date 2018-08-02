@@ -2,13 +2,11 @@ package com.fastlib.widget;
 
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Color;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.fastlib.R;

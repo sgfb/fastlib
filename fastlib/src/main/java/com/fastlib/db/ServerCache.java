@@ -1,12 +1,11 @@
 package com.fastlib.db;
 
 import com.fastlib.bean.RemoteCache;
-import com.fastlib.net.Listener;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
+import com.fastlib.net.listener.Listener;
 import com.google.gson.Gson;
 
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.concurrent.ThreadPoolExecutor;
 

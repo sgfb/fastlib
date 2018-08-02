@@ -1,16 +1,22 @@
 package com.fastlib.net;
 
-import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.app.EventObserver;
-import com.fastlib.bean.EventDownloading;
-import com.fastlib.bean.EventUploading;
+import com.fastlib.app.module.ModuleLife;
+import com.fastlib.bean.event.EventDownloading;
+import com.fastlib.bean.event.EventUploading;
+import com.fastlib.net.bean.ResponseStatus;
+import com.fastlib.net.exception.BreakoutException;
+import com.fastlib.net.exception.DiscardException;
+import com.fastlib.net.exception.NetException;
+import com.fastlib.net.listener.GlobalListener;
+import com.fastlib.net.listener.Listener;
+import com.fastlib.utils.ContextHolder;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 
@@ -54,6 +60,7 @@ public class NetProcessor implements Runnable {
     private byte[] mResponse;
     private Request mRequest;
     private String mMessage = null;
+    private String mRedirectUrl;
     private OnCompleteListener mListener;
     private Executor mResponsePoster;
     private IOException mException; //留存的异常
@@ -81,6 +88,7 @@ public class NetProcessor implements Runnable {
                 mListener.onComplete(this);
             return;
         }
+        mRequest.refreshVisibility(true);
         long connectionTimer = System.currentTimeMillis(); //优先使用X-Android-Received-Millis和X-Android-Sent_Millis来作为与服务器交互的时间,这个作为备用
         try {
             if(mRequest.isCancel())
@@ -92,7 +100,7 @@ public class NetProcessor implements Runnable {
             File downloadFile = null;
             InputStream in;
             OutputStream out;
-            URL url = new URL(isPost ? mRequest.getUrl() : splicingGetUrl());
+            URL url = new URL(TextUtils.isEmpty(mRedirectUrl)?isPost ? mRequest.getUrl() : splicingGetUrl():mRedirectUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
             if (isPost && (mRequest.getFiles() != null && mRequest.getFiles().size() > 0))
@@ -120,7 +128,8 @@ public class NetProcessor implements Runnable {
             if (isPost) {
                 connection.setDoOutput(true);
                 if (isMulti) {
-                    connection.setChunkedStreamingMode(CHUNK_BLOCK_LENGTH);
+                    if(mRequest.getChunkType()==Request.CHUNK_TYPE_OPEN)
+                        connection.setChunkedStreamingMode(CHUNK_BLOCK_LENGTH);
                     connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
                     connection.setUseCaches(false);
                 }
@@ -156,9 +165,15 @@ public class NetProcessor implements Runnable {
                 }
                 out.close();
             }
+            mRedirectUrl=checkRedirect(connection);
+            if(!TextUtils.isEmpty(mRedirectUrl)){
+                run();
+                mListener=null;
+                return;
+            }
             checkErrorStream(connection, connectionTimer); //判断返回码是否200.不是的话做额外处理
             if (needBody) {
-                Context context = getHostContext();
+                Context context = ContextHolder.getContext();
                 in = mRequest.isReceiveGzip() ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream();
                 int len;
                 byte[] data = new byte[BUFF_LENGTH];
@@ -168,8 +183,11 @@ public class NetProcessor implements Runnable {
                     String disposition = connection.getHeaderField("Content-Disposition");
                     if (!TextUtils.isEmpty(disposition) && disposition.length() > 9 && mRequest.getDownloadable().changeIfHadName()) {
                         String filename = URLDecoder.decode(disposition.substring(disposition.indexOf("filename=") + 9), "UTF-8");
-                        if (!TextUtils.isEmpty(filename))
-                            downloadFile.renameTo(new File(downloadFile.getParent() + File.separator + filename));
+                        if (!TextUtils.isEmpty(filename)){
+                            File changedFile=new File(downloadFile.getParent(),filename);
+                            boolean changeSuccess=downloadFile.renameTo(changedFile);
+                            if(changeSuccess) mRequest.getDownloadable().setFinalFile(changedFile);
+                        }
                     }
                     int maxCount = connection.getContentLength(); //如果流大小为－1说明是未知大小的流
                     int speed = 0;
@@ -213,14 +231,13 @@ public class NetProcessor implements Runnable {
                 }
             }
             connection.disconnect();
-            mRequest.setmResourceExpire(connection.getExpiration());
+            mRequest.setResourceExpire(connection.getExpiration());
             mMessage = connection.getResponseMessage();
             saveExtraToRequest(connection);
             saveResponseStatus(connection.getResponseCode(),computeRequestTime(connection,connectionTimer),connection.getResponseMessage());
             toggleCallback();
         } catch (IOException e){
-            if(e instanceof IOException)
-                mException= (IOException) e;
+            mException=e;
             if(!mRequest.getSuppressWarning())
                 e.printStackTrace();
             isSuccess = false;
@@ -229,6 +246,7 @@ public class NetProcessor implements Runnable {
                 saveErrorNetStatus(e.getMessage(), connectionTimer);
             toggleCallback();
         } finally {
+            mRequest.refreshVisibility(false);
             if (mListener != null)
                 mListener.onComplete(this);
         }
@@ -267,17 +285,7 @@ public class NetProcessor implements Runnable {
         final Listener l = mRequest.getListener();
         if (l == null || Thread.currentThread().isInterrupted())
             return;
-        Object host = mRequest.getHost();
-        boolean hostAvailable = true; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为在安全环境
-        if (host instanceof Fragment) {
-            Fragment fragment = (Fragment) host;
-            if ((fragment.isRemoving() || fragment.isDetached()))
-                hostAvailable = false;
-        } else if (host instanceof Activity) {
-            Activity activity = (Activity) host;
-            if (activity.isFinishing())
-                hostAvailable = false;
-        }
+        boolean hostAvailable =mRequest.getHostLify().flag!= ModuleLife.LIFE_DESTROYED; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为在安全环境
         if (hostAvailable) {
             mResponse = globalListener.onRawData(mRequest, mResponse);
             l.onRawData(mRequest, mResponse);
@@ -349,6 +357,12 @@ public class NetProcessor implements Runnable {
         mRequest.getResponseStatus().time = System.currentTimeMillis() - requestTime;
     }
 
+    private String checkRedirect(HttpURLConnection connection) throws IOException {
+        if(connection.getResponseCode()>=300||connection.getResponseCode()<400)
+            return connection.getHeaderField("Location");
+        return null;
+    }
+
     /**
      * 检测错误流
      * @param connection
@@ -357,7 +371,7 @@ public class NetProcessor implements Runnable {
      */
     private void checkErrorStream(HttpURLConnection connection, long requestTime) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        if (connection.getResponseCode() < HttpURLConnection.HTTP_OK||connection.getResponseCode()>=300){
+        if (connection.getResponseCode() < HttpURLConnection.HTTP_OK||connection.getResponseCode()>=400){
             byte[] errbyte = new byte[4096];
             int len;
             if(connection.getErrorStream()!=null)
@@ -399,16 +413,6 @@ public class NetProcessor implements Runnable {
         for (Map.Entry<String, List<String>> entry : connection.getHeaderFields().entrySet())
             map.put(entry.getKey(), entry.getValue());
         mRequest.setReceiveHeader(map);
-        Map<String, List<String>> cookiesMap = mRequest.getReceiveHeader();
-        List<String> cookies = cookiesMap.remove("Set-Cookie");
-        if (cookies != null && !cookies.isEmpty()) {
-            Pair<String, String>[] cookieArray = new Pair[cookies.size()];
-            for (int i = 0; i < cookies.size(); i++) {
-                String cookie = cookies.get(i);
-                cookieArray[i] = Pair.create(cookie.substring(0, cookie.indexOf('=')), cookie.substring(cookie.indexOf('=') + 1, cookie.indexOf(';')));
-            }
-            mRequest.setReceiveCookies(cookieArray);
-        }
     }
 
     /**
@@ -550,7 +554,16 @@ public class NetProcessor implements Runnable {
                             .append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
                     out.write(sb.toString().getBytes());
                     Tx += sb.toString().getBytes().length;
-                    copyFileToStream(pair.second, out);
+                    try{
+                        copyFileToStream(pair.second, out);
+                    }catch (OutOfMemoryError outOfMemoryError){
+                        if(mRequest.getChunkType()==Request.CHUNK_TYPE_AUTO){
+                            mRequest.setChunkType(Request.CHUNK_TYPE_OPEN);
+                            mRequest.start();
+                            throw new DiscardException("未分块溢出,丢弃重试");
+                        }
+                        else throw outOfMemoryError;
+                    }
                     out.write(CRLF.getBytes());
                 }
             }
@@ -564,8 +577,9 @@ public class NetProcessor implements Runnable {
      * @param file 上传的文件
      * @param out 输出流
      * @throws IOException
+     * @throws OutOfMemoryError
      */
-    private void copyFileToStream(File file, OutputStream out) throws IOException {
+    private void copyFileToStream(File file, OutputStream out) throws IOException,OutOfMemoryError{
         if (file == null || !file.exists())
             return;
         InputStream fileIn = new FileInputStream(file);
@@ -575,7 +589,7 @@ public class NetProcessor implements Runnable {
         long count = 0;
         int speed = 0;
 
-        Context context = getHostContext();
+        Context context = ContextHolder.getContext();
         boolean needEndSend=false; //保证在文件结尾处发送一次上传广播
         while ((len = fileIn.read(data)) != -1) {
             checkBreakout();
@@ -621,13 +635,6 @@ public class NetProcessor implements Runnable {
             }
         }
         return sb.toString().replace(" ", "%20"); //最后空格置换
-    }
-
-    public Context getHostContext() {
-        Object host = mRequest.getHost();
-        if (host instanceof Context) return (Context) host;
-        else if (host instanceof Fragment) return ((Fragment) host).getContext();
-        return null;
     }
 
     @Override

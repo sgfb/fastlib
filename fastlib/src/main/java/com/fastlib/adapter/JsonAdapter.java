@@ -10,11 +10,11 @@ import android.widget.BaseAdapter;
 
 import com.fastlib.base.OldViewHolder;
 import com.fastlib.base.Refreshable;
-import com.fastlib.net.Listener;
 import com.fastlib.net.Request;
+import com.fastlib.net.listener.Listener;
 import com.fastlib.utils.json.FastJson;
-import com.fastlib.utils.json.JsonViewBinder;
 import com.fastlib.utils.json.JsonObject;
+import com.fastlib.utils.json.JsonViewBinder;
 
 import java.io.IOException;
 import java.lang.reflect.Type;

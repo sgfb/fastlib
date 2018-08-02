@@ -18,6 +18,11 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicBlur;
+import android.support.annotation.IntRange;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.View;
@@ -47,6 +52,28 @@ public class ImageUtil{
         mLastUri=uri;
         edit.putString(KEY_LAST_IMAGE, uri.toString());
         edit.apply();
+    }
+
+    /**
+     * 高斯模糊
+     * @param context 上下文
+     * @param bitmap 位图
+     * @param radius 高斯模糊等级 最高25
+     * @return 高斯模糊后的位图
+     */
+    @TargetApi(17)
+    public static Bitmap getBlueBitmap(Context context,Bitmap bitmap,@IntRange(from = 0,to = 25) int radius){
+        RenderScript rs=RenderScript.create(context);
+        Allocation inAllocation=Allocation.createFromBitmap(rs, bitmap);
+        Allocation outAllocation=Allocation.createTyped(rs,inAllocation.getType());
+        ScriptIntrinsicBlur blue=ScriptIntrinsicBlur.create(rs, Element.U8_4(rs));
+
+        blue.setInput(inAllocation);
+        blue.setRadius(radius);
+        blue.forEach(outAllocation);
+        outAllocation.copyTo(bitmap);
+        rs.destroy();
+        return bitmap;
     }
 
     /**
@@ -203,10 +230,6 @@ public class ImageUtil{
     @TargetApi(18)
     public static void openAlbum(Activity activity,Fragment fragment,boolean multiChoose){
         Intent intent = new Intent();
-//        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT)
-//            intent.setAction(Intent.ACTION_OPEN_DOCUMENT);
-//        else
-//            intent.setAction(Intent.ACTION_GET_CONTENT);
         intent.setAction(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         intent.putExtra(Intent.CATEGORY_OPENABLE, true);
@@ -378,7 +401,6 @@ public class ImageUtil{
      * @param uri
      */
     private static String getImagePathForOldSdk(Context context,Uri uri) {
-
         String[] projection = { MediaStore.MediaColumns.DATA };
         Cursor cursor = context.getContentResolver().query(uri, projection, null, null, null);
         if (cursor != null) {
@@ -439,11 +461,11 @@ public class ImageUtil{
     }
 
     /**
-     * mp4文件取首帧
+     * 视频文件取首帧
      * @param filePath
      * @return
      */
-    private static Bitmap getVideoFirstFrame(String filePath) {
+    public static Bitmap getVideoFirstFrame(String filePath) {
         Bitmap bitmap;
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         retriever.setDataSource(filePath);

@@ -6,8 +6,8 @@ import android.support.annotation.Nullable;
 
 import com.fastlib.base.CommonViewHolder;
 import com.fastlib.base.Refreshable;
-import com.fastlib.net.Listener;
 import com.fastlib.net.Request;
+import com.fastlib.net.listener.Listener;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;

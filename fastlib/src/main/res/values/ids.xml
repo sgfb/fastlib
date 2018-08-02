@@ -5,6 +5,7 @@
     <item type="id" name="headView"/>
     <item type="id" name="bottomView"/>
     <item type="id" name="data"/>
+    <item type="id" name="eventItem"/>
 
     <!--AbsActivityPreviewImage必需-->
     <item type="id" name="viewPager"/>
