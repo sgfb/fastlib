@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.annotation.IdRes;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
@@ -174,7 +175,10 @@ public class LocalDataInject{
 
                 if (ld != null&&deprecated==null){
                     if(bind != null){ //视图触发
-                        View v = rootView.findViewById(bind.value()[0]);
+                        @IdRes final int id=bind.value().length==0?
+                                rootView.getContext().getResources().getIdentifier(bind.idNames()[0],"id",rootView.getContext().getPackageName()):
+                                bind.value()[0];
+                        View v = rootView.findViewById(id);
                         switch (bind.bindType()) {
                             case CLICK:
                                 v.setOnClickListener(new View.OnClickListener() {

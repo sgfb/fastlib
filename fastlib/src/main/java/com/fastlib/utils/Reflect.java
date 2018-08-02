@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * 使反射变得更简单容易
- * @author Sgfb
+ * @author sgfb
  */
 public class Reflect{
 

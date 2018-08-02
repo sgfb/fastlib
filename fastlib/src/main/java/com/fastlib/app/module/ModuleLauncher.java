@@ -8,10 +8,9 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 
-import com.fastlib.CheckModuleProcessor;
-
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -19,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import dalvik.system.DexClassLoader;
 import dalvik.system.DexFile;
 
 /**
@@ -42,8 +42,8 @@ public class ModuleLauncher {
 
     public void init(Context context) {
         String dexPath = context.getPackageResourcePath();
-        File outputFile = new File(context.getCacheDir(), "temp.apk");
-        loadDexFile(dexPath,outputFile.getAbsolutePath());
+        File outputFile = new File(context.getCacheDir(), "appDex");
+        loadDexFile(dexPath,outputFile,false);
     }
 
     public void start(Context context,ModuleRequest request){
@@ -115,14 +115,17 @@ public class ModuleLauncher {
     /**
      * 加载dex中class
      * @param path dex加载路径
-     * @param outPath dex解压路径
+     * @param outFile dex解压路径
+     * @param isPatch 是否补丁
      */
-    public void loadDexFile(String path,String outPath){
+    public void loadDexFile(String path,File outFile,boolean isPatch){
         try {
             long timer = System.currentTimeMillis();
-            DexFile dexFile = DexFile.loadDex(path,outPath, 0);
+            DexFile dexFile = DexFile.loadDex(path,outFile.getAbsolutePath(), 0);
             Enumeration<String> set = dexFile.entries();
 
+            if(isPatch)
+                patchUp(outFile.getParent(),path);
             while (set.hasMoreElements()) {
                 String className = set.nextElement();
                 if (className.endsWith(CheckModuleProcessor.CLASS_NAME)) {
@@ -162,5 +165,41 @@ public class ModuleLauncher {
 
     public void setGlobalListener(@NonNull ModuleLauncherControl listener){
         mGlobalControl=listener;
+    }
+
+    /**
+     * 将补丁打入系统
+     * @param folder 打补丁用临时目录
+     * @param patchPath 补丁路径
+     */
+    private void patchUp(String folder,String patchPath) throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
+        //声明出所有需要的类型
+        ClassLoader parentClassLoader=ClassLoader.getSystemClassLoader();
+        DexClassLoader dexClassLoader=new DexClassLoader(patchPath,folder,null,parentClassLoader);
+        Class baseClassLoader=parentClassLoader.loadClass("dalvik.system.BaseDexClassLoader");
+        Class dexClassLoaderSuperClass=dexClassLoader.getClass().getSuperclass();
+        Field pathListField=baseClassLoader.getDeclaredField("pathList");
+        Field patchPathListField=dexClassLoaderSuperClass.getDeclaredField("pathList");
+        Field dexElementsField=pathListField.getClass().getDeclaredField("dexElements");
+        Field patchDexElementsField=patchPathListField.getClass().getDeclaredField("dexElements");
+
+        pathListField.setAccessible(true);
+        patchPathListField.setAccessible(true);
+        dexElementsField.setAccessible(true);
+        patchDexElementsField.setAccessible(true);
+
+        Object pathList=pathListField.get(parentClassLoader);
+        Object patchPathList=patchPathListField.get(dexClassLoader);
+        Object[] dexElements= (Object[]) dexElementsField.get(pathList);
+        Object[] patchDexElements= (Object[]) patchDexElementsField.get(patchPathList);
+
+        //组合系统类和补丁
+        Object[] combinationDexElements= (Object[]) Array.newInstance(dexElements[0].getClass(),dexElements.length+patchDexElements.length);
+
+        for(int i=0;i<dexElements.length;i++)
+            combinationDexElements[i]=dexElements[i];
+        for(int i=dexElements.length;i<combinationDexElements.length;i++)
+            combinationDexElements[i]=patchDexElements[i-dexElements.length];
+        dexElementsField.set(pathList,combinationDexElements);
     }
 }
