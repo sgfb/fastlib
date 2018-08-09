@@ -13,6 +13,7 @@ import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
@@ -26,7 +27,7 @@ import javax.tools.Diagnostic;
  * Created by sgfb on 2018/7/24.
  * Extraction Module annotation parameters stored in the generated classes. The process as an optimization, avoided to traverse all the class
  */
-@AutoService(Process.class)
+@AutoService(Processor.class)
 @SupportedAnnotationTypes("com.fastlib.app.module.Module")
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class CheckModuleProcessor extends AbstractProcessor{

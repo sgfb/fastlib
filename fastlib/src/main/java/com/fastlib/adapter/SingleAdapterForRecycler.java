@@ -105,7 +105,7 @@ public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T>  
     public void onBindViewHolder(CommonViewHolder holder, int position){
         if(position>=getItemCount()-1&&isMore&&!isLoading)
             loadMoreData();
-        binding(position,mData.get(position),holder);
+        super.onBindViewHolder(holder,position);
     }
 
     @Override

@@ -496,7 +496,7 @@ public class Request{
      */
     public Request setListener(final Listener l){
         mListener=l;
-        if(mGenericType!=null&&mGenericType.length>0) //如果指定了实体类型，不自动解析实体类型
+        if(mListener==null||(mGenericType!=null&&mGenericType.length>0)) //如果指定了实体类型，不自动解析实体类型
             return this;
         mGenericType=new Type[3];
         //泛型解析,如果是Object和byte[]就返回原始字节流,String返回字符,其它类型就尝试使用gson解析

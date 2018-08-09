@@ -1,5 +1,6 @@
 package com.fastlib.adapter;
 
+import android.content.Context;
 import android.support.annotation.LayoutRes;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -25,6 +26,7 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
     protected CommonViewHolder mHeadViewHolder;
     protected CommonViewHolder mBottomViewHolder;
     protected OnItemClickListener<T> mItemClickListener;
+    protected Context mContext;
     private ExtraItemBean mHeadItemBean,mBottomItemBean;
 
     /**
@@ -71,18 +73,18 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
         if(viewType==TYPE_HEAD){
             if(mHeadViewHolder==null) {
                 View headView = LayoutInflater.from(parent.getContext()).inflate(mHeadItemBean.layoutId, parent, false);
-                if(mHeadItemBean.callback!=null)
-                    mHeadItemBean.callback.extraItemCreated(headView);
                 mHeadViewHolder = new CommonViewHolder(headView);
+                if(mHeadItemBean.callback!=null)
+                    mHeadItemBean.callback.extraItemCreated(mHeadViewHolder);
             }
             return mHeadViewHolder;
         }
         else if(viewType==TYPE_BOTTOM){
             if(mBottomViewHolder==null){
                 View bottomView=LayoutInflater.from(parent.getContext()).inflate(mBottomItemBean.layoutId,parent,false);
-                if(mBottomItemBean.callback!=null)
-                    mBottomItemBean.callback.extraItemCreated(bottomView);
                 mBottomViewHolder=new CommonViewHolder(bottomView);
+                if(mBottomItemBean.callback!=null)
+                    mBottomItemBean.callback.extraItemCreated(mBottomViewHolder);
             }
             return mBottomViewHolder;
         }
@@ -92,6 +94,7 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
 
     @Override
     public void onBindViewHolder(final CommonViewHolder holder, final int position){
+        mContext=holder.getConvertView().getContext();
         int type=getItemViewType(position);
         if(type!=TYPE_HEAD&&type!=TYPE_BOTTOM) {
             holder.setOnClickListener(new View.OnClickListener() {
@@ -271,7 +274,7 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
      * 头部和尾部额外视图生成后回调
      */
     public interface OnExtraItemCreateCallback{
-        void extraItemCreated(View view);
+        void extraItemCreated(CommonViewHolder view);
     }
 
     /**

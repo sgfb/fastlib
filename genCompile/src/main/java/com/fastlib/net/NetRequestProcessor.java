@@ -11,6 +11,7 @@ import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
@@ -26,7 +27,7 @@ import javax.lang.model.util.Elements;
  * Created by sgfb on 2018/4/26.
  * 网络接口辅助处理过程.具体功能见{@link Net}
  */
-@AutoService(Process.class)
+@AutoService(Processor.class)
 @SupportedAnnotationTypes("com.fastlib.net.Net")
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class NetRequestProcessor extends AbstractProcessor {
@@ -40,14 +41,14 @@ public class NetRequestProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment) {
-        StringBuilder classSb = new StringBuilder();
         Set<? extends Element> classElement = roundEnvironment.getElementsAnnotatedWith(Net.class);
 
         if (classElement == null || classElement.isEmpty()) return true;
         for (Element e : classElement) {
             String className = e.getSimpleName().toString() + "_G";
-            List<? extends Element> methods = e.getEnclosedElements();
+            List<? extends Element> elements = e.getEnclosedElements();
             String packageName = mElementUtils.getPackageOf(e).getQualifiedName().toString();
+            StringBuilder classSb = new StringBuilder();
 
             //head define
             classSb.append("package ").append(packageName).append(';').append("\n\n");
@@ -63,15 +64,16 @@ public class NetRequestProcessor extends AbstractProcessor {
                     .append("\t").append("public ").append(className).append("(GenRequestInterceptor<Request> interceptor){").append("\n")
                     .append("\t\t").append("mInterceptor=interceptor;").append("\n")
                     .append("\t").append("}").append("\n\n");
-            for (Element m : methods) {
-                if ("<init>".equals(m.getSimpleName().toString())) continue;
+            for (Element element : elements) {
+                if ("<init>".equals(element.getSimpleName().toString())) continue;
+                if(!"com.sun.tools.javac.code.Symbol.MethodSymbol".equals(element.getClass().getCanonicalName())) continue;;
 
-                BaseParam baseParamAnno = m.getAnnotation(BaseParam.class);
-                NetMock mockAnno = m.getAnnotation(NetMock.class);
-                ExecutableType type = (ExecutableType) m.asType();
+                BaseParam baseParamAnno = element.getAnnotation(BaseParam.class);
+                NetMock mockAnno = element.getAnnotation(NetMock.class);
+                ExecutableType type = (ExecutableType) element.asType();
                 String returnType=type.getReturnType().toString();
                 String mockName = mockAnno == null ? null : mockAnno.value();
-                String methodName = m.getSimpleName().toString();
+                String methodName = element.getSimpleName().toString();
                 String methodSuffix = "Callback";
                 String requestDefine =baseParamAnno==null?"Request": baseParamAnno.customerRequest().isEmpty()? "Request" : baseParamAnno.customerRequest();
                 String url = baseParamAnno == null ? "" : baseParamAnno.url();
@@ -90,8 +92,8 @@ public class NetRequestProcessor extends AbstractProcessor {
                             .append("\t\t\t}catch(Exception e){e.printStackTrace();}").append('\n');
                 }
                 try {
-                    Field methodParamsField = m.getClass().getDeclaredField("params");
-                    List<VariableElement> list = (List<VariableElement>) methodParamsField.get(m);
+                    Field methodParamsField = element.getClass().getDeclaredField("params");
+                    List<VariableElement> list = (List<VariableElement>) methodParamsField.get(element);
 
                     //loop params
                     for (int i = 0; i < type.getParameterTypes().size(); i++) {
@@ -179,7 +181,7 @@ public class NetRequestProcessor extends AbstractProcessor {
             //generator and write to file
             try {
                 Writer writer = processingEnv.getFiler().createSourceFile(packageName + "." + className, classElement.iterator().next()).openWriter();
-                writer.append(classSb.toString());
+                writer.write(classSb.toString());
                 writer.flush();
                 writer.close();
             } catch (IOException exception) {
