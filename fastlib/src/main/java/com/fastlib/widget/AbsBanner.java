@@ -23,6 +23,7 @@ public abstract class AbsBanner<T> extends ViewPager{
     private long mScrollInterval = 5000;  //轮播间隔时间
     private BannerAdapter mAdapter;
     private List<T> mData;
+    private OnPageChangeListener mPageChangeListener;
     private Runnable mAutoScrolling = new Runnable() {
         @Override
         public void run() {
@@ -117,7 +118,7 @@ public abstract class AbsBanner<T> extends ViewPager{
     public void setInfinite(boolean infinite) {
         if(isInfinite!=infinite){
             isInfinite = infinite;
-            if (isInfinite) addOnPageChangeListener(mInfiniteListener);
+            if (isInfinite) super.addOnPageChangeListener(mInfiniteListener);
             else removeOnPageChangeListener(mInfiniteListener);
             setAdapter(null);
             setAdapter(mAdapter);
@@ -138,6 +139,33 @@ public abstract class AbsBanner<T> extends ViewPager{
     public void setAutoScrollingInterval(long interval){
         if(interval<0) interval=0;
         mScrollInterval = interval;
+    }
+
+    //TODO
+    @Override
+    public void addOnPageChangeListener(final OnPageChangeListener listener) {
+        super.addOnPageChangeListener(new OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                listener.onPageScrolled(position,positionOffset,positionOffsetPixels);
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                if (mAdapter.getCount() > 1 && isInfinite){
+                    if(position==1)
+                        listener.onPageSelected(0);
+                    else if(position>1&&position<mAdapter.getCount()-1)
+                        listener.onPageSelected(position-1);
+                }
+                else listener.onPageSelected(position);
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                listener.onPageScrollStateChanged(state);
+            }
+        });
     }
 
     private class BannerAdapter extends PagerAdapter {

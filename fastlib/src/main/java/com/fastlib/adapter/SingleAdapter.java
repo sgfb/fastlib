@@ -23,7 +23,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @param <T> 数据类型
  * @param <R> 返回类型
  */
-public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener<R,Object,Object>{
+public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener<R,Object,Object> {
 	public static final String TAG=SingleAdapter.class.getSimpleName();
 
 	protected Context mContext;
@@ -36,7 +36,8 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 	private int mPerCount; //每次读取条数，默认为1
 	protected boolean isRefresh,isMore,isLoading;
 
-	public abstract @NonNull Request generateRequest();
+	public abstract @NonNull
+    Request generateRequest();
 
 	/**
 	 * 数据绑定视图
@@ -51,7 +52,8 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 	 * @param result
 	 * @return
 	 */
-	public abstract @NonNull List<T> translate(R result);
+	public abstract @NonNull
+    List<T> translate(R result);
 
 	/**
 	 * 请求更多数据时的请求
@@ -180,7 +182,7 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 	}
 
 	@Override
-	public void onResponseListener(Request request,R result,Object none1,Object none2){
+	public void onResponseListener(Request request, R result, Object none1, Object none2){
 		if(mRefreshLayout!=null)
 			mRefreshLayout.setRefreshStatus(false);
 		List<T> list=translate(result);
@@ -196,7 +198,7 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 	}
 
 	@Override
-	public void onErrorListener(Request r,String error){
+	public void onErrorListener(Request r, String error){
 		if(mRefreshLayout!=null)
 			mRefreshLayout.setRefreshStatus(false);
 		isLoading=false;

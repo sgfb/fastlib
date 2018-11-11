@@ -1,15 +1,21 @@
-apply plugin: 'com.android.library'
+apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.3"
+    compileSdkVersion 26
+    buildToolsVersion "26.0.2"
     defaultConfig {
+        applicationId 'com.fastlib'
         minSdkVersion 16
         targetSdkVersion 23
         versionCode 11
         versionName "1.4.0"
         buildConfigField("String","DEFAULT_DATA_FILE_NAME","\"fastlib\"") //sp和数据库默认存储名
         buildConfigField("boolean","isShowLog","true") //打印库中的log信息
+        javaCompileOptions {
+            annotationProcessorOptions {
+                includeCompileClasspath true
+            }
+        }
     }
 }
 
@@ -22,8 +28,8 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:23.2.1'
-    compile 'com.android.support:design:23.2.1'
+    compile 'com.android.support:appcompat-v7:26.0.2'
+    compile 'com.android.support:design:26.0.2'
     compile 'com.google.code.gson:gson:2.2.4'
     compile project(':genCompile')
 }

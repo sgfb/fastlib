@@ -4,6 +4,7 @@ import android.support.annotation.LayoutRes;
 import android.widget.BaseAdapter;
 
 import com.fastlib.annotation.ContentView;
+import com.fastlib.utils.Reflect;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,7 @@ public abstract class CommonBaseAdapter<T> extends BaseAdapter{
     public CommonBaseAdapter(@LayoutRes int itemId,List<T> initData){
         if(itemId>-1) mLayoutId =itemId;
         else{
-            ContentView itemView=getClass().getAnnotation(ContentView.class);
+            ContentView itemView= Reflect.upFindAnnotation(getClass(),ContentView.class);
             if(itemView!=null)
                 mLayoutId =itemView.value();
             else throw new IllegalArgumentException("item id和ContentView同时为空");

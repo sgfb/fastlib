@@ -11,6 +11,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -132,6 +133,11 @@ public abstract class AbsWebViewActivity extends FastActivity{
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error){
             handler.proceed(); //跳过ssl错误
             super.onReceivedSslError(view, handler, error);
+        }
+
+        @Override
+        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+            return super.shouldInterceptRequest(view, request);
         }
     }
 }
