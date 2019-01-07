@@ -53,8 +53,6 @@ public class NetProcessor implements Runnable {
     private final int BUFF_LENGTH = 4096;
     private final int CHUNK_BLOCK_LENGTH=102400;
 
-    public static long mDiffServerTime; //与服务器时间差
-
     private boolean isSuccess = true;
     private long Tx, Rx;
     private byte[] mResponse;
@@ -221,15 +219,6 @@ public class NetProcessor implements Runnable {
                 baos.close();
                 in.close();
             }
-            List<String> trustHost = NetManager.getInstance().getConfig().getTrustHost(); //调整信任服务器时间差
-            if (trustHost != null) {
-                for (String host : trustHost) {
-                    if (url.getHost().equals(host)) {
-                        mDiffServerTime = connection.getDate() - System.currentTimeMillis();
-                        break;
-                    }
-                }
-            }
             connection.disconnect();
             mRequest.setResourceExpire(connection.getExpiration());
             mMessage = connection.getResponseMessage();
@@ -285,9 +274,9 @@ public class NetProcessor implements Runnable {
         final Listener l = mRequest.getListener();
         if (l == null || Thread.currentThread().isInterrupted())
             return;
-        boolean hostAvailable =mRequest.getHostLify().flag!= ModuleLife.LIFE_DESTROYED; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为在安全环境
+        boolean hostAvailable =mRequest.getHostLify()==null||mRequest.getHostLify().flag!= ModuleLife.LIFE_DESTROYED; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为在安全环境
         if (hostAvailable) {
-            mResponse = globalListener.onRawData(mRequest, mResponse);
+            mResponse = globalListener.onRawData(mRequest, mResponse,Rx,Tx);
             l.onRawData(mRequest, mResponse);
             Type[] realType = mRequest.getGenericType();
             int realTypeIndex = 1;

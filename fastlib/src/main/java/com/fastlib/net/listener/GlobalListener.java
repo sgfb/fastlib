@@ -4,16 +4,24 @@ import com.fastlib.net.Request;
 
 /**
  * Created by sgfb on 17/7/31.
- * 与{@link Listener}相似.但是全局仅存一个并且有修改源数据的能力
+ * 与{@link Listener}相似.但是全局仅存一个且在每个请求的Listener之前触发
  */
 public class GlobalListener{
+
+    /**
+     * 请求发送前回调
+     * @param request 网络请求
+     */
+    public void onLauncherRequestBefore(Request request){
+
+    }
 
     /**
      * 原始字节数据回调
      * data 源字节
      * @return 处理后的源字节
      */
-    public byte[] onRawData(Request r, byte[] data){
+    public byte[] onRawData(Request r,byte[] data,long downloadLength,long uploadLength){
         return data;
     }
 

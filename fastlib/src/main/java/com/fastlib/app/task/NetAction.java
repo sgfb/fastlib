@@ -55,7 +55,7 @@ public abstract class NetAction<P,R> extends Action<Request,R>{
             if(response!=null){
                 String responseStr=new String(response);
                 if(globalListener!=null){
-                    response=globalListener.onRawData(param,response);
+                    response=globalListener.onRawData(param,response,0,0);
                     responseStr=globalListener.onTranslateJson(param,responseStr);
                 }
                 if(rType==Object.class||rType==byte[].class||rType==byte.class)
