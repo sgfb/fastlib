@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 
 import com.fastlib.annotation.ContentView;
 import com.fastlib.base.CommonViewHolder;
+import com.fastlib.utils.Reflect;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +54,7 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
         //如果layoutId参数不标准的情况下尝试使用ContentView注解
         if(layoutId>0) mItemId=layoutId;
         else{
-            ContentView cv=getClass().getAnnotation(ContentView.class);
+            ContentView cv= Reflect.upFindAnnotation(getClass(),ContentView.class);
             if(cv==null) throw new IllegalArgumentException("没有指定LayoutId和ContentView注解");
             mItemId=cv.value();
         }

@@ -3,17 +3,28 @@
           package="com.fastlib">
 
     <uses-permission android:name="android.permission.INTERNET"/>
+<<<<<<< HEAD
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
     <application android:label="fastlib"
         android:theme="@style/MaterialTheme"
         android:fullBackupContent="false">
+=======
+
+    <application android:label="fastlib"
+        android:logo="@mipmap/ic_launcher"
+        android:theme="@style/MaterialTheme">
+>>>>>>> 0668ee551062ff822b88b19e387267a6b1b18971
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+<<<<<<< HEAD
+=======
+        <activity android:name=".WebViewActivity"/>
+>>>>>>> 0668ee551062ff822b88b19e387267a6b1b18971
     </application>
 </manifest>

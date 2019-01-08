@@ -1,28 +1,53 @@
 apply plugin: 'com.android.application'
 
 android {
+<<<<<<< HEAD
     compileSdkVersion 27
     buildToolsVersion "23.0.3"
+=======
+    compileSdkVersion 26
+    buildToolsVersion "26.0.2"
+>>>>>>> 0668ee551062ff822b88b19e387267a6b1b18971
     defaultConfig {
+        applicationId 'com.fastlib'
         minSdkVersion 16
         targetSdkVersion 27
         versionCode 11
         versionName "1.4.0"
         buildConfigField("String","DEFAULT_DATA_FILE_NAME","\"fastlib\"") //sp和数据库默认存储名
         buildConfigField("boolean","isShowLog","true") //打印库中的log信息
+<<<<<<< HEAD
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+=======
+        javaCompileOptions {
+            annotationProcessorOptions {
+                includeCompileClasspath true
+            }
+        }
+>>>>>>> 0668ee551062ff822b88b19e387267a6b1b18971
     }
 }
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
+<<<<<<< HEAD
     testCompile 'org.robolectric:robolectric:3.8'
     androidTestCompile 'com.android.support.test:runner:1.0.2'
     androidTestCompile 'com.android.support.test.espresso:espresso-core:3.0.2'
     androidTestCompile 'com.android.support.test.espresso:espresso-intents:3.0.2'
     compile 'com.android.support:appcompat-v7:23.2.1'
     compile 'com.android.support:design:23.2.1'
+=======
+    testCompile('org.robolectric:robolectric:3.5') {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:appcompat-v7:26.0.2'
+    compile 'com.android.support:design:26.0.2'
+>>>>>>> 0668ee551062ff822b88b19e387267a6b1b18971
     compile 'com.google.code.gson:gson:2.2.4'
     compile project(':genCompile')
 }
