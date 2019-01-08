@@ -24,6 +24,7 @@ import com.fastlib.app.task.NoReturnAction;
 import com.fastlib.app.task.Task;
 import com.fastlib.app.task.TaskLauncher;
 import com.fastlib.app.task.ThreadType;
+import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.N;
@@ -95,7 +96,7 @@ public class ModuleDelegate implements ModuleInterface {
      * @return 线程池
      */
     protected ThreadPoolExecutor generateThreadPool() {
-        return (ThreadPoolExecutor) Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        return NetManager.sRequestPool;
     }
 
     /**

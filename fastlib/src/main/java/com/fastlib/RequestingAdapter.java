@@ -25,6 +25,10 @@ public class RequestingAdapter extends BaseRecyAdapter<Requesting>{
 
         TextView status=holder.getView(R.id.status);
         switch (data.status) {
+            case Requesting.STATUS_WAITING:
+                status.setTextColor(mContext.getResources().getColor(R.color.grey_600));
+                status.setText("waiting");
+                break;
             case Requesting.STATUS_REQUESTING:
                 status.setTextColor(mContext.getResources().getColor(R.color.grey_600));
 
@@ -43,9 +47,13 @@ public class RequestingAdapter extends BaseRecyAdapter<Requesting>{
                     status.setText(String.format(Locale.getDefault(),"%d%%",percent));
                     holder.setText(R.id.secondStatus,Formatter.formatFileSize(mContext,data.uploading.getSpeed()));
                 }
-                else status.setText("requesting");
+                else {
+                    progressBar.setProgress(0);
+                    status.setText("requesting");
+                }
                 break;
             case Requesting.STATUS_SUCCESS:
+                holder.setVisibility(R.id.progress,View.GONE);
                 status.setText("success");
                 status.setTextColor(mContext.getResources().getColor(R.color.green_600));
                 holder.setText(R.id.secondStatus,String.format(Locale.getDefault(),"%s | %dms",Formatter.formatFileSize(mContext,data.contentLength),data.timeConsume));
@@ -72,13 +80,13 @@ public class RequestingAdapter extends BaseRecyAdapter<Requesting>{
 //        else return count;
 //    }
 
-    public void removeRequest(int hashCode){
+    public synchronized void removeRequest(int hashCode){
         Requesting requesting=getRequestByHash(hashCode);
         remove(requesting);
         notifyDataSetChanged();
     }
 
-    public Requesting getRequestByHash(int hashCode){
+    public synchronized Requesting getRequestByHash(int hashCode){
         for(Requesting requesting:getData()){
             if(requesting.hashCode()==hashCode)
                 return requesting;

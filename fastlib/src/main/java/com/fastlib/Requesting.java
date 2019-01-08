@@ -4,10 +4,11 @@ import com.fastlib.bean.event.EventDownloading;
 import com.fastlib.bean.event.EventUploading;
 
 public class Requesting{
-    public static final int STATUS_REQUESTING=1;
-    public static final int STATUS_ERROR=2;
-    public static final int STATUS_SUCCESS=3;
-    public static final int STATUS_EXCEPTION=4;
+    public static final int STATUS_WAITING=1;
+    public static final int STATUS_REQUESTING=2;
+    public static final int STATUS_ERROR=3;
+    public static final int STATUS_SUCCESS=4;
+    public static final int STATUS_EXCEPTION=5;
     public static final int TYPE_NORMAL=1;
     public static final int TYPE_DOWNLOADING=2;
     public static final int TYPE_UPLOADING=3;

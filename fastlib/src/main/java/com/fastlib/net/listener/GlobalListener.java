@@ -12,7 +12,15 @@ public class GlobalListener{
      * 请求发送前回调
      * @param request 网络请求
      */
-    public void onLauncherRequestBefore(Request request){
+    public void onLaunchRequestBefore(Request request){
+
+    }
+
+    /**
+     * 请求开始连接
+     * @param request 网络请求
+     */
+    public void onRequestLaunched(Request request){
 
     }
 

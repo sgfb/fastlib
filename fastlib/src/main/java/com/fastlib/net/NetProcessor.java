@@ -78,6 +78,8 @@ public class NetProcessor implements Runnable {
 
     @Override
     public void run() {
+        if(NetManager.getInstance().getGlobalListener()!=null)
+            NetManager.getInstance().getGlobalListener().onRequestLaunched(mRequest);
         if (mRequest.getMock() != null) {
             mResponse = mRequest.getMock().dataResponse(mRequest);
             mMessage = "模拟数据";
