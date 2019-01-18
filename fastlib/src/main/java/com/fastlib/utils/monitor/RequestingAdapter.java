@@ -1,15 +1,14 @@
-package com.fastlib;
+package com.fastlib.utils.monitor;
 
 import android.text.format.Formatter;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.fastlib.R;
 import com.fastlib.adapter.BaseRecyAdapter;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.base.CommonViewHolder;
-import com.fastlib.net.Request;
-import com.fastlib.net.bean.ResponseStatus;
 
 import java.io.File;
 import java.util.Locale;

@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.utils.monitor;
 
 import com.fastlib.bean.event.EventDownloading;
 import com.fastlib.bean.event.EventUploading;
