@@ -146,6 +146,7 @@ public class BitmapPool {
      * @return 单app使用最大内存，MB单位
      */
     private int getMemoryClass(){
+
         final int fDefaultLimit=30;
         try {
             File file=new File("/system/build.prop");
