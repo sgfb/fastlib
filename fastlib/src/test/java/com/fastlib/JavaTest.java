@@ -22,11 +22,6 @@ public class JavaTest{
 
     @Test
     public void testMain(){
-        String s="\uFEFF{code\":200,\"message\":\"\\u624b\\u673a\\u9a8c\\u8bc1\\u7801\\u5df2\\u53d1\\u9001\\u6210\\u529f\",\"success\":true}";
-        try {
-            System.out.println(new String(s.getBytes(),"utf-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
+
     }
 }

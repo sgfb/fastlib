@@ -5,6 +5,7 @@ import android.util.LongSparseArray;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -43,6 +44,10 @@ public final class ImagePool{
             MemoryFile mf=new MemoryFile(String.format(Locale.getDefault(),"image-%s",name),data.length);
             mf.readBytes(data,0,0,data.length);
             mCursor+=data.length;
+
+            float mb=(float) mCursor/1024/1024;
+            DecimalFormat df=new DecimalFormat("##.##");
+            System.out.println("image pool:"+df.format(mb)+"mb");
         } catch (IOException e) {
             e.printStackTrace();
             return false;
@@ -50,9 +55,16 @@ public final class ImagePool{
         return true;
     }
 
+    /**
+     * 移除不必要缓存
+     * 先移除引用少，后移除老的数据
+     */
     private boolean removeRedundant(){
-        LongSparseArray<String> viewId2ImageName=mImageRef.getViewId2ImageName();
-        Map<String,Integer> imageName2RefCount=new HashMap<>();
+        for(Map.Entry<String,MemoryFile> entry:mMemoryFiles.entrySet()){
+            MemoryFile mf=mMemoryFiles.remove(entry.getKey());
+            mCursor-=mf.length();
+            mf.close();
+        }
         return true;
     }
 }

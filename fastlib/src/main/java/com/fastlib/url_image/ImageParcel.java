@@ -6,20 +6,22 @@ import android.widget.ImageView;
 import com.fastlib.url_image.request.ImageRequest;
 
 /**
- * Created by Administrator on 2018/5/17.
+ * Created by sgfb on 2018/5/17.
+ * 回调包裹
  */
-public class ImageTarget extends Target<ImageView>{
+public class ImageParcel implements CallbackParcel{
+    private ImageView mImage;
 
-    public ImageTarget(ImageView mSelf,String key) {
-        super(mSelf,key);
+    public ImageParcel(ImageView image){
+        mImage=image;
     }
 
     @Override
     public void prepareLoad(final ImageRequest request){
-        mSelf.post(new Runnable() {
+        mImage.post(new Runnable(){
             @Override
             public void run() {
-                mSelf.setImageDrawable(request.getReplaceDrawable());
+                mImage.setImageDrawable(request.getReplaceDrawable());
             }
         });
     }
@@ -27,12 +29,12 @@ public class ImageTarget extends Target<ImageView>{
     @Override
     public void success(ImageRequest request, Bitmap bitmap){
         ImageRequest.ViewAnimator animator=request.getmAnimator();
-        if(animator!=null&&!request.getResponseStatus().isFromMemory()) animator.animator(mSelf);
-        mSelf.setImageBitmap(bitmap);
+        if(animator!=null&&!request.getResponseStatus().isFromMemory()) animator.animator(mImage);
+        mImage.setImageBitmap(bitmap);
     }
 
     @Override
     public void failure(ImageRequest request) {
-        mSelf.setImageDrawable(request.getErrorDrawable());
+        mImage.setImageDrawable(request.getErrorDrawable());
     }
 }

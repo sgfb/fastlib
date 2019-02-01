@@ -5,7 +5,7 @@ import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.db.SaveUtil;
-import com.fastlib.url_image.Target;
+import com.fastlib.url_image.CallbackParcel;
 import com.fastlib.url_image.bean.BitmapWrapper;
 
 import java.io.File;
@@ -91,7 +91,7 @@ public class BitmapPool {
      * @return true移除了一个Bitmap,false无效果
      */
     private boolean pop(){
-        Map<String,List<Target>> reference= mImageViewReference.getReference();
+        Map<String,List<CallbackParcel>> reference= mImageViewReference.getReference();
         if(!reference.isEmpty()){
             String leastReferKey=findLeastReferKey(reference);
             return removeBitmap(leastReferKey);
@@ -127,11 +127,11 @@ public class BitmapPool {
      * @param map 图片引用
      * @return 图片key
      */
-    private String findLeastReferKey(Map<String,List<Target>> map){
+    private String findLeastReferKey(Map<String,List<CallbackParcel>> map){
         Pair<String,Integer> pair=Pair.create("",0);
 
-        for(Map.Entry<String,List<Target>> entry:map.entrySet()){
-            List<Target> imageViewList=entry.getValue();
+        for(Map.Entry<String,List<CallbackParcel>> entry:map.entrySet()){
+            List<CallbackParcel> imageViewList=entry.getValue();
 
             int imageViewSize=imageViewList==null?0:imageViewList.size();
             if(imageViewSize==0) return entry.getKey();

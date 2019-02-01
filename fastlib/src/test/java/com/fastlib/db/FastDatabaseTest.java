@@ -25,7 +25,7 @@ public class FastDatabaseTest{
     private DBTestBean mTestBean;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp(){
         mFastDatabase=FastDatabase.getDefaultInstance(ShadowApplication.getInstance().getApplicationContext());
         mTestBean=new DBTestBean();
         mTestBean.age=16;

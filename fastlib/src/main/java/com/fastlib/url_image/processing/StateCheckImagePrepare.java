@@ -8,7 +8,7 @@ import com.fastlib.db.And;
 import com.fastlib.db.Condition;
 import com.fastlib.db.FastDatabase;
 import com.fastlib.url_image.ImageProcessManager;
-import com.fastlib.url_image.Target;
+import com.fastlib.url_image.CallbackParcel;
 import com.fastlib.url_image.bean.BitmapWrapper;
 import com.fastlib.url_image.callback.ImageDispatchCallback;
 import com.fastlib.url_image.request.ImageRequest;
@@ -31,10 +31,10 @@ public class StateCheckImagePrepare extends UrlImageProcessing{
     public void handle(ImageProcessManager processingManager){
         System.out.println("发起网络请求前预处理图像信息:"+mRequest.getResource());
         File file=mRequest.getSaveFile();
-        Target target=mRequest.getTarget();
+        CallbackParcel callbackParcel =mRequest.getTarget();
         if(!file.exists()||file.length()<=0||!checkDownloadComplete()){
-            if(target!=null)
-                target.prepareLoad(mRequest);
+            if(callbackParcel !=null)
+                callbackParcel.prepareLoad(mRequest);
             processingManager.imageProcessStateConvert(false,this,new StateDownloadImageIfExpire(mRequest,mCallback));
             return;
         }
@@ -54,8 +54,8 @@ public class StateCheckImagePrepare extends UrlImageProcessing{
         wrapper.sampleSize =options.inSampleSize;
         wrapper.bitmap =BitmapFactory.decodeFile(file.getAbsolutePath(),options);
         if(wrapper.bitmap==null){ //如果本地图像加载失败尝试重新下载
-            if(target!=null)
-                target.prepareLoad(mRequest);
+            if(callbackParcel !=null)
+                callbackParcel.prepareLoad(mRequest);
             processingManager.imageProcessStateConvert(false,this,new StateDownloadImageIfExpire(mRequest,mCallback));
             return;
         }
