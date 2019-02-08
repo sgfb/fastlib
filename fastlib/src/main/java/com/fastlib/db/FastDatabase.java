@@ -289,6 +289,10 @@ public class FastDatabase{
                         if(obj!=null) field.setDouble(obj, cursor.getDouble(columnIndex));
                         else params.put(field.getName(),cursor.getDouble(columnIndex));
                     }
+                    else if(type==byte[].class){
+                        if(obj!=null) field.set(obj,cursor.getBlob(columnIndex));
+                        else params.put(field.getName(),cursor.getBlob(columnIndex));
+                    }
                     else if(type==String.class){
                         if(obj!=null) field.set(obj, cursor.getString(columnIndex));
                         else params.put(field.getName(),cursor.getString(columnIndex));

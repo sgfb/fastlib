@@ -407,6 +407,23 @@ public class Request{
     }
 
     /**
+     * 删除参数
+     * @param key 键
+     * @param delAll 如果单键对多值是否全部删除.true全部删除 false仅删除第一个
+     */
+    public void removeParam(String key,boolean delAll){
+        List<Pair<String,String>> needRemoveList=new ArrayList<>();
+
+        for(Pair<String,String> param:mParams){
+            if(TextUtils.equals(key,param.first)){
+                needRemoveList.add(param);
+                if(!delAll) break;
+            }
+        }
+        mParams.removeAll(needRemoveList);
+    }
+
+    /**
      * 检查是否是数字参数
      * @param key
      * @return

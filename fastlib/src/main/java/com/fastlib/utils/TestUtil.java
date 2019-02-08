@@ -2,6 +2,7 @@ package com.fastlib.utils;
 
 import android.text.TextUtils;
 
+import com.fastlib.app.module.ModuleLife;
 import com.fastlib.net.Request;
 import com.fastlib.net.listener.SimpleListener;
 import com.google.gson.Gson;
@@ -34,6 +35,9 @@ public class TestUtil{
      */
     public static <T> String netInterfaceCheck(Request request, final TypeToken<T> typeToken, final SessionCheck<T> checker)throws Exception{
         final StringBuilder sb=new StringBuilder();
+        ModuleLife life=new ModuleLife();
+        life.flag=ModuleLife.LIFE_CREATED;
+        request.setHostLifecycle(life);
         request.setCallbackByWorkThread(true);
         request.setListener(new SimpleListener<String>(){
 

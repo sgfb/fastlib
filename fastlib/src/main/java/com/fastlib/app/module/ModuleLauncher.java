@@ -128,7 +128,7 @@ public class ModuleLauncher {
                 patchUp(outFile.getParent(),path);
             while (set.hasMoreElements()) {
                 String className = set.nextElement();
-                if (className.endsWith(CheckModuleProcessor.CLASS_NAME)) {
+                if (className.endsWith("Fastlib$Function$ModuleWarehouse")) {
                     Class cla = Class.forName(className);
                     Map<String, String> moduleMap;
                     Field moduleMapField;

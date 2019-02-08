@@ -1,0 +1,33 @@
+{
+  "buildFiles": [
+    "/Users/sgfb/Documents/project/fastLib/fastlib/src/main/jni/Android.mk",
+    "/Users/sgfb/Documents/project/fastLib/fastlib/src/main/jni/Application.mk"
+  ],
+  "cleanCommands": [
+    "/Users/sgfb/Library/Android/sdk/ndk-bundle/ndk-build NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003d/Users/sgfb/Documents/project/fastLib/fastlib/src/main/jni/Android.mk NDK_APPLICATION_MK\u003d/Users/sgfb/Documents/project/fastLib/fastlib/src/main/jni/Application.mk APP_ABI\u003darm64-v8a NDK_ALL_ABIS\u003darm64-v8a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003d/Users/sgfb/Documents/project/fastLib/fastlib/build/intermediates/ndkBuild/release/obj NDK_LIBS_OUT\u003d/Users/sgfb/Documents/project/fastLib/fastlib/build/intermediates/ndkBuild/release/lib clean"
+  ],
+  "libraries": {
+    "com_fastlib_CTest-release-arm64-v8a": {
+      "buildCommand": "/Users/sgfb/Library/Android/sdk/ndk-bundle/ndk-build NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003d/Users/sgfb/Documents/project/fastLib/fastlib/src/main/jni/Android.mk NDK_APPLICATION_MK\u003d/Users/sgfb/Documents/project/fastLib/fastlib/src/main/jni/Application.mk APP_ABI\u003darm64-v8a NDK_ALL_ABIS\u003darm64-v8a NDK_DEBUG\u003d0 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003d/Users/sgfb/Documents/project/fastLib/fastlib/build/intermediates/ndkBuild/release/obj NDK_LIBS_OUT\u003d/Users/sgfb/Documents/project/fastLib/fastlib/build/intermediates/ndkBuild/release/lib /Users/sgfb/Documents/project/fastLib/fastlib/build/intermediates/ndkBuild/release/obj/local/arm64-v8a/libcom_fastlib_CTest.so",
+      "toolchain": "toolchain-arm64-v8a",
+      "abi": "arm64-v8a",
+      "artifactName": "com_fastlib_CTest",
+      "files": [
+        {
+          "src": "/Users/sgfb/Documents/project/fastLib/fastlib/src/main/jni/testjni.c",
+          "flags": "\"-gcc-toolchain\" \"/Users/sgfb/Library/Android/sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64\" \"-target\" \"aarch64-none-linux-android\" \"-ffunction-sections\" \"-funwind-tables\" \"-fstack-protector-strong\" \"-fpic\" \"-Wno-invalid-command-line-argument\" \"-Wno-unused-command-line-argument\" \"-no-canonical-prefixes\" \"-g\" \"-O2\" \"-DNDEBUG\" \"-I/Users/sgfb/Documents/project/fastLib/fastlib/src/main/jni\" \"-DANDROID\" \"-Wa,--noexecstack\" \"-Wformat\" \"-Werror\u003dformat-security\" \"-isystem\" \"/Users/sgfb/Library/Android/sdk/ndk-bundle/platforms/android-21/arch-arm64/usr/include\""
+        }
+      ],
+      "output": "/Users/sgfb/Documents/project/fastLib/fastlib/build/intermediates/ndkBuild/release/obj/local/arm64-v8a/libcom_fastlib_CTest.so"
+    }
+  },
+  "toolchains": {
+    "toolchain-arm64-v8a": {
+      "cCompilerExecutable": "/Users/sgfb/Library/Android/sdk/ndk-bundle/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang"
+    }
+  },
+  "cFileExtensions": [
+    "c"
+  ],
+  "cppFileExtensions": []
+}

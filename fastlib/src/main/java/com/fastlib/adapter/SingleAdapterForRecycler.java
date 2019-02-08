@@ -115,20 +115,23 @@ public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T>  
         List<T> list=translate(result);
 
         isLoading=false;
-        if(list==null||list.size()<=0){
+        if(list==null||list.isEmpty()){
             isMore=false;
-            return;
+            if(isRefresh&&mData!=null)
+                mData.clear();
         }
-        if(list.size()<mPerCount){
-            isMore = false;
-        }
-        if(isRefresh)
-            mData=list;
         else{
-            if(mData==null)
+            if(list.size()<mPerCount){
+                isMore = false;
+            }
+            if(isRefresh)
                 mData=list;
-            else
-                mData.addAll(list);
+            else{
+                if(mData==null)
+                    mData=list;
+                else
+                    mData.addAll(list);
+            }
         }
         notifyDataSetChanged();
     }

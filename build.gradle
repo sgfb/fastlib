@@ -5,7 +5,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.2'
+        classpath 'com.android.tools.build:gradle:3.0.0'
     }
 }
 
@@ -13,6 +13,15 @@ allprojects {
     repositories{
         maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
         jcenter()
+    }
+
+    gradle.taskGraph.whenReady {
+        tasks.each{task->
+            def taskName=task.name.toLowerCase()
+
+            if(taskName.contains('lint')||taskName.contains('test'))
+                task.enabled=false
+        }
     }
 }
 
