@@ -19,7 +19,7 @@ allprojects {
         tasks.each{task->
             def taskName=task.name.toLowerCase()
 
-            if(taskName.contains('lint')||taskName.contains('test'))
+            if(taskName.contains('lint'))
                 task.enabled=false
         }
     }

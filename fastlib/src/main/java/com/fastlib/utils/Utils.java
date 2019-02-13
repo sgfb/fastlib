@@ -153,21 +153,14 @@ public class Utils{
     /**
      * sha1文件检验
      * @param filePath 文件路径
-     * @param type 文件校验类型
-     * @return sha1文件校验码
+     * @param type     文件校验类型
+     * @return 校验码
      */
-    public static String getFileVerify(String filePath,FileVerifyType type){
+    public static byte[] getFileVerify(String filePath,FileVerifyType type){
         String typeStr=type.toString();
         try {
             FileInputStream in=new FileInputStream(new File(filePath));
 
-            if(FileVerifyType.CRC32.equals(type)){
-                CRC32 crc32=new CRC32();
-                CheckedInputStream checkedInputStream=new CheckedInputStream(in,crc32);
-                while(checkedInputStream.read()!=-1){}
-                in.close();
-                return Long.toString(crc32.getValue());
-            }
             MessageDigest md= MessageDigest.getInstance(typeStr);
             byte[] data=new byte[8192];
             int len;
@@ -175,14 +168,7 @@ public class Utils{
                 md.update(data,0,len);
             data=md.digest();
             in.close();
-            StringBuilder  sb= new StringBuilder();
-            for (int i = 0; i < data.length; i++) {
-                if (Integer.toHexString(0xFF & data[i]).length() == 1)
-                    sb.append("0").append(Integer.toHexString(0xFF & data[i]));
-                else
-                    sb.append(Integer.toHexString(0xFF & data[i]));
-            }
-            return sb.toString();
+            return data;
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e) {
@@ -263,9 +249,7 @@ public class Utils{
      */
     public enum FileVerifyType{
         SHA_1("SHA-1"),
-//        SHA3("SHA3"),
-        MD5("MD5"),
-        CRC32("CRC32");
+        MD5("MD5");
 
         private String flag;
 

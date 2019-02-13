@@ -8,11 +8,11 @@ import android.support.v4.app.Fragment;
 import android.view.View;
 import android.widget.ImageView;
 
-import com.fastlib.url_image.ImageTarget;
-import com.fastlib.url_image.Target;
+import com.fastlib.url_image.ImageParcel;
+import com.fastlib.url_image.CallbackParcel;
 import com.fastlib.url_image.callback.BitmapRequestCallback;
 import com.fastlib.url_image.FastImage;
-import com.fastlib.url_image.bean.FastImageConfig;
+import com.fastlib.url_image.bean.ImageConfig;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -20,7 +20,7 @@ import java.lang.ref.WeakReference;
 /**
  * Created by sgfb on 2017/11/4.
  * Bitmap请求类
- * 如果指定宽高.按照指定宽高的centerCrop读取
+ * 如果指定宽高.按照指定宽高读取
  * 如果没有指定宽高(width和height都是0),则尝试读取ImageView宽高,如果ImageView宽高也读取不到，载入一个小于屏幕尺寸的图像.
  * 如果指定宽高为(-1,-1),读取原图宽高到内存中
  * @param <T> 图像请求源
@@ -30,13 +30,13 @@ public abstract class ImageRequest<T>{
     protected boolean isCompressInMemory;
     protected int mRequestWidth;
     protected int mRequestHeight;
-    protected int mStoreStrategy = FastImageConfig.STRATEGY_STORE_SAVE_MEMORY | FastImageConfig.STRATEGY_STORE_SAVE_DISK;
-    protected File mSpecifiedStoreFile; //指定下载位置
+    protected int mStoreStrategy = ImageConfig.STRATEGY_STORE_SAVE_MEMORY | ImageConfig.STRATEGY_STORE_SAVE_DISK;
     protected Bitmap.Config mBitmapConfig = Bitmap.Config.RGB_565;
-    protected WeakReference<Object> mHost;  //宿主，可能是Activity或者Fragment
-    protected Target mTarget;
-    protected Drawable mReplaceDrawable; //占位图
-    protected Drawable mErrorDrawable; //错误提示图
+    @Deprecated
+    protected WeakReference<Object> mHost;                          //宿主，可能是Activity或者Fragment
+    protected CallbackParcel mCallbackParcel;
+    protected Drawable mReplaceDrawable;                            //占位图
+    protected Drawable mErrorDrawable;                              //错误提示图
     protected ViewAnimator mAnimator = new ViewAnimator() {
         @Override
         public void animator(View v) {
@@ -89,15 +89,6 @@ public abstract class ImageRequest<T>{
         return this;
     }
 
-    public File getSpecifiedStoreFile() {
-        return mSpecifiedStoreFile;
-    }
-
-    public ImageRequest setSpecifiedStoreFile(File specifiedStoreFile) {
-        mSpecifiedStoreFile = specifiedStoreFile;
-        return this;
-    }
-
     public Bitmap.Config getBitmapConfig() {
         return mBitmapConfig;
     }
@@ -116,10 +107,12 @@ public abstract class ImageRequest<T>{
         return this;
     }
 
+    @Deprecated
     public Object getHost() {
         return mHost != null ? mHost.get() : null;
     }
 
+    @Deprecated
     public ImageRequest setHost(Object host) {
         mHost = new WeakReference<>(host);
         return this;
@@ -137,12 +130,12 @@ public abstract class ImageRequest<T>{
     public ImageRequest setImageView(ImageView imageView) {
         mRequestWidth=imageView.getWidth();
         mRequestHeight=imageView.getHeight();
-        mTarget = new ImageTarget(imageView,getKey());
+        mCallbackParcel = new ImageParcel(imageView);
         return this;
     }
 
-    public Target getTarget() {
-        return mTarget;
+    public CallbackParcel getTarget() {
+        return mCallbackParcel;
     }
 
     public ImageRequest setCallback(BitmapRequestCallback callback) {
@@ -194,10 +187,10 @@ public abstract class ImageRequest<T>{
      * @param wrapper 位图
      */
     public void completeRequest(Bitmap wrapper) {
-        if (mTarget != null) {
+        if (mCallbackParcel != null) {
             if (wrapper != null) {
-                mTarget.success(this,wrapper);
-            } else mTarget.failure(this);
+                mCallbackParcel.success(this,wrapper);
+            } else mCallbackParcel.failure(this);
         }
         if (mCallback != null) {
             if (wrapper != null)
@@ -213,10 +206,10 @@ public abstract class ImageRequest<T>{
      * @return 存储位置
      */
     public File getSaveFile() {
-        if (mSpecifiedStoreFile != null) return mSpecifiedStoreFile;
         return indicateSaveFile();
     }
 
+    @Deprecated
     public Context getContext() {
         Object host = mHost.get();
         if (host instanceof Activity)

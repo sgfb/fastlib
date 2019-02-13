@@ -1,7 +1,9 @@
 package com.fastlib.utils;
 
+import android.support.annotation.Nullable;
 import android.util.Log;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +14,60 @@ import java.util.List;
  */
 public class Reflect{
 
+	/**
+	 * 寻找当前类和向上寻找类注解
+	 * @param cla 类
+	 * @param anno 指定注解
+	 * @param <T> 注解类型
+	 * @return 如果不为空返回指定注解实体
+	 */
+	public static @Nullable
+	<T extends Annotation> T upFindAnnotation(Class cla, Class<T> anno){
+		return upFindAnnotation(cla,anno,false);
+	}
+
+	/**
+	 * 寻找当前类和向上寻找类注解
+	 * @param cla 类
+	 * @param anno 指定注解
+	 * @param findInterface 是否查看接口注解
+	 * @param <T> 注解类型
+	 * @return 如果不为空返回指定注解实体
+	 */
+	public static @Nullable <T extends Annotation> T upFindAnnotation(Class cla, Class<T> anno, boolean findInterface){
+		if(findInterface)
+			return findCurrAnnotation(cla,anno);
+		else{
+			Annotation annoInstance;
+			Class upwardClass=cla;
+
+			do{
+				annoInstance=upwardClass.getAnnotation(anno);
+				if(annoInstance!=null) break;
+				upwardClass=upwardClass.getSuperclass();
+			}while(upwardClass!=null);
+			return (T) annoInstance;
+		}
+	}
+
+	private static <T extends Annotation> T findCurrAnnotation(Class cla,Class<T> anno){
+		Annotation annoInstance=cla.getAnnotation(anno);
+
+		if(annoInstance==null){
+			if(cla.getSuperclass()!=null){
+				annoInstance=findCurrAnnotation(cla.getSuperclass(),anno);
+				if(annoInstance!=null) return (T) annoInstance;
+			}
+			if(cla.getInterfaces().length>0){
+				for(Class inter:cla.getInterfaces()){
+					annoInstance=findCurrAnnotation(inter,anno);
+					if(annoInstance!=null) return (T) annoInstance;
+				}
+			}
+		}
+		return (T) annoInstance;
+	}
+
 	public static boolean instanceOfCheck(Class cla, Class superClass){
 		Class workClass=cla.getSuperclass();
 
@@ -19,61 +75,6 @@ public class Reflect{
 			if(workClass==superClass) return true;
 		}
 		return false;
-	}
-	
-	/**
-	 * 使用方法:reflectString(对象,"对象.子对象.孙对象...")
-	 * @param obj
-	 * @param fieldName
-	 * @return 反射回字符串
-	 * @throws NoSuchFieldException
-	 * @throws IllegalAccessException
-	 * @throws IllegalArgumentException
-	 */
-	public static String reflectString(Object obj,String fieldName) throws NoSuchFieldException, IllegalAccessException, IllegalArgumentException{
-		int index=-1;
-		String content=null;
-		Field field=null;
-		
-		if((index=fieldName.indexOf('.'))!=-1){
-			String firstName=fieldName.substring(0, index);
-			String lastName=fieldName.substring(index+1, fieldName.length());
-			Field firstField=obj.getClass().getDeclaredField(firstName);
-			Field lastField=null;
-			Object obj2=null;
-			
-			firstField.setAccessible(true);
-			obj2=firstField.get(obj);
-			if(lastName.indexOf('.')!=-1){
-				content=reflectString(obj2,lastName);
-				return content;
-			}
-			lastField=obj2.getClass().getDeclaredField(lastName);
-			lastField.setAccessible(true);
-			content=(String)lastField.get(obj2);
-		}
-		else{
-			field=obj.getClass().getDeclaredField(fieldName);
-			field.setAccessible(true);
-			content=(String)field.get(obj);
-		}
-		return content;
-	}
-
-	/**
-	 * 判断是否某族类
-	 * @param field 要判断的字段
-	 * @param patriarch 族长
-     * @return
-     */
-	public static boolean isFamily(Field field,Class<?> patriarch){
-		boolean result;
-		try{
-			result=field.getType().asSubclass(patriarch) != null;
-		}catch(ClassCastException e){
-			return false;
-		}
-		return result;
 	}
 
 	public static String objToStr(Object obj){

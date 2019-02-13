@@ -6,7 +6,7 @@ import android.os.Looper;
 
 import com.fastlib.net.NetManager;
 import com.fastlib.url_image.bean.BitmapWrapper;
-import com.fastlib.url_image.bean.FastImageConfig;
+import com.fastlib.url_image.bean.ImageConfig;
 import com.fastlib.url_image.callback.ImageDispatchCallback;
 import com.fastlib.url_image.pool.TargetReference;
 import com.fastlib.url_image.processing.StateCheckImagePrepare;
@@ -107,9 +107,9 @@ public class ImageProcessManager {
                 Handler handler=new Handler(Looper.getMainLooper());
                 if(wrapper.bitmap!=null){
                     //根据策略来是否存储到内存池，和缓存在磁盘上
-                    if((request.getStoreStrategy()& FastImageConfig.STRATEGY_STORE_SAVE_MEMORY)!=0)
+                    if((request.getStoreStrategy()& ImageConfig.STRATEGY_STORE_SAVE_MEMORY)!=0)
                         mImageViewReference.addBitmapReference(request,wrapper,request.getTarget());
-                    else if(((request.getStoreStrategy()&FastImageConfig.STRATEGY_STORE_SAVE_DISK)==0)&&request.getSaveFile()!=null)
+                    else if(((request.getStoreStrategy()& ImageConfig.STRATEGY_STORE_SAVE_DISK)==0)&&request.getSaveFile()!=null)
                         request.getSaveFile().delete();
                 }
                 handler.post(new Runnable() {

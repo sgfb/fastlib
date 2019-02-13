@@ -2,7 +2,7 @@ package com.fastlib.url_image;
 
 import android.support.annotation.NonNull;
 
-import com.fastlib.url_image.bean.FastImageConfig;
+import com.fastlib.url_image.bean.ImageConfig;
 import com.fastlib.url_image.pool.TargetReference;
 import com.fastlib.url_image.request.ImageRequest;
 
@@ -12,12 +12,12 @@ import com.fastlib.url_image.request.ImageRequest;
  */
 public class FastImage{
     private static FastImage mInstance;
-    private FastImageConfig mConfig; //全局配置
+    private ImageConfig mConfig; //全局配置
     private TargetReference mTargetReference;
     private ImageProcessManager mProcessingManager;
 
     private FastImage(){
-        mConfig=new FastImageConfig();
+        mConfig=new ImageConfig();
     }
 
     private static void checkInstance(){
@@ -51,17 +51,12 @@ public class FastImage{
         return mInstance.mTargetReference;
     }
 
-    public static  @NonNull FastImageConfig getConfig(){
+    public static @NonNull ImageConfig getConfig(){
         checkInstance();
-        try {
-            return mInstance.mConfig.clone();
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
-        }
-        return new FastImageConfig();
+        return mInstance.mConfig.clone();
     }
 
-    public static void setConfig(@NonNull FastImageConfig config){
+    public static void setConfig(@NonNull ImageConfig config){
         checkInstance();
         mInstance.mConfig=config;
     }

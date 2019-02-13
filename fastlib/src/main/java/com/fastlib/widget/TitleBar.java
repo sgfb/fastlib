@@ -2,26 +2,33 @@ package com.fastlib.widget;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.text.InputFilter;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.Space;
 import android.widget.TextView;
 
 import com.fastlib.R;
-import com.fastlib.utils.DensityUtils;
+import com.fastlib.utils.ScreenUtils;
 
 /**
  * Created by sgfb on 17/3/27.
  * 通用标题栏,minHeight为?android:actionBarSize
  */
-public class TitleBar extends FrameLayout{
+public class TitleBar extends LinearLayout {
     private TextView mTitle;
     private TextView mLeftText;
     private TextView mRightText;
     private ImageView mLeftIcon;
     private ImageView mRightIcon;
+    private FrameLayout mLeftBackground;
+    private FrameLayout mRightBackground;
 
     public TitleBar(Context context, AttributeSet attrs){
         super(context, attrs);
@@ -34,42 +41,41 @@ public class TitleBar extends FrameLayout{
     }
 
     private void init(){
-        mTitle=new TextView(getContext());
-        mLeftText=new TextView(getContext());
-        mRightText=new TextView(getContext());
-        mLeftIcon=new ImageView(getContext());
-        mRightIcon=new ImageView(getContext());
-        LayoutParams titleLp=new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
-        LayoutParams leftTextLp=new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.MATCH_PARENT);
-        LayoutParams rightTextLp=new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.MATCH_PARENT);
-        LayoutParams leftIconLp=new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.MATCH_PARENT);
-        LayoutParams rightIconLp=new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.MATCH_PARENT);
+        setOrientation(VERTICAL);
 
+        LayoutInflater layoutInflater= LayoutInflater.from(getContext());
+        FrameLayout mainView=new FrameLayout(getContext());
+        mTitle=new TextView(getContext());
+        mLeftBackground= (FrameLayout) layoutInflater.inflate(R.layout.title_button,null);
+        mRightBackground=(FrameLayout) layoutInflater.inflate(R.layout.title_button,null);
+        mLeftText=mLeftBackground.findViewById(R.id.text);
+        mLeftIcon=mLeftBackground.findViewById(R.id.image);
+        mRightText=mRightBackground.findViewById(R.id.text);
+        mRightIcon=mRightBackground.findViewById(R.id.image);
+        FrameLayout.LayoutParams titleLp=new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        FrameLayout.LayoutParams leftBackgroundLp=new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
+        FrameLayout.LayoutParams rightBackgroundLp=new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
+        mainView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
         titleLp.gravity= Gravity.CENTER;
-        leftTextLp.gravity=Gravity.LEFT|Gravity.CENTER_VERTICAL;
-        rightTextLp.gravity=Gravity.RIGHT|Gravity.CENTER_VERTICAL;
-        leftIconLp.gravity=Gravity.LEFT|Gravity.CENTER_VERTICAL;
-        rightIconLp.gravity=Gravity.RIGHT|Gravity.CENTER_VERTICAL;
+        leftBackgroundLp.gravity= Gravity.LEFT;
+        rightBackgroundLp.gravity= Gravity.RIGHT;
         mTitle.setLayoutParams(titleLp);
-        mLeftText.setLayoutParams(leftTextLp);
-        mRightText.setLayoutParams(rightTextLp);
-        mLeftIcon.setLayoutParams(leftIconLp);
-        mRightIcon.setLayoutParams(rightIconLp);
+        mLeftBackground.setLayoutParams(leftBackgroundLp);
+        mRightBackground.setLayoutParams(rightBackgroundLp);
 
         //文字有左右10内边距，标题默认17sp大小
-        int dp10=DensityUtils.dp2px(getContext(),10);
         mTitle.setTextSize(17);
-        mLeftText.setPadding(dp10,0,dp10,0);
-        mLeftIcon.setPadding(dp10,0,dp10,0);
-        mRightText.setPadding(dp10,0,dp10,0);
-        mRightIcon.setPadding(dp10,0,dp10,0);
-        mLeftText.setGravity(Gravity.CENTER_VERTICAL);
-        mRightText.setGravity(Gravity.CENTER_VERTICAL);
-        addView(mTitle);
-        addView(mLeftText);
-        addView(mLeftIcon);
-        addView(mRightText);
-        addView(mRightIcon);
+        mTitle.setMaxLines(1);
+        mTitle.setEllipsize(TextUtils.TruncateAt.END);
+        mTitle.setFilters(new InputFilter[]{new InputFilter.LengthFilter(15)});
+
+        Space statusSpaceView=new Space(getContext());
+        statusSpaceView.setMinimumHeight(ScreenUtils.getStatusHeight(getContext()));
+        addView(statusSpaceView);
+        addView(mainView);
+        mainView.addView(mTitle);
+        mainView.addView(mLeftBackground);
+        mainView.addView(mRightBackground);
 
         TypedValue tv=new TypedValue();
         getContext().getTheme().resolveAttribute(android.R.attr.actionBarSize,tv,true);
@@ -78,7 +84,7 @@ public class TitleBar extends FrameLayout{
 
     private void init(AttributeSet attrs){
         init();
-        TypedArray ta=getContext().obtainStyledAttributes(attrs,R.styleable.TitleBar);
+        TypedArray ta=getContext().obtainStyledAttributes(attrs, R.styleable.TitleBar);
 
         mTitle.setText(ta.getString(R.styleable.TitleBar_titleText));
         mTitle.setTextColor(ta.getColor(R.styleable.TitleBar_titleColor,mTitle.getCurrentTextColor()));
@@ -96,8 +102,7 @@ public class TitleBar extends FrameLayout{
      * @param listener
      */
     public void setOnLeftClickListener(OnClickListener listener){
-        mLeftText.setOnClickListener(listener);
-        mLeftIcon.setOnClickListener(listener);
+        mLeftBackground.setOnClickListener(listener);
     }
 
     /**
@@ -105,8 +110,7 @@ public class TitleBar extends FrameLayout{
      * @param listener
      */
     public void setOnRightClickListener(OnClickListener listener){
-        mRightText.setOnClickListener(listener);
-        mRightIcon.setOnClickListener(listener);
+        mRightBackground.setOnClickListener(listener);
     }
 
     public TextView getTitle() {

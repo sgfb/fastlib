@@ -1,6 +1,8 @@
 <resources>
 
     <style name="MaterialTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/blue_500</item>
+        <item name="colorAccent">@color/blue_500</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>

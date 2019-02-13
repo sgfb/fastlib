@@ -16,6 +16,7 @@ import com.fastlib.net.exception.DiscardException;
 import com.fastlib.net.exception.NetException;
 import com.fastlib.net.listener.GlobalListener;
 import com.fastlib.net.listener.Listener;
+import com.fastlib.net.listener.SimpleListener;
 import com.fastlib.utils.ContextHolder;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
@@ -53,8 +54,6 @@ public class NetProcessor implements Runnable {
     private final int BUFF_LENGTH = 4096;
     private final int CHUNK_BLOCK_LENGTH=102400;
 
-    public static long mDiffServerTime; //与服务器时间差
-
     private boolean isSuccess = true;
     private long Tx, Rx;
     private byte[] mResponse;
@@ -80,6 +79,8 @@ public class NetProcessor implements Runnable {
 
     @Override
     public void run() {
+        if(NetManager.getInstance().getGlobalListener()!=null)
+            NetManager.getInstance().getGlobalListener().onRequestLaunched(mRequest);
         if (mRequest.getMock() != null) {
             mResponse = mRequest.getMock().dataResponse(mRequest);
             mMessage = "模拟数据";
@@ -221,15 +222,6 @@ public class NetProcessor implements Runnable {
                 baos.close();
                 in.close();
             }
-            List<String> trustHost = NetManager.getInstance().getConfig().getTrustHost(); //调整信任服务器时间差
-            if (trustHost != null) {
-                for (String host : trustHost) {
-                    if (url.getHost().equals(host)) {
-                        mDiffServerTime = connection.getDate() - System.currentTimeMillis();
-                        break;
-                    }
-                }
-            }
             connection.disconnect();
             mRequest.setResourceExpire(connection.getExpiration());
             mMessage = connection.getResponseMessage();
@@ -280,14 +272,23 @@ public class NetProcessor implements Runnable {
      * 触发回调，理论上必定触发的回调
      */
     private void toggleCallback() {
+        //保证全局和单请求回调非空
         final GlobalListener globalListener = (NetManager.getInstance().getGlobalListener() == null ||
                 !mRequest.isAcceptGlobalCallback() ? new GlobalListener() : NetManager.getInstance().getGlobalListener()); //如果这次请求不允许全局回调或者全局回调为空，返回空白全局回调，简化if判断
+        if (mRequest.getListener()==null){
+            mRequest.setListener(new SimpleListener<byte[]>(){
+
+                @Override
+                public void onResponseListener(Request r, byte[] result) {
+                    //empty listener
+                }
+            });
+        }
+
         final Listener l = mRequest.getListener();
-        if (l == null || Thread.currentThread().isInterrupted())
-            return;
-        boolean hostAvailable =mRequest.getHostLify().flag!= ModuleLife.LIFE_DESTROYED; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为在安全环境
+        boolean hostAvailable =mRequest.getHostLify()==null||mRequest.getHostLify().flag!= ModuleLife.LIFE_DESTROYED; //宿主是否状态正常.需要request里有宿主引用.如果没有宿主默认为在安全环境
         if (hostAvailable) {
-            mResponse = globalListener.onRawData(mRequest, mResponse);
+            mResponse = globalListener.onRawData(mRequest, mResponse,Rx,Tx);
             l.onRawData(mRequest, mResponse);
             Type[] realType = mRequest.getGenericType();
             int realTypeIndex = 1;

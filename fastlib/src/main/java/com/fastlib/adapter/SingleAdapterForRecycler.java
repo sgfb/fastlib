@@ -3,6 +3,7 @@ package com.fastlib.adapter;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.view.View;
 
 import com.fastlib.base.CommonViewHolder;
 import com.fastlib.base.Refreshable;
@@ -18,8 +19,9 @@ import java.util.List;
  * @param <T> 数据类型
  * @param <R> 返回类型
  */
-public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T>  implements Listener<R,Object,Object> {
-    private boolean isRefresh,isLoading,isMore;
+public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T> implements Listener<R,Object,Object> {
+    private static final int DEFAULT_ANIM_DURATION=300;
+    protected boolean isRefresh,isLoading,isMore;
     private int mPerCount; //每次读取条数，默认为1
     private Refreshable mRefreshLayout;
     protected Request mRequest;
@@ -28,14 +30,16 @@ public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T>  
      * 生成网络请求
      * @return 网络请求
      */
-    public abstract @NonNull Request generateRequest();
+    public abstract @NonNull
+    Request generateRequest();
 
     /**
      * 返回的数据转换
      * @param result 接口返回的数据
      * @return 转换后适配器绑定数据列表
      */
-    public abstract @Nullable List<T> translate(R result);
+    public abstract @Nullable
+    List<T> translate(R result);
 
     /**
      * 请求更多数据时的请求
@@ -99,6 +103,21 @@ public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T>  
         isMore=true;
         getRefreshDataRequest(mRequest);
         mRequest.start(true);
+    }
+
+    public void refreshWithAnim(){
+        if(mRefreshLayout!=null){
+            mRefreshLayout.setRefreshStatus(true);
+            if(mRefreshLayout instanceof View){
+                ((View)mRefreshLayout).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        refresh();
+                    }
+                },DEFAULT_ANIM_DURATION);
+            }
+        }
+        else refresh();
     }
 
     @Override

@@ -2,22 +2,18 @@ package com.fastlib.net;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
-import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.BuildConfig;
-import com.fastlib.net.bean.NetGlobalData;
 import com.fastlib.net.listener.GlobalListener;
 import com.fastlib.net.param_parse.NetParamParser;
 import com.fastlib.net.param_parse.ParamParserManager;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by sgfb on 16/9/1.
@@ -28,15 +24,13 @@ public class NetManager{
     private static NetManager mOwer;
     public int mRequestCount=0;
     public long Tx,Rx;
-    public static ThreadPoolExecutor sRequestPool =(ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors()); //公共网络请求池
+    public static ThreadPoolExecutor sRequestPool=new MonitorThreadPool(Runtime.getRuntime().availableProcessors()+2,Runtime.getRuntime().availableProcessors()+2,
+            0L, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>());  //公共网络请求池
     private String mRootAddress;
-    private Config mConfig;
-    private NetGlobalData mGlobalData;
-    private GlobalListener mGlobalListener; //一个全局的事件回调监听，所有网络回调给具体回调之前做一次回调
+    private GlobalListener mGlobalListener;         //一个全局的事件回调监听，所有网络回调给具体回调之前做一次回调
     private ParamParserManager mGlobalParamParserManager;
 
     private NetManager(){
-        mConfig=new Config();
         mGlobalParamParserManager=new ParamParserManager();
     }
 
@@ -97,43 +91,8 @@ public class NetManager{
     }
 
     private Request prepareRequest(Request request){
-        if(mGlobalData!=null&&request.isUseFactory()){ //全局预加载参数
-            if(mGlobalData.mParams!=null&&mGlobalData.mParams.length>0){
-                List<Pair<String,String>> params=request.getParamsRaw();
-                if(params==null){
-                    params=new ArrayList<>();
-                    Collections.addAll(params,mGlobalData.mParams);
-                    request.setParams(params);
-                }
-                else
-                    for(Pair<String,String> pair:mGlobalData.mParams)
-                        if(!params.contains(pair))
-                            params.add(pair);
-            }
-            if(mGlobalData.mHeads!=null&&mGlobalData.mHeads.length>0){ //全局预加载头部
-                List<Request.ExtraHeader> heads=request.getSendHeadExtra();
-                if(heads==null){
-                    heads=new ArrayList<>();
-                    Collections.addAll(heads,mGlobalData.mHeads);
-                    request.setSendHeader(heads);
-                }
-                else{
-                    for(Request.ExtraHeader header:mGlobalData.mHeads)
-                        if(!heads.contains(header))
-                            heads.add(header);
-                }
-            }
-            if(mGlobalData.mCookies!=null&&!mGlobalData.mCookies.isEmpty()){ //全局预加载Cookies
-                List<Pair<String, String>> cookies=request.getSendCookies();
-                if(cookies==null)
-                    request.setSendCookies(mGlobalData.mCookies);
-                else{
-                    for(Pair<String,String> newCookie:mGlobalData.mCookies)
-                        if(!cookies.contains(newCookie))
-                            cookies.add(newCookie);
-                }
-            }
-        }
+        if(mGlobalListener!=null)
+            mGlobalListener.onLaunchRequestBefore(request);
         if(!TextUtils.isEmpty(mRootAddress)&&!request.isHadRootAddress()){ //添加根地址，如果需要的话
             request.setUrl(mRootAddress + request.getUrl());
             request.setHadRootAddress(true);
@@ -144,60 +103,6 @@ public class NetManager{
     public void close(){
         sRequestPool.shutdownNow();
         mOwer=null;
-    }
-
-    /**
-     * 获取网络全局参数
-     * @return 网络全局参数
-     */
-    public NetGlobalData getGlobalData() {
-        return mGlobalData;
-    }
-
-    /**
-     * 设置网络全局参数
-     * @param globalData 网络全局参数
-     */
-    public void setGlobalData(NetGlobalData globalData) {
-        mGlobalData = globalData;
-    }
-
-    /**
-     * 设置网络全局头部
-     * @param heads 网络全局头部
-     */
-    public void setGlobalHead(Request.ExtraHeader... heads){
-        if(mGlobalData==null)
-            mGlobalData=new NetGlobalData();
-        mGlobalData.mHeads=heads;
-    }
-
-    /**
-     * 设置网络全局参数
-     * @param params 网络全局参数
-     */
-    public void setGlobalParams(Pair<String,String>... params){
-        if(mGlobalData==null)
-            mGlobalData=new NetGlobalData();
-        mGlobalData.mParams=params;
-    }
-
-    /**
-     * 设置网络全局Cookies
-     * @param cookies 网络全局Cookies
-     */
-    public void setGlobalCookies(List<Pair<String,String>> cookies){
-        if(mGlobalData==null)
-            mGlobalData=new NetGlobalData();
-        mGlobalData.mCookies=cookies;
-    }
-
-    public void setConfig(@NonNull Config config){
-        mConfig=config;
-    }
-
-    public Config getConfig(){
-        return (Config)mConfig.clone();
     }
 
     public String getRootAddress() {
@@ -226,39 +131,5 @@ public class NetManager{
 
     public ParamParserManager getGlobalParamParserManager(){
         return mGlobalParamParserManager;
-    }
-
-    public static class Config implements Cloneable{
-        private boolean isTrackTraffic;
-        private List<String> mTrustHost; //信任站点，当前仅用于过滤保存时间
-
-        public void setTrackTraffic(boolean track){
-            isTrackTraffic=track;
-        }
-
-        public boolean isTrackTraffic(){
-            return isTrackTraffic;
-        }
-
-        public List<String> getTrustHost() {
-            return mTrustHost;
-        }
-
-        public void setTrustHost(List<String> trustHost) {
-            mTrustHost = trustHost;
-        }
-
-        @Override
-        public Object clone() {
-            try {
-                return super.clone();
-            } catch (CloneNotSupportedException e) {
-                return null;
-            }
-        }
-    }
-
-    public interface DataFactory{
-        List<Pair<String,String>> extraData();
     }
 }

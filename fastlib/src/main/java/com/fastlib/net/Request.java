@@ -809,6 +809,14 @@ public class Request{
         return this;
     }
 
+    public String getReceiveHeader(String key){
+        if(mReceiveHeader!=null){
+            List<String> list=mReceiveHeader.get(key);
+            if(!list.isEmpty()) return list.get(0);
+        }
+        return null;
+    }
+
     public Map<String, List<String>> getReceiveHeader() {
         return mReceiveHeader;
     }

@@ -4,7 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 
 import com.fastlib.url_image.LifecycleManager;
-import com.fastlib.url_image.Target;
+import com.fastlib.url_image.CallbackParcel;
 import com.fastlib.url_image.bean.BitmapWrapper;
 import com.fastlib.url_image.lifecycle.HostLifecycle;
 import com.fastlib.url_image.request.ImageRequest;
@@ -19,7 +19,7 @@ import java.util.Map;
  * 管理内存中的ImageView对Bitmap引用
  */
 public class TargetReference {
-    private Map<String,List<Target>> mReference;
+    private Map<String,List<CallbackParcel>> mReference;
     private BitmapPool mBitmapPool;
 
     public TargetReference(){
@@ -71,26 +71,26 @@ public class TargetReference {
      * 增加图像引用.间接将图像载入内存中持有
      * @param request 图像请求
      * @param wrapper 图像包裹
-     * @param target 对象引用
+     * @param callbackParcel 对象引用
      */
-    public void addBitmapReference(ImageRequest request, BitmapWrapper wrapper, final Target target){
-        if(wrapper==null||target==null) return;
+    public void addBitmapReference(ImageRequest request, BitmapWrapper wrapper, final CallbackParcel callbackParcel){
+        if(wrapper==null|| callbackParcel ==null) return;
         //先判断是否引用了其它的url再判断当前url的ImageView列表中是否存在
-        for(Map.Entry<String,List<Target>> entry:mReference.entrySet()){
-            List<Target> imageViewList=entry.getValue();
-            if(imageViewList.contains(target)){
-                imageViewList.remove(target);
+        for(Map.Entry<String,List<CallbackParcel>> entry:mReference.entrySet()){
+            List<CallbackParcel> imageViewList=entry.getValue();
+            if(imageViewList.contains(callbackParcel)){
+                imageViewList.remove(callbackParcel);
                 break;
             }
         }
-        List<Target> list=mReference.get(request.getKey());
+        List<CallbackParcel> list=mReference.get(request.getKey());
 
         if(list==null) {
             list=new ArrayList<>();
             mReference.put(request.getKey(),list);
         }
-        if(!list.contains(target)){
-            final List<Target> finalList = list;
+        if(!list.contains(callbackParcel)){
+            final List<CallbackParcel> finalList = list;
             LifecycleManager.registerLifecycle(request.getHost(), new HostLifecycle() {
                 @Override
                 public void onStart(Context context) {
@@ -104,10 +104,10 @@ public class TargetReference {
 
                 @Override
                 public void onDestroy(Context context) {
-                    finalList.remove(target);
+                    finalList.remove(callbackParcel);
                 }
             });
-            list.add(target);
+            list.add(callbackParcel);
         }
         if(request.isCompressInMemory())
             wrapper.compress();
@@ -118,8 +118,8 @@ public class TargetReference {
      * 清空所有引用和内存池中的图像
      */
     public void clear(){
-        for(Map.Entry<String,List<Target>> entry:mReference.entrySet()){
-            List<Target> list=entry.getValue();
+        for(Map.Entry<String,List<CallbackParcel>> entry:mReference.entrySet()){
+            List<CallbackParcel> list=entry.getValue();
             if(list!=null) list.clear();
         }
         mReference.clear();
@@ -128,12 +128,12 @@ public class TargetReference {
         System.out.println("清空图像池");
     }
 
-    public void remove(Target target){
-        List<Target> targets=mReference.get(target.getKey());
-        if(targets!=null) targets.remove(target);
+    public void remove(CallbackParcel callbackParcel){
+//        List<CallbackParcel> callbackParcels =mReference.get(callbackParcel.getKey());
+//        if(callbackParcels !=null) callbackParcels.remove(callbackParcel);
     }
 
-    public Map<String,List<Target>> getReference(){
+    public Map<String,List<CallbackParcel>> getReference(){
         return mReference;
     }
 

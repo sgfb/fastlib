@@ -22,34 +22,40 @@ import java.util.List;
 public class AutofitGridView extends LinearLayout implements View.OnClickListener{
     private AdapterView.OnItemClickListener mListener;
     private int mPaddingAndMargin; //外边距和内边距,px单位
-    private int index;
+    private int mIndex;
+    private int mLimitWidth;
+    private int mDividerWidth;
+    private int mDividerHeight;
 
     public AutofitGridView(Context context, AttributeSet attrs) {
         super(context, attrs);
         setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams lp= (LayoutParams) getLayoutParams();
+        LayoutParams lp= (LayoutParams) getLayoutParams();
         if(lp!=null)
             mPaddingAndMargin+=(lp.leftMargin+lp.rightMargin);
         mPaddingAndMargin=getPaddingLeft()+getPaddingRight();
+        mLimitWidth= ScreenUtils.getScreenWidth();
+        mDividerHeight= DensityUtils.dp2px(context,3);
+        mDividerWidth=DensityUtils.dp2px(context,3);
     }
 
-    public void addString(@LayoutRes final int resId,final String... ss){
+    public void addStrings(@LayoutRes final int resId, final String... ss){
         List<String> list=new ArrayList<>();
         for(int i=0;i<ss.length;i++)
             list.add(ss[i]);
-        index=0;
-        addString(resId, list);
+        mIndex =0;
+        addStrings(resId, list);
     }
 
-    public void addString(@LayoutRes final int resId,final List<String> list){
-        index=0;
+    public void addStrings(@LayoutRes final int resId, final List<String> list){
+        mIndex =0;
         addStringByCircle(resId, list);
     }
 
-    private void addStringByCircle(@LayoutRes final int resId,final List<String> list){
+    private void addStringByCircle(@LayoutRes final int resId, final List<String> list){
         TextView tv= (TextView) LayoutInflater.from(getContext()).inflate(resId,null);
-        LayoutParams lp=new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
-        LayoutParams lp2=new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT);
+        LayoutParams lp=new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        LayoutParams lp2=new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
 
         if(list==null||list.size()<=0){
             invalidate();
@@ -57,20 +63,19 @@ public class AutofitGridView extends LinearLayout implements View.OnClickListene
         }
         List<String> temp=new ArrayList<>(list);
         String str=temp.remove(0);
-        lp.setMargins(0, 0, DensityUtils.dp2px(getContext(), 15), 0);
-        lp2.setMargins(0, 0, 0, DensityUtils.dp2px(getContext(), 20));
+        lp.setMargins(0, 0,mDividerWidth, 0);
+        lp2.setMargins(0, 0, 0,mDividerHeight);
         tv.setLayoutParams(lp);
         tv.setText(str);
-        tv.setTag(index++);
+        tv.setTag(mIndex++);
         tv.setOnClickListener(this);
 
         if(getChildCount()>0){
             LinearLayout ll=(LinearLayout)getChildAt(getChildCount()-1);
-            int width = (int) (tv.getText().toString().length()*tv.getTextSize())+DensityUtils.dp2px(ll.getContext(),15);
-            int screenWidth=ScreenUtils.getScreenWidth();
+            int width = computeTextViewWidth(tv);
             int textRight=getSelfRight(ll)+width+mPaddingAndMargin;
-            System.out.println(screenWidth+"?"+textRight);
-            if (screenWidth<textRight){
+            System.out.println(mLimitWidth+"?"+textRight);
+            if (mLimitWidth<textRight){
                 LinearLayout ll2 = new LinearLayout(getContext());
 
                 ll2.setLayoutParams(lp2);
@@ -97,11 +102,18 @@ public class AutofitGridView extends LinearLayout implements View.OnClickListene
 
     private int getSelfRight(ViewGroup v){
         int right=0;
+        int dp3=DensityUtils.dp2px(getContext(),3);
         for(int i=0;i<v.getChildCount();i++){
             TextView tv= (TextView) v.getChildAt(i);
-            right+=(tv.getText().toString().length()*tv.getTextSize());
+            right+=(computeTextViewWidth(tv)+dp3);
         }
         return right;
+    }
+
+    public int computeTextViewWidth(TextView tv){
+        int spec= View.MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        tv.measure(spec,spec);
+        return tv.getMeasuredWidth();
     }
 
     public View findViewByPosition(int position){
@@ -122,5 +134,20 @@ public class AutofitGridView extends LinearLayout implements View.OnClickListene
             int index= (int) v.getTag();
             mListener.onItemClick(null,v,index,index);
         }
+    }
+
+    public void setLimitWidth(int limitWidth){
+        mLimitWidth=limitWidth;
+        invalidate();
+    }
+
+    public void setDividerWidth(int dividerWidth){
+        mDividerWidth=dividerWidth;
+        invalidate();
+    }
+
+    public void setDividerHeight(int dividerHeight){
+        mDividerHeight=dividerHeight;
+        invalidate();
     }
 }
