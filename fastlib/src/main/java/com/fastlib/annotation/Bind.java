@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Bind {
-    int[] value() default {}; //要绑定的视图id值
+    int[] value(); //要绑定的视图id值
 
     String[] idNames() default {}; //要绑定的视图id名
 

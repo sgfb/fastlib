@@ -50,7 +50,7 @@ public class Callback2ImageView implements CallbackParcel{
     }
 
     @Override
-    public void failure(ImageRequest request, Exception exception) {
-        mImageView.setImageDrawable(request.getErrorDrawable());
+    public void failure(ImageRequest request, Exception exception){
+        if(!request.isCanceled()) mImageView.setImageDrawable(request.getErrorDrawable());
     }
 }

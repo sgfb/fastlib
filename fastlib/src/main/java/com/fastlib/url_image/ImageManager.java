@@ -62,7 +62,7 @@ public class ImageManager{
         System.out.println("请求结束："+request.getSimpleName());
         List<ImageRequest> list=mPendingList.get(request);
         if(list!=null&&!list.isEmpty())
-            mRunningList.add(list.get(0));
+            mWaitingList.add(list.remove(0));
         else mPendingList.remove(request);
         mRunningList.remove(request);
         if(mRunningList.size()<mMaxRunning&&!mWaitingList.isEmpty()) {
@@ -73,6 +73,7 @@ public class ImageManager{
     }
 
     public void addRequest(final ImageRequest request){
+        if(request==null||request.getSource()==null) return;
         System.out.print(request.getSimpleName() +"请求加入:");
         if(request.getCallbackParcel()!=null) request.getCallbackParcel().prepareLoad(request);
         if(mRunningList.contains(request)||mWaitingList.contains(request)){

@@ -97,6 +97,11 @@ public class ImageRequest<T> implements FastActivity.HostLifecycle{
         return mReplaceDrawable;
     }
 
+    public ImageRequest setErrorDrawable(Drawable drawable){
+        mErrorDrawable=drawable;
+        return this;
+    }
+
     public Drawable getErrorDrawable() {
         return mErrorDrawable;
     }
