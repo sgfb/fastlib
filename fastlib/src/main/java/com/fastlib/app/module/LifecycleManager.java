@@ -1,19 +1,14 @@
-package com.fastlib.url_image;
+package com.fastlib.app.module;
 
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.support.v4.app.Fragment;
 
-import com.fastlib.url_image.lifecycle.ActivityLifecycleCallbacksAdapter;
-import com.fastlib.url_image.lifecycle.HostLifecycle;
-import com.fastlib.url_image.lifecycle.LifecycleControlFragment;
-
-import java.util.HashMap;
-import java.util.Map;
+import com.fastlib.app.ActivityLifecycleCallbacksAdapter;
 
 /**
- * Created by Administrator on 2018/5/18.
+ * Created by sgfb on 2018/5/18.
  */
 public class LifecycleManager{
 
@@ -21,7 +16,7 @@ public class LifecycleManager{
 
     }
 
-    public static void registerLifecycle(final Object host, final HostLifecycle lifecycle){
+    public static void registerLifecycle(final Object host, final FastActivity.HostLifecycle lifecycle){
         Application.ActivityLifecycleCallbacks activityLifecycleCallbacks=new ActivityLifecycleCallbacksAdapter(){
 
             @Override
@@ -51,8 +46,8 @@ public class LifecycleManager{
             }
             else if(host instanceof Fragment){
                 Fragment fragment= (Fragment)host;
-                LifecycleControlFragment controlFragment=new LifecycleControlFragment();
-                controlFragment.setHostLifecycle(new HostLifecycle() {
+                ModuleInterface.LifecycleControlFragment controlFragment=new ModuleInterface.LifecycleControlFragment();
+                controlFragment.setHostLifecycle(new FastActivity.HostLifecycle() {
                     @Override
                     public void onStart(Context context) {
                         lifecycle.onStart(context);

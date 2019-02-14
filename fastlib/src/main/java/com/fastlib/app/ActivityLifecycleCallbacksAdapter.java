@@ -1,4 +1,4 @@
-package com.fastlib.url_image.lifecycle;
+package com.fastlib.app;
 
 import android.app.Activity;
 import android.app.Application;
@@ -6,7 +6,7 @@ import android.os.Bundle;
 
 /**
  * Created by sgfb on 18/1/15.
- * Activity生命周期适配
+ * Activity生命周期回调适配
  */
 public class ActivityLifecycleCallbacksAdapter implements Application.ActivityLifecycleCallbacks{
 

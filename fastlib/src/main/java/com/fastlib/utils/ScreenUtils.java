@@ -6,6 +6,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.support.annotation.NonNull;
 import android.support.v4.util.Pair;
 import android.util.DisplayMetrics;
 import android.view.View;
@@ -61,7 +62,7 @@ public class ScreenUtils {
 	 * 获取屏幕尺寸
 	 * @return 屏幕宽高
 	 */
-	public static Pair<Integer,Integer> getScreenSize(){
+	public static @NonNull Pair<Integer,Integer> getScreenSize(){
 		return Pair.create(getScreenWidth(),getScreenHeight());
 	}
 

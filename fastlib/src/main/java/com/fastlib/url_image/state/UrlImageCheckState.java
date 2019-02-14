@@ -1,11 +1,13 @@
-package com.fastlib;
+package com.fastlib.url_image.state;
 
 import android.text.TextUtils;
 import android.util.Base64;
 
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
-import com.fastlib.net.listener.SimpleListener;
+import com.fastlib.url_image.ImageManager;
+import com.fastlib.db.MemoryPool;
+import com.fastlib.url_image.request.ImageRequest;
 import com.fastlib.utils.Utils;
 
 import java.io.File;
@@ -39,7 +41,7 @@ public class UrlImageCheckState extends ImageState<String>{
     }
 
     private boolean storageExists(){
-        String source=mRequest.mSource;
+        String source=mRequest.getSource();
         File file=new File(ImageManager.getInstance().getConfig().mSaveFolder, Utils.getMd5(source,false));
         if(!file.exists()||file.length()==0) {
             System.out.println(String.format(Locale.getDefault(),"文件不存在:%s",mRequest.getSimpleName()));

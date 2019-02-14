@@ -1,12 +1,8 @@
-package com.fastlib;
+package com.fastlib.db;
 
 import android.os.MemoryFile;
-import android.text.format.Formatter;
-import android.util.LongSparseArray;
 
-import java.io.File;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;

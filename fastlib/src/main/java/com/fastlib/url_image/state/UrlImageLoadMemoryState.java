@@ -1,10 +1,12 @@
-package com.fastlib;
+package com.fastlib.url_image.state;
 
 import com.fastlib.db.SaveUtil;
+import com.fastlib.url_image.ImageManager;
+import com.fastlib.db.MemoryPool;
+import com.fastlib.url_image.request.ImageRequest;
 import com.fastlib.utils.Utils;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Locale;
 
 /**
@@ -21,7 +23,7 @@ public class UrlImageLoadMemoryState extends ImageState<String>{
     @Override
     protected ImageState handle()throws Exception{
         System.out.println(String.format(Locale.getDefault(),"图像加载至内存:%s",mRequest.getSimpleName()));
-        File file=new File(ImageManager.getInstance().getConfig().mSaveFolder, Utils.getMd5(mRequest.mSource,false));
+        File file=new File(ImageManager.getInstance().getConfig().mSaveFolder, Utils.getMd5(mRequest.getSource(),false));
         MemoryPool.getInstance().putCache(mRequest.getName(), SaveUtil.loadFile(file.getAbsolutePath()));
         return new UrlImageRenderState(mRequest);
     }

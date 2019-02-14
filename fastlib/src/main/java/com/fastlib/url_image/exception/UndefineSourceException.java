@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.url_image.exception;
 
 /**
  * Created by sgfb on 19/2/12.

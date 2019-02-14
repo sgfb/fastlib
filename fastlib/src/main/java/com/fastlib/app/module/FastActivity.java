@@ -1,5 +1,6 @@
 package com.fastlib.app.module;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
@@ -168,5 +169,30 @@ public abstract class FastActivity extends AppCompatActivity implements ModuleIn
     @Override
     public void requestPermission(String[] permission, Runnable grantedAfterProcess, Runnable deniedAfterProcess) {
         mDelegate.requestPermission(permission,grantedAfterProcess,deniedAfterProcess);
+    }
+
+    /**
+     * Created by sgfb on 18/1/15.
+     * 宿主生命周期回调监听
+     */
+    public static interface HostLifecycle{
+
+        /**
+         * 开始生命周期,相当于onResume
+         * @param context 对应宿主上下文
+         */
+        void onStart(Context context);
+
+        /**
+         * 仅退回到后台，不在前台运行但并未被销毁
+         * @param context 对应宿主上下文
+         */
+        void onPause(Context context);
+
+        /**
+         * 被销毁，最后处理机会
+         * @param context 对应宿主上下文
+         */
+        void onDestroy(Context context);
     }
 }

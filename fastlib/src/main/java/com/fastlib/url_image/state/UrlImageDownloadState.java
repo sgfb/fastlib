@@ -1,14 +1,15 @@
-package com.fastlib;
+package com.fastlib.url_image.state;
 
 import com.fastlib.net.DefaultDownload;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.net.exception.NetException;
 import com.fastlib.net.listener.SimpleListener;
+import com.fastlib.url_image.ImageManager;
+import com.fastlib.url_image.request.ImageRequest;
 import com.fastlib.utils.Utils;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Locale;
 
 /**
@@ -27,9 +28,9 @@ public class UrlImageDownloadState extends ImageState<String>{
     @Override
     protected ImageState handle()throws Exception{
         System.out.println(String.format(Locale.getDefault(),"图像开始下载:%s",mRequest.getSimpleName()));
-        mDownloadRequest=new Request("get",mRequest.mSource);
+        mDownloadRequest=new Request("get",mRequest.getSource());
         mDownloadRequest.setCallbackByWorkThread(true);
-        File file=new File(ImageManager.getInstance().getConfig().mSaveFolder, Utils.getMd5(mRequest.mSource,false));
+        File file=new File(ImageManager.getInstance().getConfig().mSaveFolder, Utils.getMd5(mRequest.getSource(),false));
         mDownloadRequest.setDownloadable(new DefaultDownload(file).setSupportBreak(true));
         mDownloadRequest.setListener(new SimpleListener<String>(){
 

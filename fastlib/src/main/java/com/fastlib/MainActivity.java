@@ -1,22 +1,20 @@
 package com.fastlib;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Environment;
 import android.widget.ImageView;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.module.FastActivity;
-import com.fastlib.net.NetManager;
-import com.fastlib.net.Request;
-import com.fastlib.net.listener.SimpleListener;
+import com.fastlib.url_image.request.Callback2ImageView;
+import com.fastlib.url_image.request.ImageRequest;
 import com.fastlib.utils.ContextHolder;
-import com.fastlib.utils.Utils;
 import com.fastlib.utils.monitor.MonitorService;
 
 import java.io.File;
-import java.util.Random;
 
 @ContentView(R.layout.act_main)
 public class MainActivity extends FastActivity{
@@ -29,20 +27,21 @@ public class MainActivity extends FastActivity{
     @Override
     public void alreadyPrepared(){
         ContextHolder.init(getApplicationContext());
-        File file=new File(Environment.getExternalStorageDirectory(), Utils.getMd5(mImageUrl,false));
-        file.delete();
     }
 
     @Bind(R.id.bt)
     private void bt(){
-        ir.isCanceled=false;
-        ir.mCallbackParcel=new Callback2ImageView(mImage);
-        ir.start();
+        ir.setReplaceDrawable(new ColorDrawable(Color.BLUE))
+                .setCallbackParcel(new Callback2ImageView(mImage))
+                .bindOnHostLifeCycle(this)
+                .start();
     }
 
     @Bind(R.id.bt2)
     private void bt2(){
-        ir.cancel();
+        ImageRequest.create(new File(Environment.getExternalStorageDirectory(),"1.jpg"))
+                .setCallbackParcel(new Callback2ImageView(mImage))
+                .start();
     }
 
     @Bind(R.id.bt3)

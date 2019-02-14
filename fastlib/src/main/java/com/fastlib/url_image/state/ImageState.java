@@ -1,4 +1,8 @@
-package com.fastlib;
+package com.fastlib.url_image.state;
+
+import com.fastlib.url_image.ImageManager;
+import com.fastlib.url_image.request.CallbackParcel;
+import com.fastlib.url_image.request.ImageRequest;
 
 public abstract class ImageState<T> implements Runnable{
     protected ImageRequest<T> mRequest;
@@ -12,8 +16,8 @@ public abstract class ImageState<T> implements Runnable{
             }
         });
 
-        CallbackParcel callbackParcel=ImageManager.getInstance().getCallbackParcel();
-        if(callbackParcel!=null&&mRequest.isCanceled) callbackParcel.failure(mRequest,new IllegalStateException("canceled"));
+        CallbackParcel callbackParcel= ImageManager.getInstance().getCallbackParcel();
+        if(callbackParcel!=null&&mRequest.isCanceled()) callbackParcel.failure(mRequest,new IllegalStateException("canceled"));
     }
 
     /**
@@ -29,7 +33,7 @@ public abstract class ImageState<T> implements Runnable{
         CallbackParcel callbackParcel=ImageManager.getInstance().getCallbackParcel();
         try {
             ImageState is = handle();
-            if(mRequest.isCanceled) throw new IllegalStateException("canceled");
+            if(mRequest.isCanceled()) throw new IllegalStateException("canceled");
             if(is!=null) is.run();
             else{
                 if(callbackParcel!=null)
@@ -38,7 +42,7 @@ public abstract class ImageState<T> implements Runnable{
         } catch (Exception e) {
             e.printStackTrace();
             if(callbackParcel!=null) callbackParcel.failure(mRequest,e);
-            if(mRequest.mCallbackParcel!=null) mRequest.mCallbackParcel.failure(mRequest,e);
+            if(mRequest.getCallbackParcel()!=null) mRequest.getCallbackParcel().failure(mRequest,e);
         }
     }
 }

@@ -1,5 +1,9 @@
 package com.fastlib;
 
+import com.fastlib.url_image.request.CallbackParcel;
+import com.fastlib.url_image.ImageManager;
+import com.fastlib.url_image.request.ImageRequest;
+
 import junit.framework.Assert;
 
 import org.junit.Before;
@@ -24,7 +28,7 @@ public class ImageTest{
         for(int i=0;i<cycCount;i++){
             ImageRequest<String> request=new ImageRequest<String>() {};
             request.mSource ="test"+i;
-            request.mCallbackParcel=new com.fastlib.CallbackParcel() {
+            request.mCallbackParcel=new CallbackParcel() {
                 @Override
                 public void prepareLoad(ImageRequest request) {
 

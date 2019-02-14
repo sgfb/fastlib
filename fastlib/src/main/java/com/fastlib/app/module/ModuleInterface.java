@@ -1,6 +1,7 @@
 package com.fastlib.app.module;
 
 import android.support.annotation.LayoutRes;
+import android.support.v4.app.Fragment;
 import android.view.View;
 
 import com.fastlib.app.PhotoResultListener;
@@ -58,4 +59,35 @@ public interface ModuleInterface extends Deferrable,Refreshable,ModuleLifecycle{
     ThreadPoolExecutor getThreadPool();
 
     View getRootView();
+
+    /**
+     * Created by sgfb on 18/1/15.
+     * 控制生命周期回调的一个空Fragment
+     */
+    class LifecycleControlFragment extends Fragment {
+        private FastActivity.HostLifecycle mLifecycle;
+
+        @Override
+        public void onResume() {
+            super.onResume();
+            mLifecycle.onStart(getContext());
+        }
+
+        @Override
+        public void onPause() {
+            super.onPause();
+            mLifecycle.onPause(getContext());
+        }
+
+        @Override
+        public void onDestroyView() {
+            super.onDestroyView();
+            mLifecycle.onDestroy(getContext());
+            mLifecycle=null;
+        }
+
+        public void setHostLifecycle(FastActivity.HostLifecycle lifecycle){
+            mLifecycle=lifecycle;
+        }
+    }
 }

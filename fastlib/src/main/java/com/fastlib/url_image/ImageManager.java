@@ -1,9 +1,11 @@
-package com.fastlib;
+package com.fastlib.url_image;
 
 import android.graphics.Bitmap;
 
 import com.fastlib.net.NetManager;
 import com.fastlib.url_image.bean.ImageConfig;
+import com.fastlib.url_image.request.CallbackParcel;
+import com.fastlib.url_image.request.ImageRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,7 +19,7 @@ import java.util.Map;
  */
 public class ImageManager{
     private int mMaxRunning=NetManager.sRequestPool.getMaximumPoolSize()/2+1;
-    private CallbackParcel  mGlobalCallback;
+    private CallbackParcel mGlobalCallback;
     private List<ImageRequest> mRunningList=new ArrayList<>();                      //运行中队列
     private List<ImageRequest> mWaitingList =new ArrayList<>();                     //等待中队列
     private Map<ImageRequest,List<ImageRequest>> mPendingList=new HashMap<>();      //阻塞的请求
@@ -72,7 +74,7 @@ public class ImageManager{
 
     public void addRequest(final ImageRequest request){
         System.out.print(request.getSimpleName() +"请求加入:");
-        if(request.mCallbackParcel!=null) request.mCallbackParcel.prepareLoad(request);
+        if(request.getCallbackParcel()!=null) request.getCallbackParcel().prepareLoad(request);
         if(mRunningList.contains(request)||mWaitingList.contains(request)){
             System.out.println("阻塞队列");
             List<ImageRequest> list=mPendingList.get(request);
@@ -84,7 +86,7 @@ public class ImageManager{
 
             StringBuilder sb=new StringBuilder();
             for(Map.Entry<ImageRequest,List<ImageRequest>> entry:mPendingList.entrySet())
-                sb.append(entry.getKey().mSource).append(" ").append(entry.getValue().size()).append(" ");
+                sb.append(entry.getKey().getSource()).append(" ").append(entry.getValue().size()).append(" ");
             System.out.println(sb);
         }
         else{

@@ -1,120 +1,90 @@
 package com.fastlib.url_image.request;
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.support.v4.app.Fragment;
 import android.view.View;
-import android.widget.ImageView;
 
-import com.fastlib.url_image.ImageParcel;
-import com.fastlib.url_image.CallbackParcel;
-import com.fastlib.url_image.callback.BitmapRequestCallback;
-import com.fastlib.url_image.FastImage;
+import com.fastlib.app.module.FastActivity;
+import com.fastlib.app.module.LifecycleManager;
+import com.fastlib.url_image.ImageManager;
 import com.fastlib.url_image.bean.ImageConfig;
-
-import java.io.File;
-import java.lang.ref.WeakReference;
 
 /**
  * Created by sgfb on 2017/11/4.
  * Bitmap请求类
- * 如果指定宽高.按照指定宽高读取
- * 如果没有指定宽高(width和height都是0),则尝试读取ImageView宽高,如果ImageView宽高也读取不到，载入一个小于屏幕尺寸的图像.
- * 如果指定宽高为(-1,-1),读取原图宽高到内存中
+ * 建议宽高.如果没有指定宽高(width和height都是0)，载入一个小于屏幕尺寸的图像.如果指定宽高为(-1,-1),读取原图宽高
  * @param <T> 图像请求源
  */
-public abstract class ImageRequest<T>{
-    protected T mResource;
-    protected boolean isCompressInMemory;
-    protected int mRequestWidth;
-    protected int mRequestHeight;
-    protected int mStoreStrategy = ImageConfig.STRATEGY_STORE_SAVE_MEMORY | ImageConfig.STRATEGY_STORE_SAVE_DISK;
-    protected Bitmap.Config mBitmapConfig = Bitmap.Config.RGB_565;
-    @Deprecated
-    protected WeakReference<Object> mHost;                          //宿主，可能是Activity或者Fragment
-    protected CallbackParcel mCallbackParcel;
-    protected Drawable mReplaceDrawable;                            //占位图
-    protected Drawable mErrorDrawable;                              //错误提示图
-    protected ViewAnimator mAnimator = new ViewAnimator() {
+public class ImageRequest<T> implements FastActivity.HostLifecycle{
+    private T mSource;
+    private boolean isCanceled;
+    private int mRequestWidth;
+    private int mRequestHeight;
+    private int mStoreStrategy = ImageConfig.STRATEGY_STORE_SAVE_MEMORY | ImageConfig.STRATEGY_STORE_SAVE_DISK;
+    private Bitmap.Config mBitmapConfig = Bitmap.Config.RGB_565;
+    private CallbackParcel mCallbackParcel;
+    private OnCancelListener mCancelListener;
+    private Drawable mReplaceDrawable;                            //占位图
+    private Drawable mErrorDrawable;                              //错误提示图
+    private ViewAnimator mAnimator = new ViewAnimator() {
         @Override
         public void animator(View v) {
             v.setAlpha(0);
             v.animate().alpha(1).setDuration(450);
         }
     };
-    protected BitmapRequestCallback mCallback;
-    protected ResponseStatus mResponseStatus=new ResponseStatus();
 
-    /**
-     * 唯一键值来区别与其它图像
-     *
-     * @return 唯一键
-     */
-    public abstract String getKey();
-
-    /**
-     * 指明存储路径
-     *
-     * @return 如果特殊存储路径不存在指明一个常规路径
-     */
-    public abstract File indicateSaveFile();
-
-    public ImageRequest(T from, Activity activity) {
-        mResource = from;
-        setHost(activity);
+    private ImageRequest(T source){
+        mSource=source;
     }
 
-    public ImageRequest(T from, Fragment fragment) {
-        mResource = from;
-        setHost(fragment);
+    public static <T> ImageRequest<T> create(T source){
+        return new ImageRequest<T>(source);
     }
 
-    public int getRequestWidth() {
-        return mRequestWidth;
+    public String getName(){
+        return String.format("image %s", mSource.toString());
     }
 
-    public ImageRequest setRequestWidth(int requestWidth) {
-        mRequestWidth = requestWidth;
+    public String getSimpleName(){
+        String name=getName();
+        if(name.length()>9)
+            name=name.substring(name.length()-9);
+        return name;
+    }
+
+    @Override
+    public int hashCode() {
+        return mSource.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof ImageRequest){
+            ImageRequest request= (ImageRequest) obj;
+            return mSource.equals(request.mSource);
+        }
+        return false;
+    }
+
+    public void start(){
+        ImageManager.getInstance().addRequest(this);
+    }
+
+    public void cancel(){
+        isCanceled=true;
+        if(mCancelListener!=null) mCancelListener.canceled();
+    }
+
+    public ImageRequest bindOnHostLifeCycle(Context context){
+        LifecycleManager.registerLifecycle(context,this);
         return this;
     }
 
-    public int getRequestHeight() {
-        return mRequestHeight;
-    }
-
-    public ImageRequest setRequestHeight(int requestHeight) {
-        mRequestHeight = requestHeight;
-        return this;
-    }
-
-    public Bitmap.Config getBitmapConfig() {
-        return mBitmapConfig;
-    }
-
-    public ImageRequest setBitmapConfig(Bitmap.Config bitmapConfig) {
-        mBitmapConfig = bitmapConfig;
-        return this;
-    }
-
-    public int getStoreStrategy() {
-        return mStoreStrategy;
-    }
-
-    public ImageRequest setStoreStrategy(int storeStrategy) {
-        mStoreStrategy = storeStrategy;
-        return this;
-    }
-
-    @Deprecated
-    public Object getHost() {
-        return mHost != null ? mHost.get() : null;
-    }
-
-    @Deprecated
-    public ImageRequest setHost(Object host) {
-        mHost = new WeakReference<>(host);
+    public ImageRequest bindOnHostLifeCycle(Fragment fragment){
+        LifecycleManager.registerLifecycle(fragment,this);
         return this;
     }
 
@@ -123,132 +93,85 @@ public abstract class ImageRequest<T>{
         return this;
     }
 
-    public Drawable getReplaceDrawable(){
+    public Drawable getReplaceDrawable() {
         return mReplaceDrawable;
     }
 
-    public ImageRequest setImageView(ImageView imageView) {
-        mRequestWidth=imageView.getWidth();
-        mRequestHeight=imageView.getHeight();
-        mCallbackParcel = new ImageParcel(imageView);
-        return this;
-    }
-
-    public CallbackParcel getTarget() {
-        return mCallbackParcel;
-    }
-
-    public ImageRequest setCallback(BitmapRequestCallback callback) {
-        mCallback = callback;
-        return this;
-    }
-
-    public BitmapRequestCallback getCallback() {
-        return mCallback;
-    }
-
-    public T getResource() {
-        return mResource;
-    }
-
-    public ViewAnimator getmAnimator() {
-        return mAnimator;
-    }
-
-    public ImageRequest setAnimator(ViewAnimator mAnimator) {
-        this.mAnimator = mAnimator;
-        return this;
-    }
-
-    public Drawable getErrorDrawable(){
+    public Drawable getErrorDrawable() {
         return mErrorDrawable;
     }
 
-    public ResponseStatus getResponseStatus() {
-        return mResponseStatus;
+    public ViewAnimator getAnimator() {
+        return mAnimator;
     }
 
-    public ImageRequest<T> setResponseStatus(ResponseStatus mResponseStatus) {
-        this.mResponseStatus = mResponseStatus;
+    public void setOnCancelListener(OnCancelListener listener){
+        mCancelListener=listener;
+    }
+
+    public ImageRequest setRequestWidth(int width){
+        mRequestWidth=width;
         return this;
     }
 
-    public ImageRequest<T> setCompressInMemory(boolean compressInMemory){
-        isCompressInMemory=compressInMemory;
+    public int getRequestWidth(){
+        return mRequestWidth;
+    }
+
+    public ImageRequest setRequestHeight(int height){
+        mRequestHeight=height;
         return this;
     }
 
-    public boolean isCompressInMemory(){
-        return isCompressInMemory;
+    public int getRequestHeight(){
+        return mRequestHeight;
     }
 
-    /**
-     * 完结请求逻辑
-     * @param wrapper 位图
-     */
-    public void completeRequest(Bitmap wrapper) {
-        if (mCallbackParcel != null) {
-            if (wrapper != null) {
-                mCallbackParcel.success(this,wrapper);
-            } else mCallbackParcel.failure(this);
-        }
-        if (mCallback != null) {
-            if (wrapper != null)
-                mCallback.success(this, wrapper);
-            else mCallback.failure(this);
-        }
-        mHost.clear();
-        mHost=null;
+    public Bitmap.Config getBitmapConfig() {
+        return mBitmapConfig;
     }
 
-    /**
-     * 根据全局和单请求配置返回存储位置(部分类型不适用)
-     * @return 存储位置
-     */
-    public File getSaveFile() {
-        return indicateSaveFile();
+    public ImageRequest<T> setCallbackParcel(CallbackParcel parcel){
+        mCallbackParcel=parcel;
+        return this;
     }
 
-    @Deprecated
-    public Context getContext() {
-        Object host = mHost.get();
-        if (host instanceof Activity)
-            return (Context) host;
-        else if (host instanceof Fragment)
-            return ((Fragment) host).getContext();
-        return null;
+    public CallbackParcel getCallbackParcel() {
+        return mCallbackParcel;
     }
 
-    public void start() {
-        FastImage.request(this);
+    public boolean isCanceled(){
+        return isCanceled;
+    }
+
+    public T getSource(){
+        return mSource;
+    }
+
+    public int getStoreStrategy(){
+        return mStoreStrategy;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o == this) return true;
-        if (o instanceof ImageRequest) {
-            ImageRequest other = (ImageRequest) o;
-            return getKey().equals(other.getKey()) &&
-                    other.getRequestWidth() == mRequestWidth &&
-                    other.getRequestHeight() == mRequestHeight &&
-                    (getTarget() != null && other.getTarget() != null) &&
-                    other.getTarget() == other.getTarget();
-        } else return false;
+    public void onStart(Context context) {
+
     }
 
-    public static RequestFactory host(Context context){
-        return RequestFactory.host(context);
+    @Override
+    public void onPause(Context context) {
+
     }
 
-    public static RequestFactory host(Activity activity){
-        return RequestFactory.host(activity);
-    }
-
-    public static RequestFactory host(Fragment fragment){
-        return RequestFactory.host(fragment);
+    @Override
+    public void onDestroy(Context context) {
+        cancel();
     }
 
     public interface ViewAnimator {
         void animator(View v);
+    }
+
+    public interface OnCancelListener{
+        void canceled();
     }
 }
