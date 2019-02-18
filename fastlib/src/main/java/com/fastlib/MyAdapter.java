@@ -22,7 +22,7 @@ public class MyAdapter extends BaseRecyAdapter<String>{
     public MyAdapter() {
         super();
         List<String> list=new ArrayList<>();
-        for(int i=0;i<100;i++)
+        for(int i=0;i<1000;i++)
             list.add("https://static.oschina.net/uploads/img/201901/31055503_3yCJ.png");
         setData(list);
     }

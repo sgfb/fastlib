@@ -1,5 +1,6 @@
 package com.fastlib;
 
+import android.Manifest;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -27,12 +28,22 @@ public class MainActivity extends FastActivity{
     @Override
     public void alreadyPrepared(){
         ContextHolder.init(getApplicationContext());
-        mList.setAdapter(new MyAdapter());
+        requestPermission(new String[]{Manifest.permission.SYSTEM_ALERT_WINDOW}, new Runnable() {
+            @Override
+            public void run() {
+
+            }
+        }, new Runnable() {
+            @Override
+            public void run() {
+
+            }
+        });
     }
 
     @Bind(R.id.bt)
     private void bt(){
-
+        mList.setAdapter(new MyAdapter());
     }
 
     @Bind(R.id.bt2)
