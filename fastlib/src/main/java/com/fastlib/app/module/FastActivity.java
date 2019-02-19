@@ -1,5 +1,6 @@
 package com.fastlib.app.module;
 
+import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -175,7 +176,7 @@ public abstract class FastActivity extends AppCompatActivity implements ModuleIn
      * Created by sgfb on 18/1/15.
      * 宿主生命周期回调监听
      */
-    public static interface HostLifecycle{
+    public interface HostLifecycle{
 
         /**
          * 开始生命周期,相当于onResume

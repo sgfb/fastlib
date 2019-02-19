@@ -60,6 +60,7 @@ public class ImageManager{
 
     private synchronized void completeRequest(ImageRequest request){
         System.out.println("请求结束："+request.getSimpleName());
+        request.clean();
         List<ImageRequest> list=mPendingList.get(request);
         if(list!=null&&!list.isEmpty())
             mWaitingList.add(list.remove(0));

@@ -28,7 +28,7 @@ public class MainActivity extends FastActivity{
     @Override
     public void alreadyPrepared(){
         ContextHolder.init(getApplicationContext());
-        requestPermission(new String[]{Manifest.permission.SYSTEM_ALERT_WINDOW}, new Runnable() {
+        requestPermission(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, new Runnable() {
             @Override
             public void run() {
 

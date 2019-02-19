@@ -3,7 +3,9 @@ package com.fastlib.utils.monitor;
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.PixelFormat;
+import android.os.Build;
 import android.os.IBinder;
+import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.view.Gravity;
 import android.view.WindowManager;
@@ -23,8 +25,14 @@ public class MonitorService extends Service{
     @Override
     public int onStartCommand(Intent intent, int flags, int startId){
         WindowManager wm= (WindowManager) getSystemService(WINDOW_SERVICE);
-        mMonitorView=new MonitorView(this);
-        wm.addView(mMonitorView.getView(),initLayoutParam());
+        if(Build.VERSION.SDK_INT>=23&&!Settings.canDrawOverlays(this)){
+            startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION));
+            stopSelf();
+        }
+        else{
+            mMonitorView=new MonitorView(this);
+            wm.addView(mMonitorView.getView(),initLayoutParam());
+        }
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -33,7 +41,7 @@ public class MonitorService extends Service{
         lp.x=0;
         lp.y=0;
         lp.gravity=Gravity.END|Gravity.TOP;
-        lp.type=WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
+        lp.type= Build.VERSION.SDK_INT>=26?WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY:WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY;
         lp.flags=WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         lp.format=PixelFormat.RGBA_8888;
         lp.height=ScreenUtils.getScreenHeight()/3;

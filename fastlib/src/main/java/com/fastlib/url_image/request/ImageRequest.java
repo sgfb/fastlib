@@ -26,6 +26,7 @@ public class ImageRequest<T> implements FastActivity.HostLifecycle{
     private Bitmap.Config mBitmapConfig = Bitmap.Config.RGB_565;
     private CallbackParcel mCallbackParcel;
     private OnCancelListener mCancelListener;
+    private LifecycleManager mLifecycleManager;
     private Drawable mReplaceDrawable;                            //占位图
     private Drawable mErrorDrawable;                              //错误提示图
     private ViewAnimator mAnimator = new ViewAnimator() {
@@ -79,12 +80,18 @@ public class ImageRequest<T> implements FastActivity.HostLifecycle{
     }
 
     public ImageRequest bindOnHostLifeCycle(Context context){
-        LifecycleManager.registerLifecycle(context,this);
+        if(mLifecycleManager==null)
+            mLifecycleManager=new LifecycleManager();
+        else mLifecycleManager.unregisterLifecycle();
+        mLifecycleManager.registerLifecycle(context,this);
         return this;
     }
 
     public ImageRequest bindOnHostLifeCycle(Fragment fragment){
-        LifecycleManager.registerLifecycle(fragment,this);
+        if(mLifecycleManager==null)
+            mLifecycleManager=new LifecycleManager();
+        else mLifecycleManager.unregisterLifecycle();
+        mLifecycleManager.registerLifecycle(fragment,this);
         return this;
     }
 
@@ -155,6 +162,10 @@ public class ImageRequest<T> implements FastActivity.HostLifecycle{
 
     public int getStoreStrategy(){
         return mStoreStrategy;
+    }
+
+    public void clean(){
+        if(mLifecycleManager!=null) mLifecycleManager.unregisterLifecycle();
     }
 
     @Override

@@ -71,7 +71,7 @@ public class MonitorView{
                     View view = new View(context);
                     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(layoutWidth / maxThreads - 15, 5);
 
-                    lp.leftMargin = 15;
+                    lp.rightMargin = 15;
                     view.setLayoutParams(lp);
                     view.setBackgroundColor(context.getResources().getColor(R.color.grey_400));
                     mThreadLayout.addView(view);

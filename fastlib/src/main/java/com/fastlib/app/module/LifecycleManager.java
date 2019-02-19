@@ -7,17 +7,44 @@ import android.support.v4.app.Fragment;
 
 import com.fastlib.app.ActivityLifecycleCallbacksAdapter;
 
+import java.lang.ref.WeakReference;
+import java.util.Locale;
+
 /**
  * Created by sgfb on 2018/5/18.
  */
 public class LifecycleManager{
+    private WeakReference<Object> mHost;
+    private Application.ActivityLifecycleCallbacks mActivityLifecycle;
+    private ModuleInterface.LifecycleControlFragment mControlFragment;
 
-    private LifecycleManager(){
-
+    public void unregisterLifecycle(){
+        if(mHost!=null&&mHost.get()!=null){
+            Object host=mHost.get();
+            if(host instanceof Activity){
+                ((Activity)host).getApplication().unregisterActivityLifecycleCallbacks(mActivityLifecycle);
+            }
+            else if(host instanceof Fragment){
+                ((Fragment)host).getChildFragmentManager()
+                        .beginTransaction()
+                        .remove(mControlFragment)
+                        .commit();
+            }
+            mHost.clear();
+            mHost=null;
+            mActivityLifecycle=null;
+            mControlFragment=null;
+        }
     }
 
-    public static void registerLifecycle(final Object host, final FastActivity.HostLifecycle lifecycle){
-        Application.ActivityLifecycleCallbacks activityLifecycleCallbacks=new ActivityLifecycleCallbacksAdapter(){
+    /**
+     * 绑定组件生命周期
+     * @param host      activity或fragment
+     * @param lifecycle 周期回调
+     */
+    public void registerLifecycle(final Object host, final FastActivity.HostLifecycle lifecycle){
+        mHost=new WeakReference<>(host);
+        mActivityLifecycle=new ActivityLifecycleCallbacksAdapter(){
 
             @Override
             public void onActivityResumed(Activity activity) {
@@ -36,18 +63,22 @@ public class LifecycleManager{
                 if(host==activity){
                     lifecycle.onDestroy(activity);
                     activity.getApplication().unregisterActivityLifecycleCallbacks(this);
+                    if(mHost!=null){
+                        mHost.clear();
+                        mHost=null;
+                    }
                 }
             }
         };
         if(host!=null){
             if(host instanceof Activity){
                 Activity activity= (Activity)host;
-                activity.getApplication().registerActivityLifecycleCallbacks(activityLifecycleCallbacks);
+                activity.getApplication().registerActivityLifecycleCallbacks(mActivityLifecycle);
             }
             else if(host instanceof Fragment){
-                Fragment fragment= (Fragment)host;
-                ModuleInterface.LifecycleControlFragment controlFragment=new ModuleInterface.LifecycleControlFragment();
-                controlFragment.setHostLifecycle(new FastActivity.HostLifecycle() {
+                final Fragment fragment= (Fragment)host;
+                mControlFragment=new ModuleInterface.LifecycleControlFragment();
+                mControlFragment.setHostLifecycle(new FastActivity.HostLifecycle() {
                     @Override
                     public void onStart(Context context) {
                         lifecycle.onStart(context);
@@ -61,11 +92,19 @@ public class LifecycleManager{
                     @Override
                     public void onDestroy(Context context) {
                         lifecycle.onDestroy(context);
+                        fragment.getChildFragmentManager()
+                                .beginTransaction()
+                                .remove(mControlFragment)
+                                .commit();
+                        if(mHost!=null){
+                            mHost.clear();
+                            mHost=null;
+                        }
                     }
                 });
                 fragment.getChildFragmentManager()
                         .beginTransaction()
-                        .add(controlFragment,"lifecycleControl")
+                        .add(mControlFragment,String.format(Locale.getDefault(),"lifecycleControl_%s",mControlFragment))
                         .commit();
             }
             else throw new IllegalArgumentException("host must be activity or fragment");
