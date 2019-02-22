@@ -3,6 +3,7 @@ package com.fastlib.url_image.state;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.support.v4.util.Pair;
+import android.util.Log;
 
 import com.fastlib.url_image.ImageManager;
 import com.fastlib.db.MemoryPool;
@@ -27,7 +28,7 @@ public class UrlImageRenderState extends ImageState<String>{
 
     @Override
     protected ImageState handle(){
-        System.out.println(String.format(Locale.getDefault(),"开始渲染:%s",mRequest.getSimpleName()));
+        Log.d(TAG,String.format(Locale.getDefault(),"开始渲染:%s",mRequest.getSimpleName()));
         if(mRequest.getCallbackParcel()==null) return null;
 
         if((mRequest.getStoreStrategy()&ImageConfig.STRATEGY_LOAD_NORMAL)!=0){
@@ -73,7 +74,7 @@ public class UrlImageRenderState extends ImageState<String>{
         }
         options.inPreferredConfig=mRequest.getBitmapConfig();
         if(options.inSampleSize>1)
-        System.out.println(String.format(Locale.getDefault(),"裁切:(%s,%s)-->(%s,%s)",justDecodeBoundOptions.outWidth, justDecodeBoundOptions.outHeight,
+        Log.d(TAG,String.format(Locale.getDefault(),"裁切:(%s,%s)-->(%s,%s)",justDecodeBoundOptions.outWidth, justDecodeBoundOptions.outHeight,
                 justDecodeBoundOptions.outWidth/options.inSampleSize,justDecodeBoundOptions.outHeight/options.inSampleSize));
         if(file!=null) return BitmapFactory.decodeFile(file.getAbsolutePath(),options);
         else return BitmapFactory.decodeByteArray(data,0,data.length,options);

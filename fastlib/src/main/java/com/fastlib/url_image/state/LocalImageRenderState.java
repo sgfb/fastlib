@@ -1,6 +1,7 @@
 package com.fastlib.url_image.state;
 
 import android.graphics.BitmapFactory;
+import android.util.Log;
 
 import com.fastlib.db.MemoryPool;
 import com.fastlib.url_image.bean.ImageConfig;
@@ -20,8 +21,8 @@ public class LocalImageRenderState extends ImageState<File>{
     }
 
     @Override
-    protected ImageState handle() throws Exception {
-        System.out.println(String.format(Locale.getDefault(),"开始渲染:%s",mRequest.getSimpleName()));
+    protected ImageState handle(){
+        Log.d(TAG,String.format(Locale.getDefault(),"开始渲染:%s",mRequest.getSimpleName()));
         if(mRequest.getCallbackParcel()==null) return null;
         if((mRequest.getStoreStrategy()& ImageConfig.STRATEGY_LOAD_NORMAL)!=0){
             byte[] data= MemoryPool.getInstance().getCache(mRequest.getName());

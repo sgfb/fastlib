@@ -5,6 +5,7 @@ import com.fastlib.url_image.request.CallbackParcel;
 import com.fastlib.url_image.request.ImageRequest;
 
 public abstract class ImageState<T> implements Runnable{
+    protected static final String TAG=ImageState.class.getSimpleName();
     protected ImageRequest<T> mRequest;
 
     public ImageState(ImageRequest<T> request){

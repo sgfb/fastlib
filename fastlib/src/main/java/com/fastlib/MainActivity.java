@@ -11,12 +11,20 @@ import android.widget.ImageView;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.module.FastActivity;
+import com.fastlib.net.DefaultDownload;
+import com.fastlib.net.Request;
+import com.fastlib.net.listener.SimpleListener;
 import com.fastlib.url_image.request.Callback2ImageView;
 import com.fastlib.url_image.request.ImageRequest;
 import com.fastlib.utils.ContextHolder;
+import com.fastlib.utils.N;
 import com.fastlib.utils.monitor.MonitorService;
+import com.fastlib.utils.zip.ZipFileData;
+import com.fastlib.utils.zip.ZipFileEntity;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
 
 @ContentView(R.layout.act_main)
 public class MainActivity extends FastActivity{
@@ -28,7 +36,7 @@ public class MainActivity extends FastActivity{
     @Override
     public void alreadyPrepared(){
         ContextHolder.init(getApplicationContext());
-        requestPermission(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, new Runnable() {
+        requestPermission(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, new Runnable() {
             @Override
             public void run() {
 

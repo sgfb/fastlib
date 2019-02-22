@@ -48,7 +48,7 @@ import java.util.zip.GZIPOutputStream;
  * 这个类可以上传和下载文件,支持中断,下载文件时每秒发送一次进度广播(EventDownloading)
  */
 public class NetProcessor implements Runnable {
-    private final String BOUNDARY = Long.toHexString(System.currentTimeMillis());
+    private final String BOUNDARY = "------WebKitFormBoundary"+Long.toHexString(System.currentTimeMillis());
     private final String CRLF = "\r\n";
     private final String END = "--" + BOUNDARY + "--" + CRLF;
     private final int BUFF_LENGTH = 4096;
@@ -534,12 +534,12 @@ public class NetProcessor implements Runnable {
                 checkBreakout();
                 Pair<String, String> pair = iter.next();
                 sb.append("--").append(BOUNDARY).append(CRLF)
-                        .append("Content-Disposition: form-data; name=\"" + pair.first + "\"").append(CRLF)
-                        .append("Content-Type:text/plain;charset=utf-8").append(CRLF + CRLF)
+                        .append("Content-Disposition: form-data; name=\"" + pair.first + "\"").append(CRLF+CRLF)
+//                        .append("Content-Type:text/plain;charset=utf-8").append(CRLF + CRLF)
                         .append(pair.second).append(CRLF);
-                Tx += sb.toString().getBytes().length;
-                out.write(sb.toString().getBytes());
             }
+            Tx += sb.toString().getBytes().length;
+            out.write(sb.toString().getBytes());
         }
 
         if (fileParams != null && fileParams.size() > 0) {
@@ -549,10 +549,11 @@ public class NetProcessor implements Runnable {
                 StringBuilder sb = new StringBuilder();
                 Pair<String, File> pair = iter.next();
                 if (pair.second != null && pair.second.exists() && pair.second.isFile()) {
+                    sb.reverse();
                     sb.append("--" + BOUNDARY).append(CRLF)
-                            .append("Content-Disposition: form-data; name=\"" + pair.first + "\";filename=\" " + pair.second.getName() + "\"").append(CRLF)
-                            .append("Content-type: " + URLConnection.guessContentTypeFromName(pair.second.getName())).append(CRLF)
-                            .append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
+                            .append("Content-Disposition: form-data; name=\"" + pair.first + "\"; filename=\"" + pair.second.getName() + "\"").append(CRLF)
+                            .append("Content-type: " + URLConnection.guessContentTypeFromName(pair.second.getName())).append(CRLF+CRLF);
+//                            .append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
                     out.write(sb.toString().getBytes());
                     Tx += sb.toString().getBytes().length;
                     try{

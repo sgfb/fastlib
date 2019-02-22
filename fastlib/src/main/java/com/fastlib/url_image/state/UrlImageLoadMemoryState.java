@@ -1,5 +1,7 @@
 package com.fastlib.url_image.state;
 
+import android.util.Log;
+
 import com.fastlib.db.SaveUtil;
 import com.fastlib.url_image.ImageManager;
 import com.fastlib.db.MemoryPool;
@@ -22,7 +24,7 @@ public class UrlImageLoadMemoryState extends ImageState<String>{
 
     @Override
     protected ImageState handle()throws Exception{
-        System.out.println(String.format(Locale.getDefault(),"图像加载至内存:%s",mRequest.getSimpleName()));
+        Log.d(TAG,String.format(Locale.getDefault(),"图像加载至内存:%s",mRequest.getSimpleName()));
         File file=new File(ImageManager.getInstance().getConfig().mSaveFolder, Utils.getMd5(mRequest.getSource(),false));
         MemoryPool.getInstance().putCache(mRequest.getName(), SaveUtil.loadFile(file.getAbsolutePath()));
         return new UrlImageRenderState(mRequest);

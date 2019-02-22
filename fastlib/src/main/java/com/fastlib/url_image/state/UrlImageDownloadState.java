@@ -1,5 +1,7 @@
 package com.fastlib.url_image.state;
 
+import android.util.Log;
+
 import com.fastlib.net.DefaultDownload;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
@@ -27,7 +29,7 @@ public class UrlImageDownloadState extends ImageState<String>{
 
     @Override
     protected ImageState handle()throws Exception{
-        System.out.println(String.format(Locale.getDefault(),"图像开始下载:%s",mRequest.getSimpleName()));
+        Log.d(TAG,String.format(Locale.getDefault(),"图像开始下载:%s",mRequest.getSimpleName()));
         mDownloadRequest=new Request("get",mRequest.getSource());
         mDownloadRequest.setCallbackByWorkThread(true).setHadRootAddress(true);
         File file=new File(ImageManager.getInstance().getConfig().mSaveFolder, Utils.getMd5(mRequest.getSource(),false));

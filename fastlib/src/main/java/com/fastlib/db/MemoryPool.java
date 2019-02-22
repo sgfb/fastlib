@@ -1,6 +1,7 @@
 package com.fastlib.db;
 
 import android.os.MemoryFile;
+import android.util.Log;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -12,6 +13,7 @@ import java.util.Map;
  * 提供内存级存储{@link android.os.MemoryFile}
  */
 public final class MemoryPool {
+    public static final String TAG=MemoryPool.class.getSimpleName();
     private long mMaxLimit;
     private long mCursor;
     private Map<String,MemoryFile> mMemoryFiles=new HashMap<>();
@@ -105,7 +107,7 @@ public final class MemoryPool {
             maxLimit/=1024;
             maxFormat="MB";
         }
-        System.out.println(String.format(Locale.getDefault(),"cache pool:%s %s%s,curr %s%s,max %s%s",
+        Log.d(TAG,String.format(Locale.getDefault(),"cache pool:%s %s%s,curr %s%s,max %s%s",
                 sign,changeValue,changeValueFormat,cursor,poolCurrFormat,maxLimit,maxFormat));
     }
 }

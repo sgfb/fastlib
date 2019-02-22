@@ -1,6 +1,7 @@
 package com.fastlib.url_image;
 
 import android.graphics.Bitmap;
+import android.util.Log;
 
 import com.fastlib.net.NetManager;
 import com.fastlib.url_image.bean.ImageConfig;
@@ -10,6 +11,7 @@ import com.fastlib.url_image.request.ImageRequest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -18,6 +20,7 @@ import java.util.Map;
  * 有请求任务入队列前判断是否有相同url请求存在，如果没有进入正常队列否则移入阻塞队列
  */
 public class ImageManager{
+    public static final String TAG=ImageManager.class.getSimpleName();
     private int mMaxRunning=NetManager.sRequestPool.getMaximumPoolSize()/2+1;
     private CallbackParcel mGlobalCallback;
     private List<ImageRequest> mRunningList=new ArrayList<>();                      //运行中队列
@@ -58,8 +61,33 @@ public class ImageManager{
         };
     }
 
+    public void addRequest(final ImageRequest request){
+        if(request==null||request.getSource()==null) return;
+        int queueType;
+        if(request.getCallbackParcel()!=null) request.getCallbackParcel().prepareLoad(request);
+        if(mRunningList.contains(request)||mWaitingList.contains(request)){
+            queueType=2;
+            List<ImageRequest> list=mPendingList.get(request);
+            if(list==null){
+                list=new ArrayList<>();
+                mPendingList.put(request,list);
+            }
+            list.add(request);
+        }
+        else{
+            queueType=1;
+            if(mRunningList.size()<mMaxRunning){
+                mRunningList.add(request);
+                NetManager.sRequestPool.execute(new TypeCheckState(request));
+            }
+            else mWaitingList.add(request);
+        }
+        Log.d(TAG,String.format(Locale.getDefault(),"---%s（%s）进入队列----->%s",
+                request.getSimpleName(),queueType==1?"运行队列":"阻塞队列",queueType==1?mRunningList.size():mWaitingList.size()));
+    }
+
     private synchronized void completeRequest(ImageRequest request){
-        System.out.println("请求结束："+request.getSimpleName());
+        Log.d(TAG,String.format(Locale.getDefault(),"<---%s请求结束-----",request.getSimpleName()));
         request.clean();
         List<ImageRequest> list=mPendingList.get(request);
         if(list!=null&&!list.isEmpty())
@@ -70,34 +98,6 @@ public class ImageManager{
             ImageRequest r=mWaitingList.remove(mWaitingList.size()-1);
             mRunningList.add(r);
             NetManager.sRequestPool.execute(new TypeCheckState(r));
-        }
-    }
-
-    public void addRequest(final ImageRequest request){
-        if(request==null||request.getSource()==null) return;
-        System.out.print(request.getSimpleName() +"请求加入:");
-        if(request.getCallbackParcel()!=null) request.getCallbackParcel().prepareLoad(request);
-        if(mRunningList.contains(request)||mWaitingList.contains(request)){
-            System.out.println("阻塞队列");
-            List<ImageRequest> list=mPendingList.get(request);
-            if(list==null){
-                list=new ArrayList<>();
-                mPendingList.put(request,list);
-            }
-            list.add(request);
-
-            StringBuilder sb=new StringBuilder();
-            for(Map.Entry<ImageRequest,List<ImageRequest>> entry:mPendingList.entrySet())
-                sb.append(entry.getKey().getSource()).append(" ").append(entry.getValue().size()).append(" ");
-            System.out.println(sb);
-        }
-        else{
-            System.out.println("运行队列 "+ mWaitingList.size());
-            if(mRunningList.size()<mMaxRunning){
-                mRunningList.add(request);
-                NetManager.sRequestPool.execute(new TypeCheckState(request));
-            }
-            else mWaitingList.add(request);
         }
     }
 

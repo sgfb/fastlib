@@ -2,6 +2,7 @@ package com.fastlib.url_image.state;
 
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
@@ -44,7 +45,7 @@ public class UrlImageCheckState extends ImageState<String>{
         String source=mRequest.getSource();
         File file=new File(ImageManager.getInstance().getConfig().mSaveFolder, Utils.getMd5(source,false));
         if(!file.exists()||file.length()==0) {
-            System.out.println(String.format(Locale.getDefault(),"文件不存在:%s",mRequest.getSimpleName()));
+            Log.d(TAG,String.format(Locale.getDefault(),"文件不存在:%s",mRequest.getSimpleName()));
             return false;
         }
 
@@ -59,7 +60,7 @@ public class UrlImageCheckState extends ImageState<String>{
                 String localMd5=Base64.encodeToString(Utils.getFileVerify(file.getAbsolutePath(), Utils.FileVerifyType.MD5),Base64.DEFAULT);
                 if(TextUtils.equals(remoteMd5,localMd5))
                     return true;
-                else System.out.println(String.format(Locale.getDefault(),"文件md5不一致:%s",mRequest.getSimpleName()));
+                else Log.d(TAG,String.format(Locale.getDefault(),"文件md5不一致:%s",mRequest.getSimpleName()));
             }
             String remoteLastModified=request.getReceiveHeader("Last-Modified");
             String contentLength=request.getReceiveHeader("Content-Length");
@@ -68,7 +69,7 @@ public class UrlImageCheckState extends ImageState<String>{
                 Date date=sdf.parse(remoteLastModified);
                 if(file.lastModified()>=date.getTime()&&Long.parseLong(contentLength)==file.length())
                     return true;
-                else System.out.println(String.format(Locale.getDefault(),"文件过期或未下载完成:%s",mRequest.getSimpleName()));
+                else Log.d(TAG,String.format(Locale.getDefault(),"文件过期或未下载完成:%s",mRequest.getSimpleName()));
             }
         } catch (IOException e) {
             e.printStackTrace();
