@@ -1,6 +1,7 @@
 package com.fastlib.image_manager;
 
 import android.graphics.Bitmap;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.fastlib.image_manager.state.TypeCheckState;
@@ -64,6 +65,8 @@ public class ImageManager{
 
     public void addRequest(final ImageRequest request){
         if(request==null||request.getSource()==null) return;
+
+        boolean runNow=false;
         int queueType;
         if(request.getCallbackParcel()!=null) request.getCallbackParcel().prepareLoad(request);
         if(mRunningList.contains(request)||mWaitingList.contains(request)){
@@ -79,12 +82,13 @@ public class ImageManager{
             queueType=1;
             if(mRunningList.size()<mMaxRunning){
                 mRunningList.add(request);
-                NetManager.sRequestPool.execute(new TypeCheckState(request));
+                runNow=true;
             }
             else mWaitingList.add(request);
         }
         Log.d(TAG,String.format(Locale.getDefault(),"---%s（%s）进入队列----->%d",
                 request.getSimpleName(),queueType==1?"运行":"阻塞",queueType==1?mRunningList.size():getPendingListSize()));
+        if(runNow) NetManager.sRequestPool.execute(new TypeCheckState(request));
     }
 
     private synchronized void completeRequest(ImageRequest request){
@@ -111,6 +115,10 @@ public class ImageManager{
 
     public ImageConfig getConfig() {
         return mConfig.clone();
+    }
+
+    public void setConfig(@NonNull ImageConfig config){
+        mConfig=config;
     }
 
     private int getPendingListSize(){

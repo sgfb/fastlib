@@ -1,5 +1,8 @@
 package com.fastlib;
 
+import android.os.MemoryFile;
+
+import com.fastlib.db.MemoryPool;
 import com.fastlib.image_manager.request.CallbackParcel;
 import com.fastlib.image_manager.ImageManager;
 import com.fastlib.image_manager.request.ImageRequest;
@@ -9,8 +12,11 @@ import junit.framework.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+
+import java.util.List;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(manifest = Config.NONE)
@@ -24,31 +30,13 @@ public class ImageTest{
 
     @Test
     public void testAddRequest() throws InterruptedException {
-        int cycCount=100;
-        for(int i=0;i<cycCount;i++){
-            ImageRequest<String> request=new ImageRequest<String>() {};
-            request.mSource ="test"+i;
-            request.mCallbackParcel=new CallbackParcel() {
-                @Override
-                public void prepareLoad(ImageRequest request) {
 
-                }
+    }
 
-                @Override
-                public void success(ImageRequest request, byte[] data) {
-                    mTestRunningCount++;
-                }
+    @Test
+    public void testImageMemoryPool(){
+        MemoryFile mf=Mockito.mock(MemoryFile.class);
+        MemoryPool.getInstance().putCache("a",new byte[10]);
 
-                @Override
-                public void failure(ImageRequest request) {
-                    mTestRunningCount++;
-                }
-            };
-            ImageManager.getInstance().addRequest(request);
-        }
-        Thread.sleep(100);
-        Assert.assertEquals(0,ImageManager.getInstance().getNormalList().size());
-        Assert.assertEquals(0,ImageManager.getInstance().getPendingList().size());
-        Assert.assertEquals(cycCount,mTestRunningCount);
     }
 }

@@ -22,8 +22,8 @@ public class MainActivity extends FastActivity{
     RecyclerView mList;
     @Bind(R.id.image)
     ImageView mImage;
-//    final String mImageUrl="http://cn.best-wallpaper.net/wallpaper/3840x2160/1705/Earth-our-home-planet-space-black-background_3840x2160.jpg";
-    final String mImageUrl="https://static.oschina.net/uploads/img/201901/31055503_3yCJ.png";
+    final String mImageUrl="http://cn.best-wallpaper.net/wallpaper/3840x2160/1705/Earth-our-home-planet-space-black-background_3840x2160.jpg";
+//    final String mImageUrl="https://static.oschina.net/uploads/img/201901/31055503_3yCJ.png";
 
     @Override
     public void alreadyPrepared(){
@@ -48,8 +48,7 @@ public class MainActivity extends FastActivity{
 
     @Bind(R.id.bt2)
     private void bt2(){
-        File parent=new File(Environment.getExternalStorageDirectory(),Environment.DIRECTORY_DOWNLOADS);
-        ImageRequest.create(new File(parent,"1.jpg"))
+        ImageRequest.create(mImageUrl)
                 .bindOnHostLifeCycle(this)
                 .setCallbackParcel(new Callback2ImageView(mImage))
                 .start();

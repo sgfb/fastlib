@@ -30,8 +30,8 @@ public class Callback2ImageView implements CallbackParcel{
         if(request.getRequestWidth()==0&&request.getRequestHeight()==0){
             LayoutParams lp=mImageView.getLayoutParams();
             if(lp!=null&&lp.width>=0&&lp.height>=0){
-                request.setRequestWidth(mImageView.getWidth());
-                request.setRequestHeight(mImageView.getHeight());
+                request.setRequestWidth(lp.width);
+                request.setRequestHeight(lp.height);
             }
         }
         mImageView.setImageDrawable(request.getReplaceDrawable());

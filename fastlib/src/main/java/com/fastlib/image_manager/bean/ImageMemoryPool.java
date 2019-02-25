@@ -67,21 +67,18 @@ public class ImageMemoryPool{
         }
         else if(width==0||height==0){
             Pair<Integer,Integer> screenSize=ScreenUtils.getScreenSize();
-            if(width>screenSize.first||height>screenSize.second){
-                //config 优化
-                ByteArrayOutputStream outputStream=new ByteArrayOutputStream();
-                Bitmap bitmap=ImageUtils.cropBitmap(screenSize.first,screenSize.second,request.getBitmapConfig(),data);
-                bitmap.compress(Bitmap.CompressFormat.WEBP,90,outputStream);
-                saveData=outputStream.toByteArray();
-            }
-            else{
-                mSizeMap.put(request.hashCode(),new Point(options.outWidth,options.outHeight));
-            }
+            //config 优化
+            ByteArrayOutputStream outputStream=new ByteArrayOutputStream();
+            Bitmap bitmap=ImageUtils.cropBitmap(screenSize.first,screenSize.second,request.getBitmapConfig(),data);
+            bitmap.compress(Bitmap.CompressFormat.WEBP,90,outputStream);
+            mSizeMap.put(request.hashCode(),new Point(bitmap.getWidth(),bitmap.getHeight()));
+            saveData=outputStream.toByteArray();
         }
         else{
             ByteArrayOutputStream outputStream=new ByteArrayOutputStream();
             Bitmap bitmap=ImageUtils.cropBitmap(width,height,request.getBitmapConfig(),data);
             bitmap.compress(Bitmap.CompressFormat.WEBP,90,outputStream);
+            mSizeMap.put(request.hashCode(),new Point(bitmap.getWidth(),bitmap.getHeight()));
             saveData=outputStream.toByteArray();
         }
         return MemoryPool.getInstance().putCache(request.getName(),saveData);
