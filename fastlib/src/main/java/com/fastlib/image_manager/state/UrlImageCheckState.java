@@ -1,4 +1,4 @@
-package com.fastlib.url_image.state;
+package com.fastlib.image_manager.state;
 
 import android.text.TextUtils;
 import android.util.Base64;
@@ -6,9 +6,9 @@ import android.util.Log;
 
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
-import com.fastlib.url_image.ImageManager;
+import com.fastlib.image_manager.ImageManager;
 import com.fastlib.db.MemoryPool;
-import com.fastlib.url_image.request.ImageRequest;
+import com.fastlib.image_manager.request.ImageRequest;
 import com.fastlib.utils.Utils;
 
 import java.io.File;
@@ -50,6 +50,7 @@ public class UrlImageCheckState extends ImageState<String>{
         }
 
         //检查本地和远程的文件一致性
+        Log.d(TAG,"检查远程图像一致性");
         Request request=new Request("head",source).setHadRootAddress(true);
         try {
             NetManager.getInstance().netRequestPromptlyBack(request);

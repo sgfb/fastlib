@@ -1,7 +1,7 @@
-package com.fastlib.url_image.state;
+package com.fastlib.image_manager.state;
 
 import com.fastlib.db.MemoryPool;
-import com.fastlib.url_image.request.ImageRequest;
+import com.fastlib.image_manager.request.ImageRequest;
 
 import java.io.File;
 

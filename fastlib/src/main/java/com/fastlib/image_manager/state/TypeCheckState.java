@@ -1,11 +1,12 @@
-package com.fastlib.url_image;
+package com.fastlib.image_manager.state;
 
-import com.fastlib.url_image.request.CallbackParcel;
-import com.fastlib.url_image.request.ImageRequest;
-import com.fastlib.url_image.state.ImageState;
-import com.fastlib.url_image.state.LocalImageCheckState;
-import com.fastlib.url_image.exception.UndefineSourceException;
-import com.fastlib.url_image.state.UrlImageCheckState;
+import com.fastlib.image_manager.ImageManager;
+import com.fastlib.image_manager.request.CallbackParcel;
+import com.fastlib.image_manager.request.ImageRequest;
+import com.fastlib.image_manager.state.ImageState;
+import com.fastlib.image_manager.state.LocalImageCheckState;
+import com.fastlib.image_manager.exception.UndefineSourceException;
+import com.fastlib.image_manager.state.UrlImageCheckState;
 
 import java.io.File;
 
@@ -28,7 +29,7 @@ public class TypeCheckState extends ImageState {
         if(resource instanceof Integer){
             //TODO
         }
-        CallbackParcel callbackParcel=ImageManager.getInstance().getCallbackParcel();
+        CallbackParcel callbackParcel= ImageManager.getInstance().getCallbackParcel();
         if(callbackParcel!=null) callbackParcel.failure(mRequest,new UndefineSourceException());
         return null;
     }

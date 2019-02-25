@@ -1,11 +1,13 @@
-package com.fastlib.url_image.state;
+package com.fastlib.image_manager.state;
 
 import android.graphics.BitmapFactory;
 import android.util.Log;
 
 import com.fastlib.db.MemoryPool;
-import com.fastlib.url_image.bean.ImageConfig;
-import com.fastlib.url_image.request.ImageRequest;
+import com.fastlib.image_manager.ImageUtils;
+import com.fastlib.image_manager.bean.ImageConfig;
+import com.fastlib.image_manager.request.ImageRequest;
+import com.fastlib.utils.ImageUtil;
 
 import java.io.File;
 import java.util.Locale;
@@ -27,12 +29,11 @@ public class LocalImageRenderState extends ImageState<File>{
         if((mRequest.getStoreStrategy()& ImageConfig.STRATEGY_LOAD_NORMAL)!=0){
             byte[] data= MemoryPool.getInstance().getCache(mRequest.getName());
             if(data!=null)
-                mRequest.getCallbackParcel().success(mRequest, BitmapFactory.decodeByteArray(data,0,data.length));
+                mRequest.getCallbackParcel().success(mRequest, ImageUtils.cropBitmap(mRequest.getRequestWidth(),mRequest.getRequestHeight(),mRequest.getBitmapConfig(),data));
             else mRequest.getCallbackParcel().failure(mRequest,new IllegalStateException());
         }
         else if((mRequest.getStoreStrategy()&ImageConfig.STRATEGY_LOAD_DISK_ONLY)!=0){
-            //TODO 裁剪
-            mRequest.getCallbackParcel().success(mRequest,BitmapFactory.decodeFile(mRequest.getSource().getAbsolutePath()));
+            mRequest.getCallbackParcel().success(mRequest, ImageUtils.cropBitmap(mRequest.getRequestWidth(),mRequest.getRequestHeight(),mRequest.getBitmapConfig(),mRequest.getSource()));
         }
         return null;
     }

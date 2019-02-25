@@ -1,12 +1,13 @@
-package com.fastlib.url_image;
+package com.fastlib.image_manager;
 
 import android.graphics.Bitmap;
 import android.util.Log;
 
+import com.fastlib.image_manager.state.TypeCheckState;
 import com.fastlib.net.NetManager;
-import com.fastlib.url_image.bean.ImageConfig;
-import com.fastlib.url_image.request.CallbackParcel;
-import com.fastlib.url_image.request.ImageRequest;
+import com.fastlib.image_manager.bean.ImageConfig;
+import com.fastlib.image_manager.request.CallbackParcel;
+import com.fastlib.image_manager.request.ImageRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -82,21 +83,24 @@ public class ImageManager{
             }
             else mWaitingList.add(request);
         }
-        Log.d(TAG,String.format(Locale.getDefault(),"---%s（%s）进入队列----->%s",
-                request.getSimpleName(),queueType==1?"运行队列":"阻塞队列",queueType==1?mRunningList.size():mWaitingList.size()));
+        Log.d(TAG,String.format(Locale.getDefault(),"---%s（%s）进入队列----->%d",
+                request.getSimpleName(),queueType==1?"运行":"阻塞",queueType==1?mRunningList.size():getPendingListSize()));
     }
 
     private synchronized void completeRequest(ImageRequest request){
-        Log.d(TAG,String.format(Locale.getDefault(),"<---%s请求结束-----",request.getSimpleName()));
+        mRunningList.remove(request);
+        Log.d(TAG,String.format(Locale.getDefault(),"<---%s请求结束-----%d",request.getSimpleName(),mRunningList.size()));
         request.clean();
         List<ImageRequest> list=mPendingList.get(request);
-        if(list!=null&&!list.isEmpty())
+        if(list!=null&&!list.isEmpty()) {
             mWaitingList.add(list.remove(0));
+            Log.d(TAG,String.format(Locale.getDefault(),"%s-----阻塞转等待--->%s",getPendingListSize(),mWaitingList.size()));
+        }
         else mPendingList.remove(request);
-        mRunningList.remove(request);
         if(mRunningList.size()<mMaxRunning&&!mWaitingList.isEmpty()) {
             ImageRequest r=mWaitingList.remove(mWaitingList.size()-1);
             mRunningList.add(r);
+            Log.d(TAG,String.format(Locale.getDefault(),"%s-----等待转运行--->%s",mWaitingList.size(),mRunningList.size()));
             NetManager.sRequestPool.execute(new TypeCheckState(r));
         }
     }
@@ -107,5 +111,12 @@ public class ImageManager{
 
     public ImageConfig getConfig() {
         return mConfig.clone();
+    }
+
+    private int getPendingListSize(){
+        int count=0;
+        for(Map.Entry<ImageRequest,List<ImageRequest>> entry:mPendingList.entrySet())
+            count=entry.getValue().size();
+        return count;
     }
 }

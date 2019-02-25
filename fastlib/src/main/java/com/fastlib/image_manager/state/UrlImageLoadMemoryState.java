@@ -1,11 +1,12 @@
-package com.fastlib.url_image.state;
+package com.fastlib.image_manager.state;
 
 import android.util.Log;
 
 import com.fastlib.db.SaveUtil;
-import com.fastlib.url_image.ImageManager;
+import com.fastlib.image_manager.ImageManager;
 import com.fastlib.db.MemoryPool;
-import com.fastlib.url_image.request.ImageRequest;
+import com.fastlib.image_manager.bean.ImageMemoryPool;
+import com.fastlib.image_manager.request.ImageRequest;
 import com.fastlib.utils.Utils;
 
 import java.io.File;
@@ -26,7 +27,7 @@ public class UrlImageLoadMemoryState extends ImageState<String>{
     protected ImageState handle()throws Exception{
         Log.d(TAG,String.format(Locale.getDefault(),"图像加载至内存:%s",mRequest.getSimpleName()));
         File file=new File(ImageManager.getInstance().getConfig().mSaveFolder, Utils.getMd5(mRequest.getSource(),false));
-        MemoryPool.getInstance().putCache(mRequest.getName(), SaveUtil.loadFile(file.getAbsolutePath()));
+        ImageMemoryPool.getInstance().putCache(mRequest,SaveUtil.loadFile(file.getAbsolutePath()));
         return new UrlImageRenderState(mRequest);
     }
 }

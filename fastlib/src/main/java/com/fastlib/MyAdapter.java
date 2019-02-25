@@ -3,11 +3,10 @@ package com.fastlib;
 import android.widget.ImageView;
 
 import com.fastlib.adapter.BaseRecyAdapter;
-import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.base.CommonViewHolder;
-import com.fastlib.url_image.request.Callback2ImageView;
-import com.fastlib.url_image.request.ImageRequest;
+import com.fastlib.image_manager.request.Callback2ImageView;
+import com.fastlib.image_manager.request.ImageRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +22,7 @@ public class MyAdapter extends BaseRecyAdapter<String>{
         super();
         List<String> list=new ArrayList<>();
         for(int i=0;i<1000;i++)
-            list.add("https://static.oschina.net/uploads/img/201901/31055503_3yCJ.png");
+            list.add("http://cn.best-wallpaper.net/wallpaper/3840x2160/1705/Earth-our-home-planet-space-black-background_3840x2160.jpg");
         setData(list);
     }
 

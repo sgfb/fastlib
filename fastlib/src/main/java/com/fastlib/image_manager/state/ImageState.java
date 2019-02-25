@@ -1,8 +1,8 @@
-package com.fastlib.url_image.state;
+package com.fastlib.image_manager.state;
 
-import com.fastlib.url_image.ImageManager;
-import com.fastlib.url_image.request.CallbackParcel;
-import com.fastlib.url_image.request.ImageRequest;
+import com.fastlib.image_manager.ImageManager;
+import com.fastlib.image_manager.request.CallbackParcel;
+import com.fastlib.image_manager.request.ImageRequest;
 
 public abstract class ImageState<T> implements Runnable{
     protected static final String TAG=ImageState.class.getSimpleName();

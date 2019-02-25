@@ -1,4 +1,4 @@
-package com.fastlib.url_image.request;
+package com.fastlib.image_manager.request;
 
 import android.graphics.Bitmap;
 

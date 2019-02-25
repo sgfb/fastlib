@@ -1,4 +1,4 @@
-package com.fastlib.url_image.state;
+package com.fastlib.image_manager.state;
 
 import android.util.Log;
 
@@ -7,8 +7,8 @@ import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.net.exception.NetException;
 import com.fastlib.net.listener.SimpleListener;
-import com.fastlib.url_image.ImageManager;
-import com.fastlib.url_image.request.ImageRequest;
+import com.fastlib.image_manager.ImageManager;
+import com.fastlib.image_manager.request.ImageRequest;
 import com.fastlib.utils.Utils;
 
 import java.io.File;

@@ -4,6 +4,7 @@ import android.os.MemoryFile;
 import android.util.Log;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -12,7 +13,7 @@ import java.util.Map;
  * 内存池
  * 提供内存级存储{@link android.os.MemoryFile}
  */
-public final class MemoryPool {
+public class MemoryPool{
     public static final String TAG=MemoryPool.class.getSimpleName();
     private long mMaxLimit;
     private long mCursor;

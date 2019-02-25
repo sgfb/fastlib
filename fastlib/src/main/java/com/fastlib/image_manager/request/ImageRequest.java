@@ -1,4 +1,4 @@
-package com.fastlib.url_image.request;
+package com.fastlib.image_manager.request;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -8,8 +8,8 @@ import android.view.View;
 
 import com.fastlib.app.module.FastActivity;
 import com.fastlib.app.module.LifecycleManager;
-import com.fastlib.url_image.ImageManager;
-import com.fastlib.url_image.bean.ImageConfig;
+import com.fastlib.image_manager.ImageManager;
+import com.fastlib.image_manager.bean.ImageConfig;
 
 /**
  * Created by sgfb on 2017/11/4.

@@ -1,4 +1,4 @@
-package com.fastlib.url_image.bean;
+package com.fastlib.image_manager.bean;
 
 import android.os.Environment;
 
