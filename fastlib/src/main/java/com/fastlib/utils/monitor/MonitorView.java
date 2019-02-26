@@ -29,8 +29,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Locale;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class MonitorView{
+    private ThreadPoolExecutor mThreadPool= (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private TextView mTaskCompleteCount;
     private ProgressBar mCpuProgress;
     private ProgressBar mMemProgress;
@@ -203,7 +206,7 @@ public class MonitorView{
                         }
                     });
 
-                    NetManager.sRequestPool.execute(new Runnable() {
+                    mThreadPool.execute(new Runnable() {
                         @Override
                         public void run() {
                             try {
@@ -234,7 +237,7 @@ public class MonitorView{
                     }
                 });
 
-                NetManager.sRequestPool.execute(new Runnable() {
+                mThreadPool.execute(new Runnable() {
                     @Override
                     public void run() {
                         try {

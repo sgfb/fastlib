@@ -71,14 +71,6 @@ public class RequestingAdapter extends BaseRecyAdapter<Requesting>{
         }
     }
 
-//    @Override
-//    public int getItemCount() {
-//        int count=super.getItemCount();
-//
-//        if(count>5) return 5;
-//        else return count;
-//    }
-
     public synchronized void removeRequest(int hashCode){
         Requesting requesting=getRequestByHash(hashCode);
         remove(requesting);

@@ -23,7 +23,8 @@ public class MonitorService extends Service{
     private MonitorView mMonitorView;
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId){
+    public void onCreate() {
+        super.onCreate();
         WindowManager wm= (WindowManager) getSystemService(WINDOW_SERVICE);
         if(Build.VERSION.SDK_INT>=23&&!Settings.canDrawOverlays(this)){
             startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION));
@@ -33,6 +34,10 @@ public class MonitorService extends Service{
             mMonitorView=new MonitorView(this);
             wm.addView(mMonitorView.getView(),initLayoutParam());
         }
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId){
         return super.onStartCommand(intent, flags, startId);
     }
 
