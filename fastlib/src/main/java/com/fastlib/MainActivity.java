@@ -24,7 +24,7 @@ public class MainActivity extends FastActivity{
     ImageView mImage;
     final String mImageUrl="http://cn.best-wallpaper.net/wallpaper/3840x2160/1705/Earth-our-home-planet-space-black-background_3840x2160.jpg";
 //    final String mImageUrl="https://static.oschina.net/uploads/img/201901/31055503_3yCJ.png";
-
+//
     @Override
     public void alreadyPrepared(){
         ContextHolder.init(getApplicationContext());
