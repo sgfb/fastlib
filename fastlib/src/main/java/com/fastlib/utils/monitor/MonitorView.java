@@ -11,13 +11,12 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.fastlib.MainActivity;
 import com.fastlib.R;
 import com.fastlib.annotation.Event;
 import com.fastlib.app.EventObserver;
+import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.bean.event.EventDownloading;
-import com.fastlib.bean.event.EventUploading;
-import com.fastlib.net.MonitorThreadPool;
+import com.fastlib.app.task.MonitorThreadPool;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.net.listener.GlobalListener;
@@ -68,7 +67,7 @@ public class MonitorView{
             @Override
             public void run() {
                 //线程池监控
-                int maxThreads = NetManager.sRequestPool.getMaximumPoolSize();
+                int maxThreads = ThreadPoolManager.getThreadCount();
                 int layoutWidth = mThreadLayout.getWidth();
                 for (int i = 0; i < maxThreads; i++) {
                     View view = new View(context);
@@ -79,14 +78,14 @@ public class MonitorView{
                     view.setBackgroundColor(context.getResources().getColor(R.color.grey_400));
                     mThreadLayout.addView(view);
                 }
-                ((MonitorThreadPool) NetManager.sRequestPool).setThreadStatusChangedListener(new MonitorThreadPool.OnThreadStatusChangedListener() {
+                ThreadPoolManager.setOnThreadChanageListener(new MonitorThreadPool.OnThreadStatusChangedListener() {
                     @Override
                     public void onThreadStatusChanged(final int position, final int status) {
                         mThreadLayout.post(new Runnable() {
                             @Override
                             public void run() {
                                 if (status == MonitorThreadPool.THREAD_STATUS_IDLE)
-                                    mTaskCompleteCount.setText(String.format(Locale.getDefault(), "tc:%d", NetManager.sRequestPool.getCompletedTaskCount()));
+                                    mTaskCompleteCount.setText(String.format(Locale.getDefault(), "tc:%d", ThreadPoolManager.getCompleteTaskCount()));
                                 mThreadLayout.getChildAt(position - 1).setBackgroundColor(context.getResources().getColor(status == MonitorThreadPool.THREAD_STATUS_IDLE ? R.color.grey_400 : R.color.green_400));
                             }
                         });
@@ -263,7 +262,7 @@ public class MonitorView{
         mView=null;
         NetManager.getInstance().setGlobalListener(null);
         EventObserver.getInstance().unsubscribe(ContextHolder.getContext(),this);
-        ((MonitorThreadPool) NetManager.sRequestPool).setThreadStatusChangedListener(null);
+        ThreadPoolManager.setOnThreadChanageListener(null);
     }
 
     @Event

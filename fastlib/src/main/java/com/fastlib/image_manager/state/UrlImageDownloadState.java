@@ -31,7 +31,7 @@ public class UrlImageDownloadState extends ImageState<String>{
     protected ImageState handle()throws Exception{
         Log.d(TAG,String.format(Locale.getDefault(),"图像开始下载:%s",mRequest.getSimpleName()));
         mDownloadRequest=new Request("get",mRequest.getSource());
-        mDownloadRequest.setCallbackByWorkThread(true).setHadRootAddress(true);
+        mDownloadRequest.setCallbackByWorkThread(true).setCustomRootAddress("");
         File file=new File(ImageManager.getInstance().getConfig().mSaveFolder, Utils.getMd5(mRequest.getSource(),false));
         mDownloadRequest.setDownloadable(new DefaultDownload(file).setSupportBreak(true));
         mDownloadRequest.setListener(new SimpleListener<String>(){

@@ -6,5 +6,9 @@ package com.fastlib.net;
  */
 public interface GenRequestInterceptor<T>{
 
+    /**
+     * 自动生成前回调
+     * @param request 自动生成的request
+     */
     void genCompleteBefore(T request);
 }

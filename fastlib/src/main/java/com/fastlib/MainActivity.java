@@ -1,6 +1,7 @@
 package com.fastlib;
 
 import android.Manifest;
+import android.arch.lifecycle.LifecycleObserver;
 import android.content.Intent;
 import android.os.Environment;
 import android.support.v7.widget.RecyclerView;
@@ -11,6 +12,11 @@ import com.fastlib.annotation.ContentView;
 import com.fastlib.app.module.FastActivity;
 import com.fastlib.image_manager.request.Callback2ImageView;
 import com.fastlib.image_manager.request.ImageRequest;
+import com.fastlib.net.DefaultDownload;
+import com.fastlib.net.GenRequestInterceptor;
+import com.fastlib.net.NetManager;
+import com.fastlib.net.Request;
+import com.fastlib.net.listener.SimpleListener;
 import com.fastlib.utils.ContextHolder;
 import com.fastlib.utils.monitor.MonitorService;
 
@@ -27,6 +33,7 @@ public class MainActivity extends FastActivity{
 
     @Override
     public void alreadyPrepared(){
+        NetManager.getInstance().setRootAddress("http://www.baidu.com");
         ContextHolder.init(getApplicationContext());
         requestPermission(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, new Runnable() {
             @Override
@@ -43,7 +50,19 @@ public class MainActivity extends FastActivity{
 
     @Bind(R.id.bt)
     private void bt(){
-        mList.setAdapter(new MyAdapter());
+        TestInterface_G i=new TestInterface_G(new GenRequestInterceptor<Request>() {
+            @Override
+            public void genCompleteBefore(Request request) {
+                request.setHostLifecycle(getModuleLife());
+            }
+        });
+        i.genJustTestRequest(1, "", new SimpleListener<String>() {
+            @Override
+            public void onResponseListener(Request r, String result) {
+                System.out.println("download success");
+            }
+        }).setDownloadable(new DefaultDownload(new File(getCacheDir(),"temp.apk"))).start();
+//        mList.setAdapter(new MyAdapter());
     }
 
     @Bind(R.id.bt2)

@@ -105,7 +105,7 @@ public abstract class UpdateService extends Service{
         NotificationManager nm= (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         nm.notify(NOTIFY_ID,mNotification);
         mRequest=new Request("get",url)
-                .setHadRootAddress(true)
+                .setCustomRootAddress("")
                 .setUseFactory(false)
                 .setDownloadable(new DefaultDownload(tempFile).setSupportBreak(true));
         mRequest.setIntervalSendFileTransferEvent(500);

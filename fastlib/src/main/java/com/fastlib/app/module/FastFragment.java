@@ -177,4 +177,9 @@ public abstract class FastFragment extends Fragment implements ModuleInterface {
     public void setRefreshCallback(OnRefreshCallback callback) {
         mDelegate.setRefreshCallback(callback);
     }
+
+    @Override
+    public ModuleLife getModuleLife() {
+        return null;
+    }
 }

@@ -5,6 +5,7 @@ import android.os.Looper;
 import android.text.TextUtils;
 
 import com.fastlib.BuildConfig;
+import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.net.listener.GlobalListener;
 import com.fastlib.net.param_parse.NetParamParser;
 import com.fastlib.net.param_parse.ParamParserManager;
@@ -24,8 +25,6 @@ public class NetManager{
     private static NetManager mOwer;
     public int mRequestCount=0;
     public long Tx,Rx;
-    public static ThreadPoolExecutor sRequestPool=new MonitorThreadPool(Runtime.getRuntime().availableProcessors()+2,Runtime.getRuntime().availableProcessors()+2,
-            0L, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>());  //公共网络请求池
     private String mRootAddress;
     private GlobalListener mGlobalListener;         //一个全局的事件回调监听，所有网络回调给具体回调之前做一次回调
     private ParamParserManager mGlobalParamParserManager;
@@ -86,22 +85,22 @@ public class NetManager{
             return processor.getResponse();
         }
         if(pool!=null) pool.execute(processor);
-        else sRequestPool.execute(processor);
+        else ThreadPoolManager.sSlowPool.execute(processor);
         return null;
     }
 
     private Request prepareRequest(Request request){
         if(mGlobalListener!=null)
             mGlobalListener.onLaunchRequestBefore(request);
-        if(!TextUtils.isEmpty(mRootAddress)&&!request.isHadRootAddress()){ //添加根地址，如果需要的话
+        if(!TextUtils.isEmpty(mRootAddress)&&request.getCustomRootAddress()==null){ //根地址替换，如果需要的话
             request.setUrl(mRootAddress + request.getUrl());
-            request.setHadRootAddress(true);
+            request.setCustomRootAddress(mRootAddress);
         }
         return request;
     }
 
     public void close(){
-        sRequestPool.shutdownNow();
+        ThreadPoolManager.sSlowPool.shutdownNow();
         mOwer=null;
     }
 

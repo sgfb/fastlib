@@ -14,6 +14,7 @@ import android.util.Log;
 
 import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Database;
+import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.bean.DatabaseTable;
 import com.fastlib.net.NetManager;
 import com.fastlib.utils.ContextHolder;
@@ -78,7 +79,7 @@ public class FastDatabase{
      * @param callback 结束后回调
      */
     public void saveOrUpdateAsync(final Object obj, final DatabaseNoDataResultCallback callback){
-        NetManager.sRequestPool.execute(new Runnable() {
+        ThreadPoolManager.sSlowPool.execute(new Runnable() {
             @Override
             public void run(){
             	Handler handle=new Handler(Looper.getMainLooper());
@@ -100,7 +101,7 @@ public class FastDatabase{
      * @param callback 结束后回调
      */
     public void deleteAsync(final Class<?> cla, final DatabaseNoDataResultCallback callback){
-        NetManager.sRequestPool.execute(new Runnable() {
+        ThreadPoolManager.sSlowPool.execute(new Runnable() {
             @Override
             public void run() {
                 if(callback!=null)
@@ -116,7 +117,7 @@ public class FastDatabase{
      * @param <T> 任意泛型
      */
     public <T> void getFirstAsync(final Class<T> cla, final DatabaseGetCallback<T> listener) {
-        NetManager.sRequestPool.execute(new Runnable() {
+        ThreadPoolManager.sSlowPool.execute(new Runnable() {
             @Override
             public void run(){
                 Handler handle=new Handler(Looper.getMainLooper());
@@ -151,7 +152,7 @@ public class FastDatabase{
      * @param <T> 任意泛型
      */
     public <T> void getAsync(final Class<T> cla,final DatabaseListGetCallback<T> listener){
-        NetManager.sRequestPool.execute(new Runnable(){
+        ThreadPoolManager.sSlowPool.execute(new Runnable(){
             @Override
             public void run(){
                 Handler handler=new Handler(Looper.getMainLooper());

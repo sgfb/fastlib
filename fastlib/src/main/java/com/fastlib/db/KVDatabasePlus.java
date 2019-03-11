@@ -5,6 +5,7 @@ import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.BuildConfig;
+import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.net.NetManager;
 
 import java.util.ArrayList;
@@ -59,7 +60,7 @@ public class KVDatabasePlus extends KVDatabase{
      * 内存中数据存储到外存中，开启异步存储
      */
     public void saveBg(){
-        NetManager.sRequestPool.execute(new Runnable() {
+        ThreadPoolManager.sSlowPool.execute(new Runnable() {
             @Override
             public void run() {
                 save();

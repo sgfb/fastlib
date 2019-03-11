@@ -1,4 +1,4 @@
-package com.fastlib.net;
+package com.fastlib.app.task;
 
 import android.util.SparseIntArray;
 
