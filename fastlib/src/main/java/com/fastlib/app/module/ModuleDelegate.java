@@ -23,6 +23,7 @@ import com.fastlib.app.task.EmptyAction;
 import com.fastlib.app.task.NoReturnAction;
 import com.fastlib.app.task.Task;
 import com.fastlib.app.task.TaskLauncher;
+import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.app.task.ThreadType;
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
@@ -94,7 +95,7 @@ public class ModuleDelegate implements ModuleInterface {
      * @return 线程池
      */
     protected ThreadPoolExecutor generateThreadPool() {
-        return NetManager.sRequestPool;
+        return ThreadPoolManager.sQuickPool;
     }
 
     /**
@@ -183,6 +184,11 @@ public class ModuleDelegate implements ModuleInterface {
     @Override
     public View getRootView() {
         return mHost.getRootView();
+    }
+
+    @Override
+    public ModuleLife getModuleLife() {
+        return mLife;
     }
 
     /**
@@ -347,7 +353,6 @@ public class ModuleDelegate implements ModuleInterface {
     @Override
     public void net(Request request) {
         request.setHostLifecycle(mLife)
-                .setExecutor(mThreadPool)
                 .start(false);
     }
 

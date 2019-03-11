@@ -75,7 +75,8 @@ public class NetRequestProcessor extends AbstractProcessor {
                 String mockName = mockAnno == null ? null : mockAnno.value();
                 String methodName = element.getSimpleName().toString();
                 String methodSuffix = "Callback";
-                String requestDefine =baseParamAnno==null?"Request": baseParamAnno.customerRequest().isEmpty()? "Request" : baseParamAnno.customerRequest();
+                String requestDefine =baseParamAnno==null?"Request": baseParamAnno.customRequest().isEmpty()? "Request" : baseParamAnno.customRequest();
+                String customRootAddress=baseParamAnno==null?null:baseParamAnno.customRootAddress();
                 String url = baseParamAnno == null ? "" : baseParamAnno.url();
                 String requestMethod = baseParamAnno == null ? "post" : baseParamAnno.method();
                 StringBuilder paramsSb = new StringBuilder();         //paramType paramName,paramType2 paramsName2
@@ -112,6 +113,8 @@ public class NetRequestProcessor extends AbstractProcessor {
                             .append("\t\t").append(requestDefine).append(" request=new ").append(requestDefine).append("(")
                             .append('"').append(requestMethod).append('"').append(",").append('"').append(url).append('"').append(")").append("\n")
                             .append("\t\t\t").append(".setListener(listener)").append("\n");
+                    if(customRootAddress!=null&&customRootAddress.length()>0)
+                        genRequestSb.append("\t\t\t").append(".setCustomRootAddress(").append("\"").append(customRootAddress).append("\"").append(")").append("\n");
                     for (String paramName : paramNameList) {
                         genRequestSb.append("\t\t\t").append(".put(").append('"').append(paramName).append('"').append(",").append(paramName).append(")\n");
                     }

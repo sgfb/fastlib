@@ -1,6 +1,5 @@
 package com.fastlib.app.module;
 
-import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -29,7 +28,7 @@ public abstract class FastActivity extends AppCompatActivity implements ModuleIn
 
     //----------------------------继承自Activity系列-------------------------------------//
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         created();
     }
@@ -170,6 +169,11 @@ public abstract class FastActivity extends AppCompatActivity implements ModuleIn
     @Override
     public void requestPermission(String[] permission, Runnable grantedAfterProcess, Runnable deniedAfterProcess) {
         mDelegate.requestPermission(permission,grantedAfterProcess,deniedAfterProcess);
+    }
+
+    @Override
+    public ModuleLife getModuleLife() {
+        return mDelegate.getModuleLife();
     }
 
     /**

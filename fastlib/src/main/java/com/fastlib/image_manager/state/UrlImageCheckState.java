@@ -51,7 +51,7 @@ public class UrlImageCheckState extends ImageState<String>{
 
         //检查本地和远程的文件一致性
         Log.d(TAG,"检查远程图像一致性");
-        Request request=new Request("head",source).setHadRootAddress(true);
+        Request request=new Request("head",source).setCustomRootAddress("");
         try {
             NetManager.getInstance().netRequestPromptlyBack(request);
             Map<String,List<String>> header=request.getReceiveHeader();

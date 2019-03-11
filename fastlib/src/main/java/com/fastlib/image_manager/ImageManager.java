@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.image_manager.state.TypeCheckState;
 import com.fastlib.net.NetManager;
 import com.fastlib.image_manager.bean.ImageConfig;
@@ -23,7 +24,7 @@ import java.util.Map;
  */
 public class ImageManager{
     public static final String TAG=ImageManager.class.getSimpleName();
-    private int mMaxRunning=NetManager.sRequestPool.getMaximumPoolSize()/2+1;
+    private int mMaxRunning= ThreadPoolManager.sSlowPool.getMaximumPoolSize()/2+1;
     private CallbackParcel mGlobalCallback;
     private List<ImageRequest> mRunningList=new ArrayList<>();                      //运行中队列
     private List<ImageRequest> mWaitingList =new ArrayList<>();                     //等待中队列
@@ -88,7 +89,7 @@ public class ImageManager{
         }
         Log.d(TAG,String.format(Locale.getDefault(),"---%s（%s）进入队列----->%d",
                 request.getSimpleName(),queueType==1?"运行":"阻塞",queueType==1?mRunningList.size():getPendingListSize()));
-        if(runNow) NetManager.sRequestPool.execute(new TypeCheckState(request));
+        if(runNow) ThreadPoolManager.sSlowPool.execute(new TypeCheckState(request));
     }
 
     private synchronized void completeRequest(ImageRequest request){
@@ -105,7 +106,7 @@ public class ImageManager{
             ImageRequest r=mWaitingList.remove(mWaitingList.size()-1);
             mRunningList.add(r);
             Log.d(TAG,String.format(Locale.getDefault(),"%s-----等待转运行--->%s",mWaitingList.size(),mRunningList.size()));
-            NetManager.sRequestPool.execute(new TypeCheckState(r));
+            ThreadPoolManager.sSlowPool.execute(new TypeCheckState(r));
         }
     }
 

@@ -60,6 +60,8 @@ public interface ModuleInterface extends Deferrable,Refreshable,ModuleLifecycle{
 
     View getRootView();
 
+    ModuleLife getModuleLife();
+
     /**
      * Created by sgfb on 18/1/15.
      * 控制生命周期回调的一个空Fragment

@@ -12,6 +12,7 @@ import android.util.Log;
 
 import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Event;
+import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.net.NetManager;
 
 import java.io.Serializable;
@@ -234,7 +235,7 @@ public class EventObserver {
                     if(anno.value()) //是否在主线程调用,如果不是进入线程池
                         m.invoke(subscribe,wrapper.obj);
                     else
-                        NetManager.sRequestPool.execute(new Runnable() {
+                        ThreadPoolManager.sQuickPool.execute(new Runnable() {
                             @Override
                             public void run() {
                                 try {

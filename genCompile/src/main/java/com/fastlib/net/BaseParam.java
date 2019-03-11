@@ -12,14 +12,19 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.CLASS)
 public @interface BaseParam {
-
     String url();
 
     String method() default "post";
 
     /**
+     * 自定义根地址
+     * @return 根地址
+     */
+    String customRootAddress() default "";
+
+    /**
      * 自定义Request
      * @return 自定义Request类
      */
-    String customerRequest() default "";
+    String customRequest() default "";
 }

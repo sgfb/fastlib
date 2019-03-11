@@ -40,7 +40,6 @@ public class Request{
     private boolean isSuppressWarning;              //压制警告
     private boolean isAcceptGlobalCallback;         //是否接受全局回调监听.默认true
     private boolean isReplaceChinese;               //是否替换中文url,默认为true
-    private boolean hadRootAddress;                 //是否已加入根地址
     private boolean useFactory;                     //是否使用预设值
     private boolean isSendGzip;                     //指定这次请求发送时是否压缩成gzip流
     private boolean isReceiveGzip;                  //指定这次请求是否使用gzip解码
@@ -51,6 +50,7 @@ public class Request{
     private long mIntervalSendFileTransferEvent=1000;//间隔多久发送上传和下载文件广播
     private String method;
     private String mUrl;
+    private String mCustomRootAddress;              //自定义根地址
     private List<Pair<String, String>> mSendCookies;
     private Downloadable mDownloadable;
     private Map<String,List<String>> mReceiveHeader;
@@ -620,7 +620,8 @@ public class Request{
     }
 
     public String getUrl() {
-        return mUrl;
+        String rootAddress=mCustomRootAddress==null?"":mCustomRootAddress;
+        return rootAddress+mUrl;
     }
 
     public String getMethod() {
@@ -650,13 +651,13 @@ public class Request{
         return this;
     }
 
-    public boolean isHadRootAddress() {
-        return hadRootAddress;
+    public Request setCustomRootAddress(String address){
+        mCustomRootAddress=address;
+        return this;
     }
 
-    public Request setHadRootAddress(boolean hadRootAddress) {
-        this.hadRootAddress = hadRootAddress;
-        return this;
+    public String getCustomRootAddress(){
+        return mCustomRootAddress;
     }
 
     public boolean downloadable() {
@@ -934,9 +935,9 @@ public class Request{
     }
 
     /**
-     * 请求类型</br>
-     * 1.默认 一切行动照正常规则来</br>
-     * 2.全局请求 不受模块限制，独立于模块之外</br>
+     * 请求类型
+     * 1.默认 一切行动照正常规则来
+     * 2.全局请求 不受模块限制，独立于模块之外
      * 3.必达请求 在请求开始的时候存入数据库，仅成功送达后删除，并且在错误返回后重试
      */
     public enum RequestType {
