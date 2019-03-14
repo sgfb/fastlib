@@ -107,7 +107,7 @@ public abstract class UpdateService extends Service{
         mRequest=new Request("get",url)
                 .setCustomRootAddress("")
                 .setUseFactory(false)
-                .setDownloadable(new DefaultDownload(tempFile).setSupportBreak(true));
+                .setDownloadable(new DefaultDownload(tempFile).setDownloadSegment(true));
         mRequest.setIntervalSendFileTransferEvent(500);
         mRequest.setListener(new SimpleListener<String>(){
 

@@ -33,7 +33,7 @@ public class UrlImageDownloadState extends ImageState<String>{
         mDownloadRequest=new Request("get",mRequest.getSource());
         mDownloadRequest.setCallbackByWorkThread(true).setCustomRootAddress("");
         File file=new File(ImageManager.getInstance().getConfig().mSaveFolder, Utils.getMd5(mRequest.getSource(),false));
-        mDownloadRequest.setDownloadable(new DefaultDownload(file).setSupportBreak(true));
+        mDownloadRequest.setDownloadable(new DefaultDownload(file).setDownloadSegment(true));
         mDownloadRequest.setListener(new SimpleListener<String>(){
 
             @Override

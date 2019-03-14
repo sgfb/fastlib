@@ -38,6 +38,7 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.zip.GZIPInputStream;
@@ -78,7 +79,7 @@ public class NetProcessor implements Runnable {
     }
 
     @Override
-    public void run() {
+    public void run(){
         if(NetManager.getInstance().getGlobalListener()!=null)
             NetManager.getInstance().getGlobalListener().onRequestLaunched(mRequest);
         if (mRequest.getMock() != null) {
@@ -96,9 +97,7 @@ public class NetProcessor implements Runnable {
                 throw new BreakoutException();
             else mRequest.setCurrThread();
             boolean isMulti = false, isPost = mRequest.getMethod().equals("POST") || mRequest.getMethod().equals("PUT"), needBody = (isPost || mRequest.getMethod().equals("GET")); //如果不是post类型也不是get，不需要请求体
-            long existsLength;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            File downloadFile = null;
             InputStream in;
             OutputStream out;
             URL url = new URL(TextUtils.isEmpty(mRedirectUrl)?isPost ? mRequest.getUrl() : splicingGetUrl():mRedirectUrl);
@@ -114,12 +113,15 @@ public class NetProcessor implements Runnable {
                         connection.addRequestProperty(extra.field, extra.value);
                     else connection.setRequestProperty(extra.field, extra.value);
             }
-            //检测是否可保存为文件
+            //支持中断下载和资源过期
             if (mRequest.downloadable()) {
-                downloadFile = mRequest.getDownloadable().getTargetFile();
-                existsLength = downloadFile.length();
-                if (existsLength > 0 && mRequest.getDownloadable().supportBreak()) //如果支持中断并且文件已部分存在,跳过部分流
-                    connection.addRequestProperty("Range", "bytes=" + Long.toString(existsLength) + "-");
+                Downloadable.DownloadSegment ds=mRequest.getDownloadable().supportSegment();
+                if(ds!=null){
+                    long existsLength = mRequest.getDownloadable().getTargetFile().length();
+                    if(ds.breakMode()&&existsLength>0)
+                        connection.addRequestProperty("Range", "bytes=" + Long.toString(existsLength) + "-");                               //中断模式
+                    else connection.addRequestProperty("Range",String.format(Locale.getDefault(),"bytes=%d-%d",ds.getStart(),ds.getEnd())); //分段模式
+                }
                 if (!TextUtils.isEmpty(mRequest.getDownloadable().expireTime())) //添加资源是否过期判断
                     connection.addRequestProperty("If-Modified-Since", mRequest.getDownloadable().expireTime());
             }
@@ -178,18 +180,21 @@ public class NetProcessor implements Runnable {
                 in = mRequest.isReceiveGzip() ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream();
                 int len;
                 byte[] data = new byte[BUFF_LENGTH];
-                //如果支持,修改下载的文件名
-                if (mRequest.getDownloadable() != null) {
-                    OutputStream fileOut = new FileOutputStream(downloadFile, mRequest.getDownloadable().supportBreak());
+                //下载类型
+                if (mRequest.downloadable()) {
                     String disposition = connection.getHeaderField("Content-Disposition");
+                    //如果支持且有名字,修改下载的文件名
                     if (!TextUtils.isEmpty(disposition) && disposition.length() > 9 && mRequest.getDownloadable().changeIfHadName()) {
                         String filename = URLDecoder.decode(disposition.substring(disposition.indexOf("filename=") + 9), "UTF-8");
                         if (!TextUtils.isEmpty(filename)){
-                            File changedFile=new File(downloadFile.getParent(),filename);
-                            boolean changeSuccess=downloadFile.renameTo(changedFile);
-                            if(changeSuccess) mRequest.getDownloadable().setFinalFile(changedFile);
+                            File oriFile=mRequest.getDownloadable().getTargetFile();
+                            File changedFile=new File(oriFile.getParent(),filename);
+                            boolean changeSuccess=oriFile.renameTo(changedFile);
+                            if(changeSuccess) mRequest.getDownloadable().setChangedFile(changedFile);
                         }
                     }
+
+                    OutputStream downloadableOut =mRequest.getDownloadable().getOutputStream();
                     int maxCount = connection.getContentLength(); //如果流大小为－1说明是未知大小的流
                     int speed = 0;
                     long timer = System.currentTimeMillis();
@@ -197,20 +202,20 @@ public class NetProcessor implements Runnable {
                     while ((len = in.read(data)) != -1){
                         checkBreakout();
                         needEndSend=true;
-                        fileOut.write(data, 0, len);
+                        downloadableOut.write(data, 0, len);
                         Rx += len;
                         speed += len;
                         if (context != null && (System.currentTimeMillis() - timer) > mRequest.getIntervalSendFileTransferEvent()) { //每秒发送一次广播
                             needEndSend=false;
-                            EventObserver.getInstance().sendEvent(context, new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(), mRequest));
+                            EventObserver.getInstance().sendEvent(context, new EventDownloading(maxCount, speed,mRequest.getDownloadable().getTargetFile().getAbsolutePath(), mRequest));
                             speed = 0;
                             timer = System.currentTimeMillis();
                         }
                     }
                     if(context!=null&&needEndSend)
-                        EventObserver.getInstance().sendEvent(context, new EventDownloading(maxCount, speed, downloadFile.getAbsolutePath(), mRequest)); //下载结束发一次广播
-                    fileOut.close();
-                    mResponse = downloadFile.getAbsolutePath().getBytes();
+                        EventObserver.getInstance().sendEvent(context, new EventDownloading(maxCount, speed, mRequest.getDownloadable().getTargetFile().getAbsolutePath(), mRequest)); //下载结束发一次广播
+                    downloadableOut.close();
+                    mResponse = mRequest.getDownloadable().getTargetFile().getAbsolutePath().getBytes();
                 } else {
                     while ((len = in.read(data)) != -1){
                         checkBreakout();

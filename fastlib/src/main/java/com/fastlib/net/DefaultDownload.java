@@ -1,24 +1,28 @@
 package com.fastlib.net;
 
+import android.support.annotation.NonNull;
+
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
 
 /**
  * 实例化一个简单的可下载类,默认不可中断,不修改文件名,不判断资源是否过期
  */
 public class DefaultDownload implements Downloadable {
-    private boolean mSupportBreak;
     private boolean mChangeIfHadName;
     private String mExpireTime;
     private File mTargetFile;
-    private File mFinalFile; //如果文件夹名被修改，这个将是修改后的文件
+    private DownloadSegment mDownloadSegment;
 
     public DefaultDownload(String path){
         this(new File(path));
     }
 
     public DefaultDownload(File target){
-        mSupportBreak=false;
         mChangeIfHadName=false;
         mTargetFile=target;
         ensureTargetFileExists();
@@ -27,10 +31,10 @@ public class DefaultDownload implements Downloadable {
     /**
      * 确保目标文件生成
      */
-    private void ensureTargetFileExists(){
-        if(!mTargetFile.exists()){
+    private void ensureTargetFileExists() {
+        if (!mTargetFile.exists()) {
             try {
-                File parent=mTargetFile.getParentFile();
+                File parent = mTargetFile.getParentFile();
                 parent.mkdirs();
                 mTargetFile.createNewFile();
             } catch (IOException e) {
@@ -38,13 +42,14 @@ public class DefaultDownload implements Downloadable {
             }
         }
     }
-    public DefaultDownload setTargetFile(File targetFile) {
-        mTargetFile = targetFile;
+
+    public DefaultDownload setDownloadSegment(boolean breakMode){
+        mDownloadSegment=breakMode?new DownloadSegment():null;
         return this;
     }
 
-    public DefaultDownload setSupportBreak(boolean supportBreak) {
-        mSupportBreak = supportBreak;
+    public DefaultDownload setDownloadSegment(long start,long end){
+        mDownloadSegment=new DownloadSegment(start,end);
         return this;
     }
 
@@ -59,13 +64,18 @@ public class DefaultDownload implements Downloadable {
     }
 
     @Override
+    public void setChangedFile(File newFile) {
+        mTargetFile=newFile;
+    }
+
+    @Override
     public File getTargetFile() {
         return mTargetFile;
     }
 
     @Override
-    public boolean supportBreak() {
-        return mSupportBreak;
+    public DownloadSegment supportSegment() {
+        return mDownloadSegment;
     }
 
     @Override
@@ -79,11 +89,34 @@ public class DefaultDownload implements Downloadable {
     }
 
     @Override
-    public void setFinalFile(File finalFile){
-        mFinalFile=finalFile;
+    public OutputStream getOutputStream() throws IOException {
+        if(mDownloadSegment==null) return new FileOutputStream(mTargetFile);
+        else if(mDownloadSegment.breakMode()) return new FileOutputStream(mTargetFile,true);
+        else return new SegmentOutputStream();
     }
 
-    public File getFinalFile(){
-        return mFinalFile==null?mTargetFile:mFinalFile;
+    private class SegmentOutputStream extends OutputStream{
+        private RandomAccessFile mRandomAccessFile;
+
+        public SegmentOutputStream() throws IOException {
+            mRandomAccessFile=new RandomAccessFile(mTargetFile,"rw");
+            mRandomAccessFile.seek(mDownloadSegment.getStart());
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            mRandomAccessFile.write(b);
+        }
+
+        @Override
+        public void write(@NonNull byte[] b, int off, int len) throws IOException {
+            mRandomAccessFile.write(b,off,len);
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.close();
+            mRandomAccessFile.close();
+        }
     }
 }

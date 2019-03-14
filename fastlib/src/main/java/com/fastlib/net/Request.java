@@ -80,7 +80,6 @@ public class Request{
 
     /**
      * 使用模拟数据来初始化请求
-     * @param mock
      */
     public Request(MockProcess mock){
         this("");
@@ -104,7 +103,7 @@ public class Request{
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || !(o instanceof Request))
+        if (!(o instanceof Request))
             return false;
         Request another = (Request) o;
         //如果url和上传的参数，文件都相同那么认为这个网络请求是同一个
@@ -127,8 +126,6 @@ public class Request{
 
     /**
      * 查找第一个某个键位置
-     * @param key
-     * @return
      */
     private int paramsIndexOf(String key){
         if(mParams!=null){
@@ -141,10 +138,6 @@ public class Request{
 
     /**
      * 增加一组数据到某个键中
-     * @param key
-     * @param list
-     * @param <T>
-     * @return
      */
     public <T> Request addAll(String key,List<T> list){
         if(list!=null&&!list.isEmpty())
@@ -155,9 +148,6 @@ public class Request{
 
     /**
      * 添加字符串请求参数
-     * @param key
-     * @param value
-     * @return
      */
     public Request add(String key,String value){
         if(mParams==null)
@@ -176,9 +166,6 @@ public class Request{
 
     /**
      * 添加整数
-     * @param key
-     * @param value
-     * @return
      */
     public Request add(String key,int value){
         return  add(key,Integer.toString(value));
@@ -186,9 +173,6 @@ public class Request{
 
     /**
      * 添加单精浮点数
-     * @param key
-     * @param value
-     * @return
      */
     public Request add(String key,float value){
         return add(key,Float.toString(value));
@@ -196,9 +180,6 @@ public class Request{
 
     /**
      * 添加长整形数
-     * @param key
-     * @param value
-     * @return
      */
     public Request add(String key,long value){
         return add(key,Long.toString(value));
@@ -206,9 +187,6 @@ public class Request{
 
     /**
      * 添加双精浮点数
-     * @param key
-     * @param value
-     * @return
      */
     public Request add(String key,double value){
         return add(key,Double.toHexString(value));
@@ -216,9 +194,6 @@ public class Request{
 
     /**
      * 添加短整型对象
-     * @param key
-     * @param value
-     * @return
      */
     public Request add(String key,short value){
         return add(key,Short.toString(value));
@@ -226,9 +201,6 @@ public class Request{
 
     /**
      * 添加上传文件
-     * @param key
-     * @param file
-     * @return
      */
     public Request add(String key,File file){
         mFiles.add(Pair.create(key,file));
@@ -237,9 +209,6 @@ public class Request{
 
     /**
      * 添加Json对象
-     * @param key
-     * @param obj
-     * @return
      */
     public Request add(String key,Object obj){
         if(isUseGlobalParamParser) NetManager.getInstance().getGlobalParamParserManager().parserParam(true,this,key,obj);
@@ -249,8 +218,6 @@ public class Request{
 
     /**
      * 添加字符串请求参数,如果存在则覆盖第一个
-     * @param key
-     * @param value
      */
     public Request put(String key,String value) {
         if (mParams == null)
@@ -273,9 +240,6 @@ public class Request{
 
     /**
      * 添加短整型请求参数,如果存在,覆盖第一个
-     * @param key
-     * @param value
-     * @return
      */
     public Request put(String key,short value){
         return put(key,String.valueOf(value));
@@ -283,9 +247,6 @@ public class Request{
 
     /**
      * 添加整型请求参数,如果存在,覆盖第一个
-     * @param key
-     * @param value
-     * @return
      */
     public Request put(String key, int value) {
         return put(key, Integer.toString(value));
@@ -293,9 +254,6 @@ public class Request{
 
     /**
      * 添加长整型请求参数,如果存在,覆盖第一个
-     * @param key
-     * @param value
-     * @return
      */
     public Request put(String key,long value){
         return put(key,Long.toString(value));
@@ -303,9 +261,6 @@ public class Request{
 
     /**
      * 添加单精浮点请求参数,如果存在,覆盖第一个
-     * @param key
-     * @param value
-     * @return
      */
     public Request put(String key,float value){
         return put(key,String.valueOf(value));
@@ -313,9 +268,6 @@ public class Request{
 
     /**
      * 添加双精浮点请求参数,如果存在,覆盖第一个
-     * @param key
-     * @param value
-     * @return
      */
     public Request put(String key,double value){
         return put(key,String.valueOf(value));
@@ -323,9 +275,6 @@ public class Request{
 
     /**
      * 添加json对象,如果存在,覆盖第一个
-     * @param key
-     * @param obj
-     * @return
      */
     public Request put(String key,Object obj){
         if(isUseGlobalParamParser) NetManager.getInstance().getGlobalParamParserManager().parserParam(false,this,key,obj);
@@ -340,8 +289,6 @@ public class Request{
 
     /**
      * 简易地添加请求参数
-     * @param params
-     * @return
      */
     public Request put(List<Pair<String,String>> params) {
         if (mParams == null)
@@ -354,9 +301,6 @@ public class Request{
 
     /**
      * 发送文件
-     * @param key
-     * @param file
-     * @return
      */
     public Request put(String key, File file) {
         if (mFiles == null)
@@ -367,8 +311,6 @@ public class Request{
 
     /**
      * 发送文件列表
-     * @param fileParams
-     * @return
      */
     public Request putFile(List<Pair<String,File>> fileParams) {
         if (mFiles == null) mFiles = fileParams;
@@ -378,8 +320,6 @@ public class Request{
 
     /**
      * 参数递增
-     * @param key
-     * @param count
      */
     public void increment(String key, int count){
         int index;
@@ -393,8 +333,6 @@ public class Request{
 
     /**
      * 参数递减
-     * @param key
-     * @param count
      */
     public void decrease(String key, int count){
         int index;
@@ -425,8 +363,6 @@ public class Request{
 
     /**
      * 检查是否是数字参数
-     * @param key
-     * @return
      */
     private int checkNumberParams(String key){
         int index=-1;
@@ -450,8 +386,6 @@ public class Request{
 
     /**
      * 获取类型索引
-     * @param sb
-     * @return
      */
     private int getTypeIndex(StringBuilder sb) {
         int index = sb.indexOf(",");
@@ -480,7 +414,6 @@ public class Request{
 
     /**
      * 发送参数
-     * @param params
      */
     public void setParams(List<Pair<String,String>> params) {
         if (params == null&&mParams!=null)
@@ -584,8 +517,6 @@ public class Request{
 
     /**
      * 空格和汉字替换成unicode
-     * @param str
-     * @return
      */
     private String transferSpaceAndChinese(String str){
         if(TextUtils.isEmpty(str))
