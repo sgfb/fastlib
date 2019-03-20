@@ -1,27 +1,15 @@
 package com.fastlib;
 
 import android.content.Intent;
-import android.media.projection.MediaProjection;
-import android.media.projection.MediaProjectionManager;
-import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
 import android.text.TextUtils;
-import android.view.SurfaceView;
+import android.text.TextWatcher;
 import android.widget.EditText;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.module.FastActivity;
-import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.utils.N;
-
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
 
 @ContentView(R.layout.act_main)
 public class MainActivity extends FastActivity{
@@ -36,7 +24,7 @@ public class MainActivity extends FastActivity{
 
     @Override
     public void alreadyPrepared(){
-
+        mAddress.addTextChangedListener();
     }
 
     @Bind(R.id.bt)
