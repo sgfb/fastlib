@@ -30,6 +30,7 @@ import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.N;
 import com.fastlib.utils.PermissionHelper;
+import com.fastlib.utils.Reflect;
 import com.fastlib.utils.ViewInject;
 import com.fastlib.utils.local_data.LocalDataInject;
 
@@ -77,7 +78,7 @@ public class ModuleDelegate implements ModuleInterface {
      * ContentView注入，如果存在的话
      */
     private void checkContentViewInject() {
-        ContentView cv = mHost.getClass().getAnnotation(ContentView.class);
+        ContentView cv = Reflect.findAnnotation(mHost.getClass(),ContentView.class);
         if (cv != null) {
             if (mDeferView == null) alreadyContentView(cv.value());
             else {

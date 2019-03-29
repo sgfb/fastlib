@@ -63,10 +63,17 @@ public class NetRequestProcessor extends AbstractProcessor {
                     .append("\t").append("public ").append(className).append("(){}").append("\n\n")
                     .append("\t").append("public ").append(className).append("(GenRequestInterceptor<Request> interceptor){").append("\n")
                     .append("\t\t").append("mInterceptor=interceptor;").append("\n")
+                    .append("\t").append("}").append("\n\n")
+                    .append("\t").append("public ").append(className).append("(final com.fastlib.app.module.ModuleLife moduleLife){").append("\n")
+                    .append("\t\t").append("mInterceptor=new GenRequestInterceptor<Request>() {").append("\n")
+                    .append("\t\t\t").append("@Override").append("\n")
+                    .append("\t\t\t").append("public void genCompleteBefore(Request request) {").append("\n")
+                    .append("\t\t\t\t").append("request.setHostLifecycle(moduleLife);").append("\n")
+                    .append("\t\t").append("}};").append("\n")
                     .append("\t").append("}").append("\n\n");
             for (Element element : elements) {
                 if ("<init>".equals(element.getSimpleName().toString())) continue;
-                if(!"com.sun.tools.javac.code.Symbol.MethodSymbol".equals(element.getClass().getCanonicalName())) continue;;
+                if(!"com.sun.tools.javac.code.Symbol.MethodSymbol".equals(element.getClass().getCanonicalName())) continue;
 
                 BaseParam baseParamAnno = element.getAnnotation(BaseParam.class);
                 NetMock mockAnno = element.getAnnotation(NetMock.class);
@@ -87,10 +94,10 @@ public class NetRequestProcessor extends AbstractProcessor {
 
                 listenerDeclare.append("Listener<").append(returnType).append(",Object,Object>");
                 if (mockName != null) {
-                    mockSb.append("\t\t").append("try{")
-                            .append("request").append(".setMock(")
+                    mockSb.append("\t\t").append("try{").append("\n")
+                            .append("\t\t\t").append("request").append(".setMock(")
                             .append("(MockProcess)Class.forName(\"").append(mockName).append("\").newInstance());").append('\n')
-                            .append("\t\t\t}catch(Exception e){e.printStackTrace();}").append('\n');
+                            .append("\t\t}catch(Exception e){e.printStackTrace();}").append('\n');
                 }
                 try {
                     Field methodParamsField = element.getClass().getDeclaredField("params");
@@ -109,7 +116,7 @@ public class NetRequestProcessor extends AbstractProcessor {
                     if (paramsSb.length() > 0)
                         paramsSb.deleteCharAt(paramsSb.length()-1);
                     genRequestSb.append("\t").append("public ").append(requestDefine).append(" gen").append(methodName.substring(0, 1).toUpperCase()).append(methodName.substring(1))
-                            .append("Request(").append(paramsSb).append(",").append(listenerDeclare).append(" listener").append(")").append("{").append("\n")
+                            .append("Request(").append(paramsSb).append(paramsSb.length()==0?"":",").append(listenerDeclare).append(" listener").append(")").append("{").append("\n")
                             .append("\t\t").append(requestDefine).append(" request=new ").append(requestDefine).append("(")
                             .append('"').append(requestMethod).append('"').append(",").append('"').append(url).append('"').append(")").append("\n")
                             .append("\t\t\t").append(".setListener(listener)").append("\n");
@@ -119,6 +126,9 @@ public class NetRequestProcessor extends AbstractProcessor {
                         genRequestSb.append("\t\t\t").append(".put(").append('"').append(paramName).append('"').append(",").append(paramName).append(")\n");
                     }
                     genRequestSb.replace(genRequestSb.length()-1,genRequestSb.length()-1,";\n");
+                    if(mockSb.length()>0){
+                        genRequestSb.append(mockSb).append("\n");
+                    }
                     genRequestSb.append("\t\t").append("if(mInterceptor!=null)").append("\n")
                             .append("\t\t\t").append("mInterceptor").append(".genCompleteBefore(request);").append("\n")
                             .append("\t\t").append("return request;").append("\n")
@@ -142,7 +152,7 @@ public class NetRequestProcessor extends AbstractProcessor {
 
                 //standard launcher request method
                 classSb.append("\t").append("public ").append(returnType).append(" ").append(methodName).append("(")
-                        .append(paramsSb).append(",final ").append(listenerDeclare).append(" listener)").append("{").append("\n")
+                        .append(paramsSb).append(paramsSb.length()==0?"":",").append("final ").append(listenerDeclare).append(" listener)").append("{").append("\n")
                         .append("\t\t").append(requestDefine).append(" request=gen").append(methodName.substring(0, 1).toUpperCase()).append(methodName.substring(1))
                         .append("Request").append("(");
                 for(String paramName:paramNameList)
@@ -164,13 +174,11 @@ public class NetRequestProcessor extends AbstractProcessor {
                         .append("\t\t\t\t").append("if(listener!=null) listener.onResponseListener(r,result,result2,cookedResult);").append("\n")
                         .append("\t\t\t").append("}").append("\n\n")
                         .append("\t\t\t").append("@Override").append("\n")
-                        .append("\t\t\t").append("public void onErrorListener(").append(requestDefine).append(" r,String error){").append("\n")
+                        .append("\t\t\t").append("public void onErrorListener(").append(requestDefine).append(" r,Exception error){").append("\n")
                         .append("\t\t\t\t").append("if(listener!=null) listener.onErrorListener(r,error);").append("\n")
                         .append("\t\t\t").append("}").append("\n")
                         .append("\t\t").append("});").append("\n");
-                if(mockSb.length()>0){
-                    classSb.append(mockSb).append("\n");
-                }
+
                 classSb.append("\t\t").append("request.start();").append("\n")
                         .append("\t\t").append("return null;").append("\n")
                         .append("\t").append("}").append("\n\n");

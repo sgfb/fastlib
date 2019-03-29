@@ -88,9 +88,8 @@ public abstract class AbsWebViewActivity extends FastActivity{
         @Override
         public void onProgressChanged(WebView view, int newProgress) {
             if(mProgress!=null){
+                mProgress.setVisibility(newProgress >= 100?View.GONE:View.VISIBLE);
                 mProgress.setProgress(newProgress);
-                if (newProgress >= 100)
-                    mProgress.setVisibility(View.GONE);
             }
         }
 

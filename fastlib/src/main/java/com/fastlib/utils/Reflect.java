@@ -14,6 +14,15 @@ import java.util.List;
  */
 public class Reflect{
 
+	public static @Nullable <T extends Annotation> Class checkParentClassHadAnnotation(Class cla,Class<T> annotation){
+		Class parent=cla;
+		do{
+			if(parent.getAnnotation(annotation)!=null) return parent;
+			parent=parent.getSuperclass();
+		}while(parent!=null);
+		return null;
+	}
+
 	/**
 	 * 寻找当前类和向上寻找类注解
 	 * @param cla 类
@@ -24,6 +33,41 @@ public class Reflect{
 	public static @Nullable
 	<T extends Annotation> T upFindAnnotation(Class cla, Class<T> anno){
 		return upFindAnnotation(cla,anno,false);
+	}
+
+	/**
+	 * 寻找当前类和向上寻找类注解
+	 * @param cla 类
+	 * @param anno 指定注解
+	 * @param <T> 注解类型
+	 * @return 如果不为空返回指定注解实体
+	 */
+	public static @Nullable <T extends Annotation> T findAnnotation(Class cla, Class<T> anno){
+		return findAnnotation(cla,anno,false);
+	}
+
+	/**
+	 * 寻找当前类和向上寻找类注解
+	 * @param cla 类
+	 * @param anno 指定注解
+	 * @param findInterface 是否查看接口注解
+	 * @param <T> 注解类型
+	 * @return 如果不为空返回指定注解实体
+	 */
+	public static @Nullable <T extends Annotation> T findAnnotation(Class cla,Class<T> anno,boolean findInterface){
+		if(findInterface)
+			return findCurrAnnotation(cla,anno);
+		else{
+			Annotation annoInstance;
+			Class upwardClass=cla;
+
+			do{
+				annoInstance=upwardClass.getAnnotation(anno);
+				if(annoInstance!=null) break;
+				upwardClass=upwardClass.getSuperclass();
+			}while(upwardClass!=null);
+			return (T) annoInstance;
+		}
 	}
 
 	/**
