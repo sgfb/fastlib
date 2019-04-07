@@ -78,10 +78,13 @@ public class VideoEncoder {
             mMediaCodec.configure(format,null,null,MediaCodec.CONFIGURE_FLAG_ENCODE);
             mMediaCodec.setCallback(mCallback,mEncoderHandler);
             mSurface=mMediaCodec.createInputSurface();
-            mMediaCodec.start();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void start(){
+        mMediaCodec.start();
     }
 
     public void close(){
@@ -93,6 +96,10 @@ public class VideoEncoder {
             mMediaCodec.release();
             mMediaCodec=null;
         }
+    }
+
+    public boolean isClosed(){
+        return mMediaCodec==null;
     }
 
     public void inputFrameToEncoder(byte[] data){

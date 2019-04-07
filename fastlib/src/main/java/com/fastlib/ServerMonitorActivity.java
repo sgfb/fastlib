@@ -42,7 +42,7 @@ public class ServerMonitorActivity extends FastActivity{
         mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(SurfaceHolder holder) {
-                mDecoder=new VideoDecoder(holder.getSurface());
+                mDecoder=new VideoDecoder();
             }
 
             @Override
@@ -87,6 +87,6 @@ public class ServerMonitorActivity extends FastActivity{
 
     @Bind(R.id.start)
     private void start(){
-        mDecoder.start();
+        mDecoder.start(mSurfaceView.getHolder().getSurface());
     }
 }

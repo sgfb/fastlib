@@ -57,10 +57,16 @@ public class VideoDecoder{
         }
     };
 
-    public VideoDecoder(Surface surface){
+    public VideoDecoder(){
         mHandlerThread.start();
         mDecoderHandler=new Handler(mHandlerThread.getLooper());
+    }
 
+    public void setSurface(Surface surface){
+        mMediaCodec.setInputSurface(surface);
+    }
+
+    public void start(Surface surface){
         MediaFormat format=MediaFormat.createVideoFormat("video/avc",480,800);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT,MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         format.setInteger(MediaFormat.KEY_BIT_RATE,480*800);
@@ -74,13 +80,6 @@ public class VideoDecoder{
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public void setSurface(Surface surface){
-        mMediaCodec.setInputSurface(surface);
-    }
-
-    public void start(){
         mMediaCodec.start();
     }
 
