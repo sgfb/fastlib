@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.alpha;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -11,7 +11,6 @@ import android.view.Surface;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.logging.LogRecord;
 
 /**
  * Create by sgfb on 2019/03/19
@@ -73,7 +72,7 @@ public class VideoEncoder {
             MediaFormat format=MediaFormat.createVideoFormat("video/avc",480,800);
             format.setInteger(MediaFormat.KEY_COLOR_FORMAT,MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
             format.setInteger(MediaFormat.KEY_BIT_RATE,480*800);
-            format.setInteger(MediaFormat.KEY_FRAME_RATE,40);
+            format.setInteger(MediaFormat.KEY_FRAME_RATE,80);
             format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL,1);
             mMediaCodec.configure(format,null,null,MediaCodec.CONFIGURE_FLAG_ENCODE);
             mMediaCodec.setCallback(mCallback,mEncoderHandler);
@@ -89,11 +88,11 @@ public class VideoEncoder {
 
     public void close(){
         if(mMediaCodec!=null){
-            mMediaCodec.stop();
             mMediaCodec.setCallback(null);
+            mMediaCodec.stop();
+            mMediaCodec.release();
             mInputQueue.clear();
             mOutputQueue.clear();
-            mMediaCodec.release();
             mMediaCodec=null;
         }
     }

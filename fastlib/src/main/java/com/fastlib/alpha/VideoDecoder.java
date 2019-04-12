@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.alpha;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -70,7 +70,7 @@ public class VideoDecoder{
         MediaFormat format=MediaFormat.createVideoFormat("video/avc",480,800);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT,MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         format.setInteger(MediaFormat.KEY_BIT_RATE,480*800);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE,40);
+        format.setInteger(MediaFormat.KEY_FRAME_RATE,80);
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL,1);
 
         try {

@@ -1,26 +1,22 @@
-package com.fastlib;
+package com.fastlib.alpha;
 
 import android.content.Intent;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 
+import com.fastlib.R;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.annotation.LocalData;
 import com.fastlib.app.module.FastActivity;
 import com.fastlib.app.task.ThreadPoolManager;
+import com.fastlib.alpha.VideoEncoder;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.Socket;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * Create by sgfb on 2019/03/19
@@ -38,8 +34,8 @@ public class ClientRecordActivity extends FastActivity{
     VideoEncoder mEncoder;
     MediaProjectionManager mProjectionManager;
     MediaProjection mMediaProject;
-    long mTimer;
-    long mSendCount;
+    Socket mSocket;
+    BlockingQueue<byte[]> mBuffer=new ArrayBlockingQueue<>(1024);
 
     @Override
     public void alreadyPrepared(){
@@ -55,6 +51,21 @@ public class ClientRecordActivity extends FastActivity{
         if(requestCode==1&&resultCode==RESULT_OK){
             mMediaProject=mProjectionManager.getMediaProjection(resultCode,data);
             mMediaProject.createVirtualDisplay("screenRecode",480,800,260,0,mEncoder.getSurface(),null,null);
+            mEncoder.start();
+            ThreadPoolManager.sSlowPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        while(!isFinishing()&&!isDestroyed()){
+                            byte[] data=mEncoder.pollFrameFromEncoder();
+                            if(data==null) continue;
+                            mBuffer.put(data);
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
         }
     }
 
@@ -63,21 +74,25 @@ public class ClientRecordActivity extends FastActivity{
         ThreadPoolManager.sSlowPool.execute(new Runnable(){
             @Override
             public void run() {
-                try{
-                    DatagramSocket dataSocket=new DatagramSocket(0);
-                    while(!isDestroyed()&&!isFinishing()){
-                        byte[] data=mEncoder.pollFrameFromEncoder();
-                        if(data==null) continue;
-                        mSendCount+=data.length;
-                        if(System.currentTimeMillis()-mTimer>1000){
-                            System.out.println("发送:"+mSendCount);
-                            mTimer=System.currentTimeMillis();
-                            mSendCount=0;
-                        }
-                        DatagramPacket pck=new DatagramPacket(data,data.length,InetAddress.getByName(mAddress),mPort);
-                        dataSocket.send(pck);
+                try {
+                    mSocket=new Socket(mAddress,mPort);
+                    OutputStream out=mSocket.getOutputStream();
+                    while(!mSocket.isClosed()&&!isDestroyed()&&!isFinishing()){
+                        byte[] data=mBuffer.take();
+
+                        System.out.println(mBuffer.size());
+                        byte[] intByte=new byte[4];
+                        intByte[0]= (byte) (data.length>>24);
+                        intByte[1]= (byte) (data.length>>16);
+                        intByte[2]= (byte) (data.length>>8);
+                        intByte[3]= (byte) (data.length);
+                        out.write(intByte);
+                        out.write(data);
                     }
-                }catch (IOException e){
+                    mSocket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }

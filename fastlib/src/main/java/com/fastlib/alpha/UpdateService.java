@@ -1,4 +1,4 @@
-package com.fastlib.test;
+package com.fastlib.alpha;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -22,7 +22,6 @@ import com.fastlib.bean.event.EventDownloading;
 import com.fastlib.net.DefaultDownload;
 import com.fastlib.net.Request;
 import com.fastlib.net.listener.SimpleListener;
-import com.fastlib.utils.N;
 
 import java.io.File;
 
