@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
@@ -14,6 +15,7 @@ import android.util.Log;
 
 import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Database;
+import com.fastlib.annotation.DbFileRef;
 import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.bean.DatabaseTable;
 import com.fastlib.net.NetManager;
@@ -22,6 +24,7 @@ import com.fastlib.utils.Reflect;
 import com.google.gson.Gson;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -29,7 +32,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 封装一些与数据库交互的基本操作。非orm数据库。
@@ -39,7 +44,7 @@ import java.util.Map;
 public class FastDatabase{
     private static final String SAVE_INT_DB_VERSION="dbVersion";
     private static final String DEFAULT_DATABASE_NAME = BuildConfig.DEFAULT_DATA_FILE_NAME;
-    private static DatabaseConfig sConfig=new DatabaseConfig();
+    private static DatabaseConfig sConfig;
 
     private CustomUpdate mCustomUpdate;
     private Context mContext;
@@ -48,6 +53,7 @@ public class FastDatabase{
 
     private FastDatabase(Context context){
         mContext = context.getApplicationContext();
+        sConfig=new DatabaseConfig(context);
         mAttribute = new RuntimeAttribute();
         mFunctionCommand=new HashMap<>();
     }
@@ -220,6 +226,7 @@ public class FastDatabase{
 
                 for (Field field : fields){
                     Database inject = field.getAnnotation(Database.class);
+                    DbFileRef fileRef=field.getAnnotation(DbFileRef.class);
                     field.setAccessible(true);
                     Class<?> type=field.getType();
                     String typeName = field.getType().getSimpleName();
@@ -295,11 +302,24 @@ public class FastDatabase{
                         else params.put(field.getName(),cursor.getBlob(columnIndex));
                     }
                     else if(type==String.class){
-                        if(obj!=null) field.set(obj, cursor.getString(columnIndex));
-                        else params.put(field.getName(),cursor.getString(columnIndex));
+                        String value=cursor.getString(columnIndex);
+
+                        if(fileRef!=null){
+                            File file=new File(value);
+                            value=new String(SaveUtil.loadFile(file.getAbsolutePath()));
+                        }
+                        if(obj!=null) field.set(obj,value);
+                        else params.put(field.getName(),value);
                     }
                     else{
-                        String json = cursor.getString(columnIndex);
+                        String value = cursor.getString(columnIndex);
+                        String json;
+                        if(fileRef==null)
+                            json=value;
+                        else{
+                            File file=new File(value);
+                            json=new String(SaveUtil.loadFile(file.getAbsolutePath()));
+                        }
                         Object preObj = gson.fromJson(json,field.getGenericType());
                         if(obj!=null) field.set(obj,preObj);
                         else params.put(field.getName(),preObj);
@@ -608,6 +628,7 @@ public class FastDatabase{
                 for (Field field : fields){
                     field.setAccessible(true);
                     Database fieldInject = field.getAnnotation(Database.class);
+                    DbFileRef fileRef=field.getAnnotation(DbFileRef.class);
                     String columnName;
                     Class<?> type=field.getType();
 
@@ -659,26 +680,44 @@ public class FastDatabase{
                         }
                         else if(type==short.class)
                             cv.put(columnName,field.getShort(obj));
-                        else if(type==String.class)
-                            cv.put(columnName,(String)field.get(obj));
                         else if(type==byte.class)
                             cv.put(columnName,field.getByte(obj));
                         else if(type==byte[].class)
                             cv.put(columnName,(byte[])field.get(obj));
+                        else if(type==String.class){
+                            if(fileRef==null)
+                                cv.put(columnName, (String) field.get(obj));
+                            else{
+                                File file=new File(sConfig.mFileRefDir,String.format(Locale.getDefault(),"%s_%s_%s",availableObj.getClass().getSimpleName(),field.getName(),UUID.randomUUID()));
+                                file.createNewFile();
+                                SaveUtil.saveToFile(file,((String)field.get(obj)).getBytes(),false);
+                                cv.put(columnName,file.getAbsolutePath());
+                            }
+                        }
                         else{
                             Object pre = field.get(obj);
                             Gson gson = new Gson();
                             String json = gson.toJson(pre);
 
-                            if (pre == null)
-                                cv.putNull(columnName);
-                            else
-                                cv.put(columnName, json);
+                            if(fileRef==null){
+                                if (pre == null)
+                                    cv.putNull(columnName);
+                                else
+                                    cv.put(columnName, json);
+                            }
+                            else{
+                                File file=new File(sConfig.mFileRefDir,String.format(Locale.getDefault(),"%s_%s_%s",availableObj.getClass().getSimpleName(),field.getName(),UUID.randomUUID()));
+                                file.createNewFile();
+                                SaveUtil.saveToFile(file,json.getBytes(),false);
+                                cv.put(columnName,file.getAbsolutePath());
+                            }
                         }
                     } catch (IllegalAccessException | IllegalArgumentException e){
                         if (BuildConfig.isShowLog)
                             System.out.println("更新数据失败:"+e.getMessage());
                         return false;
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
                 //对自动增长的主键
@@ -1491,6 +1530,7 @@ public class FastDatabase{
         private int mVersion;
         private String mCurrentDatabase;
         private String mPrefix;
+        private File mFileRefDir;
 
         /**
          * 默认的数据库配置为
@@ -1498,9 +1538,11 @@ public class FastDatabase{
          * 日志输出＝true
          * 数据库名＝default.db
          */
-        private DatabaseConfig(){
+        private DatabaseConfig(Context context){
             mVersion = SaveUtil.getFromSp(ContextHolder.getContext(),SAVE_INT_DB_VERSION,1);
             mCurrentDatabase = getDefaultDatabaseName() + ".db";
+            mFileRefDir=context.getExternalFilesDir("dbRef");
+            if(mFileRefDir==null||!mFileRefDir.exists()) mFileRefDir.mkdir();
         }
 
         /**
@@ -1524,6 +1566,10 @@ public class FastDatabase{
             }
             mVersion = version;
             SaveUtil.saveToSp(context,SAVE_INT_DB_VERSION,version);
+        }
+
+        public File getFileRefDir(){
+            return mFileRefDir;
         }
 
         public int getVersion() {

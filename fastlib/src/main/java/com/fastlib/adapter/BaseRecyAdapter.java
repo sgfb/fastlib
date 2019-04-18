@@ -275,7 +275,7 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
      * 头部和尾部额外视图生成后回调
      */
     public interface OnExtraItemCreateCallback{
-        void extraItemCreated(CommonViewHolder view);
+        void extraItemCreated(CommonViewHolder viewHolder);
     }
 
     /**

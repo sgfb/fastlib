@@ -5,6 +5,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.view.View;
 
+import com.fastlib.annotation.NetCallback;
 import com.fastlib.base.CommonViewHolder;
 import com.fastlib.base.Refreshable;
 import com.fastlib.net.Request;
@@ -19,12 +20,12 @@ import java.util.List;
  * @param <T> 数据类型
  * @param <R> 返回类型
  */
+@NetCallback("translate")
 public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T> implements Listener<R,Object,Object> {
     private static final int DEFAULT_ANIM_DURATION=300;
     protected boolean isRefresh,isLoading,isMore;
-    private int mPerCount; //每次读取条数，默认为1
-    private Refreshable mRefreshLayout;
     protected Request mRequest;
+    private Refreshable mRefreshLayout;
 
     /**
      * 生成网络请求
@@ -64,26 +65,12 @@ public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T> i
     public SingleAdapterForRecycler(@LayoutRes int layoutId, boolean startNow){
         super(layoutId);
         mRequest= generateRequest();
-        mPerCount=1;
         isRefresh=true;
         isMore=true;
         isLoading=false;
-        mRequest.setGenericType(new Type[]{getResponseType()});
         mRequest.setListener(this);
         if(startNow)
             refresh();
-    }
-
-    private Type getResponseType(){
-        Method[] methods=getClass().getDeclaredMethods();
-        for(Method m:methods){
-            if(m.getName().equals("translate")) {
-                Type type=m.getGenericParameterTypes()[0];
-                if(type!=Object.class)
-                    return type;
-            }
-        }
-        return null;
     }
 
     /**
@@ -140,9 +127,6 @@ public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T> i
                 mData.clear();
         }
         else{
-            if(list.size()<mPerCount){
-                isMore = false;
-            }
             if(isRefresh)
                 mData=list;
             else{

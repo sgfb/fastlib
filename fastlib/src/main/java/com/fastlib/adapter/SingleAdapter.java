@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 
+import com.fastlib.annotation.NetCallback;
 import com.fastlib.base.AdapterViewState;
 import com.fastlib.base.OldViewHolder;
 import com.fastlib.base.Refreshable;
@@ -23,6 +24,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @param <T> 数据类型
  * @param <R> 返回类型
  */
+@NetCallback("translate")
 public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener<R,Object,Object> {
 	public static final String TAG=SingleAdapter.class.getSimpleName();
 
@@ -79,21 +81,9 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 		isRefresh=true;
 		isMore=true;
 		isLoading=false;
-		mRequest.setGenericType(new Type[]{getResponseType()});
 		mRequest.setListener(this);
 		if(startNow)
 		    refresh();
-	}
-
-	private Type getResponseType(){
-		Method[] methods=getClass().getDeclaredMethods();
-		for(Method m:methods)
-		    if(m.getName().equals("translate")){
-				Type type=m.getGenericParameterTypes()[0];
-				if(type!=Object.class)
-					return type;
-			}
-		return null;
 	}
 
 	@Override

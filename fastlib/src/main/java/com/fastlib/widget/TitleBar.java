@@ -99,7 +99,7 @@ public class TitleBar extends LinearLayout {
 
     /**
      * 设置左视图点击事件
-     * @param listener
+     * @param listener 监听回调
      */
     public void setOnLeftClickListener(OnClickListener listener){
         mLeftBackground.setOnClickListener(listener);
@@ -107,7 +107,7 @@ public class TitleBar extends LinearLayout {
 
     /**
      * 点击右视图点击事件
-     * @param listener
+     * @param listener 监听回调
      */
     public void setOnRightClickListener(OnClickListener listener){
         mRightBackground.setOnClickListener(listener);

@@ -5,6 +5,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
+import com.fastlib.annotation.NetCallback;
 import com.fastlib.app.module.ModuleLife;
 import com.fastlib.base.Refreshable;
 import com.fastlib.db.FastDatabase;
@@ -13,6 +14,7 @@ import com.fastlib.net.bean.ResponseStatus;
 import com.fastlib.net.listener.Listener;
 import com.fastlib.net.mock.MockProcess;
 import com.fastlib.net.param_parse.ParamParserManager;
+import com.fastlib.utils.Reflect;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
@@ -450,30 +452,42 @@ public class Request{
             return this;
         mGenericType=new Type[3];
         //泛型解析,如果是Object和byte[]就返回原始字节流,String返回字符,其它类型就尝试使用gson解析
+        NetCallback netCallback=Reflect.findAnnotation(l.getClass(),NetCallback.class,true);
         Method[] ms = l.getClass().getDeclaredMethods();
-        List<Method> duplicate = new ArrayList<>();
+
+        if(netCallback==null) throw new IllegalStateException("RequestCallbackFun can't be null!");
+        //使用遍历免去手动输入方法参数（但同时略微降低性能）
+        List<Method> duplicateList=new ArrayList<>();
         for (Method m : ms) {
-            if ("onResponseListener".equals(m.getName()))
-                duplicate.add(m);
+            String methodFullDescription=m.toString();
+            if (netCallback.value().equals(m.getName())&&!methodFullDescription.contains("volatile")){
+                duplicateList.add(m);
+            }
         }
-        for (Method m : duplicate){
-            boolean someoneIsNotObject=false;
+        Method realMethod = null;
+        //所有参数都必须不是Object
+        for (Method m : duplicateList){
+            boolean allNotObject=true;
             Type[] types=m.getGenericParameterTypes();
+
+            for(Type t:types){
+                if(t==Object.class) allNotObject=false;
+            }
+            if(allNotObject){
+                realMethod=m;
+                break;
+            }
+        }
+        if(realMethod!=null){
+            Type[] types=realMethod.getGenericParameterTypes();
+
             if(types!=null){
-                if (types.length>1&&types[1] != Object.class){
-                    mGenericType[0] = types[1];
-                    someoneIsNotObject=true;
-                }
-                if(types.length>2&&types[2]!=Object.class){
-                    mGenericType[1]=types[2];
-                    someoneIsNotObject=true;
-                }
-                if(types.length>3&&types[3]!=Object.class){
-                    mGenericType[2]=types[3];
-                    someoneIsNotObject=true;
+                for(int i=0;i<Math.min(3,types.length);i++){
+                    Type type=types[i];
+                    if(type!=Request.class)
+                        mGenericType[i]=type;
                 }
             }
-            if(someoneIsNotObject) break;
         }
         return this;
     }

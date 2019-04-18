@@ -1,11 +1,13 @@
 package com.fastlib.net.listener;
 
+import com.fastlib.annotation.NetCallback;
 import com.fastlib.net.Request;
 
 /**
  * Created by sgfb on 16/12/28.
  * 网络回调监听.最原始级,可以使用更简便封装好的{@link SimpleListener}{@link SimpleListener2}{@link SimpleListener3}{@link CookedListener}
  */
+@NetCallback("onResponseListener")
 public interface Listener<T,T2,R>{
 
     /**
