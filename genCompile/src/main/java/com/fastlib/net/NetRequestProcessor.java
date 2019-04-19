@@ -147,7 +147,7 @@ public class NetRequestProcessor extends AbstractProcessor {
                 for(String paramName:paramNameList)
                     classSb.append(paramName).append(",");
                 classSb.append("null);").append("\n")
-                        .append("\t\t\t").append("return null;").append("\n")
+                        .append("\t\t").append("return null;").append("\n")
                         .append("\t").append("}").append("\n\n");
 
                 //standard launcher request method
@@ -157,27 +157,29 @@ public class NetRequestProcessor extends AbstractProcessor {
                         .append("Request").append("(");
                 for(String paramName:paramNameList)
                     classSb.append(paramName).append(",");
-                classSb.append("listener);").append("\n")
-                        .append("\t\t").append("request.setListener(new Listener<").append(returnType).append(",Object,Object>(){").append("\n").append("\n")
-                        .append("\t\t\t").append("@Override").append("\n")
-                        .append("\t\t\t").append("public void onRawData(").append(requestDefine).append(" r,byte[] data){").append("\n")
-                        .append("\t\t\t\t").append("if(listener!=null) listener.onRawData(r,data);").append("\n")
-                        .append("\t\t\t").append("}").append("\n\n")
-                        .append("\t\t\t").append("@Override").append("\n")
-                        .append("\t\t\t").append("public void onTranslateJson(").append(requestDefine).append(" r,String json){").append("\n")
-                        .append("\t\t\t\t").append("if(listener!=null) listener.onTranslateJson(r,json);").append("\n")
-                        .append("\t\t\t").append("}").append("\n\n")
-                        .append("\t\t\t").append("@Override").append("\n")
-                        .append("\t\t\t").append("public void onResponseListener(").append(requestDefine).append(" r,").append(returnType)
+                classSb.append("\t").append("listener);").append("\n")
+                        .append("\t\t").append("if(listener!=null){").append("\n")
+                        .append("\t\t\t").append("request.setListener(new Listener<").append(returnType).append(",Object,Object>(){").append("\n").append("\n")
+                        .append("\t\t\t\t").append("@Override").append("\n")
+                        .append("\t\t\t\t").append("public void onRawData(").append(requestDefine).append(" r,byte[] data){").append("\n")
+                        .append("\t\t\t\t\t").append("if(listener!=null) listener.onRawData(r,data);").append("\n")
+                        .append("\t\t\t\t").append("}").append("\n\n")
+                        .append("\t\t\t\t").append("@Override").append("\n")
+                        .append("\t\t\t\t").append("public void onTranslateJson(").append(requestDefine).append(" r,String json){").append("\n")
+                        .append("\t\t\t\t\t").append("if(listener!=null) listener.onTranslateJson(r,json);").append("\n")
+                        .append("\t\t\t\t").append("}").append("\n\n")
+                        .append("\t\t\t\t").append("@Override").append("\n")
+                        .append("\t\t\t\t").append("public void onResponseListener(").append(requestDefine).append(" r,").append(returnType)
                         .append(" result,Object result2,Object cookedResult){").append("\n")
-                        .append("\t\t\t\t").append(methodName).append(methodSuffix).append("(r,result);").append("\n")
-                        .append("\t\t\t\t").append("if(listener!=null) listener.onResponseListener(r,result,result2,cookedResult);").append("\n")
-                        .append("\t\t\t").append("}").append("\n\n")
-                        .append("\t\t\t").append("@Override").append("\n")
-                        .append("\t\t\t").append("public void onErrorListener(").append(requestDefine).append(" r,Exception error){").append("\n")
-                        .append("\t\t\t\t").append("if(listener!=null) listener.onErrorListener(r,error);").append("\n")
-                        .append("\t\t\t").append("}").append("\n")
-                        .append("\t\t").append("});").append("\n");
+                        .append("\t\t\t\t\t").append(methodName).append(methodSuffix).append("(r,result);").append("\n")
+                        .append("\t\t\t\t\t").append("if(listener!=null) listener.onResponseListener(r,result,result2,cookedResult);").append("\n")
+                        .append("\t\t\t\t").append("}").append("\n\n")
+                        .append("\t\t\t\t").append("@Override").append("\n")
+                        .append("\t\t\t\t").append("public void onErrorListener(").append(requestDefine).append(" r,Exception error){").append("\n")
+                        .append("\t\t\t\t\t").append("if(listener!=null) listener.onErrorListener(r,error);").append("\n")
+                        .append("\t\t\t\t").append("}").append("\n")
+                        .append("\t\t\t").append("});").append("\n")
+                        .append("\t\t").append("}").append("\n");
 
                 classSb.append("\t\t").append("request.start();").append("\n")
                         .append("\t\t").append("return null;").append("\n")

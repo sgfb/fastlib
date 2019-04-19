@@ -102,7 +102,7 @@ public abstract class NetAction<P,R> extends Action<Request,R>{
             }
             else
                 return executeAdapt(isCookResultData()? (P) mCookedData :(P) mResponseObj,param);
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             stopTask();
             globalListener.onErrorListener(param,e.toString());

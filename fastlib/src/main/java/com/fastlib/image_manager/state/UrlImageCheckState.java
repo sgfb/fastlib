@@ -72,9 +72,7 @@ public class UrlImageCheckState extends ImageState<String>{
                     return true;
                 else Log.d(TAG,String.format(Locale.getDefault(),"文件过期或未下载完成:%s",mRequest.getSimpleName()));
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return false;

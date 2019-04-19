@@ -11,6 +11,7 @@ import com.fastlib.base.Refreshable;
 import com.fastlib.db.FastDatabase;
 import com.fastlib.db.ServerCache;
 import com.fastlib.net.bean.ResponseStatus;
+import com.fastlib.net.exception.DiscardException;
 import com.fastlib.net.listener.Listener;
 import com.fastlib.net.mock.MockProcess;
 import com.fastlib.net.param_parse.ParamParserManager;
@@ -500,7 +501,7 @@ public class Request{
         isCancel=true;
         if(mThread!=null) mThread.interrupt();
         if(mListener != null)
-            mListener.onErrorListener(this, "手动取消网络请求 " + mUrl);
+            mListener.onErrorListener(this,new DiscardException("手动取消网络请求 " + mUrl));
     }
 
     /**

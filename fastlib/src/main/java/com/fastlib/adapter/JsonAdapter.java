@@ -134,7 +134,7 @@ public abstract class JsonAdapter extends BaseAdapter implements Listener<String
     }
 
     @Override
-    public void onErrorListener(Request r, String error){
+    public void onErrorListener(Request r, Exception error){
         isLoading=false;
         if(mRefreshable!=null)
             mRefreshable.setRefreshStatus(false);

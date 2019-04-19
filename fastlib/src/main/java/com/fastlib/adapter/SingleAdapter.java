@@ -188,7 +188,7 @@ public abstract class SingleAdapter<T,R> extends BaseAdapter implements Listener
 	}
 
 	@Override
-	public void onErrorListener(Request r, String error){
+	public void onErrorListener(Request r, Exception error){
 		if(mRefreshLayout!=null)
 			mRefreshLayout.setRefreshStatus(false);
 		isLoading=false;

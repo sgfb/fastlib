@@ -113,7 +113,7 @@ public abstract class BindingGroup<T,R> extends MultiTypeAdapter.RecyclerGroup<T
     }
 
     @Override
-    public void onErrorListener(Request r, String error){
+    public void onErrorListener(Request r, Exception error){
         if(mRefreshLayout!=null) mRefreshLayout.setRefreshing(false);
         isLoading=false;
     }

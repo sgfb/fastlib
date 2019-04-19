@@ -117,7 +117,7 @@ public abstract class UpdateService extends Service{
             }
 
             @Override
-            public void onErrorListener(Request r, String error) {
+            public void onErrorListener(Request r, Exception error) {
                 super.onErrorListener(r, error);
                 updateError(r.isCancel(),error);
                 stopSelf();
@@ -131,7 +131,7 @@ public abstract class UpdateService extends Service{
      * @param selfCancel 自己手动取消
      * @param msg 错误消息
      */
-    protected void updateError(boolean selfCancel,String msg){}
+    protected void updateError(boolean selfCancel,Exception msg){}
 
     /**
      * 安装更新包

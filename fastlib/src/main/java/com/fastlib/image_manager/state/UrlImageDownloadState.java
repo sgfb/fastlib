@@ -42,7 +42,7 @@ public class UrlImageDownloadState extends ImageState<String>{
             }
 
             @Override
-            public void onErrorListener(Request r, String error) {
+            public void onErrorListener(Request r, Exception error) {
                 super.onErrorListener(r, error);
                 mDownloadSuccess=false;
             }

@@ -140,7 +140,7 @@ public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T> i
     }
 
     @Override
-    public void onErrorListener(Request r, String error){
+    public void onErrorListener(Request r, Exception error){
         if(mRefreshLayout!=null)
             mRefreshLayout.setRefreshStatus(false);
         isLoading=false;

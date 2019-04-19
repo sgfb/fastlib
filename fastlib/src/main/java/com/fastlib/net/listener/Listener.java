@@ -36,5 +36,5 @@ public interface Listener<T,T2,R>{
      * @param r 网络请求
      * @param error 简单的错误信息
      */
-    void onErrorListener(Request r,String error);
+    void onErrorListener(Request r,Exception error);
 }

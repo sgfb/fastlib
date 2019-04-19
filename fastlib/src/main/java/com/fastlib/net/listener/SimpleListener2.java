@@ -33,7 +33,7 @@ public abstract class SimpleListener2<T1,T2> implements Listener<T1,T2,Object> {
     }
 
     @Override
-    public void onErrorListener(Request r, String error) {
+    public void onErrorListener(Request r, Exception error) {
 
     }
 }

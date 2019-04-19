@@ -63,7 +63,7 @@ public class NetProcessor implements Runnable {
     private String mRedirectUrl;
     private OnCompleteListener mListener;
     private Executor mResponsePoster;
-    private IOException mException; //留存的异常
+    private Exception mException;           //留存的异常
 
     public NetProcessor(Request request, OnCompleteListener l, final Handler handler) {
         mRequest = request;
@@ -119,7 +119,7 @@ public class NetProcessor implements Runnable {
                 if(ds!=null){
                     long existsLength = mRequest.getDownloadable().getTargetFile().length();
                     if(ds.breakMode()&&existsLength>0)
-                        connection.addRequestProperty("Range", "bytes=" + Long.toString(existsLength) + "-");                               //中断模式
+                        connection.addRequestProperty("Range", "bytes=" + Long.toString(existsLength) + "-");                                       //中断模式
                     else connection.addRequestProperty("Range",String.format(Locale.getDefault(),"bytes=%d-%d",ds.getStart(),ds.getEnd())); //分段模式
                 }
                 if (!TextUtils.isEmpty(mRequest.getDownloadable().expireTime())) //添加资源是否过期判断
@@ -345,7 +345,7 @@ public class NetProcessor implements Runnable {
                     @Override
                     public void run() {
                         mMessage = globalListener.onErrorListener(mRequest, mMessage);
-                        l.onErrorListener(mRequest, mMessage);
+                        l.onErrorListener(mRequest, new NetException(String.format(Locale.getDefault(),"请求异常：%s",mRequest),mException));
                     }
                 });
             }
@@ -670,7 +670,7 @@ public class NetProcessor implements Runnable {
         void onComplete(NetProcessor processer);
     }
 
-    public byte[] getResponse()throws IOException{
+    public byte[] getResponse()throws Exception{
         if(mException!=null) throw mException;
         return mResponse;
     }
