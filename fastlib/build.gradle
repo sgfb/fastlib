@@ -5,7 +5,7 @@ android {
     defaultConfig {
         applicationId 'com.fastlib'
         minSdkVersion 16
-        targetSdkVersion 26
+        targetSdkVersion 27
         versionCode 11
         versionName "1.4.0"
         buildConfigField("String","DEFAULT_DATA_FILE_NAME","\"fastlib\"") //sp和数据库默认存储名
@@ -15,6 +15,16 @@ android {
             annotationProcessorOptions {
                 includeCompileClasspath true
             }
+        }
+
+        ndk {
+            abiFilters 'armeabi', 'armeabi-v7a'
+        }
+    }
+
+    repositories {
+        flatDir {
+            dir 'libs'
         }
     }
 }
@@ -28,8 +38,11 @@ dependencies {
     androidTestImplementation('com.android.support.test.espresso:espresso-core:3.0.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
+    implementation 'com.android.support:support-v13:27.1.0'
+    implementation name: 'udsdkv4.0.20181122', ext: 'aar'
     implementation 'com.android.support:appcompat-v7:27.1.1'
     implementation 'com.android.support:design:27.1.1'
     implementation 'com.google.code.gson:gson:2.8.1'
+    implementation 'com.github.bumptech.glide:glide:3.7.0'
     compile project(':genCompile')
 }

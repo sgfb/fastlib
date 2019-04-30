@@ -19,8 +19,8 @@ import java.util.List;
  */
 public abstract class AbsBanner<T> extends ViewPager{
     private boolean isAutoScrolling=false;
-    private boolean isInfinite = false;  //无限往前轮播
-    private long mScrollInterval = 5000;  //轮播间隔时间
+    private boolean isInfinite = false;     //无限往前轮播
+    private long mScrollInterval = 5000;    //轮播间隔时间
     private BannerAdapter mAdapter;
     private List<T> mData;
     private OnPageChangeListener mPageChangeListener;

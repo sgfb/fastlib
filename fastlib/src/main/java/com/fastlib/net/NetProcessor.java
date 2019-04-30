@@ -120,7 +120,6 @@ public class NetProcessor implements Runnable {
                     long existsLength = mRequest.getDownloadable().getTargetFile().length();
                     if(ds.breakMode()&&existsLength>0)
                         connection.addRequestProperty("Range", "bytes=" + Long.toString(existsLength) + "-");                                       //中断模式
-                    else connection.addRequestProperty("Range",String.format(Locale.getDefault(),"bytes=%d-%d",ds.getStart(),ds.getEnd())); //分段模式
                 }
                 if (!TextUtils.isEmpty(mRequest.getDownloadable().expireTime())) //添加资源是否过期判断
                     connection.addRequestProperty("If-Modified-Since", mRequest.getDownloadable().expireTime());
