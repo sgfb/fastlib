@@ -16,16 +16,6 @@ android {
                 includeCompileClasspath true
             }
         }
-
-        ndk {
-            abiFilters 'armeabi', 'armeabi-v7a'
-        }
-    }
-
-    repositories {
-        flatDir {
-            dir 'libs'
-        }
     }
 }
 
@@ -39,7 +29,6 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
     implementation 'com.android.support:support-v13:27.1.0'
-    implementation name: 'udsdkv4.0.20181122', ext: 'aar'
     implementation 'com.android.support:appcompat-v7:27.1.1'
     implementation 'com.android.support:design:27.1.1'
     implementation 'com.google.code.gson:gson:2.8.1'

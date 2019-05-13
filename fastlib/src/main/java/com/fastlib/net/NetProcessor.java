@@ -338,12 +338,13 @@ public class NetProcessor implements Runnable {
             } catch (JsonParseException e) {
                 mMessage = "请求:" + mRequest + "\n解析时出现异常:" + e.getMessage() + "\njson字符串:" + json;
                 isSuccess = false;
+                mException=e;
             }
             if (!isSuccess) {
                 mResponsePoster.execute(new Runnable() {
                     @Override
                     public void run() {
-                        mMessage = globalListener.onErrorListener(mRequest, mMessage);
+                        mException = globalListener.onErrorListener(mRequest, mException);
                         l.onErrorListener(mRequest, new NetException(String.format(Locale.getDefault(),"请求异常：%s",mRequest),mException));
                     }
                 });
@@ -539,7 +540,6 @@ public class NetProcessor implements Runnable {
                 Pair<String, String> pair = iter.next();
                 sb.append("--").append(BOUNDARY).append(CRLF)
                         .append("Content-Disposition: form-data; name=\"" + pair.first + "\"").append(CRLF+CRLF)
-//                        .append("Content-Type:text/plain;charset=utf-8").append(CRLF + CRLF)
                         .append(pair.second).append(CRLF);
             }
             Tx += sb.toString().getBytes().length;
@@ -557,7 +557,6 @@ public class NetProcessor implements Runnable {
                     sb.append("--" + BOUNDARY).append(CRLF)
                             .append("Content-Disposition: form-data; name=\"" + pair.first + "\"; filename=\"" + pair.second.getName() + "\"").append(CRLF)
                             .append("Content-type: " + URLConnection.guessContentTypeFromName(pair.second.getName())).append(CRLF+CRLF);
-//                            .append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
                     out.write(sb.toString().getBytes());
                     Tx += sb.toString().getBytes().length;
                     try{

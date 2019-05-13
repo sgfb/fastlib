@@ -53,7 +53,7 @@ public class Request{
     private long mIntervalSendFileTransferEvent=1000;//间隔多久发送上传和下载文件广播
     private String method;
     private String mUrl;
-    private String mCustomRootAddress;              //自定义根地址
+    private String mRootAddress;              //自定义根地址
     private List<Pair<String, String>> mSendCookies;
     private Downloadable mDownloadable;
     private Map<String,List<String>> mReceiveHeader;
@@ -89,7 +89,7 @@ public class Request{
         mMock=mock;
     }
 
-    public Request(String method, String url) {
+    public Request(String url,String method) {
         this.method = method.toUpperCase();
         mUrl = isReplaceChinese?transferSpaceAndChinese(url):url;
         isAcceptGlobalCallback=true;
@@ -483,10 +483,11 @@ public class Request{
             Type[] types=realMethod.getGenericParameterTypes();
 
             if(types!=null){
+                int typeIndex=0;
                 for(int i=0;i<Math.min(3,types.length);i++){
                     Type type=types[i];
                     if(type!=Request.class)
-                        mGenericType[i]=type;
+                        mGenericType[typeIndex++]=type;
                 }
             }
         }
@@ -566,7 +567,7 @@ public class Request{
     }
 
     public String getUrl() {
-        String rootAddress=mCustomRootAddress==null?"":mCustomRootAddress;
+        String rootAddress= mRootAddress ==null?"": mRootAddress;
         return rootAddress+mUrl;
     }
 
@@ -598,12 +599,12 @@ public class Request{
     }
 
     public Request setCustomRootAddress(String address){
-        mCustomRootAddress=address;
+        mRootAddress =address;
         return this;
     }
 
     public String getCustomRootAddress(){
-        return mCustomRootAddress;
+        return mRootAddress;
     }
 
     public boolean downloadable() {
@@ -831,9 +832,8 @@ public class Request{
             uploadFileStr.deleteCharAt(uploadFileStr.length()-1);
         }
         uploadFileStr.append("]");
-        return "URL:" + mUrl + " Method:" + method + "\n" +
-                paramsStr.toString() + "\n" +
-                uploadFileStr.toString();
+        return getUrl() + " " + method + "\n" +
+                paramsStr +" "+ uploadFileStr;
     }
 
     public long getResourceExpire() {

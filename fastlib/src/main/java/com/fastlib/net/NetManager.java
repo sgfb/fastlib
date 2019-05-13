@@ -93,7 +93,6 @@ public class NetManager{
         if(mGlobalListener!=null)
             mGlobalListener.onLaunchRequestBefore(request);
         if(!TextUtils.isEmpty(mRootAddress)&&request.getCustomRootAddress()==null){ //根地址替换，如果需要的话
-            request.setUrl(mRootAddress + request.getUrl());
             request.setCustomRootAddress(mRootAddress);
         }
         return request;
