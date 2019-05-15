@@ -226,7 +226,7 @@ public class MonitorView{
             }
 
             @Override
-            public String onErrorListener(Request r, String error) {
+            public Exception onErrorListener(Request r, Exception error) {
                 final Requesting requesting = mAdapter.getRequestByHash(mRequestHash.get(r.hashCode()));
                 requesting.status = Requesting.STATUS_ERROR;
                 mThreadLayout.post(new Runnable() {

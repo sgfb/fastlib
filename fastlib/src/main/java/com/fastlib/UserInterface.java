@@ -1,5 +1,6 @@
 package com.fastlib;
 
+import com.fastlib.net.FinalParam;
 import com.fastlib.net.Net;
 
 /**
@@ -9,5 +10,6 @@ import com.fastlib.net.Net;
 @Net
 public interface UserInterface{
 
+    @FinalParam({"id","10"})
     String getString();
 }

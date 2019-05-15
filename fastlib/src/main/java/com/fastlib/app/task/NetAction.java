@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
+import com.fastlib.net.exception.NetException;
 import com.fastlib.net.listener.GlobalListener;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
@@ -68,7 +69,7 @@ public abstract class NetAction<P,R> extends Action<Request,R>{
                         mResponseObj =gson.fromJson(responseStr,rType);
                         mCookedData=globalListener.onResponseListener(param,mResponseObj,null);
                     }catch (JsonParseException e){
-                        globalListener.onErrorListener(param,"请求:" + param + "\n解析时出现异常:" + e.getMessage() + "\njson字符串:" + responseStr);
+                        globalListener.onErrorListener(param,new NetException("请求:" + param + "\n解析时出现异常:" + e.getMessage() + "\njson字符串:" + responseStr));
                         stopTask(); //如果异常了，停止任务链
                     }
                 }
@@ -105,7 +106,7 @@ public abstract class NetAction<P,R> extends Action<Request,R>{
         } catch (Exception e) {
             e.printStackTrace();
             stopTask();
-            globalListener.onErrorListener(param,e.toString());
+            globalListener.onErrorListener(param,e);
             return null;
         }
     }

@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -77,6 +80,7 @@ public class NetRequestProcessor extends AbstractProcessor {
 
                 BaseParam baseParamAnno = element.getAnnotation(BaseParam.class);
                 NetMock mockAnno = element.getAnnotation(NetMock.class);
+                FinalParam finalParam = (FinalParam)element.getAnnotation(FinalParam.class);
                 ExecutableType type = (ExecutableType) element.asType();
                 String returnType=type.getReturnType().toString();
                 String mockName = mockAnno == null ? null : mockAnno.value();
@@ -122,6 +126,31 @@ public class NetRequestProcessor extends AbstractProcessor {
                             .append("\t\t\t").append(".setListener(listener)").append("\n");
                     if(customRootAddress!=null&&customRootAddress.length()>0)
                         genRequestSb.append("\t\t\t").append(".setCustomRootAddress(").append("\"").append(customRootAddress).append("\"").append(")").append("\n");
+                    String key;
+                    if (finalParam != null && finalParam.value().length > 0) {
+                        int i;
+                        if (finalParam.isSupportDuplication()) {
+                            key = "";
+
+                            for(i = 0; i < finalParam.value().length; ++i) {
+                                if (i % 2 == 0) {
+                                    key = finalParam.value()[i];
+                                } else {
+                                    genRequestSb.append("\t\t\t").append(".put(").append('"').append(key).append('"').append(",").append('"').append(finalParam.value()[i]).append('"').append(")").append("\n");
+                                }
+                            }
+                        } else {
+                            Map<String, String> finalParamMap = new HashMap<String,String>();
+
+                            for(i = 0; i < finalParam.value().length / 2; ++i) {
+                                finalParamMap.put(finalParam.value()[i * 2], finalParam.value()[i * 2 + 1]);
+                            }
+
+                            for (Map.Entry<String, String> entry : finalParamMap.entrySet()) {
+                                genRequestSb.append("\t\t\t").append(".put(").append('"').append(entry.getKey()).append('"').append(',').append('"').append(entry.getValue()).append('"').append(')').append('\n');
+                            }
+                        }
+                    }
                     for (String paramName : paramNameList) {
                         genRequestSb.append("\t\t\t").append(".put(").append('"').append(paramName).append('"').append(",").append(paramName).append(")\n");
                     }
@@ -133,9 +162,7 @@ public class NetRequestProcessor extends AbstractProcessor {
                             .append("\t\t\t").append("mInterceptor").append(".genCompleteBefore(request);").append("\n")
                             .append("\t\t").append("return request;").append("\n")
                             .append("\t").append("}").append("\n\n");
-                } catch (NoSuchFieldException e1) {
-                    e1.printStackTrace();
-                } catch (IllegalAccessException e1) {
+                } catch (NoSuchFieldException | IllegalAccessException e1) {
                     e1.printStackTrace();
                 }
                 classSb.append(genRequestSb);
