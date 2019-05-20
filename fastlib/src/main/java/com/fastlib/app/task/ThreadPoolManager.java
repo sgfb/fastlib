@@ -50,7 +50,6 @@ public class ThreadPoolManager {
      * 仅\定义线程池名自定义工厂
      */
     private static class NamedThreadFactory implements ThreadFactory {
-        private static final AtomicInteger poolNumber = new AtomicInteger(1);
         private final ThreadGroup group;
         private final AtomicInteger threadNumber = new AtomicInteger(1);
         private final String namePrefix;
@@ -59,7 +58,7 @@ public class ThreadPoolManager {
             SecurityManager s = System.getSecurityManager();
             group = (s != null) ? s.getThreadGroup() :
                     Thread.currentThread().getThreadGroup();
-            namePrefix = groupNamePrefix+"-"+ poolNumber.getAndIncrement() + "-thread";
+            namePrefix = groupNamePrefix+"-" + "-thread";
         }
 
         public Thread newThread(@NonNull Runnable r) {

@@ -9,7 +9,9 @@ import com.fastlib.adapter.CommonFragmentViewPagerAdapter;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.module.FastActivity;
+import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.db.FastDatabase;
+import com.fastlib.db.SaveUtil;
 import com.fastlib.image_manager.ImageManager;
 import com.fastlib.image_manager.bean.ImageConfig;
 import com.fastlib.net.DefaultDownload;
@@ -27,12 +29,17 @@ public class MainActivity extends FastActivity {
 
     @Bind(R.id.bt)
     private void startServer(){
-
+        System.out.println("location");
     }
 
     @Bind(R.id.bt2)
     private void bt2(){
-
+        ThreadPoolManager.sQuickPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                SaveUtil.cacheSize(MainActivity.this);
+            }
+        });
     }
 
     @Override
