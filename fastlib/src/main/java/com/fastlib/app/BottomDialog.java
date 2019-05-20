@@ -6,21 +6,25 @@ import android.animation.ObjectAnimator;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import com.fastlib.R;
+import com.fastlib.annotation.ContentView;
+import com.fastlib.app.module.SupportBack;
 import com.fastlib.utils.ScreenUtils;
+import com.fastlib.utils.ViewInject;
 
 /**
  * Created by sgfb on 16/9/20.
  * 底部dialog，带动画
  */
-public abstract class BottomDialog extends Fragment{
-    public static final String ARG_INT_LAYOUT_ID ="layoutId"; //必传的布局id
-    public static final String ARG_INT_COLOR ="colorId"; //背景颜色代码
+public abstract class BottomDialog extends Fragment implements SupportBack {
+    public static final String ARG_INT_LAYOUT_ID ="layoutId";   //必传的布局id
+    public static final String ARG_INT_COLOR ="colorId";        //背景颜色代码
 
     private ObjectAnimator mStartAnimator,mBgAnimation;
     private View mView;
@@ -28,25 +32,55 @@ public abstract class BottomDialog extends Fragment{
 
     /**
      * 绑定视图
-     * @param v
      */
-    protected abstract void bindView(View v);
+    protected abstract void bindView();
+
+    @Override
+    public boolean onBackPressed() {
+        return false;
+    }
+
+    public void show(FragmentManager fm){
+        fm.beginTransaction()
+                .replace(android.R.id.content,this)
+                .commit();
+    }
+
+    /**
+     * 获取对应的布局id 优先arguments中去后ContentView注解
+     * @return 布局id
+     * @throws IllegalArgumentException 如果两个中都取不到id弹出异常
+     */
+    private int getLayoutId()throws IllegalArgumentException{
+        int layoutId=-1;
+        if(getArguments()!=null)
+            layoutId=getArguments().getInt(ARG_INT_LAYOUT_ID,-1);
+        if(layoutId==-1){
+            ContentView cv=getClass().getAnnotation(ContentView.class);
+            if(cv==null) throw new IllegalArgumentException("没有设置对应的布局");
+            layoutId=cv.value();
+        }
+        return layoutId;
+    }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState){
         ViewGroup parent= (ViewGroup) inflater.inflate(R.layout.dialog_bottom,null);
         FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,FrameLayout.LayoutParams.WRAP_CONTENT);
-        int bgColor=getArguments().getInt(ARG_INT_COLOR,-1);
+        int bgColor=-1;
         mBg=parent.findViewById(R.id.bg);
-        mView=inflater.inflate(getArguments().getInt(ARG_INT_LAYOUT_ID),null);
+        mView=inflater.inflate(getLayoutId(),null);
 
+        if(getArguments()!=null)
+            bgColor=getArguments().getInt(ARG_INT_COLOR,getResources().getColor(R.color.translucent_dialog));
         if(bgColor!=-1)
             mBg.setBackgroundColor(bgColor);
         mView.setLayoutParams(lp);
         mView.setTranslationY(ScreenUtils.getScreenHeight()-ScreenUtils.getStatusHeight(getContext()));
-        bindView(mView);
         parent.addView(mView);
+        ViewInject.inject(this,parent);
+        bindView();
         mBg.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

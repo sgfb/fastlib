@@ -1,8 +1,11 @@
 package com.fastlib;
 
+import android.support.v4.app.Fragment;
+import android.support.v4.util.Pair;
 import android.support.v4.view.ViewPager;
 import android.webkit.WebView;
 
+import com.fastlib.adapter.CommonFragmentViewPagerAdapter;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.module.FastActivity;
@@ -24,7 +27,7 @@ public class MainActivity extends FastActivity {
 
     @Bind(R.id.bt)
     private void startServer(){
-        new Request("get","http://www.baidu.com").start();
+
     }
 
     @Bind(R.id.bt2)
@@ -34,6 +37,6 @@ public class MainActivity extends FastActivity {
 
     @Override
     public void alreadyPrepared() {
-        NetManager.getInstance().setGlobalListener(new AppGlobalListener());
+
     }
 }

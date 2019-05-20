@@ -162,7 +162,9 @@ public class NetRequestProcessor extends AbstractProcessor {
                             .append("\t\t\t").append("mInterceptor").append(".genCompleteBefore(request);").append("\n")
                             .append("\t\t").append("return request;").append("\n")
                             .append("\t").append("}").append("\n\n");
-                } catch (NoSuchFieldException | IllegalAccessException e1) {
+                } catch (NoSuchFieldException e1) {
+                    e1.printStackTrace();
+                } catch (IllegalAccessException e1) {
                     e1.printStackTrace();
                 }
                 classSb.append(genRequestSb);

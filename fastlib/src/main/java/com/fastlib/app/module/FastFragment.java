@@ -30,10 +30,16 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 5.相机相册调取（openAlbum(PhotoResultListener)和openCamera(PhotoResultListener))
  * 6.6.0权限获取辅助(mPermissionHelper)
  * 7.延时启动优化
+ * 8.后退键事件回应(需Activity支持)
  */
-public abstract class FastFragment extends Fragment implements ModuleInterface {
+public abstract class FastFragment extends Fragment implements ModuleInterface,SupportBack{
     private ModuleDelegate mDelegate;
     private Pair<Integer,View> mContentView;
+
+    @Override
+    public boolean onBackPressed(){
+        return false;
+    }
 
     //----------------------------继承自Fragment系列-------------------------------------//
     @Override
