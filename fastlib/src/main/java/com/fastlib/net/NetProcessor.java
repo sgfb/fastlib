@@ -80,7 +80,7 @@ public class NetProcessor implements Runnable {
 
     @Override
     public void run(){
-        if(NetManager.getInstance().getGlobalListener()!=null)
+        if(NetManager.getInstance().getGlobalListener()!=null&&mRequest.isAcceptGlobalCallback())
             NetManager.getInstance().getGlobalListener().onRequestLaunched(mRequest);
         if (mRequest.getMock() != null) {
             mResponse = mRequest.getMock().dataResponse(mRequest);

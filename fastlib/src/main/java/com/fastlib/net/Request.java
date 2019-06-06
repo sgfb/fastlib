@@ -43,7 +43,6 @@ public class Request{
     private boolean isSuppressWarning;              //压制警告
     private boolean isAcceptGlobalCallback;         //是否接受全局回调监听.默认true
     private boolean isReplaceChinese;               //是否替换中文url,默认为true
-    private boolean useFactory;                     //是否使用预设值
     private boolean isSendGzip;                     //指定这次请求发送时是否压缩成gzip流
     private boolean isReceiveGzip;                  //指定这次请求是否使用gzip解码
     private boolean isUseGlobalParamParser;
@@ -96,7 +95,6 @@ public class Request{
         isReplaceChinese=true;
         isSendGzip=false;
         isReceiveGzip=false;
-        useFactory = true;
         isUseGlobalParamParser=true;
         mParams = new ArrayList<>();
         mFiles = new ArrayList<>();
@@ -587,15 +585,6 @@ public class Request{
 
     public Downloadable getDownloadable() {
         return mDownloadable;
-    }
-
-    public boolean isUseFactory() {
-        return useFactory;
-    }
-
-    public Request setUseFactory(boolean useFactory) {
-        this.useFactory = useFactory;
-        return this;
     }
 
     public Request setCustomRootAddress(String address){

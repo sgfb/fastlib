@@ -90,7 +90,7 @@ public class NetManager{
     }
 
     private Request prepareRequest(Request request){
-        if(mGlobalListener!=null)
+        if(mGlobalListener!=null&&request.isAcceptGlobalCallback())
             mGlobalListener.onLaunchRequestBefore(request);
         if(!TextUtils.isEmpty(mRootAddress)&&request.getCustomRootAddress()==null){ //根地址替换，如果需要的话
             request.setCustomRootAddress(mRootAddress);

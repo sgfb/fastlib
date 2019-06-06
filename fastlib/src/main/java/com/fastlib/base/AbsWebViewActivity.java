@@ -36,9 +36,10 @@ public abstract class AbsWebViewActivity extends FastActivity{
     public static final String ARG_BOOL_VIEWPORT_MATCH_PARENT="viewPortMatchParent";  //单屏显示开关
     public static final String ARG_STR_URL = "URL";
     public static final String ARG_STR_TITLE = "title";
-    public static final String ARG_STR_DATA = "data";  //本地html数据
+    public static final String ARG_STR_DATA = "data";                                  //本地html数据
     public static final String ARG_INT_WEBVIEW_ID="webviewId";
     public static final String ARG_INT_PROGRESS_BAR_ID="progressBarId";
+    public static final String ARG_STR_ASSETS_PATH="assetsPath";
 
     protected WebView mWebView;
     protected ProgressBar mProgress;
@@ -53,12 +54,14 @@ public abstract class AbsWebViewActivity extends FastActivity{
         mUrl = getIntent().getStringExtra(ARG_STR_URL);
         String data = getIntent().getStringExtra(ARG_STR_DATA);
         String title = getIntent().getStringExtra(ARG_STR_TITLE);
+        String path=getIntent().getStringExtra(ARG_STR_ASSETS_PATH);
 
         webTitle(title);
         initSettings(mWebView.getSettings());
         mWebView.setWebViewClient(new WebClient());
         mWebView.setWebChromeClient(new ChromeClient());
-        if (TextUtils.isEmpty(data)) mWebView.loadUrl(mUrl);
+        if (!TextUtils.isEmpty(mUrl)) mWebView.loadUrl(mUrl);
+        else if(!TextUtils.isEmpty(path)) mWebView.loadUrl("file:///android_asset/"+path);
         else mWebView.loadData(data, "text/html;charset=UTF-8", null);
     }
 

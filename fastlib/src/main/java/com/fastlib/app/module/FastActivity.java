@@ -75,7 +75,9 @@ public abstract class FastActivity extends AppCompatActivity implements ModuleIn
     public void onBackPressed() {
         boolean handled=false;
         List<Fragment> fragmentList=getSupportFragmentManager().getFragments();
-        for(Fragment fragment:fragmentList){
+        //越后面的fragment是越后面加入的所以需要反向触发
+        for(int i=fragmentList.size()-1;i>0;i--){
+            Fragment fragment=fragmentList.get(i);
             if(fragment instanceof SupportBack){
                 if(((SupportBack) fragment).onBackPressed()){
                     handled=true;
