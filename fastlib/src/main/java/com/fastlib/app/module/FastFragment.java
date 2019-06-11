@@ -33,7 +33,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 8.后退键事件回应(需Activity支持)
  */
 public abstract class FastFragment extends Fragment implements ModuleInterface,SupportBack{
-    private ModuleDelegate mDelegate;
+    private ModuleDelegate mDelegate=new ModuleDelegate(this,this);
     private Pair<Integer,View> mContentView;
 
     @Override
@@ -45,7 +45,6 @@ public abstract class FastFragment extends Fragment implements ModuleInterface,S
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mDelegate=new ModuleDelegate(this,this);
         created();
     }
 
@@ -186,6 +185,6 @@ public abstract class FastFragment extends Fragment implements ModuleInterface,S
 
     @Override
     public ModuleLife getModuleLife() {
-        return null;
+        return mDelegate.mLife;
     }
 }
