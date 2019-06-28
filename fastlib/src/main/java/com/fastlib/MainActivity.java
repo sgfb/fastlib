@@ -44,17 +44,27 @@ public class MainActivity extends FastActivity {
 
     @Bind(R.id.bt)
     private void startServer(){
-        startActivity(new Intent(this,ServiceActivity.class));
+        ThreadPoolManager.sSlowPool.execute(new Runnable() {
+            @Override
+            public void run() {
+
+            }
+        });
     }
 
     @Bind(R.id.bt2)
     private void bt2(){
-        startActivity(new Intent(this,ClientActivity.class));
+        ThreadPoolManager.sQuickPool.execute(new Runnable() {
+            @Override
+            public void run() {
+
+            }
+        });
     }
 
     @Bind(R.id.bt3)
     private void bt3(){
-
+        System.out.println("location");
     }
 
     @Override

@@ -29,7 +29,7 @@ import java.io.File;
  * Created by Administrator on 2018/4/2.
  * 更新服务
  */
-public abstract class UpdateService extends Service{
+public abstract class AbsUpdateService extends Service{
     public static final String ARG_STR_NAME="name";
     public static final String ARG_STR_UPDATE_URL="updateUrl";
     public static final String ACTION_CLOSE="closeAction";
@@ -97,10 +97,8 @@ public abstract class UpdateService extends Service{
         final File tempFile=new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),name);
         final File apkFile=new File(tempFile.getAbsolutePath()+".apk");
 
-        if(apkFile.exists()){
-            installApk(apkFile);
-            return;
-        }
+        //TODO 判断更新的版本和本地的apk版本来确定是中断下载还是覆盖下载
+        apkFile.delete();
         NotificationManager nm= (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         nm.notify(NOTIFY_ID,mNotification);
         mRequest=new Request("get",url)

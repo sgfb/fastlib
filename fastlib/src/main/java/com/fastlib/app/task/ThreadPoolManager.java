@@ -47,7 +47,7 @@ public class ThreadPoolManager {
     }
 
     /**
-     * 仅\定义线程池名自定义工厂
+     * 仅定义线程池名自定义工厂
      */
     private static class NamedThreadFactory implements ThreadFactory {
         private final ThreadGroup group;
@@ -58,7 +58,7 @@ public class ThreadPoolManager {
             SecurityManager s = System.getSecurityManager();
             group = (s != null) ? s.getThreadGroup() :
                     Thread.currentThread().getThreadGroup();
-            namePrefix = groupNamePrefix+"-" + "-thread";
+            namePrefix = groupNamePrefix+"-thread";
         }
 
         public Thread newThread(@NonNull Runnable r) {
