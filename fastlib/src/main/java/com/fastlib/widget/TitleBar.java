@@ -48,10 +48,10 @@ public class TitleBar extends LinearLayout {
         mTitle=new TextView(getContext());
         mLeftBackground= (FrameLayout) layoutInflater.inflate(R.layout.title_button,null);
         mRightBackground=(FrameLayout) layoutInflater.inflate(R.layout.title_button,null);
-        mLeftText=mLeftBackground.findViewById(R.id.text);
-        mLeftIcon=mLeftBackground.findViewById(R.id.image);
-        mRightText=mRightBackground.findViewById(R.id.text);
-        mRightIcon=mRightBackground.findViewById(R.id.image);
+        mLeftText=mLeftBackground.findViewById(R.id.titleText);
+        mLeftIcon=mLeftBackground.findViewById(R.id.titleImage);
+        mRightText=mRightBackground.findViewById(R.id.titleText);
+        mRightIcon=mRightBackground.findViewById(R.id.titleImage);
         FrameLayout.LayoutParams titleLp=new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
         FrameLayout.LayoutParams leftBackgroundLp=new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
         FrameLayout.LayoutParams rightBackgroundLp=new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);

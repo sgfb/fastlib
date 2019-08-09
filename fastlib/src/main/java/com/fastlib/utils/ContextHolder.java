@@ -21,7 +21,7 @@ public class ContextHolder {
      * 初始化context，如果由于不同机型导致反射获取context失败可以在Application调用此方法
      */
     public static void init(Context context) {
-        APPLICATION_CONTEXT = context;
+        APPLICATION_CONTEXT = context.getApplicationContext();
     }
 
     public static Context getContext(){

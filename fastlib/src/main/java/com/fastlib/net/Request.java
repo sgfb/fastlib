@@ -77,7 +77,7 @@ public class Request{
     }
 
     public Request(String url) {
-        this("POST", url);
+        this(url,"POST");
     }
 
     /**

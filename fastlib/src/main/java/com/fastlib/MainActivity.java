@@ -1,42 +1,16 @@
 package com.fastlib;
 
 import android.Manifest;
-import android.content.Intent;
-import android.support.v4.app.Fragment;
-import android.support.v4.util.Pair;
-import android.support.v4.view.ViewPager;
-import android.view.View;
-import android.webkit.CookieManager;
-import android.webkit.CookieSyncManager;
-import android.webkit.WebView;
+import android.content.ContentProvider;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.CallLog;
+import android.provider.Telephony;
 
-import com.fastlib.adapter.CommonFragmentViewPagerAdapter;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.module.FastActivity;
-import com.fastlib.app.task.ThreadPoolManager;
-import com.fastlib.db.FastDatabase;
-import com.fastlib.db.SaveUtil;
-import com.fastlib.image_manager.ImageManager;
-import com.fastlib.image_manager.bean.ImageConfig;
-import com.fastlib.net.DefaultDownload;
-import com.fastlib.net.NetManager;
-import com.fastlib.net.Request;
-import com.fastlib.net.listener.GlobalListener;
-import com.fastlib.net.listener.SimpleListener;
-import com.fastlib.utils.Utils;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 @ContentView(R.layout.act_main)
@@ -44,28 +18,36 @@ public class MainActivity extends FastActivity {
 
     @Bind(R.id.bt)
     private void startServer(){
-        ThreadPoolManager.sSlowPool.execute(new Runnable() {
+        requestPermission(new String[]{Manifest.permission.READ_SMS}, new Runnable() {
             @Override
             public void run() {
+                Cursor cursor=getContentResolver().query(Uri.parse("content://sms/"),null,null,null,null);
 
+                if(cursor!=null){
+                    while(cursor.moveToNext()){
+                        for(int i=0;i<cursor.getColumnCount();i++) {
+                            String columnName=cursor.getColumnName(i);
+                            System.out.println(String.format(Locale.getDefault(),"%s:%s ",columnName,cursor.getString(i)));
+                        }
+                        cursor.moveToNext();
+                    }
+                    cursor.close();
+                }
+                else System.out.println("未有通话记录或无权限");
+            }
+        }, new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("未给予权限");
             }
         });
     }
 
     @Bind(R.id.bt2)
     private void bt2(){
-        ThreadPoolManager.sQuickPool.execute(new Runnable() {
-            @Override
-            public void run() {
 
-            }
-        });
     }
 
-    @Bind(R.id.bt3)
-    private void bt3(){
-        System.out.println("location");
-    }
 
     @Override
     public void alreadyPrepared() {

@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
+import android.text.format.Formatter;
 
 import com.fastlib.app.EventObserver;
 import com.fastlib.app.module.ModuleLife;
@@ -600,9 +601,11 @@ public class NetProcessor implements Runnable {
             checkBreakout();
             needEndSend=true;
             out.write(data, 0, len);
+
             count += len;
             speed += len;
             Tx += len;
+            System.out.println(Formatter.formatFileSize(ContextHolder.getContext(),count));
             if (context != null && (System.currentTimeMillis() - time) > mRequest.getIntervalSendFileTransferEvent()) {
                 needEndSend=false;
                 EventObserver.getInstance().sendEvent(context, new EventUploading(speed, count, file.getAbsolutePath()));
