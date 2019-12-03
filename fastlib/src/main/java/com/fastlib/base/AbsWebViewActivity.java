@@ -20,13 +20,6 @@ import android.widget.ProgressBar;
 
 import com.fastlib.app.module.FastActivity;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-
 /**
  * Created by sgfb on 16/9/29.
  * 简易webview模块

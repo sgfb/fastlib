@@ -4,7 +4,6 @@ buildscript {
         maven{ url 'http://maven.aliyun.com/nexus/content/groups/public/'}
         jcenter()
         google()
-        maven { url "https://jitpack.io" }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.0.0'
@@ -16,16 +15,6 @@ allprojects {
         maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
         jcenter()
         google()
-        maven { url "https://jitpack.io" }
-    }
-
-    gradle.taskGraph.whenReady {
-        tasks.each{task->
-            def taskName=task.name.toLowerCase()
-
-            if(taskName.contains('lint'))
-                task.enabled=false
-        }
     }
 }
 

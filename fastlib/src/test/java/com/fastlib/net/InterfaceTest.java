@@ -2,8 +2,6 @@ package com.fastlib.net;
 
 import com.fastlib.bean.InterfaceCheckTestBean;
 import com.fastlib.net.mock.SimpleMockProcessor;
-import com.fastlib.utils.SessionCheck;
-import com.fastlib.utils.TestUtil;
 import com.google.gson.reflect.TypeToken;
 
 import junit.framework.Assert;

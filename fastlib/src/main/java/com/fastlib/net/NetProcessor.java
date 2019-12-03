@@ -382,8 +382,8 @@ public class NetProcessor implements Runnable {
             byte[] errbyte = new byte[4096];
             int len;
             if(connection.getErrorStream()!=null)
-            while ((len = connection.getErrorStream().read(errbyte)) != -1)
-                baos.write(errbyte, 0, len);
+                while ((len = connection.getErrorStream().read(errbyte)) != -1)
+                    baos.write(errbyte, 0, len);
             ResponseStatus status = new ResponseStatus();
             status.message = connection.getResponseMessage();
             status.code = connection.getResponseCode();
