@@ -11,6 +11,8 @@ import com.fastlib.app.module.LifecycleManager;
 import com.fastlib.image_manager.ImageManager;
 import com.fastlib.image_manager.bean.ImageConfig;
 
+import java.util.Locale;
+
 /**
  * Created by sgfb on 2017/11/4.
  * Bitmap请求类
@@ -113,6 +115,11 @@ public class ImageRequest<T> implements FastActivity.HostLifecycle{
         return mErrorDrawable;
     }
 
+    public ImageRequest setAnimator(ViewAnimator animator){
+        mAnimator=animator;
+        return this;
+    }
+
     public ViewAnimator getAnimator() {
         return mAnimator;
     }
@@ -162,6 +169,10 @@ public class ImageRequest<T> implements FastActivity.HostLifecycle{
 
     public int getStoreStrategy(){
         return mStoreStrategy;
+    }
+
+    public String getInfomation(){
+        return String.format(Locale.getDefault(),"source:"+mSource+" width:"+mRequestWidth+" height:"+mRequestHeight+" config:"+mBitmapConfig);
     }
 
     public void clean(){

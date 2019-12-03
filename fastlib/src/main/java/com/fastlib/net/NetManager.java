@@ -47,7 +47,7 @@ public class NetManager{
         request=prepareRequest(request);
         try {
             enqueue(request,false);
-        } catch (IOException e) {
+        } catch (Exception e) {
             //不会被触发，丢弃异常处理
         }
     }
@@ -58,7 +58,7 @@ public class NetManager{
      * @return 服务器返回数据
      * @throws IOException 触发的异常
      */
-    public byte[] netRequestPromptlyBack(Request request) throws IOException {
+    public byte[] netRequestPromptlyBack(Request request) throws Exception {
         request=prepareRequest(request);
         return enqueue(request,true);
     }
@@ -68,7 +68,7 @@ public class NetManager{
      * @param request 网络请求
      * @param promptlyBackMode 标识立即返回模式
      */
-    private byte[] enqueue(Request request,boolean promptlyBackMode)throws IOException{
+    private byte[] enqueue(Request request,boolean promptlyBackMode)throws Exception{
         ThreadPoolExecutor pool=request.getExecutor();
         NetProcessor processor=new NetProcessor(request,new NetProcessor.OnCompleteListener(){
             @Override
@@ -90,10 +90,9 @@ public class NetManager{
     }
 
     private Request prepareRequest(Request request){
-        if(mGlobalListener!=null)
+        if(mGlobalListener!=null&&request.isAcceptGlobalCallback())
             mGlobalListener.onLaunchRequestBefore(request);
         if(!TextUtils.isEmpty(mRootAddress)&&request.getCustomRootAddress()==null){ //根地址替换，如果需要的话
-            request.setUrl(mRootAddress + request.getUrl());
             request.setCustomRootAddress(mRootAddress);
         }
         return request;

@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
+import android.text.format.Formatter;
 
 import com.fastlib.app.EventObserver;
 import com.fastlib.app.module.ModuleLife;
@@ -63,7 +64,7 @@ public class NetProcessor implements Runnable {
     private String mRedirectUrl;
     private OnCompleteListener mListener;
     private Executor mResponsePoster;
-    private IOException mException; //留存的异常
+    private Exception mException;           //留存的异常
 
     public NetProcessor(Request request, OnCompleteListener l, final Handler handler) {
         mRequest = request;
@@ -80,7 +81,7 @@ public class NetProcessor implements Runnable {
 
     @Override
     public void run(){
-        if(NetManager.getInstance().getGlobalListener()!=null)
+        if(NetManager.getInstance().getGlobalListener()!=null&&mRequest.isAcceptGlobalCallback())
             NetManager.getInstance().getGlobalListener().onRequestLaunched(mRequest);
         if (mRequest.getMock() != null) {
             mResponse = mRequest.getMock().dataResponse(mRequest);
@@ -119,8 +120,7 @@ public class NetProcessor implements Runnable {
                 if(ds!=null){
                     long existsLength = mRequest.getDownloadable().getTargetFile().length();
                     if(ds.breakMode()&&existsLength>0)
-                        connection.addRequestProperty("Range", "bytes=" + Long.toString(existsLength) + "-");                               //中断模式
-                    else connection.addRequestProperty("Range",String.format(Locale.getDefault(),"bytes=%d-%d",ds.getStart(),ds.getEnd())); //分段模式
+                        connection.addRequestProperty("Range", "bytes=" + Long.toString(existsLength) + "-");                                       //中断模式
                 }
                 if (!TextUtils.isEmpty(mRequest.getDownloadable().expireTime())) //添加资源是否过期判断
                     connection.addRequestProperty("If-Modified-Since", mRequest.getDownloadable().expireTime());
@@ -339,13 +339,14 @@ public class NetProcessor implements Runnable {
             } catch (JsonParseException e) {
                 mMessage = "请求:" + mRequest + "\n解析时出现异常:" + e.getMessage() + "\njson字符串:" + json;
                 isSuccess = false;
+                mException=e;
             }
             if (!isSuccess) {
                 mResponsePoster.execute(new Runnable() {
                     @Override
                     public void run() {
-                        mMessage = globalListener.onErrorListener(mRequest, mMessage);
-                        l.onErrorListener(mRequest, mMessage);
+                        mException = globalListener.onErrorListener(mRequest, mException);
+                        l.onErrorListener(mRequest, new NetException(String.format(Locale.getDefault(),"请求异常：%s",mRequest),mException));
                     }
                 });
             }
@@ -540,7 +541,6 @@ public class NetProcessor implements Runnable {
                 Pair<String, String> pair = iter.next();
                 sb.append("--").append(BOUNDARY).append(CRLF)
                         .append("Content-Disposition: form-data; name=\"" + pair.first + "\"").append(CRLF+CRLF)
-//                        .append("Content-Type:text/plain;charset=utf-8").append(CRLF + CRLF)
                         .append(pair.second).append(CRLF);
             }
             Tx += sb.toString().getBytes().length;
@@ -558,7 +558,6 @@ public class NetProcessor implements Runnable {
                     sb.append("--" + BOUNDARY).append(CRLF)
                             .append("Content-Disposition: form-data; name=\"" + pair.first + "\"; filename=\"" + pair.second.getName() + "\"").append(CRLF)
                             .append("Content-type: " + URLConnection.guessContentTypeFromName(pair.second.getName())).append(CRLF+CRLF);
-//                            .append("Content-Transfer-Encoding:binary").append(CRLF + CRLF);
                     out.write(sb.toString().getBytes());
                     Tx += sb.toString().getBytes().length;
                     try{
@@ -602,9 +601,11 @@ public class NetProcessor implements Runnable {
             checkBreakout();
             needEndSend=true;
             out.write(data, 0, len);
+
             count += len;
             speed += len;
             Tx += len;
+            System.out.println(Formatter.formatFileSize(ContextHolder.getContext(),count));
             if (context != null && (System.currentTimeMillis() - time) > mRequest.getIntervalSendFileTransferEvent()) {
                 needEndSend=false;
                 EventObserver.getInstance().sendEvent(context, new EventUploading(speed, count, file.getAbsolutePath()));
@@ -670,7 +671,7 @@ public class NetProcessor implements Runnable {
         void onComplete(NetProcessor processer);
     }
 
-    public byte[] getResponse()throws IOException{
+    public byte[] getResponse()throws Exception{
         if(mException!=null) throw mException;
         return mResponse;
     }

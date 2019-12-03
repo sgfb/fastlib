@@ -19,7 +19,7 @@ public abstract class SimpleListener3<T1,T2,T3> implements Listener<T1,T2,T3> {
     }
 
     @Override
-    public void onErrorListener(Request r, String error) {
+    public void onErrorListener(Request r, Exception error) {
 
     }
 }

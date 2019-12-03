@@ -1,13 +1,18 @@
 package com.fastlib.app.task;
 
 import android.util.SparseIntArray;
+import android.util.SparseLongArray;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 监听控制线程池
+ */
 public class MonitorThreadPool extends ThreadPoolExecutor{
     public static final int THREAD_STATUS_IDLE =1;
     public static final int THREAD_STATUS_RUNNING=2;
@@ -16,6 +21,8 @@ public class MonitorThreadPool extends ThreadPoolExecutor{
     private OnThreadStatusChangedListener mListener;
     private SparseIntArray mRunnableThread =new SparseIntArray();
     private SparseIntArray mThreadIndex =new SparseIntArray();
+    private ConcurrentHashMap<Integer,Long> mStartTimeMap=new ConcurrentHashMap<>();
+    private long mConsumeCount;
 
     public MonitorThreadPool(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue);
@@ -43,6 +50,7 @@ public class MonitorThreadPool extends ThreadPoolExecutor{
         mRunnableThread.put(r.hashCode(),tHash);
         if(mListener!=null)
             mListener.onThreadStatusChanged(index,THREAD_STATUS_RUNNING);
+        mStartTimeMap.put(tHash,System.currentTimeMillis());
     }
 
     @Override
@@ -56,6 +64,7 @@ public class MonitorThreadPool extends ThreadPoolExecutor{
             int index=mThreadIndex.get(tHash);
             if(index!=0) mListener.onThreadStatusChanged(index,THREAD_STATUS_IDLE);
         }
+        mConsumeCount+=(System.currentTimeMillis()-mStartTimeMap.remove(tHash));
     }
 
     public void setThreadStatusChangedListener(OnThreadStatusChangedListener listener){

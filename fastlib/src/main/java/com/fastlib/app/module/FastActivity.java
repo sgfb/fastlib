@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +18,7 @@ import com.fastlib.app.task.Task;
 import com.fastlib.app.task.TaskLauncher;
 import com.fastlib.net.Request;
 
+import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -67,6 +69,24 @@ public abstract class FastActivity extends AppCompatActivity implements ModuleIn
     public void setContentView(View view, ViewGroup.LayoutParams params) {
         super.setContentView(view, params);
         mDelegate.afterSetContentView();
+    }
+
+    @Override
+    public void onBackPressed() {
+        boolean handled=false;
+        List<Fragment> fragmentList=getSupportFragmentManager().getFragments();
+        //越后面的fragment是越后面加入的所以需要反向触发
+        for(int i=fragmentList.size()-1;i>0;i--){
+            Fragment fragment=fragmentList.get(i);
+            if(fragment instanceof SupportBack){
+                if(((SupportBack) fragment).onBackPressed()){
+                    handled=true;
+                    break;
+                }
+            }
+        }
+        if(!handled)
+            super.onBackPressed();
     }
 
     //----------------------------继承自Module系列-------------------------------------//

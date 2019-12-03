@@ -34,8 +34,8 @@ public class AutofitGridView extends LinearLayout implements View.OnClickListene
         if(lp!=null)
             mPaddingAndMargin+=(lp.leftMargin+lp.rightMargin);
         mPaddingAndMargin=getPaddingLeft()+getPaddingRight();
-        mLimitWidth= ScreenUtils.getScreenWidth();
-        mDividerHeight= DensityUtils.dp2px(context,3);
+        mLimitWidth=ScreenUtils.getScreenWidth();
+        mDividerHeight=DensityUtils.dp2px(context,3);
         mDividerWidth=DensityUtils.dp2px(context,3);
     }
 
@@ -52,10 +52,10 @@ public class AutofitGridView extends LinearLayout implements View.OnClickListene
         addStringByCircle(resId, list);
     }
 
-    private void addStringByCircle(@LayoutRes final int resId, final List<String> list){
+    private void addStringByCircle(@LayoutRes final int resId,final List<String> list){
         TextView tv= (TextView) LayoutInflater.from(getContext()).inflate(resId,null);
-        LayoutParams lp=new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        LayoutParams lp2=new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        LayoutParams lp=new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT);
+        LayoutParams lp2=new LayoutParams(LayoutParams.MATCH_PARENT,LayoutParams.WRAP_CONTENT);
 
         if(list==null||list.size()<=0){
             invalidate();
@@ -74,7 +74,7 @@ public class AutofitGridView extends LinearLayout implements View.OnClickListene
             LinearLayout ll=(LinearLayout)getChildAt(getChildCount()-1);
             int width = computeTextViewWidth(tv);
             int textRight=getSelfRight(ll)+width+mPaddingAndMargin;
-            System.out.println(mLimitWidth+"?"+textRight);
+
             if (mLimitWidth<textRight){
                 LinearLayout ll2 = new LinearLayout(getContext());
 
@@ -111,7 +111,7 @@ public class AutofitGridView extends LinearLayout implements View.OnClickListene
     }
 
     public int computeTextViewWidth(TextView tv){
-        int spec= View.MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        int spec=MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
         tv.measure(spec,spec);
         return tv.getMeasuredWidth();
     }

@@ -19,15 +19,17 @@ import java.util.List;
  */
 public abstract class AbsBanner<T> extends ViewPager{
     private boolean isAutoScrolling=false;
-    private boolean isInfinite = false;  //无限往前轮播
-    private long mScrollInterval = 5000;  //轮播间隔时间
+    private boolean isInfinite = false;     //无限往前轮播
+    private long mScrollInterval = 5000;    //轮播间隔时间
     private BannerAdapter mAdapter;
     private List<T> mData;
     private OnPageChangeListener mPageChangeListener;
     private Runnable mAutoScrolling = new Runnable() {
         @Override
         public void run() {
-            setCurrentItem((getCurrentItem() + 1) % mAdapter.getCount(), true);
+            int itemCount=mAdapter.getCount();
+            if(itemCount==0) return;
+            setCurrentItem((getCurrentItem() + 1) % itemCount, true);
             if(isAutoScrolling)
                 startAutoScroll();
         }

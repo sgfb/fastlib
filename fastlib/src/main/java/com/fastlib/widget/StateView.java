@@ -50,7 +50,6 @@ public class StateView extends FrameLayout implements AdapterViewState{
      * 增加状态视图,每个状态只保存一个
      * @param state 状态
      * @param view 视图
-     * @param location 何种形式生成位置 miss
      */
     @Override
     public void addStateView(int state,View view, int location) {

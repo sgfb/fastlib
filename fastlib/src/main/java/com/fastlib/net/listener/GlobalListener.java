@@ -60,7 +60,7 @@ public class GlobalListener{
      * @param error 简单的错误信息
      * @return 被处理后的简单错误信息
      */
-    public String onErrorListener(Request r,String error){
+    public Exception onErrorListener(Request r,Exception error){
         return error;
     }
 }

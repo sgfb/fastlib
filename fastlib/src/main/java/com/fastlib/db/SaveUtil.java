@@ -206,8 +206,8 @@ public class SaveUtil{
 
     /**
      * 计算缓存占用容量(内部加外部)
-     * @param context
-     * @return
+     * @param context 上下文
+     * @return 缓存容量 字节
      */
     public static long cacheSize(Context context){
         return cacheSize(context,null);
@@ -215,9 +215,9 @@ public class SaveUtil{
 
     /**
      * 计算缓存占用容量(内部加外部加额外文件夹列表)
-     * @param context
-     * @param cacheFolders
-     * @return
+     * @param context       上下文
+     * @param cacheFolders  指定文件夹
+     * @return 缓存占用容量 字节
      */
     public static long cacheSize(Context context,File[] cacheFolders){
         File internalDir=context.getCacheDir();
@@ -290,8 +290,8 @@ public class SaveUtil{
 
     /**
      * 清理文件,如果是文件夹必须递归删除成空文件夹.应将此方法置于工作线程中
-     * @param file
-     * @return
+     * @param file 指定删除的文件或文件夹
+     * @return true删除成功 false删除失败（虽然删除目标文件夹失败但可能文件夹内部分是删除成功的）
      */
     public static boolean clearFile(File file){
         if(Thread.currentThread().isInterrupted())
@@ -302,8 +302,7 @@ public class SaveUtil{
             File[] files=file.listFiles();
             for(File f:files){
                 boolean b=clearFile(f);
-                if(!b)
-                    return b;
+                if(!b) return false;
             }
         }
         return true;

@@ -30,6 +30,7 @@ import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.N;
 import com.fastlib.utils.PermissionHelper;
+import com.fastlib.utils.Reflect;
 import com.fastlib.utils.ViewInject;
 import com.fastlib.utils.local_data.LocalDataInject;
 
@@ -64,7 +65,7 @@ public class ModuleDelegate implements ModuleInterface {
     private ModuleInterface mHost;
 
     public ModuleDelegate(ModuleInterface host, Fragment fragment){
-        this(host,fragment.getActivity());
+        mHost=host;
         mFragmentContext=fragment;
     }
 
@@ -77,12 +78,12 @@ public class ModuleDelegate implements ModuleInterface {
      * ContentView注入，如果存在的话
      */
     private void checkContentViewInject() {
-        ContentView cv = mHost.getClass().getAnnotation(ContentView.class);
+        ContentView cv = Reflect.findAnnotation(mHost.getClass(),ContentView.class);
         if (cv != null) {
             if (mDeferView == null) alreadyContentView(cv.value());
             else {
-                FrameLayout frameLayout=new FrameLayout(mContext);
-                mViewStub = new ViewStub(mContext, cv.value());
+                FrameLayout frameLayout=new FrameLayout(getRealActivity());
+                mViewStub = new ViewStub(getRealActivity(), cv.value());
                 frameLayout.addView(mViewStub);
                 frameLayout.addView(mDeferView);
                 alreadyContentView(frameLayout);
@@ -117,7 +118,7 @@ public class ModuleDelegate implements ModuleInterface {
             protected void executeAdapt() {
                 ViewInject.inject(mHost, getRootView(), mThreadPool);
                 mLocalDataInject.localDataInject();
-                EventObserver.getInstance().subscribe(mContext,mHost);
+                EventObserver.getInstance().subscribe(getRealActivity(),mHost);
             }
         });
     }
@@ -203,12 +204,12 @@ public class ModuleDelegate implements ModuleInterface {
                 isGatingPhoto = true;
                 mPhotoResultListener = photoResultListener;
                 if(mFragmentContext!=null) ImageUtil.openAlbum(mFragmentContext);
-                else ImageUtil.openAlbum(mContext);
+                else ImageUtil.openAlbum(getRealActivity());
             }
         }, new Runnable() {
             @Override
             public void run() {
-                N.showShort(mContext, "请开启读存储卡权限");
+                N.showShort(getRealActivity(), "请开启读存储卡权限");
             }
         });
     }
@@ -231,25 +232,25 @@ public class ModuleDelegate implements ModuleInterface {
                         if (TextUtils.isEmpty(path)) {
                             if(mFragmentContext!=null)
                                 ImageUtil.openCamera(mFragmentContext);
-                            else ImageUtil.openCamera(mContext);
+                            else ImageUtil.openCamera(getRealActivity());
                         }
                         else{
                             if(mFragmentContext!=null)
                                 ImageUtil.openCamera(mFragmentContext,Uri.fromFile(new File(path)));
-                            else ImageUtil.openCamera(mContext, Uri.fromFile(new File(path)));
+                            else ImageUtil.openCamera(getRealActivity(), Uri.fromFile(new File(path)));
                         }
                     }
                 }, new Runnable() {
                     @Override
                     public void run() {
-                        N.showShort(mContext, "请开启使用照相机权限");
+                        N.showShort(getRealActivity(), "请开启使用照相机权限");
                     }
                 });
             }
         }, new Runnable() {
             @Override
             public void run() {
-                N.showShort(mContext, "请开启写存储卡权限");
+                N.showShort(getRealActivity(), "请开启写存储卡权限");
             }
         });
     }
@@ -269,9 +270,9 @@ public class ModuleDelegate implements ModuleInterface {
             isGatingPhoto = false;
             if (resultCode != Activity.RESULT_OK)
                 return;
-            Uri photoUri = ImageUtil.getImageFromActive(mContext, requestCode, resultCode, data);
+            Uri photoUri = ImageUtil.getImageFromActive(getRealActivity(), requestCode, resultCode, data);
             if (photoUri != null) {
-                String photoPath = ImageUtil.getImagePath(mContext, photoUri);
+                String photoPath = ImageUtil.getImagePath(getRealActivity(), photoUri);
                 if (mPhotoResultListener != null)
                     mPhotoResultListener.onPhotoResult(photoPath);
             }
@@ -301,7 +302,7 @@ public class ModuleDelegate implements ModuleInterface {
         runOnMainThread(new Runnable() {
             @Override
             public void run() {
-                mLoading.show(mContext.getSupportFragmentManager());
+                mLoading.show(getRealActivity().getSupportFragmentManager());
                 mLoading.setHint(hint);
             }
         });
@@ -362,7 +363,7 @@ public class ModuleDelegate implements ModuleInterface {
      */
     private void runOnMainThread(Runnable runnable) {
         if (Looper.getMainLooper() != Looper.myLooper())
-            mContext.runOnUiThread(runnable);
+            getRealActivity().runOnUiThread(runnable);
         else runnable.run();
     }
 
@@ -377,7 +378,7 @@ public class ModuleDelegate implements ModuleInterface {
 
     @Override
     public void requestPermission(String[] permission, Runnable grantedAfterProcess, Runnable deniedAfterProcess) {
-        mPermissionHelper.requestPermission(mContext,mFragmentContext,permission,grantedAfterProcess,deniedAfterProcess);
+        mPermissionHelper.requestPermission(getRealActivity(),mFragmentContext,permission,grantedAfterProcess,deniedAfterProcess);
     }
     /**
      * 内部任务运行线程
@@ -420,11 +421,15 @@ public class ModuleDelegate implements ModuleInterface {
     @Override
     public void destroyed() {
         mLife.flag=ModuleLife.LIFE_DESTROYED;
-        EventObserver.getInstance().unsubscribe(mContext,mHost);
+        EventObserver.getInstance().unsubscribe(getRealActivity(),mHost);
     }
 
     @Override
     public ThreadPoolExecutor getThreadPool() {
         return mThreadPool;
+    }
+
+    private FragmentActivity getRealActivity(){
+        return mContext!=null?mContext:mFragmentContext.getActivity();
     }
 }

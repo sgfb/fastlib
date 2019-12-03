@@ -107,7 +107,7 @@ public abstract class UploadUncaughtException implements Thread.UncaughtExceptio
                 }
 
                 @Override
-                public void onErrorListener(Request r, String error) {
+                public void onErrorListener(Request r, Exception error) {
                     super.onErrorListener(r, error);
                     if(listener!=null) listener.onErrorListener(r,error);
                 }

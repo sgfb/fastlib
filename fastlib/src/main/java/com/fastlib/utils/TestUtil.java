@@ -59,7 +59,7 @@ public class TestUtil{
             }
 
             @Override
-            public void onErrorListener(Request r, String error) {
+            public void onErrorListener(Request r, Exception error) {
                 super.onErrorListener(r, error);
                 sb.append(ERROR_HARD_LAYER);
                 synchronized (sLock){

@@ -1,4 +1,4 @@
-package com.fastlib.test;
+package com.fastlib.alpha;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -22,7 +22,6 @@ import com.fastlib.bean.event.EventDownloading;
 import com.fastlib.net.DefaultDownload;
 import com.fastlib.net.Request;
 import com.fastlib.net.listener.SimpleListener;
-import com.fastlib.utils.N;
 
 import java.io.File;
 
@@ -30,7 +29,7 @@ import java.io.File;
  * Created by Administrator on 2018/4/2.
  * 更新服务
  */
-public abstract class UpdateService extends Service{
+public abstract class AbsUpdateService extends Service{
     public static final String ARG_STR_NAME="name";
     public static final String ARG_STR_UPDATE_URL="updateUrl";
     public static final String ACTION_CLOSE="closeAction";
@@ -98,15 +97,12 @@ public abstract class UpdateService extends Service{
         final File tempFile=new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),name);
         final File apkFile=new File(tempFile.getAbsolutePath()+".apk");
 
-        if(apkFile.exists()){
-            installApk(apkFile);
-            return;
-        }
+        //TODO 判断更新的版本和本地的apk版本来确定是中断下载还是覆盖下载
+        apkFile.delete();
         NotificationManager nm= (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         nm.notify(NOTIFY_ID,mNotification);
         mRequest=new Request("get",url)
                 .setCustomRootAddress("")
-                .setUseFactory(false)
                 .setDownloadable(new DefaultDownload(tempFile).setDownloadSegment(true));
         mRequest.setIntervalSendFileTransferEvent(500);
         mRequest.setListener(new SimpleListener<String>(){
@@ -118,7 +114,7 @@ public abstract class UpdateService extends Service{
             }
 
             @Override
-            public void onErrorListener(Request r, String error) {
+            public void onErrorListener(Request r, Exception error) {
                 super.onErrorListener(r, error);
                 updateError(r.isCancel(),error);
                 stopSelf();
@@ -132,7 +128,7 @@ public abstract class UpdateService extends Service{
      * @param selfCancel 自己手动取消
      * @param msg 错误消息
      */
-    protected void updateError(boolean selfCancel,String msg){}
+    protected void updateError(boolean selfCancel,Exception msg){}
 
     /**
      * 安装更新包

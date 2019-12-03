@@ -78,7 +78,7 @@ public class MonitorView{
                     view.setBackgroundColor(context.getResources().getColor(R.color.grey_400));
                     mThreadLayout.addView(view);
                 }
-                ThreadPoolManager.setOnThreadChanageListener(new MonitorThreadPool.OnThreadStatusChangedListener() {
+                ThreadPoolManager.setOnThreadChangeListener(new MonitorThreadPool.OnThreadStatusChangedListener() {
                     @Override
                     public void onThreadStatusChanged(final int position, final int status) {
                         mThreadLayout.post(new Runnable() {
@@ -226,7 +226,7 @@ public class MonitorView{
             }
 
             @Override
-            public String onErrorListener(Request r, String error) {
+            public Exception onErrorListener(Request r, Exception error) {
                 final Requesting requesting = mAdapter.getRequestByHash(mRequestHash.get(r.hashCode()));
                 requesting.status = Requesting.STATUS_ERROR;
                 mThreadLayout.post(new Runnable() {
@@ -262,7 +262,7 @@ public class MonitorView{
         mView=null;
         NetManager.getInstance().setGlobalListener(null);
         EventObserver.getInstance().unsubscribe(ContextHolder.getContext(),this);
-        ThreadPoolManager.setOnThreadChanageListener(null);
+        ThreadPoolManager.setOnThreadChangeListener(null);
     }
 
     @Event

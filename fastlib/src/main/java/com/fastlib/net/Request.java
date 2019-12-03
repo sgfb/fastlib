@@ -5,14 +5,17 @@ import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
+import com.fastlib.annotation.NetCallback;
 import com.fastlib.app.module.ModuleLife;
 import com.fastlib.base.Refreshable;
 import com.fastlib.db.FastDatabase;
 import com.fastlib.db.ServerCache;
 import com.fastlib.net.bean.ResponseStatus;
+import com.fastlib.net.exception.DiscardException;
 import com.fastlib.net.listener.Listener;
 import com.fastlib.net.mock.MockProcess;
 import com.fastlib.net.param_parse.ParamParserManager;
+import com.fastlib.utils.Reflect;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
@@ -40,7 +43,6 @@ public class Request{
     private boolean isSuppressWarning;              //压制警告
     private boolean isAcceptGlobalCallback;         //是否接受全局回调监听.默认true
     private boolean isReplaceChinese;               //是否替换中文url,默认为true
-    private boolean useFactory;                     //是否使用预设值
     private boolean isSendGzip;                     //指定这次请求发送时是否压缩成gzip流
     private boolean isReceiveGzip;                  //指定这次请求是否使用gzip解码
     private boolean isUseGlobalParamParser;
@@ -50,7 +52,7 @@ public class Request{
     private long mIntervalSendFileTransferEvent=1000;//间隔多久发送上传和下载文件广播
     private String method;
     private String mUrl;
-    private String mCustomRootAddress;              //自定义根地址
+    private String mRootAddress;              //自定义根地址
     private List<Pair<String, String>> mSendCookies;
     private Downloadable mDownloadable;
     private Map<String,List<String>> mReceiveHeader;
@@ -75,7 +77,7 @@ public class Request{
     }
 
     public Request(String url) {
-        this("POST", url);
+        this(url,"POST");
     }
 
     /**
@@ -86,14 +88,13 @@ public class Request{
         mMock=mock;
     }
 
-    public Request(String method, String url) {
+    public Request(String url,String method) {
         this.method = method.toUpperCase();
         mUrl = isReplaceChinese?transferSpaceAndChinese(url):url;
         isAcceptGlobalCallback=true;
         isReplaceChinese=true;
         isSendGzip=false;
         isReceiveGzip=false;
-        useFactory = true;
         isUseGlobalParamParser=true;
         mParams = new ArrayList<>();
         mFiles = new ArrayList<>();
@@ -450,30 +451,43 @@ public class Request{
             return this;
         mGenericType=new Type[3];
         //泛型解析,如果是Object和byte[]就返回原始字节流,String返回字符,其它类型就尝试使用gson解析
+        NetCallback netCallback=Reflect.findAnnotation(l.getClass(),NetCallback.class,true);
         Method[] ms = l.getClass().getDeclaredMethods();
-        List<Method> duplicate = new ArrayList<>();
+
+        if(netCallback==null) throw new IllegalStateException("RequestCallbackFun can't be null!");
+        //使用遍历免去手动输入方法参数（但同时略微降低性能）
+        List<Method> duplicateList=new ArrayList<>();
         for (Method m : ms) {
-            if ("onResponseListener".equals(m.getName()))
-                duplicate.add(m);
+            String methodFullDescription=m.toString();
+            if (netCallback.value().equals(m.getName())&&!methodFullDescription.contains("volatile")){
+                duplicateList.add(m);
+            }
         }
-        for (Method m : duplicate){
-            boolean someoneIsNotObject=false;
+        Method realMethod = null;
+        //所有参数都必须不是Object
+        for (Method m : duplicateList){
+            boolean allNotObject=true;
             Type[] types=m.getGenericParameterTypes();
+
+            for(Type t:types){
+                if(t==Object.class) allNotObject=false;
+            }
+            if(allNotObject){
+                realMethod=m;
+                break;
+            }
+        }
+        if(realMethod!=null){
+            Type[] types=realMethod.getGenericParameterTypes();
+
             if(types!=null){
-                if (types.length>1&&types[1] != Object.class){
-                    mGenericType[0] = types[1];
-                    someoneIsNotObject=true;
-                }
-                if(types.length>2&&types[2]!=Object.class){
-                    mGenericType[1]=types[2];
-                    someoneIsNotObject=true;
-                }
-                if(types.length>3&&types[3]!=Object.class){
-                    mGenericType[2]=types[3];
-                    someoneIsNotObject=true;
+                int typeIndex=0;
+                for(int i=0;i<Math.min(3,types.length);i++){
+                    Type type=types[i];
+                    if(type!=Request.class)
+                        mGenericType[typeIndex++]=type;
                 }
             }
-            if(someoneIsNotObject) break;
         }
         return this;
     }
@@ -486,7 +500,7 @@ public class Request{
         isCancel=true;
         if(mThread!=null) mThread.interrupt();
         if(mListener != null)
-            mListener.onErrorListener(this, "手动取消网络请求 " + mUrl);
+            mListener.onErrorListener(this,new DiscardException("手动取消网络请求 " + mUrl));
     }
 
     /**
@@ -551,7 +565,7 @@ public class Request{
     }
 
     public String getUrl() {
-        String rootAddress=mCustomRootAddress==null?"":mCustomRootAddress;
+        String rootAddress= mRootAddress ==null?"": mRootAddress;
         return rootAddress+mUrl;
     }
 
@@ -573,22 +587,13 @@ public class Request{
         return mDownloadable;
     }
 
-    public boolean isUseFactory() {
-        return useFactory;
-    }
-
-    public Request setUseFactory(boolean useFactory) {
-        this.useFactory = useFactory;
-        return this;
-    }
-
     public Request setCustomRootAddress(String address){
-        mCustomRootAddress=address;
+        mRootAddress =address;
         return this;
     }
 
     public String getCustomRootAddress(){
-        return mCustomRootAddress;
+        return mRootAddress;
     }
 
     public boolean downloadable() {
@@ -816,9 +821,8 @@ public class Request{
             uploadFileStr.deleteCharAt(uploadFileStr.length()-1);
         }
         uploadFileStr.append("]");
-        return "URL:" + mUrl + " Method:" + method + "\n" +
-                paramsStr.toString() + "\n" +
-                uploadFileStr.toString();
+        return getUrl() + " " + method + "\n" +
+                paramsStr +" "+ uploadFileStr;
     }
 
     public long getResourceExpire() {
