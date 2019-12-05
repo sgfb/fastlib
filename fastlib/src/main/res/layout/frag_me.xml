@@ -1,0 +1,525 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v4.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/refresh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <android.support.v4.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:background="@color/amber_50" />
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="true"
+                android:focusableInTouchMode="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="right"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="18dp"
+                        android:layout_marginRight="10dp">
+
+                        <ImageView
+                            android:id="@+id/settings"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="9dp"
+                            android:src="@drawable/icon_set_mine" />
+
+                        <FrameLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content">
+
+                            <ImageView
+                                android:id="@+id/message"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:padding="9dp"
+                                android:src="@drawable/icon_massage_mine" />
+
+                            <TextView
+                                android:id="@+id/alertCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="right"
+                                android:background="@drawable/shape_round_solid_fd3543"
+                                android:paddingLeft="3dp"
+                                android:paddingRight="3dp"
+                                android:textColor="@android:color/white"
+                                android:textSize="@dimen/font_size_tiny"
+                                android:visibility="gone"
+                                tools:visibility="visible"
+                                tools:text="9+" />
+                        </FrameLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="5dp">
+
+                    <ImageView
+                        android:layout_width="58dp"
+                        android:layout_height="58dp"
+                        android:layout_marginLeft="30dp"
+                        android:src="@drawable/img_head_mine" />
+
+                    <TextView
+                        android:id="@+id/phone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginLeft="20dp"
+                        android:textColor="@android:color/white"
+                        android:textSize="@dimen/font_size_large"
+                        tools:text="18886117615" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginRight="10dp"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/shape_round_solid_white2">
+
+                    <FrameLayout
+                        android:id="@+id/unpaidLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1">
+
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:paddingTop="15dp"
+                            android:paddingBottom="15dp">
+
+                            <ImageView
+                                android:layout_width="30dp"
+                                android:layout_height="30dp"
+                                android:src="@drawable/icon_pay_order"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:text="待付款"/>
+                        </LinearLayout>
+
+                        <FrameLayout
+                            android:id="@+id/unpaidCountLayout"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:layout_marginBottom="26dp"
+                            android:layout_marginLeft="10dp"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:src="@drawable/shape_circle_solid_white_fd3f4d" />
+
+                            <TextView
+                                android:id="@+id/unpaidCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="#fd3f4d"
+                                android:layout_gravity="center"
+                                tools:text="1"/>
+                        </FrameLayout>
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:id="@+id/unPostLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1">
+
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center">
+
+                            <ImageView
+                                android:layout_width="30dp"
+                                android:layout_height="30dp"
+                                android:src="@drawable/icon_send_order"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:text="待发货"/>
+                        </LinearLayout>
+
+                        <FrameLayout
+                            android:id="@+id/unPostCountLayout"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:layout_marginBottom="26dp"
+                            android:layout_marginLeft="10dp"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:src="@drawable/shape_circle_solid_white_fd3f4d" />
+
+                            <TextView
+                                android:id="@+id/unPostCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="#fd3f4d"
+                                android:layout_gravity="center"
+                                tools:text="1"/>
+                        </FrameLayout>
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:id="@+id/unReceiveLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1">
+
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center">
+
+                            <ImageView
+                                android:layout_width="30dp"
+                                android:layout_height="30dp"
+                                android:src="@drawable/icon_receive_order"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:text="待收货"/>
+                        </LinearLayout>
+
+                        <FrameLayout
+                            android:id="@+id/unReceiveCountLayout"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:layout_marginBottom="26dp"
+                            android:layout_marginLeft="10dp"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:src="@drawable/shape_circle_solid_white_fd3f4d" />
+
+                            <TextView
+                                android:id="@+id/unReceiveCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="#fd3f4d"
+                                android:layout_gravity="center"
+                                tools:text="1"/>
+                        </FrameLayout>
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:id="@+id/rentingLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1">
+
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center">
+
+                            <ImageView
+                                android:layout_width="30dp"
+                                android:layout_height="30dp"
+                                android:src="@drawable/icon_use_order"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:text="租用中"/>
+                        </LinearLayout>
+
+                        <FrameLayout
+                            android:id="@+id/rentingCountLayout"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:layout_marginBottom="26dp"
+                            android:layout_marginLeft="10dp"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:src="@drawable/shape_circle_solid_white_fd3f4d" />
+
+                            <TextView
+                                android:id="@+id/rentingCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="#fd3f4d"
+                                android:layout_gravity="center"
+                                tools:text="1"/>
+                        </FrameLayout>
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:id="@+id/allOrderLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1">
+
+                        <LinearLayout
+                            android:orientation="vertical"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center">
+
+                            <ImageView
+                                android:layout_width="30dp"
+                                android:layout_height="30dp"
+                                android:src="@drawable/icon_order_mine"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:text="我的订单"/>
+                        </LinearLayout>
+
+                        <FrameLayout
+                            android:id="@+id/allOrderCountLayout"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:layout_marginBottom="26dp"
+                            android:layout_marginLeft="10dp"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <ImageView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:src="@drawable/shape_circle_solid_white_fd3f4d" />
+
+                            <TextView
+                                android:id="@+id/allOrderCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="#fd3f4d"
+                                android:layout_gravity="center"
+                                tools:text="1"/>
+                        </FrameLayout>
+                    </FrameLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:id="@+id/coupon"
+                        android:orientation="horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="10dp"
+                        android:layout_marginRight="10dp"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/shape_round_solid_white2">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textSize="@dimen/font_size_normal_high"
+                            android:drawableLeft="@drawable/icon_coupon_mine"
+                            android:drawableRight="@drawable/btn_more_index"
+                            android:drawablePadding="14dp"
+                            android:paddingLeft="16dp"
+                            android:paddingRight="12dp"
+                            android:paddingTop="18dp"
+                            android:paddingBottom="18dp"
+                            android:background="?selectableItemBackground"
+                            android:text="我的优惠券"/>
+                    </LinearLayout>
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="10dp"
+                        android:layout_marginRight="10dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/shape_round_solid_white2">
+
+                        <LinearLayout
+                            android:id="@+id/realNameVerify"
+                            android:orientation="horizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="?selectableItemBackground">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:textSize="@dimen/font_size_normal_high"
+                                android:drawableLeft="@drawable/icon_name_mine"
+                                android:drawablePadding="14dp"
+                                android:paddingLeft="16dp"
+                                android:paddingTop="18dp"
+                                android:paddingBottom="18dp"
+                                android:text="实名认证"/>
+
+                            <TextView
+                                android:id="@+id/realName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/green_50"
+                                android:layout_marginRight="12dp"
+                                tools:text="已实名"/>
+
+                            <ImageView
+                                android:id="@+id/realNameArrow"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center_vertical"
+                                android:layout_marginRight="12dp"
+                                android:src="@drawable/btn_more_index"/>
+                        </LinearLayout>
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:id="@+id/address"
+                        android:orientation="horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="10dp"
+                        android:layout_marginRight="10dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/shape_round_solid_white2">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textSize="@dimen/font_size_normal_high"
+                            android:drawableLeft="@drawable/icon_address_mine"
+                            android:drawableRight="@drawable/btn_more_index"
+                            android:drawablePadding="14dp"
+                            android:paddingLeft="16dp"
+                            android:paddingRight="12dp"
+                            android:paddingTop="18dp"
+                            android:paddingBottom="18dp"
+                            android:background="?selectableItemBackground"
+                            android:text="收货地址"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/customerService"
+                        android:orientation="horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="10dp"
+                        android:layout_marginRight="10dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/shape_round_solid_white2">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textSize="@dimen/font_size_normal_high"
+                            android:drawableLeft="@drawable/icon_serve_mine"
+                            android:drawableRight="@drawable/btn_more_index"
+                            android:drawablePadding="14dp"
+                            android:paddingLeft="16dp"
+                            android:paddingRight="12dp"
+                            android:paddingTop="18dp"
+                            android:paddingBottom="18dp"
+                            android:background="?selectableItemBackground"
+                            android:text="客户服务"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/font_size_normal_high"
+                        android:gravity="center_horizontal"
+                        android:layout_marginTop="20dp"
+                        android:text="为你推荐"/>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/font_size_small"
+                        android:gravity="center_horizontal"
+                        android:layout_marginTop="8dp"
+                        android:text="精选好物 为你推荐"/>
+
+                    <android.support.v7.widget.RecyclerView
+                        android:id="@+id/recommendList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false"
+                        android:paddingLeft="6dp"
+                        android:paddingRight="6dp"
+                        app:layoutManager="android.support.v7.widget.GridLayoutManager"
+                        app:spanCount="2"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:textColor="@color/green_900"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginBottom="10dp"
+                        android:text="- 不要扯了，已经到底了 -"/>
+                </LinearLayout>
+            </LinearLayout>
+        </FrameLayout>
+    </android.support.v4.widget.NestedScrollView>
+</android.support.v4.widget.SwipeRefreshLayout>

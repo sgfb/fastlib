@@ -6,14 +6,11 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
-    <uses-permission android:name="android.permission.READ_CALL_LOG"/>
-    <uses-permission android:name="android.permission.READ_SMS"/>
-
-
     <application
         android:label="fastlib"
         android:logo="@mipmap/ic_launcher"
-        android:theme="@style/MaterialTheme">
+        android:theme="@style/MaterialTheme"
+        android:usesCleartextTraffic="true">
 
         <activity android:name=".MainActivity">
             <intent-filter>
