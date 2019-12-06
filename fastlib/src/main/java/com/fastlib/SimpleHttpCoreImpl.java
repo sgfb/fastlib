@@ -18,7 +18,6 @@ import java.util.Map;
 /**
  * Created by sgfb on 2019\12\03.
  * 基础实现HttpCore功能.添加便利功能可快速安全使用Http协议与服务器交互
- * TODO 控制某些操作在begin之前
  */
 public class SimpleHttpCoreImpl extends HttpCore{
     private Map<String,List<String>> mAdditionHeader=new HashMap<>();
@@ -82,6 +81,11 @@ public class SimpleHttpCoreImpl extends HttpCore{
     @Override
     protected String getRequestMethod() {
         return "POST";
+    }
+
+    @Override
+    protected HttpOption getHttpOption() {
+        return new HttpOption();
     }
 
     @Override
@@ -150,10 +154,14 @@ public class SimpleHttpCoreImpl extends HttpCore{
      * @param inputStream 预计发送给服务器的数据
      */
     public void addPendingInputStream(@NonNull InputStream inputStream){
+        if(isBegin)
+            throw new IllegalStateException("不允许在begin()后添加输入流");
         mPendingInputStream.add(inputStream);
     }
 
     public void addHeader(String key,String value){
+        if(isBegin)
+            throw new IllegalStateException("不允许在begin()后设置头部参数");
         List<String> valueList=mAdditionHeader.get(key);
 
         if(valueList==null) {
@@ -164,6 +172,8 @@ public class SimpleHttpCoreImpl extends HttpCore{
     }
 
     public void setHeader(String key,String value){
+        if(isBegin)
+            throw new IllegalStateException("不允许在begin()后设置头部参数");
         List<String> valueList=mAdditionHeader.get(key);
 
         if(valueList==null) {

@@ -69,14 +69,14 @@ public class MainActivity extends FastActivity {
             N.showLong(this,"未初始化连接");
             return;
         }
-        StringBuilder sb=new StringBuilder();
-        List<Pair<String,String>> list=new ArrayList<>();
-        list.add(Pair.create("param1","value1"));
-        list.add(Pair.create("param2","value2"));
-        loadParams(list,sb);
-        mHttpCore.addHeader("Content-Type","application/x-www-form-urlencoded");
-        mHttpCore.addPendingInputStream(new ByteArrayInputStream(sb.toString().getBytes()));
-        System.out.println("已写入到网络缓存");
+//        StringBuilder sb=new StringBuilder();
+//        List<Pair<String,String>> list=new ArrayList<>();
+//        list.add(Pair.create("param1","value1"));
+//        list.add(Pair.create("param2","value2"));
+//        loadParams(list,sb);
+//        mHttpCore.addHeader("Content-Type","application/x-www-form-urlencoded");
+//        mHttpCore.addPendingInputStream(new ByteArrayInputStream(sb.toString().getBytes()));
+//        System.out.println("已写入到网络缓存");
         ThreadPoolManager.sSlowPool.execute(new Runnable() {
             @Override
             public void run() {
@@ -92,9 +92,7 @@ public class MainActivity extends FastActivity {
 
     @Bind(R.id.bt3)
     private void closeSocket(){
-        Request request=new Request(mSendData.getText().toString().trim());
-        request.put("param1","value1");
-        request.put("param2","value2");
+        Request request=new Request("http://www.baidu.com","get");
         request.setListener(new SimpleListener<String>(){
 
             @Override

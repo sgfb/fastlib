@@ -41,7 +41,7 @@ public class URLUtil {
     /**
      * 获取Host
      * @param url   完整的url 例:http://www.baidu.com:8080/getTop
-     * @return  协议后首个冒号或者斜杠的位置,取这之间的字符串，如果没有则返回null
+     * @return  协议后首个冒号或者斜杠的位置,取这之间的字符串.否则返回协议后所有字符串
      */
     public static String getHost(String url){
         int notSlashIndex=getNotSlashIndex(url);
@@ -53,7 +53,7 @@ public class URLUtil {
 
         int notSlashToNextSlashIndex=url.substring(notSlashIndex).indexOf('/');
         if(notSlashToNextSlashIndex!=-1) return url.substring(notSlashIndex,notSlashIndex+notSlashToNextSlashIndex);
-        return null;
+        return url.substring(notSlashIndex);
     }
 
     /**
@@ -62,10 +62,9 @@ public class URLUtil {
      * @return  取协议后首个冒号后数字 如果没有则取80
      */
     public static int getPort(String url) {
-        final int fDefaultPort = 80;
 
         int notSlashIndex = getNotSlashIndex(url);
-        if (notSlashIndex < 0) return fDefaultPort;
+        if (notSlashIndex < 0) return resultDefaultPort(url);
 
         int notSlashToColonIndex = url.substring(notSlashIndex).indexOf(':');
         if (notSlashToColonIndex != -1) {
@@ -83,7 +82,13 @@ public class URLUtil {
                 return Integer.parseInt(number);
             }
         }
-        return fDefaultPort;
+        return resultDefaultPort(url);
+    }
+
+    private static int resultDefaultPort(String url){
+        final int fDefaultPort = 80;
+        final int fDefaultHttpsPort=443;
+        return url.startsWith("https")?fDefaultHttpsPort:fDefaultPort;
     }
 
     public static boolean validUrl(String url){

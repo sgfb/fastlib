@@ -12,7 +12,11 @@ public interface HeaderDefinition{
     String KEY_ACCEPT_ENCODING ="Accept_Encoding";
     String KEY_CONNECTION ="Connection";
     String KEY_CACHE_CONTROL ="Cache-Control";
-    String KEY_CONTENT_LENGTH="Content-Length";         //这个参数在post请求时有参数时是必要的
+
+    /**
+     * 内容长度这个参数在post请求且有参数时是必要的
+     */
+    String KEY_CONTENT_LENGTH="Content-Length";
 
     /**
      * 通常用于对实体内容进行压缩编码，目的是优化传输，例如用 gzip 压缩文本文件，能大幅减小体积。内容编码通常是选择性的，
@@ -27,5 +31,13 @@ public interface HeaderDefinition{
      */
     String KEY_TRANSFER_ENCODING="Transfer-Encoding";
 
+    /**
+     * 需要将页面重新定向至的地址。一般响应码为3xx中才会出现
+     */
+    String KEY_LOCATION="Location";
+
+    /**
+     * 传输编码中使用的类型值.可对数据分块传输
+     */
     String VALUE_TRANSFER_ENCODING_CHUNKED="chunked";
 }
