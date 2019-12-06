@@ -1,5 +1,6 @@
 package com.fastlib;
 
+import android.support.v4.util.Pair;
 import android.text.TextUtils;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -8,15 +9,22 @@ import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.module.FastActivity;
 import com.fastlib.app.task.ThreadPoolManager;
+import com.fastlib.net.Request;
+import com.fastlib.net.listener.SimpleListener;
 import com.fastlib.utils.N;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -45,68 +53,76 @@ public class MainActivity extends FastActivity {
             @Override
             public void run() {
                 mHttpCore=new SimpleHttpCoreImpl(address);
-                try {
-                    mHttpCore.connect();
-                    ResponseHeader header=mHttpCore.getResponseHeader();
-                    System.out.println(String.format(Locale.getDefault(),"protocol:%s code:%d message:%s",header.getProtocol(),header.getCode(),header.getMessage()));
-                    for(Map.Entry<String,List<String>> entry:header.getHeader().entrySet()){
-                        System.out.println("header:"+entry.getKey()+","+entry.getValue().get(0));
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mStatus.setText("连接成功");
                     }
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mStatus.setText("连接成功");
-                        }
-                    });
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mStatus.setText("连接失败");
-                        }
-                    });
-                }
+                });
             }
         });
     }
 
     @Bind(R.id.bt2)
     private void bt2() {
-        if(mHttpCore==null||!mHttpCore.isConnected()){
-            N.showLong(this,"未连接");
+        if(mHttpCore==null){
+            N.showLong(this,"未初始化连接");
             return;
         }
+        StringBuilder sb=new StringBuilder();
+        List<Pair<String,String>> list=new ArrayList<>();
+        list.add(Pair.create("param1","value1"));
+        list.add(Pair.create("param2","value2"));
+        loadParams(list,sb);
+        mHttpCore.addHeader("Content-Type","application/x-www-form-urlencoded");
+        mHttpCore.addPendingInputStream(new ByteArrayInputStream(sb.toString().getBytes()));
+        System.out.println("已写入到网络缓存");
         ThreadPoolManager.sSlowPool.execute(new Runnable() {
             @Override
             public void run() {
-
+                try {
+                    mHttpCore.begin();
+                    System.out.println("发起请求成功");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
 
     @Bind(R.id.bt3)
     private void closeSocket(){
-        if(mHttpCore==null||!mHttpCore.isConnected()){
-            N.showLong(this,"未连接");
-            return;
-        }
-        ThreadPoolManager.sSlowPool.execute(new Runnable() {
+        Request request=new Request(mSendData.getText().toString().trim());
+        request.put("param1","value1");
+        request.put("param2","value2");
+        request.setListener(new SimpleListener<String>(){
+
             @Override
-            public void run() {
-                try {
-                    mHttpCore.disconnect();
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mStatus.setText("已关闭");
-                        }
-                    });
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            public void onResponseListener(Request r, String result) {
+                System.out.println(result);
             }
         });
+        request.start();
+//        if(mHttpCore==null||!mHttpCore.isConnected()){
+//            N.showLong(this,"未连接");
+//            return;
+//        }
+//        ThreadPoolManager.sSlowPool.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    mHttpCore.disconnect();
+//                    runOnUiThread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            mStatus.setText("已关闭");
+//                        }
+//                    });
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
     }
 
     @Bind(R.id.bt4)
@@ -141,5 +157,27 @@ public class MainActivity extends FastActivity {
     @Override
     public void alreadyPrepared(){
 
+    }
+
+    /**
+     * 拼接字符串参数
+     *
+     * @param params
+     * @param sb
+     */
+    private void loadParams(List<Pair<String, String>> params, StringBuilder sb) {
+        if (params == null || params.size() <= 0)
+            return;
+        Iterator<Pair<String, String>> iter = params.iterator();
+
+        while (iter.hasNext()) {
+            Pair<String, String> pair = iter.next();
+            try {
+                sb.append(pair.first).append("=").append(TextUtils.isEmpty(pair.second)?"": URLEncoder.encode(pair.second,"UTF-8")).append("&");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        }
+        sb.deleteCharAt(sb.length() - 1);
     }
 }

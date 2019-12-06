@@ -1,5 +1,7 @@
 package com.fastlib;
 
+import android.support.annotation.NonNull;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -9,38 +11,63 @@ import java.io.InputStream;
  */
 public class HttpInputStream extends InputStream{
     private InputStream mSocketInput;
+    private StreamRemainCounter mRemain;
 
-    public HttpInputStream(InputStream socketInput) {
+    public HttpInputStream(InputStream socketInput,StreamRemainCounter streamRemainCounter){
         mSocketInput = socketInput;
+        mRemain =streamRemainCounter;
     }
 
     @Override
-    public int read() throws IOException {
-        return 0;
+    public int read() throws IOException{
+        int remain=mRemain.getRemainCount();
+        if(remain>0) {
+            mRemain.readStream(4);
+            return mSocketInput.read();
+        }
+        return remain;
     }
 
     @Override
-    public int read(byte[] b) throws IOException {
-        return super.read(b);
+    public int read(@NonNull byte[] b) throws IOException {
+        int remain=mRemain.getRemainCount();
+        if(remain>0) {
+            int readCount=mSocketInput.read(b,0,remain);
+            mRemain.readStream(readCount);
+            return readCount;
+        }
+        return remain;
     }
 
     @Override
-    public int read(byte[] b, int off, int len) throws IOException {
-        return super.read(b, off, len);
+    public int read(@NonNull byte[] b, int off, int len) throws IOException {
+        int remain=mRemain.getRemainCount();
+        if(remain>0) {
+            int readCount=mSocketInput.read(b, off, len);
+            mRemain.readStream(readCount);
+            return readCount;
+        }
+        return remain;
     }
 
     @Override
     public long skip(long n) throws IOException {
-        return super.skip(n);
+        int remain=mRemain.getRemainCount();
+        if(remain>0) {
+            long skipCount=mSocketInput.skip(n);
+            mRemain.readStream((int) skipCount);
+            return skipCount;
+        }
+        return remain;
     }
 
     @Override
     public int available() throws IOException {
-        return super.available();
+        return mRemain.getRemainCount();
     }
 
     @Override
     public void close() throws IOException {
-
+        mSocketInput.close();
     }
 }

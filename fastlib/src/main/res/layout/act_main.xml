@@ -45,7 +45,8 @@
         android:id="@+id/sendData"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:maxLines="1"/>
+        android:maxLines="1"
+        android:text="http://www.sgfb.top:8082/getParamData"/>
 
     <TextView
         android:id="@+id/responseData"

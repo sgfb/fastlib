@@ -35,7 +35,17 @@ public class ResponseHeader{
         return mMessage;
     }
 
-    public Map<String, List<String>> getHeader() {
+    public Map<String, List<String>> getHeaders() {
         return new HashMap<>(mHeader);
+    }
+
+    public List<String> getHeader(String key){
+        return mHeader.get(key);
+    }
+
+    public String getHeaderFirst(String key){
+        List<String> list=mHeader.get(key);
+        if(list==null||list.isEmpty()) return null;
+        return list.get(0);
     }
 }

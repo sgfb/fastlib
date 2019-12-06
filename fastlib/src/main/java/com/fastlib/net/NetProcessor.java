@@ -108,8 +108,8 @@ public class NetProcessor implements Runnable {
                 isMulti = true;
             //添加额外信息到头部
             if (mRequest.getSendHeadExtra() != null) {
-                List<Request.ExtraHeader> list = mRequest.getSendHeadExtra();
-                for (Request.ExtraHeader extra : list)
+                List<ExtraHeader> list = mRequest.getSendHeadExtra();
+                for (ExtraHeader extra : list)
                     if (extra.canDuplication)
                         connection.addRequestProperty(extra.field, extra.value);
                     else connection.setRequestProperty(extra.field, extra.value);
