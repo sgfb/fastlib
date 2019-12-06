@@ -4,9 +4,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+<<<<<<< HEAD
 import java.lang.reflect.Field;
 import java.util.List;
 
+=======
+>>>>>>> a55fc6a244e6d9470f7218d8573e2c53158d5c37
 /**
  * Created by Administrator on 2018/7/27.
  */
@@ -14,6 +17,7 @@ import java.util.List;
 public class JavaTest{
 
     @Test
+<<<<<<< HEAD
     public void testByte(){
         int i=1512;
         byte[] data=new byte[4];
@@ -31,5 +35,9 @@ public class JavaTest{
         value|=data[2]<<8;
         value|=data[3];
         return value;
+=======
+    public void testMain(){
+        System.out.println(System.currentTimeMillis());
+>>>>>>> a55fc6a244e6d9470f7218d8573e2c53158d5c37
     }
 }

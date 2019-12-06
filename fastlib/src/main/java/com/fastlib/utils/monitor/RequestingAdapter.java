@@ -13,8 +13,11 @@ import com.fastlib.base.CommonViewHolder;
 import java.io.File;
 import java.util.Locale;
 
-@ContentView(R.layout.item_requesting)
 public class RequestingAdapter extends BaseRecyAdapter<Requesting>{
+
+    public RequestingAdapter() {
+        super(R.layout.item_requesting);
+    }
 
     @Override
     public void binding(int position, Requesting data, CommonViewHolder holder) {

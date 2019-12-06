@@ -14,8 +14,6 @@ import com.fastlib.base.Refreshable;
 import com.fastlib.net.Request;
 import com.fastlib.net.listener.Listener;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 

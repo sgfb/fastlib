@@ -1,14 +1,9 @@
 package com.fastlib.net;
 
-import com.fastlib.app.module.ModuleLife;
-import com.fastlib.net.listener.SimpleListener;
-import com.fastlib.utils.SessionCheck;
-import com.fastlib.utils.TestUtil;
 import com.google.gson.reflect.TypeToken;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 
 import java.io.File;
