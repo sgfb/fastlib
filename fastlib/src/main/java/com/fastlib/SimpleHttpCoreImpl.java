@@ -80,7 +80,7 @@ public class SimpleHttpCoreImpl extends HttpCore{
 
     @Override
     protected String getRequestMethod() {
-        return "POST";
+        return "GET";
     }
 
     @Override

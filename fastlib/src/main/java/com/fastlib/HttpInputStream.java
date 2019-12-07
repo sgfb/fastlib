@@ -31,7 +31,9 @@ public class HttpInputStream extends InputStream{
     @Override
     public int read(@NonNull byte[] b) throws IOException {
         int remain=mRemain.getRemainCount();
-        if(remain>0) {
+        if(remain>0){
+            if(remain>b.length)
+                remain=b.length;
             int readCount=mSocketInput.read(b,0,remain);
             mRemain.readStream(readCount);
             return readCount;

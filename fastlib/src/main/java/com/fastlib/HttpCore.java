@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+
 /**
  * Created by sgfb on 2019/12/3
  * E-mail:602687446@qq.com
@@ -68,7 +71,8 @@ public abstract class HttpCore {
 
     public void begin() throws IOException {
         isBegin = true;
-        mSocket = new Socket(URLUtil.getHost(mUrl), URLUtil.getPort(mUrl));
+        mSocket = !mUrl.startsWith("https") ? new Socket(URLUtil.getHost(mUrl), URLUtil.getPort(mUrl)) :
+                SSLSocketFactory.getDefault().createSocket(URLUtil.getHost(mUrl), URLUtil.getPort(mUrl));
         Log.d(TAG, "Socket已连接");
         mSocketOut = mSocket.getOutputStream();
         mSocketIn = mSocket.getInputStream();
@@ -113,17 +117,17 @@ public abstract class HttpCore {
             while (!TextUtils.isEmpty((line = readLine(mSocketIn)))) {
                 String key;
                 List<String> value;
-                int firstColonIndex=line.indexOf(':');
-                if (firstColonIndex==-1) key = null;
-                else key = line.substring(0,firstColonIndex).trim();
+                int firstColonIndex = line.indexOf(':');
+                if (firstColonIndex == -1) key = null;
+                else key = line.substring(0, firstColonIndex).trim();
 
                 value = header.get(key);
                 if (value == null) {
                     value = new ArrayList<>();
                     header.put(key, value);
                 }
-                if(firstColonIndex<line.length())
-                    value.add(firstColonIndex==-1?line.trim():line.substring(firstColonIndex+1).trim());
+                if (firstColonIndex < line.length())
+                    value.add(firstColonIndex == -1 ? line.trim() : line.substring(firstColonIndex + 1).trim());
                 else value.add("");
                 header.put(key, value);
             }
@@ -157,12 +161,12 @@ public abstract class HttpCore {
 
         //重定位
         if ((code == ResponseCodeDefinition.MULTIPLE_CHOICES || code == ResponseCodeDefinition.MOVED_PERMANENTLY ||
-                code == ResponseCodeDefinition.MOVE_TEMPORARILY || code == ResponseCodeDefinition.SEE_OTHER)&&getHttpOption().canRelocation){
-            String location=mResponseHeader.getHeaderFirst(HeaderDefinition.KEY_LOCATION);
+                code == ResponseCodeDefinition.MOVE_TEMPORARILY || code == ResponseCodeDefinition.SEE_OTHER) && getHttpOption().canRelocation) {
+            String location = mResponseHeader.getHeaderFirst(HeaderDefinition.KEY_LOCATION);
 
-            if(!TextUtils.isEmpty(location)){
-                Log.i(TAG,"重定向到:"+location);
-                mUrl=location;
+            if (!TextUtils.isEmpty(location)) {
+                Log.i(TAG, "重定向到:" + location);
+                mUrl = location;
                 end();
                 begin();
             }

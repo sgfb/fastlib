@@ -1,5 +1,6 @@
 package com.fastlib;
 
+import android.os.Environment;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 import android.widget.EditText;
@@ -9,12 +10,14 @@ import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.module.FastActivity;
 import com.fastlib.app.task.ThreadPoolManager;
+import com.fastlib.db.SaveUtil;
 import com.fastlib.net.Request;
 import com.fastlib.net.listener.SimpleListener;
 import com.fastlib.utils.N;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -92,12 +95,12 @@ public class MainActivity extends FastActivity {
 
     @Bind(R.id.bt3)
     private void closeSocket(){
-        Request request=new Request("http://www.baidu.com","get");
+        Request request=new Request("https://www.baidu.com","get");
         request.setListener(new SimpleListener<String>(){
 
             @Override
             public void onResponseListener(Request r, String result) {
-                System.out.println(result);
+                System.out.println(result.length());
             }
         });
         request.start();
@@ -142,7 +145,15 @@ public class MainActivity extends FastActivity {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            mResponseData.setText(new String(baos.toByteArray()));
+                            String result=baos.toString();
+                            File file=new File(Environment.getExternalStorageDirectory(),"baidu.txt");
+                            try {
+                                file.createNewFile();
+                                SaveUtil.saveToFile(file,baos.toByteArray(),false);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            mResponseData.setText(Integer.toString(result.length()));
                         }
                     });
                 } catch (IOException e) {
