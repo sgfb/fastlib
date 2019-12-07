@@ -95,7 +95,7 @@ public class MainActivity extends FastActivity {
 
     @Bind(R.id.bt3)
     private void closeSocket(){
-        Request request=new Request("https://www.baidu.com","get");
+        Request request=new Request("https://api-inner.rent.winder-tech.com/consumer-app/app/user/getPlatformServiceTelephone","get");
         request.setListener(new SimpleListener<String>(){
 
             @Override
@@ -146,14 +146,8 @@ public class MainActivity extends FastActivity {
                         @Override
                         public void run() {
                             String result=baos.toString();
-                            File file=new File(Environment.getExternalStorageDirectory(),"baidu.txt");
-                            try {
-                                file.createNewFile();
-                                SaveUtil.saveToFile(file,baos.toByteArray(),false);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            mResponseData.setText(Integer.toString(result.length()));
+                            System.out.println("result length:"+result.length());
+                            mResponseData.setText(result);
                         }
                     });
                 } catch (IOException e) {

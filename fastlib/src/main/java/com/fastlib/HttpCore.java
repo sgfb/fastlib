@@ -8,6 +8,7 @@ import com.fastlib.net.exception.NetException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +16,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
 /**
@@ -71,9 +71,10 @@ public abstract class HttpCore {
 
     public void begin() throws IOException {
         isBegin = true;
-        mSocket = !mUrl.startsWith("https") ? new Socket(URLUtil.getHost(mUrl), URLUtil.getPort(mUrl)) :
-                SSLSocketFactory.getDefault().createSocket(URLUtil.getHost(mUrl), URLUtil.getPort(mUrl));
+        mSocket = !mUrl.startsWith("https") ? new Socket():SSLSocketFactory.getDefault().createSocket();
+        mSocket.connect(new InetSocketAddress(URLUtil.getHost(mUrl),URLUtil.getPort(mUrl)),getHttpOption().connectionTimeout);
         Log.d(TAG, "Socket已连接");
+        mSocket.setSoTimeout(getHttpOption().readTimeout);
         mSocketOut = mSocket.getOutputStream();
         mSocketIn = mSocket.getInputStream();
         sendHeader();
@@ -161,7 +162,7 @@ public abstract class HttpCore {
 
         //重定位
         if ((code == ResponseCodeDefinition.MULTIPLE_CHOICES || code == ResponseCodeDefinition.MOVED_PERMANENTLY ||
-                code == ResponseCodeDefinition.MOVE_TEMPORARILY || code == ResponseCodeDefinition.SEE_OTHER) && getHttpOption().canRelocation) {
+                code == ResponseCodeDefinition.MOVE_TEMPORARILY || code == ResponseCodeDefinition.SEE_OTHER) && getHttpOption().autoRelocation) {
             String location = mResponseHeader.getHeaderFirst(HeaderDefinition.KEY_LOCATION);
 
             if (!TextUtils.isEmpty(location)) {

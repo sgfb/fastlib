@@ -6,5 +6,7 @@ package com.fastlib;
  * Http核心可配置选项
  */
 public class HttpOption{
-    boolean canRelocation=true;
+    boolean autoRelocation =true;     //是否自动重定向
+    int connectionTimeout=0;          //连接超时(毫秒)
+    int readTimeout=0;                //读超时(毫秒)
 }
