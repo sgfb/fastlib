@@ -43,11 +43,16 @@ public class SocketEntity{
     }
 
     public void close() throws IOException {
-        if(mInputStream!=null)
-            mInputStream.close();
-        if(mOutputStream!=null)
+        if(mOutputStream!=null) {
             mOutputStream.close();
+            mOutputStream=null;
+        }
+        if(mInputStream!=null){
+            mInputStream.close();
+            mOutputStream=null;
+        }
         mSocket.close();
+        mSocket=null;
     }
 
     public boolean isValid() throws IOException {
