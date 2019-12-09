@@ -46,7 +46,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:maxLines="1"
-        android:text="http://www.baidu.com"/>
+        android:text="http://192.168.0.184:8082/hello"/>
 
     <TextView
         android:id="@+id/responseData"

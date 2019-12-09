@@ -16,8 +16,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.net.ssl.SSLSocketFactory;
-
 /**
  * Created by sgfb on 2019/12/3
  * E-mail:602687446@qq.com
@@ -28,9 +26,7 @@ public abstract class HttpCore {
     private static final String HTTP_PROTOCOL = "HTTP/1.1";
     private static final String CRLF = "\r\n";
 
-    private Socket mSocket;
-    private OutputStream mSocketOut;
-    private InputStream mSocketIn;
+    private SocketEntity mSocketEntity;
     protected boolean isBegin = false;
     protected long mInitTime;
     protected ResponseHeader mResponseHeader;
@@ -38,10 +34,9 @@ public abstract class HttpCore {
 
     /**
      * 生成必要的和自定义的头部
-     *
      * @return 请求的HTTP头部
      */
-    protected abstract Map<String, List<String>> createHeader() throws IOException;
+    protected abstract Map<String, List<String>> getHeader() throws IOException;
 
     /**
      * 发送请求体给服务器
@@ -57,7 +52,6 @@ public abstract class HttpCore {
 
     /**
      * 返回一个配置单
-     *
      * @return 配置单
      */
     protected abstract HttpOption getHttpOption();
@@ -71,12 +65,12 @@ public abstract class HttpCore {
 
     public void begin() throws IOException {
         isBegin = true;
-        mSocket = !mUrl.startsWith("https") ? new Socket():SSLSocketFactory.getDefault().createSocket();
-        mSocket.connect(new InetSocketAddress(URLUtil.getHost(mUrl),URLUtil.getPort(mUrl)),getHttpOption().connectionTimeout);
+        mSocketEntity=SocketEntityPool.getInstance().getSocketEntity(mUrl);
+
+        Socket socket=mSocketEntity.getSocket();
+        socket.connect(new InetSocketAddress(URLUtil.getHost(mUrl),URLUtil.getPort(mUrl)),getHttpOption().connectionTimeout);
         Log.d(TAG, "Socket已连接");
-        mSocket.setSoTimeout(getHttpOption().readTimeout);
-        mSocketOut = mSocket.getOutputStream();
-        mSocketIn = mSocket.getInputStream();
+        socket.setSoTimeout(getHttpOption().readTimeout);
         sendHeader();
         onSendData();
         receiveHeader();
@@ -87,7 +81,7 @@ public abstract class HttpCore {
      * 发送头部
      */
     private void sendHeader() throws IOException {
-        Map<String, List<String>> header = createHeader();
+        Map<String, List<String>> header = getHeader();
         StringBuilder sb = new StringBuilder(256);
 
         //例：GET /index HTTP/1.1
@@ -98,15 +92,15 @@ public abstract class HttpCore {
             }
         }
         sb.append(CRLF);
-        mSocketOut.write(sb.toString().getBytes());
+        mSocketEntity.getOutputStream().write(sb.toString().getBytes());
     }
 
     /**
      * 接收头部
      */
     private void receiveHeader() throws IOException {
-        mSocketOut.flush();
-        String statusLine = readLine(mSocketIn);
+        mSocketEntity.getOutputStream().flush();
+        String statusLine = readLine(mSocketEntity.getInputStream());
         if (TextUtils.isEmpty(statusLine)) throw new IOException("服务器返回HTTP协议异常");
         String[] status = statusLine.trim().split(" ");
         if (status.length < 2) throw new IOException("服务器返回HTTP协议异常");
@@ -115,7 +109,7 @@ public abstract class HttpCore {
             Map<String, List<String>> header = new HashMap<>();
             String line;
 
-            while (!TextUtils.isEmpty((line = readLine(mSocketIn)))) {
+            while (!TextUtils.isEmpty((line = readLine(mSocketEntity.getInputStream())))) {
                 String key;
                 List<String> value;
                 int firstColonIndex = line.indexOf(':');
@@ -193,28 +187,45 @@ public abstract class HttpCore {
     }
 
     protected OutputStream getSocketOutputStream() throws IOException {
-        if (mSocket == null) begin();
-        return mSocketOut;
+        if (mSocketEntity == null) begin();
+        return mSocketEntity.getOutputStream();
     }
 
     public void end() throws IOException {
-        if (mSocket != null) {
-            mSocket.close();
-            mSocket = null;
-            Log.d(TAG, "socket已关闭");
+        if (mSocketEntity != null) {
+            if(isKeepAlive())
+                SocketEntityPool.getInstance().returnSocketEntity(mSocketEntity);
+            mSocketEntity = null;
+            Log.d(TAG, "Http单次请求已结束");
         }
     }
 
     public InputStream getInputStream() throws IOException {
-        if (mSocket == null) begin();
-        return mSocketIn;
+        if (mSocketEntity == null) begin();
+        return mSocketEntity.getInputStream();
     }
 
     public boolean isConnected() {
-        return mSocket != null;
+        return mSocketEntity != null;
     }
 
     public ResponseHeader getResponseHeader() {
         return mResponseHeader;
+    }
+
+    /**
+     * 是否支持长连接优化
+     * @return  true支持 false不支持
+     */
+    protected boolean isKeepAlive() throws IOException {
+        if(mResponseHeader==null) return false;
+
+        String serverConnection=mResponseHeader.getHeaderFirst(HeaderDefinition.KEY_CONNECTION);
+        if(HeaderDefinition.VALUE_CONNECTION_CLOSE.equals(serverConnection))
+            return false;
+
+        Map<String,List<String>> clientHeader=getHeader();
+        List<String> clientConnection=clientHeader.get(HeaderDefinition.KEY_CONNECTION);
+        return clientConnection == null || !clientConnection.contains("close");
     }
 }

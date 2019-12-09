@@ -10,12 +10,14 @@ import java.io.InputStream;
  * 对Http协议输入流封装
  */
 public class HttpInputStream extends InputStream{
+    private boolean isKeepAlive;
     private InputStream mSocketInput;
     private StreamRemainCounter mRemain;
 
-    public HttpInputStream(InputStream socketInput,StreamRemainCounter streamRemainCounter){
+    public HttpInputStream(InputStream socketInput,StreamRemainCounter streamRemainCounter,boolean keepAlive){
         mSocketInput = socketInput;
         mRemain =streamRemainCounter;
+        isKeepAlive=keepAlive;
     }
 
     @Override
@@ -70,6 +72,7 @@ public class HttpInputStream extends InputStream{
 
     @Override
     public void close() throws IOException {
-        mSocketInput.close();
+        if(!isKeepAlive)
+            mSocketInput.close();
     }
 }

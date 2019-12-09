@@ -28,7 +28,7 @@ public class SimpleHttpCoreImpl extends HttpCore{
     }
 
     @Override
-    protected Map<String, List<String>> createHeader() throws IOException {
+    protected Map<String, List<String>> getHeader() throws IOException {
         Map<String,List<String>> totalHeader=new HashMap<>(mAdditionHeader);
 
         putIfNotExist(totalHeader,HeaderDefinition.KEY_HOST,URLUtil.getHost(mUrl));
@@ -90,7 +90,7 @@ public class SimpleHttpCoreImpl extends HttpCore{
 
     @Override
     public InputStream getInputStream() throws IOException {
-        return new HttpInputStream(super.getInputStream(), new StreamRemainCounter() {
+        return new HttpInputStream(super.getInputStream(), new StreamRemainCounter(){
             private static final int NOT_INIT=-2;
 
             int mRemain=NOT_INIT;
@@ -146,7 +146,7 @@ public class SimpleHttpCoreImpl extends HttpCore{
                     mRemain=-1;
                 else mRemain-=readBytes;
             }
-        });
+        },isKeepAlive());
     }
 
     /**

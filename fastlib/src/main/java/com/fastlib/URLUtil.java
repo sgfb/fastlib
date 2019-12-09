@@ -13,6 +13,11 @@ public class URLUtil {
         //no instance
     }
 
+    /**
+     * 获取host和端口后的url端
+     * @param url   例 1:http://www.baidu.com/getTop 2:http://www.baidu.com
+     * @return  例 1:/getTop 2:/
+     */
     public static String getPath(String url){
         final String fDefaultPath="/";
         int notSlashIndex=getNotSlashIndex(url);
@@ -62,7 +67,6 @@ public class URLUtil {
      * @return  取协议后首个冒号后数字 如果没有则取80
      */
     public static int getPort(String url) {
-
         int notSlashIndex = getNotSlashIndex(url);
         if (notSlashIndex < 0) return resultDefaultPort(url);
 
@@ -83,6 +87,10 @@ public class URLUtil {
             }
         }
         return resultDefaultPort(url);
+    }
+
+    public static String getHostAndPort(String url){
+        return getHost(url)+":"+getPort(url);
     }
 
     private static int resultDefaultPort(String url){

@@ -40,4 +40,9 @@ public interface HeaderDefinition{
      * 传输编码中使用的类型值.可对数据分块传输
      */
     String VALUE_TRANSFER_ENCODING_CHUNKED="chunked";
+
+    /**
+     * 不支持长连接.即完成此次http响应后应关闭socket
+     */
+    String VALUE_CONNECTION_CLOSE="close";
 }
