@@ -28,12 +28,13 @@ public abstract class HttpCore {
 
     private SocketEntity mSocketEntity;
     protected boolean isBegin = false;
-    protected long mInitTime;
-    protected ResponseHeader mResponseHeader;
     protected String mUrl;
+    protected ResponseHeader mResponseHeader;
+    protected HttpTimer mTimer;
 
     /**
      * 生成必要的和自定义的头部
+     *
      * @return 请求的HTTP头部
      */
     protected abstract Map<String, List<String>> getHeader() throws IOException;
@@ -52,6 +53,7 @@ public abstract class HttpCore {
 
     /**
      * 返回一个配置单
+     *
      * @return 配置单
      */
     protected abstract HttpOption getHttpOption();
@@ -60,17 +62,19 @@ public abstract class HttpCore {
         if (!URLUtil.validUrl(url))
             throw new IllegalArgumentException("url不正确或者不支持的协议");
         mUrl = url;
-        mInitTime = System.currentTimeMillis();
+        mTimer = new HttpTimer();
     }
 
     public void begin() throws IOException {
+        mTimer.nextProcess();
         isBegin = true;
-        mSocketEntity=SocketEntityPool.getInstance().getSocketEntity(mUrl);
+        mSocketEntity = SocketEntityPool.getInstance().getSocketEntity(mUrl);
+        Socket socket = mSocketEntity.getSocket();
 
-        Socket socket=mSocketEntity.getSocket();
-        socket.connect(new InetSocketAddress(URLUtil.getHost(mUrl),URLUtil.getPort(mUrl)),getHttpOption().connectionTimeout);
+        socket.connect(new InetSocketAddress(URLUtil.getHost(mUrl), URLUtil.getPort(mUrl)), getHttpOption().connectionTimeout);
         Log.d(TAG, "Socket已连接");
         socket.setSoTimeout(getHttpOption().readTimeout);
+        mTimer.nextProcess();
         sendHeader();
         onSendData();
         receiveHeader();
@@ -101,6 +105,7 @@ public abstract class HttpCore {
     private void receiveHeader() throws IOException {
         mSocketEntity.getOutputStream().flush();
         String statusLine = readLine(mSocketEntity.getInputStream());
+        mTimer.nextProcess();
         if (TextUtils.isEmpty(statusLine)) throw new IOException("服务器返回HTTP协议异常");
         String[] status = statusLine.trim().split(" ");
         if (status.length < 2) throw new IOException("服务器返回HTTP协议异常");
@@ -193,7 +198,7 @@ public abstract class HttpCore {
 
     public void end() throws IOException {
         if (mSocketEntity != null) {
-            if(isKeepAlive())
+            if (isKeepAlive())
                 SocketEntityPool.getInstance().returnSocketEntity(mSocketEntity);
             mSocketEntity = null;
             Log.d(TAG, "Http单次请求已结束");
@@ -215,17 +220,22 @@ public abstract class HttpCore {
 
     /**
      * 是否支持长连接优化
-     * @return  true支持 false不支持
+     *
+     * @return true支持 false不支持
      */
     protected boolean isKeepAlive() throws IOException {
-        if(mResponseHeader==null) return false;
+        if (mResponseHeader == null) return false;
 
-        String serverConnection=mResponseHeader.getHeaderFirst(HeaderDefinition.KEY_CONNECTION);
-        if(HeaderDefinition.VALUE_CONNECTION_CLOSE.equals(serverConnection))
+        String serverConnection = mResponseHeader.getHeaderFirst(HeaderDefinition.KEY_CONNECTION);
+        if (HeaderDefinition.VALUE_CONNECTION_CLOSE.equals(serverConnection))
             return false;
 
-        Map<String,List<String>> clientHeader=getHeader();
-        List<String> clientConnection=clientHeader.get(HeaderDefinition.KEY_CONNECTION);
+        Map<String, List<String>> clientHeader = getHeader();
+        List<String> clientConnection = clientHeader.get(HeaderDefinition.KEY_CONNECTION);
         return clientConnection == null || !clientConnection.contains("close");
+    }
+
+    public HttpTimer getHttpTimer() {
+        return mTimer;
     }
 }

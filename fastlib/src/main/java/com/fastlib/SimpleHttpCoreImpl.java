@@ -34,7 +34,7 @@ public class SimpleHttpCoreImpl extends HttpCore{
         putIfNotExist(totalHeader,HeaderDefinition.KEY_HOST,URLUtil.getHost(mUrl));
         putIfNotExist(totalHeader,HeaderDefinition.KEY_ACCEPT,"*/*");
         putIfNotExist(totalHeader,HeaderDefinition.KEY_AGENT,String.format(Locale.getDefault(),"%s %s","android", Build.VERSION.SDK));
-        putIfNotExist(totalHeader,HeaderDefinition.KEY_CONNECTION,"keep-alive");
+//        putIfNotExist(totalHeader,HeaderDefinition.KEY_CONNECTION,"keep-alive");
         putIfNotExist(totalHeader,HeaderDefinition.KEY_CACHE_CONTROL,"no-cache");
         putIfNotExist(totalHeader,HeaderDefinition.KEY_ACCEPT_ENCODING,"gzip,deflate");
         if(!totalHeader.containsKey(HeaderDefinition.KEY_TRANSFER_ENCODING))

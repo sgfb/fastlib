@@ -45,17 +45,37 @@ public class MainActivity extends FastActivity {
 
     @Bind(R.id.bt)
     private void bt() {
-        final String address=mSendData.getText().toString().trim();
+        final String address = mSendData.getText().toString().trim();
 
-        if(TextUtils.isEmpty(address)){
-            N.showLong(this,"地址不能为空");
+        if (TextUtils.isEmpty(address)) {
+            N.showLong(this, "地址不能为空");
             return;
         }
         mStatus.setText("开始连接");
         ThreadPoolManager.sSlowPool.execute(new Runnable() {
             @Override
             public void run() {
-                mHttpCore=new SimpleHttpCoreImpl(address);
+                final long timer = System.currentTimeMillis();
+                if (mHttpCore == null)
+                    mHttpCore = new SimpleHttpCoreImpl(address);
+                try {
+                    mHttpCore.begin();
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    InputStream inputStream = mHttpCore.getInputStream();
+                    byte[] buffer = new byte[4096];
+                    int len;
+
+                    while ((len = inputStream.read(buffer)) != -1)
+                        baos.write(buffer, 0, len);
+                    mHttpCore.end();
+                    HttpTimer httpTimer = mHttpCore.getHttpTimer();
+                    System.out.println(String.format(Locale.getDefault(), "consume init:%s,connection:%s,ttfb:%s,download:%s",
+                            httpTimer.getInitConsume(), httpTimer.getConnectionConsume(), httpTimer.getTTFB(), httpTimer.getDownloadConsume()));
+                    System.out.println(baos);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("consume:" + (System.currentTimeMillis() - timer));
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -68,8 +88,8 @@ public class MainActivity extends FastActivity {
 
     @Bind(R.id.bt2)
     private void bt2() {
-        if(mHttpCore==null){
-            N.showLong(this,"未初始化连接");
+        if (mHttpCore == null) {
+            N.showLong(this, "未初始化连接");
             return;
         }
 //        StringBuilder sb=new StringBuilder();
@@ -94,13 +114,14 @@ public class MainActivity extends FastActivity {
     }
 
     @Bind(R.id.bt3)
-    private void closeSocket(){
-        Request request=new Request("https://api-inner.rent.winder-tech.com/consumer-app/app/user/getPlatformServiceTelephone","get");
-        request.setListener(new SimpleListener<String>(){
+    private void closeSocket() {
+        final long timer = System.currentTimeMillis();
+        Request request = new Request(mSendData.getText().toString().trim(), "get");
+        request.setListener(new SimpleListener<String>() {
 
             @Override
             public void onResponseListener(Request r, String result) {
-                System.out.println(result.length());
+                System.out.println("consume:" + (System.currentTimeMillis() - timer));
             }
         });
         request.start();
@@ -127,26 +148,27 @@ public class MainActivity extends FastActivity {
     }
 
     @Bind(R.id.bt4)
-    private void receiveData(){
-        if(mHttpCore==null||!mHttpCore.isConnected()){
-            N.showLong(this,"未连接");
+    private void receiveData() {
+        if (mHttpCore == null || !mHttpCore.isConnected()) {
+            N.showLong(this, "未连接");
             return;
         }
         ThreadPoolManager.sSlowPool.execute(new Runnable() {
             @Override
             public void run() {
                 try {
-                    InputStream in=mHttpCore.getInputStream();
-                    byte[] buffer=new byte[4096];
-                    final ByteArrayOutputStream baos=new ByteArrayOutputStream();
+                    InputStream in = mHttpCore.getInputStream();
+                    byte[] buffer = new byte[4096];
+                    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     int len;
-                    while((len=in.read(buffer))!=-1)
-                        baos.write(buffer,0,len);
+                    while ((len = in.read(buffer)) != -1)
+                        baos.write(buffer, 0, len);
+                    mHttpCore.end();
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            String result=baos.toString();
-                            System.out.println("result length:"+result.length());
+                            String result = baos.toString();
+                            System.out.println("result length:" + result.length());
                             mResponseData.setText(result);
                         }
                     });
@@ -158,7 +180,7 @@ public class MainActivity extends FastActivity {
     }
 
     @Override
-    public void alreadyPrepared(){
+    public void alreadyPrepared() {
 
     }
 
@@ -176,7 +198,7 @@ public class MainActivity extends FastActivity {
         while (iter.hasNext()) {
             Pair<String, String> pair = iter.next();
             try {
-                sb.append(pair.first).append("=").append(TextUtils.isEmpty(pair.second)?"": URLEncoder.encode(pair.second,"UTF-8")).append("&");
+                sb.append(pair.first).append("=").append(TextUtils.isEmpty(pair.second) ? "" : URLEncoder.encode(pair.second, "UTF-8")).append("&");
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
