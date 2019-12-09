@@ -32,9 +32,9 @@ public abstract class HttpCore {
     private OutputStream mSocketOut;
     private InputStream mSocketIn;
     protected boolean isBegin = false;
-    protected long mInitTime;
-    protected ResponseHeader mResponseHeader;
     protected String mUrl;
+    protected ResponseHeader mResponseHeader;
+    protected HttpTimer mTimer;
 
     /**
      * 生成必要的和自定义的头部
@@ -66,17 +66,21 @@ public abstract class HttpCore {
         if (!URLUtil.validUrl(url))
             throw new IllegalArgumentException("url不正确或者不支持的协议");
         mUrl = url;
-        mInitTime = System.currentTimeMillis();
+        mTimer=new HttpTimer();
     }
 
     public void begin() throws IOException {
+        mTimer.nextProcess();
         isBegin = true;
-        mSocket = !mUrl.startsWith("https") ? new Socket():SSLSocketFactory.getDefault().createSocket();
-        mSocket.connect(new InetSocketAddress(URLUtil.getHost(mUrl),URLUtil.getPort(mUrl)),getHttpOption().connectionTimeout);
+        if(mSocket==null){
+            mSocket = !mUrl.startsWith("https") ? new Socket():SSLSocketFactory.getDefault().createSocket();
+            mSocket.connect(new InetSocketAddress(URLUtil.getHost(mUrl),URLUtil.getPort(mUrl)),getHttpOption().connectionTimeout);
+        }
         Log.d(TAG, "Socket已连接");
         mSocket.setSoTimeout(getHttpOption().readTimeout);
         mSocketOut = mSocket.getOutputStream();
         mSocketIn = mSocket.getInputStream();
+        mTimer.nextProcess();
         sendHeader();
         onSendData();
         receiveHeader();
@@ -107,6 +111,7 @@ public abstract class HttpCore {
     private void receiveHeader() throws IOException {
         mSocketOut.flush();
         String statusLine = readLine(mSocketIn);
+        mTimer.nextProcess();
         if (TextUtils.isEmpty(statusLine)) throw new IOException("服务器返回HTTP协议异常");
         String[] status = statusLine.trim().split(" ");
         if (status.length < 2) throw new IOException("服务器返回HTTP协议异常");
@@ -199,9 +204,10 @@ public abstract class HttpCore {
 
     public void end() throws IOException {
         if (mSocket != null) {
-            mSocket.close();
-            mSocket = null;
-            Log.d(TAG, "socket已关闭");
+            mTimer.nextProcess();
+//            mSocket.close();
+//            mSocket = null;
+//            Log.d(TAG, "socket已关闭");
         }
     }
 
@@ -216,5 +222,9 @@ public abstract class HttpCore {
 
     public ResponseHeader getResponseHeader() {
         return mResponseHeader;
+    }
+
+    public HttpTimer getHttpTimer(){
+        return mTimer;
     }
 }

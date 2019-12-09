@@ -5,7 +5,7 @@ package com.fastlib;
  * E-mail:602687446@qq.com
  * Http全流程计时器
  */
-public class HttpTimer{
+public final class HttpTimer{
     /**
      * 初始化
      * 开始连接
@@ -16,9 +16,13 @@ public class HttpTimer{
     private long[] mProcessTime=new long[5];
     private int mIndex=0;
 
+    public HttpTimer(){
+        nextProcess();
+    }
+
     public void nextProcess(){
         if(mIndex>=mProcessTime.length) return;
-        mProcessTime[mIndex]=System.currentTimeMillis();
+        mProcessTime[mIndex++]=System.currentTimeMillis();
     }
 
     public long getInitConsume(){
