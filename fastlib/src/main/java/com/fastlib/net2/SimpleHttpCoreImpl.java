@@ -1,10 +1,8 @@
-package com.fastlib;
+package com.fastlib.net2;
 
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
-
-import com.fastlib.net.ExtraHeader;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,9 +20,11 @@ import java.util.Map;
 public class SimpleHttpCoreImpl extends HttpCore{
     private Map<String,List<String>> mAdditionHeader=new HashMap<>();
     private List<InputStream> mPendingInputStream=new ArrayList<>();
+    private String mMethod;
 
-    public SimpleHttpCoreImpl(String url) {
+    public SimpleHttpCoreImpl(String url,String method){
         super(url);
+        mMethod=method;
     }
 
     @Override
@@ -34,7 +34,7 @@ public class SimpleHttpCoreImpl extends HttpCore{
         putIfNotExist(totalHeader,HeaderDefinition.KEY_HOST,URLUtil.getHost(mUrl));
         putIfNotExist(totalHeader,HeaderDefinition.KEY_ACCEPT,"*/*");
         putIfNotExist(totalHeader,HeaderDefinition.KEY_AGENT,String.format(Locale.getDefault(),"%s %s","android", Build.VERSION.SDK));
-//        putIfNotExist(totalHeader,HeaderDefinition.KEY_CONNECTION,"keep-alive");
+        putIfNotExist(totalHeader,HeaderDefinition.KEY_CONNECTION,"keep-alive");
         putIfNotExist(totalHeader,HeaderDefinition.KEY_CACHE_CONTROL,"no-cache");
         putIfNotExist(totalHeader,HeaderDefinition.KEY_ACCEPT_ENCODING,"gzip,deflate");
         if(!totalHeader.containsKey(HeaderDefinition.KEY_TRANSFER_ENCODING))
@@ -70,6 +70,10 @@ public class SimpleHttpCoreImpl extends HttpCore{
         }
     }
 
+    /**
+     * 计算发送的内容长度
+     * @return  内容长度
+     */
     private long calContentLength() throws IOException {
         long length=0;
         for(InputStream in:mPendingInputStream){
@@ -80,7 +84,7 @@ public class SimpleHttpCoreImpl extends HttpCore{
 
     @Override
     protected String getRequestMethod() {
-        return "GET";
+        return mMethod;
     }
 
     @Override

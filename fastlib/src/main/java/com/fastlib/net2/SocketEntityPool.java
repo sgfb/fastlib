@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.net2;
 
 import android.support.annotation.Nullable;
 
@@ -56,17 +56,14 @@ public class SocketEntityPool{
      * 返回一个实体到池中
      * @param entity    socket实体
      */
-    public void returnSocketEntity(SocketEntity entity) throws IOException {
-        if(entity.isValid()){
-            String key=URLUtil.getHostAndPort(entity.getUrl());
-            List<SocketEntity> list=mEntityMap.get(key);
+    public void returnSocketEntity(SocketEntity entity){
+        String key=URLUtil.getHostAndPort(entity.getUrl());
+        List<SocketEntity> list=mEntityMap.get(key);
 
-            if(list==null){
-                list=new ArrayList<>();
-                mEntityMap.put(key,list);
-            }
-            list.add(entity);
+        if(list==null){
+            list=new ArrayList<>();
+            mEntityMap.put(key,list);
         }
-        else entity.close();
+        list.add(entity);
     }
 }

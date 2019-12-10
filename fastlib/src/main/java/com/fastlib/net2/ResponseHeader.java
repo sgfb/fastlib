@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.net2;
 
 import java.util.HashMap;
 import java.util.List;

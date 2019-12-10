@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.net2;
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -71,8 +71,11 @@ public abstract class HttpCore {
         mSocketEntity = SocketEntityPool.getInstance().getSocketEntity(mUrl);
         Socket socket = mSocketEntity.getSocket();
 
-        socket.connect(new InetSocketAddress(URLUtil.getHost(mUrl), URLUtil.getPort(mUrl)), getHttpOption().connectionTimeout);
-        Log.d(TAG, "Socket已连接");
+        if(!socket.isConnected()) {
+            socket.connect(new InetSocketAddress(URLUtil.getHost(mUrl), URLUtil.getPort(mUrl)), getHttpOption().connectionTimeout);
+            Log.d(TAG, "Http已连接（新连接）");
+        }
+        else Log.d(TAG, "Http已连接（复用连接）");
         socket.setSoTimeout(getHttpOption().readTimeout);
         mTimer.nextProcess();
         sendHeader();
@@ -133,18 +136,6 @@ public abstract class HttpCore {
             }
             mResponseHeader = new ResponseHeader(code, status[0], status.length > 2 ? status[2] : "", header);
             Log.d(TAG, String.format(Locale.getDefault(), "code:%d message:%s", mResponseHeader.getCode(), mResponseHeader.getMessage()));
-            for (Map.Entry<String, List<String>> entry : mResponseHeader.getHeaders().entrySet()) {
-                StringBuilder sb = new StringBuilder();
-                sb.append('[');
-                if (entry.getValue() != null) {
-                    for (String value : entry.getValue())
-                        sb.append(value).append(',');
-                }
-                if (sb.length() > 2)
-                    sb.deleteCharAt(sb.length() - 1);
-                sb.append(']');
-                Log.d(TAG, String.format(Locale.getDefault(), "header:%s,%s", entry.getKey(), sb.toString()));
-            }
         } catch (NumberFormatException e) {
             throw new IOException("服务器返回状态码异常,状态码为:" + status[1]);
         }
@@ -197,11 +188,12 @@ public abstract class HttpCore {
     }
 
     public void end() throws IOException {
+        mTimer.nextProcess();
         if (mSocketEntity != null) {
             if (isKeepAlive())
                 SocketEntityPool.getInstance().returnSocketEntity(mSocketEntity);
             mSocketEntity = null;
-            Log.d(TAG, "Http单次请求已结束");
+            Log.d(TAG, "Http请求结束");
         }
     }
 

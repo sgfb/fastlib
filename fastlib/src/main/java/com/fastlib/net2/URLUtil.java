@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.net2;
 
 import android.text.TextUtils;
 

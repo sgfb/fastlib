@@ -1,11 +1,13 @@
-package com.fastlib;
+package com.fastlib.net2;
 
 import android.support.annotation.NonNull;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 
 /**
  * Created by sgfb on 2019/12/9
@@ -56,6 +58,26 @@ public class SocketEntity{
     }
 
     public boolean isValid() throws IOException {
-        return !mSocket.isClosed()&&mInputStream.available()!=-1;
+        if(!mSocket.isClosed()&&!mSocket.isInputShutdown()&&!mSocket.isOutputShutdown()){
+            InputStream inputStream=getInputStream();
+            if(inputStream.available()<=0){
+                int timeout=mSocket.getSoTimeout();
+                mSocket.setSoTimeout(1);
+                inputStream.mark(1);
+
+                try{
+                    int result=inputStream.read();
+                    System.out.println("what result:"+result);
+                    if(result==-1)
+                        return false;
+                }catch (InterruptedIOException e){
+                    //不做任何事 异常的话说明这个socket是有效的
+                }finally {
+                    mSocket.setSoTimeout(timeout);
+                }
+            }
+            return true;
+        }
+        return false;
     }
 }

@@ -1,4 +1,4 @@
-package com.fastlib;
+package com.fastlib.net2;
 
 /**
  * Created by sgfb on 2019/12/7 0007
