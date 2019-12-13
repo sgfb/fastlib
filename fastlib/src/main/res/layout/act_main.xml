@@ -46,11 +46,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:maxLines="1"
-<<<<<<< HEAD
         android:text="http://192.168.0.184:8082/hello"/>
-=======
-        android:text="http://192.168.3.20:8082/getSimpleData"/>
->>>>>>> 15dc4f4699e7af7a5f2859c7c31a1dc5a5804d29
 
     <TextView
         android:id="@+id/responseData"
@@ -58,4 +54,9 @@
         android:layout_height="wrap_content"
         android:textSize="@dimen/font_size_normal_high"
         android:text="准备接收数据"/>
+
+    <android.support.design.widget.TabLayout
+        android:id="@+id/tabLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 </LinearLayout>

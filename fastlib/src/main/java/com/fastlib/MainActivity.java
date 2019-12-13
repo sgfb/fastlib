@@ -1,6 +1,7 @@
 package com.fastlib;
 
 import android.os.Environment;
+import android.support.design.widget.TabLayout;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 import android.widget.EditText;
@@ -42,6 +43,8 @@ public class MainActivity extends FastActivity {
     @Bind(R.id.sendData)
     EditText mSendData;
     SimpleHttpCoreImpl mHttpCore;
+    @Bind(R.id.tabLayout)
+    TabLayout mTabLayout;
 
     @Bind(R.id.bt)
     private void bt() {
@@ -88,10 +91,11 @@ public class MainActivity extends FastActivity {
 
     @Bind(R.id.bt2)
     private void bt2() {
-        if (mHttpCore == null) {
-            N.showLong(this, "未初始化连接");
-            return;
-        }
+        mTabLayout.getTabAt(0).setText("changed");
+//        if (mHttpCore == null) {
+//            N.showLong(this, "未初始化连接");
+//            return;
+//        }
 //        StringBuilder sb=new StringBuilder();
 //        List<Pair<String,String>> list=new ArrayList<>();
 //        list.add(Pair.create("param1","value1"));
@@ -100,17 +104,17 @@ public class MainActivity extends FastActivity {
 //        mHttpCore.addHeader("Content-Type","application/x-www-form-urlencoded");
 //        mHttpCore.addPendingInputStream(new ByteArrayInputStream(sb.toString().getBytes()));
 //        System.out.println("已写入到网络缓存");
-        ThreadPoolManager.sSlowPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    mHttpCore.begin();
-                    System.out.println("发起请求成功");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+//        ThreadPoolManager.sSlowPool.execute(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    mHttpCore.begin();
+//                    System.out.println("发起请求成功");
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
     }
 
     @Bind(R.id.bt3)
@@ -181,7 +185,9 @@ public class MainActivity extends FastActivity {
 
     @Override
     public void alreadyPrepared() {
-
+        mTabLayout.addTab(mTabLayout.newTab().setText("tab1"));
+        mTabLayout.addTab(mTabLayout.newTab().setText("tab2"));
+        mTabLayout.addTab(mTabLayout.newTab().setText("tab3"));
     }
 
     /**
