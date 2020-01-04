@@ -13,7 +13,7 @@ import java.util.TreeMap;
  * 参数解析管理器
  */
 public class ParamParserManager{
-    Map<NetParamParserClass,NetParamParser> mNetParamParserMap =new TreeMap<>();
+    private Map<NetParamParserClass,NetParamParser> mNetParamParserMap =new HashMap<>();
 
     public void putParser(NetParamParser paramParser){
         mNetParamParserMap.put(new NetParamParserClass(paramParser.priority(),paramParser.getClass()),paramParser);
@@ -24,7 +24,6 @@ public class ParamParserManager{
     }
 
     public void parserParam(boolean duplication,Request request,String key,Object obj){
-
         for(Map.Entry<NetParamParserClass,NetParamParser> entry: mNetParamParserMap.entrySet()){
             NetParamParser paramParser=entry.getValue();
             if(paramParser.canParse(request,key,obj)&&paramParser.parseParam(duplication,request,key,obj)){

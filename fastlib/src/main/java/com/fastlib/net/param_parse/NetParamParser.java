@@ -4,7 +4,7 @@ import com.fastlib.net.Request;
 
 /**
  * Created by sgfb on 18/5/1.
- * 解析请求参数的非基本类型字段
+ * 解析请求参数,最终解析出的应是String和List<String>类型
  */
 public interface NetParamParser{
 
@@ -16,7 +16,6 @@ public interface NetParamParser{
      * @return true能解析，false不能
      */
     boolean canParse(Request request, String key, Object obj);
-
 
     /**
      * 尝试解析参数

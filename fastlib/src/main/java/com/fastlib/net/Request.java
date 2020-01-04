@@ -52,7 +52,7 @@ public class Request{
     private long mIntervalSendFileTransferEvent=1000;//间隔多久发送上传和下载文件广播
     private String method;
     private String mUrl;
-    private String mRootAddress;              //自定义根地址
+    private String mRootAddress;                    //自定义根地址
     private List<Pair<String, String>> mSendCookies;
     private Downloadable mDownloadable;
     private Map<String,List<String>> mReceiveHeader;
@@ -234,10 +234,12 @@ public class Request{
         return put(key,charSequence.toString());
     }
 
+    /**
+     * 添加一个布尔型请求参数,如果存在,覆盖第一个
+     */
     public Request put(String key,boolean value){
         return put(key,Boolean.toString(value));
     }
-
 
     /**
      * 添加短整型请求参数,如果存在,覆盖第一个

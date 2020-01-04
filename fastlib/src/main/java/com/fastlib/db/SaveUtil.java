@@ -191,7 +191,6 @@ public class SaveUtil{
      * @param name 包含后缀名
      * @param data 数据
      * @param isCache 是否缓存
-     * @throws IOException
      */
     public static void saveToInternal(Context context,String name,byte[] data,boolean isCache) throws IOException {
         File directory=isCache?context.getCacheDir():context.getFilesDir();
@@ -202,6 +201,19 @@ public class SaveUtil{
             return;
         }
         saveToFile(file,data,false);
+    }
+
+    public static byte[] loadInputStream(InputStream in,boolean closeEnd) throws IOException {
+        byte[] buffer=new byte[8096];
+        int len;
+        ByteArrayOutputStream baos=new ByteArrayOutputStream();
+
+        while((len=in.read(buffer))!=-1){
+            baos.write(buffer,0,len);
+        }
+        if(closeEnd)
+            in.close();
+        return baos.toByteArray();
     }
 
     /**
