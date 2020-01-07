@@ -37,6 +37,8 @@ public abstract class HttpCore {
     protected String mUrl;
     protected ResponseHeader mResponseHeader;
     protected HttpTimer mTimer;
+    protected int mSendHeaderLength;
+    protected int mReceivedHeaderLength;
 
     /**
      * 生成必要的和自定义的头部
@@ -122,7 +124,10 @@ public abstract class HttpCore {
             }
         }
         sb.append(CRLF);
-        mSocketEntity.getOutputStream().write(sb.toString().getBytes());
+
+        byte[] headerByte=sb.toString().getBytes();
+        mSendHeaderLength=headerByte.length;
+        mSocketEntity.getOutputStream().write(headerByte);
     }
 
     /**
@@ -131,6 +136,8 @@ public abstract class HttpCore {
     private void receiveHeader() throws IOException {
         mSocketEntity.getOutputStream().flush();
         String statusLine = readLine(mSocketEntity.getInputStream());
+        //如果第一次读取到空的状态行，再读取一次，在Transfer-Encoding为chunked类型时会发生多了个空行的问题
+        if(TextUtils.isEmpty(statusLine)) statusLine=readLine(mSocketEntity.getInputStream());
         mTimer.nextProcess();
         if (TextUtils.isEmpty(statusLine)) throw new IOException("服务器返回HTTP协议异常");
         String[] status = statusLine.trim().split(" ");
@@ -200,6 +207,7 @@ public abstract class HttpCore {
             sb.append((char) currChar);
         }
 
+        mReceivedHeaderLength+=sb.toString().getBytes().length;
         if (sb.length() >= 2 && sb.substring(sb.length() - 2).equals(CRLF))
             sb.delete(sb.length() - 2, sb.length());
         return sb.toString();

@@ -1,6 +1,9 @@
 package com.fastlib.net2;
 
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.support.v4.util.Pair;
 
 import com.fastlib.annotation.NetCallback;
@@ -23,6 +26,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 /**
  * Created by sgfb on 2019/12/10
@@ -35,9 +39,18 @@ public class HttpProcessor implements Runnable{
     private File mDownloadFile;
     private InputStream mRawDataInputStream;
     private Exception mException;
+    private Executor mCallbackExecutor;
 
     public HttpProcessor(Request request) {
         mRequest = request;
+        mCallbackExecutor=new Executor() {
+            @Override
+            public void execute(@NonNull Runnable command) {
+                if(!mRequest.getCallbackOnWorkThread())
+                    new Handler(Looper.getMainLooper()).post(command);
+                else command.run();
+            }
+        };
     }
 
     @Override
@@ -108,10 +121,19 @@ public class HttpProcessor implements Runnable{
             }
             else mRawDataInputStream=new ByteArrayInputStream(SaveUtil.loadInputStream(in,false));
             httpCore.end();
+
+            int sendLength=httpCore.getSendHeaderLength()+httpCore.getSendBodyLength();
+            int receivedLength=httpCore.getReceivedHeaderLength()+httpCore.getReceivedBodyLength();
+            mRequest.setStatistical(new SimpleStatistical(0,httpCore.getHttpTimer(), new Statistical.ContentLength(sendLength,receivedLength)));
         } catch (Exception e) {
             mException=e;
         }finally {
-            callbackProcess();
+            mCallbackExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    callbackProcess();
+                }
+            });
         }
     }
 

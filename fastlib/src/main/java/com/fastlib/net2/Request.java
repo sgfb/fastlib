@@ -15,12 +15,14 @@ import java.util.Map;
 public class Request {
     private boolean isSkipRootAddress;
     private boolean isSkipGlobalListener;
+    private boolean isCallbackOnWorkThread;
     private String mUrl;
     private String mMethod;
     private Map<String,List<String>> mHeader = new HashMap<>();
     private RequestParam mParam=new RequestParam();
     private Downloadable mDownloadable;
     private Listener mListener;
+    private Statistical mStatistical;
 
     public Request(String url) {
         this(url, "GET");
@@ -101,6 +103,24 @@ public class Request {
 
     public boolean getSkipGlobalListener(){
         return isSkipGlobalListener;
+    }
+
+    public Request setStatistical(Statistical statistical){
+        mStatistical=statistical;
+        return this;
+    }
+
+    public Statistical getStatistical(){
+        return mStatistical;
+    }
+
+    public Request setCallbackOnWorkThread(boolean callbackOnWorkThread){
+        isCallbackOnWorkThread=callbackOnWorkThread;
+        return this;
+    }
+
+    public boolean getCallbackOnWorkThread(){
+        return isCallbackOnWorkThread;
     }
 
     public void start(){

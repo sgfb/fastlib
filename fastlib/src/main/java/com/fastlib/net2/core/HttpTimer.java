@@ -1,5 +1,7 @@
 package com.fastlib.net2.core;
 
+import java.util.Arrays;
+
 /**
  * Created by sgfb on 2019/12/7 0007
  * E-mail:602687446@qq.com
@@ -47,5 +49,15 @@ public final class HttpTimer{
         if(mProcessTime[3]==0||mProcessTime[4]==0)
             return -1;
         return mProcessTime[4]-mProcessTime[3];
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb=new StringBuilder();
+        sb.append("初始化:").append(getInitConsume()).append("ms").append(" ")
+                .append("连接:").append(getConnectionConsume()).append("ms").append(" ")
+                .append("TTFB:").append(getTTFB()).append("ms").append(" ")
+                .append("下载:").append(getDownloadConsume()).append("ms");
+        return sb.toString();
     }
 }

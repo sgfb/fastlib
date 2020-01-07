@@ -23,6 +23,8 @@ public class SimpleHttpCoreImpl extends HttpCore{
     private Map<String,List<String>> mAdditionHeader=new HashMap<>();
     private List<InputStream> mPendingInputStream=new ArrayList<>();
     private String mMethod;
+    private int mSendBodyLength;
+    private int mReceivedBodyLength;
     private long mContentLength=-1;
 
     public SimpleHttpCoreImpl(String url,String method){
@@ -58,6 +60,7 @@ public class SimpleHttpCoreImpl extends HttpCore{
 
             while((len=inputStream.read(buffer))!=-1){
                 out.write(buffer,0,len);
+                mSendBodyLength+=len;
             }
             inputStream.close();
         }
@@ -155,7 +158,10 @@ public class SimpleHttpCoreImpl extends HttpCore{
             public void readStream(int readBytes) {
                 if(readBytes==-1)
                     mRemain=-1;
-                else mRemain-=readBytes;
+                else{
+                    mRemain-=readBytes;
+                    mReceivedBodyLength+=readBytes;
+                }
             }
         },isKeepAlive());
     }
@@ -193,5 +199,21 @@ public class SimpleHttpCoreImpl extends HttpCore{
         }
         else valueList.clear();
         valueList.add(value);
+    }
+
+    public int getSendHeaderLength(){
+        return mSendHeaderLength;
+    }
+
+    public int getReceivedHeaderLength(){
+        return mReceivedHeaderLength;
+    }
+
+    public int getSendBodyLength(){
+        return mSendBodyLength;
+    }
+
+    public int getReceivedBodyLength(){
+        return mReceivedBodyLength;
     }
 }
