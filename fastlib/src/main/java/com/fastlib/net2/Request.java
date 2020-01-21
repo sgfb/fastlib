@@ -1,8 +1,13 @@
 package com.fastlib.net2;
 
+import com.fastlib.annotation.NetCallback;
 import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.net2.param.RequestParam;
+import com.fastlib.utils.Reflect;
 
+import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +28,7 @@ public class Request {
     private Downloadable mDownloadable;
     private Listener mListener;
     private Statistical mStatistical;
+    private Type mCustomType;       //一个自定义回调类型，优先使用这个参数其次才是解析mListener中方法参数
 
     public Request(String url) {
         this(url, "GET");
@@ -127,7 +133,45 @@ public class Request {
         ThreadPoolManager.sSlowPool.execute(new HttpProcessor(this));
     }
 
+    public Object startSyc(Type type){
+        mCustomType=type;
+        setCallbackOnWorkThread(true);
+        HttpProcessor hp=new HttpProcessor(this);
+        hp.run();
+        return hp.getResultData();
+    }
+
     public void cancel(){
         //TODO
+    }
+
+    public Type getResultType(){
+        if(mCustomType!=null)
+            return mCustomType;
+        else if(mListener!=null)
+            return resolveResultType();
+        return null;
+    }
+
+    /**
+     * 解析回调指定类型.如果是Object或byte[]就返回原始字节流,String返回字符,File则联合{@link Request#mDownloadable}来做处理,其它类型就尝试使用gson解析
+     * @return  需要回调的类型
+     */
+    private Type resolveResultType(){
+        NetCallback netCallback=Reflect.findAnnotation(mListener.getClass(),NetCallback.class,true);
+        if(netCallback==null) throw new IllegalStateException("NetCallback annotation can't be null!");
+
+        Method[] ms = mListener.getClass().getDeclaredMethods();
+        for (Method m : ms) {
+            String methodFullDescription=m.toString();
+            if (netCallback.value().equals(m.getName())&&!methodFullDescription.contains("volatile")){
+                //所有参数都必须不是Object,否则当无类型使用
+                Type[] paramsType=m.getGenericParameterTypes();
+                for(Type type:paramsType){
+                    if(type!=Request.class&&type!=Object.class) return type;
+                }
+            }
+        }
+        return null;
     }
 }

@@ -1,30 +1,29 @@
 package com.fastlib;
 
-import android.content.Intent;
+import android.support.annotation.NonNull;
+import android.view.View;
+import android.view.ViewGroup;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
-import com.fastlib.app.PhotoResultListener;
 import com.fastlib.app.module.FastActivity;
-import com.fastlib.app.task.ThreadPoolManager;
-import com.fastlib.net2.Request;
-import com.fastlib.net2.SimpleListener;
+import com.fastlib.aspect.ControllerInvocationHandler;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
+import leo.android.cglib.proxy.Enhancer;
 
 @ContentView(R.layout.act_main)
 public class MainActivity extends FastActivity{
+    MainController mMc;
+    ControllerInvocationHandler mControllerInvocationhandler;
 
     @Bind(R.id.bt)
-    private void bt() {
-
+    private void bt(ViewGroup v) {
     }
 
     @Bind(R.id.bt2)
     private void bt2(){
-
+        if(mMc!=null)
+            mMc.doNow(this);
     }
 
     @Bind(R.id.bt3)
@@ -33,8 +32,15 @@ public class MainActivity extends FastActivity{
     }
 
     @Override
-    public void alreadyPrepared() {
-
+    public void alreadyPrepared(){
+        Enhancer enhancer=new Enhancer(this);
+        enhancer.setSuperclass(MainController.class);
+        enhancer.setInterceptor(mControllerInvocationhandler =new ControllerInvocationHandler());
+        mMc= (MainController) enhancer.create();
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
 }

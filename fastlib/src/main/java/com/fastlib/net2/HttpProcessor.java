@@ -40,6 +40,7 @@ public class HttpProcessor implements Runnable{
     private InputStream mRawDataInputStream;
     private Exception mException;
     private Executor mCallbackExecutor;
+    private Object mResultData;
 
     public HttpProcessor(Request request) {
         mRequest = request;
@@ -95,7 +96,7 @@ public class HttpProcessor implements Runnable{
             httpCore.begin();
             InputStream in=httpCore.getInputStream();
             Downloadable downloadable=mRequest.getDownloadable();
-            mCallbackType=resolveResultType(mRequest.getListener());
+            mCallbackType=mRequest.getResultType();
 
             //下载类型
             if(downloadable!=null||mCallbackType==File.class){
@@ -127,6 +128,7 @@ public class HttpProcessor implements Runnable{
             mRequest.setStatistical(new SimpleStatistical(0,httpCore.getHttpTimer(), new Statistical.ContentLength(sendLength,receivedLength)));
         } catch (Exception e) {
             mException=e;
+            e.printStackTrace();
         }finally {
             mCallbackExecutor.execute(new Runnable() {
                 @Override
@@ -180,81 +182,80 @@ public class HttpProcessor implements Runnable{
      */
     @SuppressWarnings("unchecked")
     private void callbackProcess() {
-        final Listener listener=mRequest.getListener();
+        final Listener listener=mRequest.getListener()!=null?mRequest.getListener():getEmptyListener();
         //如果跳过全局监听回调则置空这个回调
         final GlobalListener globalListener=mRequest.getSkipGlobalListener()?
                 HttpGlobalConfig.getInstance().getEmptyGlobalListener():HttpGlobalConfig.getInstance().getGlobalListener();
 
-        if(listener!=null){
-            //此包裹监听将回调先经过globalListener然后走原监听
-            Listener wrapperListener=new Listener() {
-                @Override
-                public void onRawCallback(Request request, InputStream outputStream) {
-                    InputStream handledInputStream=globalListener.onRawData(request,outputStream);
-                    listener.onRawCallback(request,handledInputStream);
-                }
+        //此包裹监听将回调先经过globalListener然后走原监听
+        Listener wrapperListener=new Listener() {
+            @Override
+            public void onRawCallback(Request request, InputStream outputStream) {
+                InputStream handledInputStream=globalListener.onRawData(request,outputStream);
+                listener.onRawCallback(request,handledInputStream);
+            }
 
-                @Override
-                public void onResponseSuccess(Request request, Object result) {
-                    Object handledResult=globalListener.onResponseListener(request,result);
-                    listener.onResponseSuccess(request,handledResult);
-                }
+            @Override
+            public void onResponseSuccess(Request request, Object result) {
+                Object handledResult=globalListener.onResponseListener(request,result);
+                listener.onResponseSuccess(request,handledResult);
+                mResultData=handledResult;
+            }
 
-                @Override
-                public void onError(Request request, Exception error) {
-                    Exception handledException=globalListener.onErrorListener(request,error);
-                    listener.onError(request,handledException);
+            @Override
+            public void onError(Request request, Exception error) {
+                Exception handledException=globalListener.onErrorListener(request,error);
+                listener.onError(request,handledException);
+            }
+        };
+        if(mException==null){
+            try{
+                wrapperListener.onRawCallback(mRequest,mRawDataInputStream);
+                if(mCallbackType==null||mCallbackType==Object.class||mCallbackType==byte[].class)
+                    wrapperListener.onResponseSuccess(mRequest,SaveUtil.loadInputStream(mRawDataInputStream,false));
+                else if(mCallbackType==File.class)
+                    wrapperListener.onResponseSuccess(mRequest,mDownloadFile);
+                else if(mCallbackType==String.class)
+                    wrapperListener.onResponseSuccess(mRequest,new String(SaveUtil.loadInputStream(mRawDataInputStream,false)));
+                else{
+                    Gson gson=new Gson();
+                    String json=new String(SaveUtil.loadInputStream(mRawDataInputStream,false));
+                    wrapperListener.onResponseSuccess(mRequest,gson.fromJson(json,mCallbackType));
                 }
-            };
-            if(mException==null){
-                try{
-                    wrapperListener.onRawCallback(mRequest,mRawDataInputStream);
-                    if(mCallbackType==null||mCallbackType==Object.class||mCallbackType==byte[].class)
-                        wrapperListener.onResponseSuccess(mRequest,SaveUtil.loadInputStream(mRawDataInputStream,false));
-                    else if(mCallbackType==File.class)
-                        wrapperListener.onResponseSuccess(mRequest,mDownloadFile);
-                    else if(mCallbackType==String.class)
-                        wrapperListener.onResponseSuccess(mRequest,new String(SaveUtil.loadInputStream(mRawDataInputStream,false)));
-                    else{
-                        Gson gson=new Gson();
-                        String json=new String(SaveUtil.loadInputStream(mRawDataInputStream,false));
-                        wrapperListener.onResponseSuccess(mRequest,gson.fromJson(json,mCallbackType));
-                    }
-                }catch (IOException e) {
+            }catch (IOException e) {
+                //这里仅关闭流时可能出现的异常，不处理
+            }finally {
+                try {
+                    mRawDataInputStream.close();
+                } catch (IOException e) {
                     //这里仅关闭流时可能出现的异常，不处理
-                }finally {
-                    try {
-                        mRawDataInputStream.close();
-                    } catch (IOException e) {
-                        //这里仅关闭流时可能出现的异常，不处理
-                    }
                 }
             }
-            else wrapperListener.onError(mRequest,mException);
         }
+        else wrapperListener.onError(mRequest,mException);
         globalListener.onRequestComplete();
     }
 
-    /**
-     * 解析回调指定类型.如果是Object或byte[]就返回原始字节流,String返回字符,File则联合{@link Request#mDownloadable}来做处理,其它类型就尝试使用gson解析
-     * @param listener  监听回调
-     * @return  需要回调的类型
-     */
-    private Type resolveResultType(Listener listener){
-        NetCallback netCallback=Reflect.findAnnotation(listener.getClass(),NetCallback.class,true);
-        if(netCallback==null) throw new IllegalStateException("NetCallback annotation can't be null!");
+    private Listener getEmptyListener(){
+        return new Listener() {
+            @Override
+            public void onRawCallback(Request request, InputStream outputStream) {
 
-        Method[] ms = listener.getClass().getDeclaredMethods();
-        for (Method m : ms) {
-            String methodFullDescription=m.toString();
-            if (netCallback.value().equals(m.getName())&&!methodFullDescription.contains("volatile")){
-                //所有参数都必须不是Object,否则当无类型使用
-                Type[] paramsType=m.getGenericParameterTypes();
-                for(Type type:paramsType){
-                    if(type!=Request.class&&type!=Object.class) return type;
-                }
             }
-        }
-        return null;
+
+            @Override
+            public void onResponseSuccess(Request request, Object result) {
+
+            }
+
+            @Override
+            public void onError(Request request, Exception error) {
+
+            }
+        };
+    }
+
+    public Object getResultData(){
+        return mResultData;
     }
 }
