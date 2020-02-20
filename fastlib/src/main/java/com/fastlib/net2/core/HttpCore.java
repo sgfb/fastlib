@@ -210,6 +210,9 @@ public abstract class HttpCore {
         mReceivedHeaderLength+=sb.toString().getBytes().length;
         if (sb.length() >= 2 && sb.substring(sb.length() - 2).equals(CRLF))
             sb.delete(sb.length() - 2, sb.length());
+        //TODO 是否读错了位置？
+        if("\n".equals(sb.toString()))
+            return readLine(inputStream);
         return sb.toString();
     }
 

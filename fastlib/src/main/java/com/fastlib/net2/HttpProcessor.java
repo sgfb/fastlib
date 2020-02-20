@@ -6,7 +6,6 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.util.Pair;
 
-import com.fastlib.annotation.NetCallback;
 import com.fastlib.db.SaveUtil;
 import com.fastlib.net2.core.HeaderDefinition;
 import com.fastlib.net2.core.MethodDefinition;
@@ -14,7 +13,6 @@ import com.fastlib.net2.core.SimpleHttpCoreImpl;
 import com.fastlib.net2.param.interpreter.FormDataInterpreter;
 import com.fastlib.net2.param.interpreter.ParamInterpreter;
 import com.fastlib.net2.param.interpreter.ParamInterpreterFactor;
-import com.fastlib.utils.Reflect;
 import com.google.gson.Gson;
 
 import java.io.ByteArrayInputStream;
@@ -22,7 +20,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +33,11 @@ import java.util.concurrent.Executor;
 public class HttpProcessor implements Runnable{
     private Request mRequest;
     private Type mCallbackType;
-    private File mDownloadFile;
     private InputStream mRawDataInputStream;
     private Exception mException;
     private Executor mCallbackExecutor;
     private Object mResultData;
+    private File mDownloadFile;
 
     public HttpProcessor(Request request) {
         mRequest = request;
@@ -66,7 +63,7 @@ public class HttpProcessor implements Runnable{
                 e.printStackTrace();
             }
         }
-        SimpleHttpCoreImpl httpCore= new SimpleHttpCoreImpl(urlWithParam,mRequest.getMethod());
+        SimpleHttpCoreImpl httpCore= new SimpleHttpCoreImpl(urlWithParam,method);
 
         //填充头部
         for(Map.Entry<String, List<String>> entry:mRequest.getHeader().entrySet()){
@@ -76,6 +73,7 @@ public class HttpProcessor implements Runnable{
         }
 
         boolean needClientBody=MethodDefinition.POST.equals(method)||MethodDefinition.PUT.equals(method);
+        boolean needServerBody=!MethodDefinition.HEAD.equals(method);
         if(needClientBody){
             //填充输出体
             String bodyType=checkBodyType();
@@ -94,37 +92,42 @@ public class HttpProcessor implements Runnable{
             if(!mRequest.getSkipGlobalListener())
                 HttpGlobalConfig.getInstance().getGlobalListener().onLaunchRequestBefore(mRequest);
             httpCore.begin();
-            InputStream in=httpCore.getInputStream();
-            Downloadable downloadable=mRequest.getDownloadable();
-            mCallbackType=mRequest.getResultType();
+            if(needServerBody){
+                InputStream in=httpCore.getInputStream();
+                mCallbackType=mRequest.getResultType();
+                DownloadStreamController downloadController=mRequest.getDownloadable();
 
-            //下载类型
-            if(downloadable!=null||mCallbackType==File.class){
-                if(downloadable!=null){
-                    if(downloadable.getTargetFile().isFile())
-                        mDownloadFile=downloadable.getTargetFile();
-                    else if(downloadable.getTargetFile().isDirectory()){
-                        String name;
-                        if("GET".equals(mRequest.getMethod().toUpperCase())){
-                            String url=mRequest.getUrl();
-                            int lastSlash=url.lastIndexOf("/");
-                            if(lastSlash!=-1&&lastSlash!=url.length()-1)
-                                name=url.substring(lastSlash,url.length());
-                            else name="download"+System.currentTimeMillis();
-                            mDownloadFile=new File(downloadable.getTargetFile(),name);
-                        }
-                    }
+                if(downloadController==null&&mCallbackType==File.class){
+                    File randomFile=createRandomFile();
+                    if(randomFile==null) throw new IOException("创建文件时异常");
+                    downloadController=new SingleDownloadController(randomFile);
                 }
-                if(mDownloadFile==null)
-                    mDownloadFile=new File(Environment.getExternalStorageDirectory(),"download"+System.currentTimeMillis());
-                SaveUtil.saveToFile(mDownloadFile,in,false);
-                mRawDataInputStream=new FileInputStream(mDownloadFile);
+
+                //下载类型
+                if(downloadController!=null){
+                    long fileLength;
+                    String filename=null;
+
+                    String fileLengthHeader=httpCore.getResponseHeader().getHeaderFirst(HeaderDefinition.KEY_CONTENT_LENGTH);
+                    fileLength=Long.parseLong(fileLengthHeader);
+                    String contentDisposition=httpCore.getResponseHeader().getHeaderFirst(HeaderDefinition.KEY_CONTENT_DISPOSITION);
+                    if(contentDisposition!=null){
+                        int filenameIndex=contentDisposition.indexOf("filename=\"");
+                        if(filenameIndex!=-1)
+                            filename=new String(contentDisposition.substring(filenameIndex+10,contentDisposition.length()-1).getBytes("ISO_8859_1"),"utf-8");
+                    }
+                    downloadController.onStreamReady(in,filename,fileLength);
+                    mDownloadFile=downloadController.getSavedFile();
+                    mRawDataInputStream=new FileInputStream(mDownloadFile);
+                }
+                else mRawDataInputStream=new ByteArrayInputStream(SaveUtil.loadInputStream(in,false));
             }
-            else mRawDataInputStream=new ByteArrayInputStream(SaveUtil.loadInputStream(in,false));
+            else mRawDataInputStream=new ByteArrayInputStream(new byte[]{});
             httpCore.end();
 
             int sendLength=httpCore.getSendHeaderLength()+httpCore.getSendBodyLength();
             int receivedLength=httpCore.getReceivedHeaderLength()+httpCore.getReceivedBodyLength();
+            mRequest.setResponseHeader(httpCore.getResponseHeader());
             mRequest.setStatistical(new SimpleStatistical(0,httpCore.getHttpTimer(), new Statistical.ContentLength(sendLength,receivedLength)));
         } catch (Exception e) {
             mException=e;
@@ -257,5 +260,21 @@ public class HttpProcessor implements Runnable{
 
     public Object getResultData(){
         return mResultData;
+    }
+
+    /**
+     * 生成一个随机文件
+     */
+    private File createRandomFile()throws IOException{
+        File downloadDirectory=new File(Environment.getExternalStorageDirectory(),Environment.DIRECTORY_DOWNLOADS);
+        if(!downloadDirectory.exists())
+            downloadDirectory=Environment.getExternalStorageDirectory();
+        File file=new File(downloadDirectory,Long.toString(System.currentTimeMillis()));
+
+        boolean success;
+        if(file.exists())
+            success=file.delete();
+        else success=file.createNewFile();
+        return success?file:null;
     }
 }

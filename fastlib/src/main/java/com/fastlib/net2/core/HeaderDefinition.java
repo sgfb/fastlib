@@ -12,6 +12,7 @@ public interface HeaderDefinition{
     String KEY_ACCEPT_ENCODING ="Accept_Encoding";
     String KEY_CONNECTION ="Connection";
     String KEY_CACHE_CONTROL ="Cache-Control";
+    String KEY_CONTENT_DISPOSITION="content-disposition";
 
     /**
      * 指示资源的MIME类型

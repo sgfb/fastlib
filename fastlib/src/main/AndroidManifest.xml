@@ -11,6 +11,7 @@
     <application
         android:label="fastlib"
         android:logo="@mipmap/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
         android:theme="@style/MaterialTheme"
         android:usesCleartextTraffic="true">
 

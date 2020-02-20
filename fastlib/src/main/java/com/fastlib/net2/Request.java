@@ -2,12 +2,14 @@ package com.fastlib.net2;
 
 import com.fastlib.annotation.NetCallback;
 import com.fastlib.app.task.ThreadPoolManager;
+import com.fastlib.net2.core.ResponseHeader;
 import com.fastlib.net2.param.RequestParam;
 import com.fastlib.utils.Reflect;
 
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +19,7 @@ import java.util.Map;
  * E-mail:602687446@qq.com
  * Http请求所有交互窗口
  */
-public class Request {
+public class Request{
     private boolean isSkipRootAddress;
     private boolean isSkipGlobalListener;
     private boolean isCallbackOnWorkThread;
@@ -25,10 +27,11 @@ public class Request {
     private String mMethod;
     private Map<String,List<String>> mHeader = new HashMap<>();
     private RequestParam mParam=new RequestParam();
-    private Downloadable mDownloadable;
+    private DownloadStreamController mDownloadable;
     private Listener mListener;
     private Statistical mStatistical;
     private Type mCustomType;       //一个自定义回调类型，优先使用这个参数其次才是解析mListener中方法参数
+    private ResponseHeader mResponseHeader;
 
     public Request(String url) {
         this(url, "GET");
@@ -68,12 +71,36 @@ public class Request {
         return mUrl;
     }
 
+    public Request setMethod(String method){
+        mMethod=method;
+        return this;
+    }
+
     public String getMethod(){
         return mMethod;
     }
 
     public Map<String,List<String>> getHeader(){
         return mHeader;
+    }
+
+    public ResponseHeader getResponseHeader(){
+        return mResponseHeader;
+    }
+
+    public Request setResponseHeader(ResponseHeader responseHeader){
+        mResponseHeader=responseHeader;
+        return this;
+    }
+
+    public Request addHeader(String key,String value){
+        List<String> values=mHeader.get(key);
+        if(values==null){
+            values=new ArrayList<>();
+            mHeader.put(key,values);
+        }
+        values.add(value);
+        return this;
     }
 
     public Listener getListener(){
@@ -84,12 +111,12 @@ public class Request {
         return mParam;
     }
 
-    public Request setDownloadable(Downloadable downloadable){
+    public Request setDownloadable(DownloadStreamController downloadable){
         mDownloadable=downloadable;
         return this;
     }
 
-    public Downloadable getDownloadable(){
+    public DownloadStreamController getDownloadable(){
         return mDownloadable;
     }
 

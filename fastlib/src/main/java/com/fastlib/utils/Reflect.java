@@ -14,6 +14,16 @@ import java.util.List;
  */
 public class Reflect{
 
+	public static boolean isExtendsFrom(Class cla,Class specCla){
+		Class parent=cla;
+		do{
+			parent=parent.getSuperclass();
+			if(parent==specCla) return true;
+		}
+		while(parent!=Object.class&&parent!=null);
+		return false;
+	}
+
 	public static @Nullable <T extends Annotation> Class checkParentClassHadAnnotation(Class cla,Class<T> annotation){
 		Class parent=cla;
 		do{
