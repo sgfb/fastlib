@@ -1,4 +1,4 @@
-package com.fastlib.aspect.component;
+package com.fastlib.aspect.component.inject;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

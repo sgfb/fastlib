@@ -1,4 +1,4 @@
-package com.fastlib.aspect.component;
+package com.fastlib.aspect.component.inject;
 
 import android.app.Activity;
 

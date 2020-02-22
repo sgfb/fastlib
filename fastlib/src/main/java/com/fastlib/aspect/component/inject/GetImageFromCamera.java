@@ -1,8 +1,9 @@
-package com.fastlib.aspect.component;
+package com.fastlib.aspect.component.inject;
 
 import android.Manifest;
 
 import com.fastlib.annotation.Permission;
+import com.fastlib.aspect.component.GetImageFromCameraAction;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

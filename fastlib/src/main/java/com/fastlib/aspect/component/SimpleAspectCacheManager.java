@@ -6,7 +6,7 @@ import java.util.Map;
 /**
  * Created by sgfb on 2020\02\19.
  */
-public class SimpleAspectCacheManager implements AspectCache{
+public class SimpleAspectCacheManager implements AspectCache {
     private Map<String,Object> mCaches=new HashMap<>();
 
     @Override

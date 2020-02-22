@@ -3,6 +3,7 @@ package com.fastlib.aspect;
 import android.content.Context;
 import android.os.Build;
 import android.support.annotation.Nullable;
+import android.support.v4.util.Pair;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -37,7 +38,7 @@ public class AspectManager {
      * 原则上在多非透明事件同时触发情况下如果有未通过的事件则不调起原方法,都通过则调起最多次的次数,
      * 例如权限事件未通过则不应调起原方法
      */
-    private Map<Class, Runnable> mTransparentAction;
+    private Map<Class, AspectTransparentAction> mTransparentAction;
     private Map<Class, AspectAction> mOpaqueAction;
     private static AspectManager sInstance;
     private static final Object sLock = new Object();
@@ -59,16 +60,17 @@ public class AspectManager {
     /**
      * 添加透明切面事件.注意调用者不能持有runnable对象否则可能造成内存泄漏
      */
-    public void putTransparentAction(Class<? extends Annotation> cla, Runnable runnable) {
-        mTransparentAction.put(cla, runnable);
+    public void putTransparentAction(Class<? extends Annotation> cla, AspectTransparentAction aspect) {
+        Log.d(TAG,"添加透明切面事件:"+cla.getSimpleName()+"-->"+aspect.getClass().getSimpleName());
+        mTransparentAction.put(cla, aspect);
     }
 
     /**
      * 添加不透明切面事件.注意调用者不能持有action对象否则可能造成内存泄漏
      */
-    public void putOpaqueAction(Class<? extends Annotation> cla, AspectAction action) {
-        Log.d(TAG,"添加不透明切面事件:"+cla.getSimpleName()+","+action.getClass().getSimpleName());
-        mOpaqueAction.put(cla, action);
+    public void putOpaqueAction(Class<? extends Annotation> cla, AspectAction aspect) {
+        Log.d(TAG,"添加不透明切面事件:"+cla.getSimpleName()+"-->"+aspect.getClass().getSimpleName());
+        mOpaqueAction.put(cla, aspect);
     }
 
     /**
@@ -76,16 +78,29 @@ public class AspectManager {
      * 先直接启动透明事件
      * 后检查非透明事件,条件满足后才能启动
      */
+    @SuppressWarnings("all")
     public Object callAction(Object o, List<Annotation> actionAnnotations, List envronment, Object[] args, MethodProxy proxyMethod) {
         ArrayList<Annotation> allAnnotation = new ArrayList<>();
         List<Annotation> opaqueActionAnnos = new ArrayList<>();
+        List<Pair<Annotation,AspectTransparentAction>> transparentActions=new ArrayList<>();
 
         flatAnnotation(allAnnotation, actionAnnotations);
         for (Annotation actionAnno : allAnnotation) {
-            Runnable transparentAction = mTransparentAction.get(actionAnno.annotationType());
-            if (transparentAction != null) transparentAction.run();
-            else opaqueActionAnnos.add(actionAnno);
+            //执行透明切面前段调用
+            AspectTransparentAction transparentAction = mTransparentAction.get(actionAnno.annotationType());
+            try{
+                if (transparentAction != null){
+                    transparentActions.add(Pair.create(actionAnno,transparentAction));
+                    transparentAction.before(o,actionAnno,proxyMethod.getOriginalMethod(),actionAnnotations);
+                }
+                else opaqueActionAnnos.add(actionAnno);
+            }catch (Throwable throwable) {
+                throwable.printStackTrace();
+            }
         }
+
+        Object realResult=null;
+        Exception catchException=null;
 
         try {
             boolean success = true;
@@ -94,7 +109,7 @@ public class AspectManager {
 
             //检查和分类满足条件
             for (Annotation opaqueAnno : opaqueActionAnnos) {
-                AspectAction action = mOpaqueAction.get(opaqueAnno.annotationType());
+                AspectAction action =mOpaqueAction.get(opaqueAnno.annotationType());
                 if (action != null) {
                     ActionResult actionResult = action.handleAction(opaqueAnno, envronment, args);
                     if (!actionResult.isPassed) {
@@ -112,10 +127,19 @@ public class AspectManager {
                 Object result = proxyMethod.invokeSuper(o, args);
                 for (MethodResultCallback callback : callbacks)
                     callback.onCheckedSuccess(result);
-                return delegateResult != null ? delegateResult : result;
+                realResult=delegateResult != null ? delegateResult : result;
+                return realResult;
             }
         } catch (EnvMissingException e) {
             Log.w(TAG, "注解环境缺失:" + e.getCla());
+            catchException=e;
+        } finally {
+            try{
+                for(Pair<Annotation,AspectTransparentAction> pair:transparentActions)
+                    pair.second.after(o,pair.first,proxyMethod.getOriginalMethod(),realResult,catchException);
+            }catch (Throwable e){
+                e.printStackTrace();
+            }
         }
         return null;
     }
@@ -164,7 +188,19 @@ public class AspectManager {
                         if (!TextUtils.isEmpty(filterPackageName)) {
                             if (className.contains(filterPackageName)) {
                                 Class cla = Class.forName(className);
-                                if(Reflect.isExtendsFrom(cla,AspectAction.class)){
+                                boolean isTransparentAspect=false;
+
+                                Class[] interfaces=cla.getInterfaces();
+                                for(int i=0;i<interfaces.length;i++){
+                                    Class claInterface=interfaces[i];
+                                    if(claInterface==AspectTransparentAction.class){
+                                        isTransparentAspect=true;
+                                        Class aspectAnno= (Class) ((ParameterizedType)cla.getGenericInterfaces()[i]).getActualTypeArguments()[0];
+                                        putTransparentAction(aspectAnno, (AspectTransparentAction) cla.newInstance());
+                                        break;
+                                    }
+                                }
+                                if(!isTransparentAspect&&Reflect.isExtendsFrom(cla,AspectAction.class)){
                                     //取出泛型指定的注解
                                     Class aspectAnno= (Class) ((ParameterizedType)cla.getGenericSuperclass()).getActualTypeArguments()[0];
                                     putOpaqueAction(aspectAnno, (AspectAction) cla.newInstance());

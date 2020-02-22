@@ -8,7 +8,6 @@ import android.support.v7.app.AppCompatActivity;
 
 import com.fastlib.annotation.Permission;
 import com.fastlib.aspect.AspectAction;
-import com.fastlib.aspect.ActionResult;
 import com.fastlib.aspect.exception.EnvMissingException;
 
 /**

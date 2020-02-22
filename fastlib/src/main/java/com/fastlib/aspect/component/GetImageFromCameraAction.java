@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 
 import com.fastlib.aspect.AspectAction;
-import com.fastlib.aspect.ActionResult;
+import com.fastlib.aspect.component.inject.GetImageFromCamera;
 import com.fastlib.utils.ImageUtil;
 
 /**
@@ -19,28 +19,20 @@ public class GetImageFromCameraAction extends AspectAction<GetImageFromCamera>{
         final Activity activity=getEnv(Activity.class);
         ActivityResultCallback.ActivityResultDelegate delegate=getEnv(ActivityResultCallback.ActivityResultDelegate.class);
 
-        delegate.setCallback(new ActivityResultCallback() {
+        final CrossLock lock=obtainLock();
+        delegate.addCallback(new ActivityResultCallback() {
             @Override
             public void onHandleActivityResult(int requestCode, int resultCode, Intent data) {
-                if(resultCode!=Activity.RESULT_OK)
-                    return;
-                Uri photoUri = ImageUtil.getImageFromActive(activity, requestCode, resultCode, data);
-                if (photoUri != null)
-                    setResult(ImageUtil.getImagePath(activity, photoUri));
-                synchronized (GetImageFromCameraAction.this){
-                    GetImageFromCameraAction.this.notifyAll();
+                if(resultCode==Activity.RESULT_OK){
+                    Uri photoUri = ImageUtil.getImageFromActive(activity, requestCode, resultCode, data);
+                    if (photoUri != null)
+                        setResult(ImageUtil.getImagePath(activity, photoUri));
+                    lock.unlock();
                 }
             }
         });
         ImageUtil.openCamera(activity);
-
-        synchronized (GetImageFromCameraAction.this){
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        lock.lock();
         setPassed(true);
     }
 }

@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import com.fastlib.aspect.AspectAction;
+import com.fastlib.aspect.component.inject.SycStartActivityForResult;
+import com.fastlib.aspect.event_callback.ThirdParamReceiver;
 
 /**
  * Created by sgfb on 2020\02\19.
@@ -14,29 +16,23 @@ public class SycStartActivityForResultAction extends AspectAction<SycStartActivi
 
     @Override
     protected void handleAction(final SycStartActivityForResult anno, Object[] args) {
-        ActivityResultCallback.ActivityResultDelegate delegate=getEnv(ActivityResultCallback.ActivityResultDelegate.class);
+//        ActivityResultCallback.ActivityResultDelegate delegate=getEnv(ActivityResultCallback.ActivityResultDelegate.class);
         Activity activity=getEnv(Activity.class);
+        ActivityResultReceiverGroup activityEventReceivers=getEnv(ActivityResultReceiverGroup.class);
 
-        delegate.setCallback(new ActivityResultCallback() {
+        final CrossLock lock=obtainLock();
+        activityEventReceivers.addEventCallback(new ThirdParamReceiver<Integer, Integer, Intent>() {
             @Override
-            public void onHandleActivityResult(int requestCode, int resultCode, Intent data) {
-                if(resultCode==Activity.RESULT_OK&&requestCode==1){
-                    Bundle bundle=data.getExtras();
+            public void receiveEvent(Integer param1, Integer param2, Intent param3) {
+                if(param1==lock.getId()&&param2==Activity.RESULT_OK){
+                    Bundle bundle=param3.getExtras();
                     setResult(bundle!=null?bundle.get(anno.resultKey()):null);
-                }
-                synchronized (SycStartActivityForResultAction.this){
-                    SycStartActivityForResultAction.this.notifyAll();
+                    lock.unlock();
                 }
             }
         });
-        activity.startActivityForResult(new Intent(activity,anno.value()),1);
-        synchronized (this){
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        activity.startActivityForResult(new Intent(activity,anno.value()),lock.getId());
+        lock.lock();
         setPassed(true);
     }
 }
