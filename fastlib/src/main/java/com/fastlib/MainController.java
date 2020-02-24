@@ -1,6 +1,8 @@
 package com.fastlib;
 
 import com.fastlib.aspect.BaseEnvironmentProvider;
+import com.fastlib.aspect.ThreadOn;
+import com.fastlib.aspect.component.inject.Cache;
 import com.fastlib.aspect.component.inject.GetImageFromAlbum;
 import com.fastlib.aspect.component.inject.GetImageFromCamera;
 import com.fastlib.aspect.component.inject.Logcat;
@@ -10,10 +12,16 @@ import com.fastlib.aspect.component.inject.SycStartActivityForResult;
  * Created by sgfb on 2020\01\07.
  */
 public class MainController extends BaseEnvironmentProvider {
+    int count=0;
 
-    @GetImageFromCamera
-    public String getImageFromCamera(){
-        return null;
+    @ThreadOn(ThreadOn.ThreadType.WORK)
+    public void testGetImage(){
+        System.out.println("image from album:"+getImageFromAlbum());
+    }
+
+    @Logcat
+    public void justCallNone(){
+        System.out.println(none());
     }
 
     @Logcat
@@ -23,14 +31,7 @@ public class MainController extends BaseEnvironmentProvider {
     }
 
     @Logcat
-    @SycStartActivityForResult(value = SecondActivity.class,resultKey = "name")
-    public String startSecondActivityWaitResult(){
-        return null;
-    }
-
-    @Logcat
-    @SycStartActivityForResult(value = ThirdActivity.class,resultKey = "name")
-    public String startThirdActivityWaitResult(){
-        return null;
+    public String none(){
+        return "none";
     }
 }

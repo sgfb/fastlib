@@ -18,5 +18,6 @@ public abstract class EventReceiveGroup<T1,T2,T3>{
     public void sendEvent(T1 param1,T2 param2,T3 param3){
         for(ThirdParamReceiver<T1,T2,T3> eventCallback:mEventCallbacks)
             eventCallback.receiveEvent(param1,param2,param3);
+        mEventCallbacks.clear();
     }
 }

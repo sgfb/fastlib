@@ -13,6 +13,7 @@ import android.util.Log;
 import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Event;
 import com.fastlib.app.task.ThreadPoolManager;
+import com.fastlib.aspect.AspectSupport;
 import com.fastlib.net.NetManager;
 
 import java.io.Serializable;
@@ -219,39 +220,15 @@ public class EventObserver {
         public void onReceive(Context context, Intent intent){
             final EntityWrapper wrapper= (EntityWrapper) intent.getSerializableExtra("entity");
             List<Object> invisibleSubscriber=new ArrayList<>();
-            Iterator<Object> iter=mSubscribes.keySet().iterator();
-            while(iter.hasNext()){
-                final Object subscribe=iter.next();
-                boolean visible=checkVisible(subscribe);
-                if(!visible){
+            for (Object subscribe : mSubscribes.keySet()) {
+                boolean visible = checkVisible(subscribe);
+                if (!visible) {
                     invisibleSubscriber.add(subscribe);
                     continue;
                 }
-                try{
-                    final Method m=mSubscribes.get(subscribe);
-                    Event anno=m.getAnnotation(Event.class);
-
-                    m.setAccessible(true);
-                    if(anno.value()) //是否在主线程调用,如果不是进入线程池
-                        m.invoke(subscribe,wrapper.obj);
-                    else
-                        ThreadPoolManager.sQuickPool.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    m.invoke(subscribe,wrapper.obj);
-                                } catch (IllegalAccessException e) {
-                                    Log.w(TAG,"方法调起失败:"+e.getMessage());
-                                } catch (InvocationTargetException e) {
-                                    Log.w(TAG,"方法调起失败:"+e.getMessage());
-                                }
-                            }
-                        });
-                } catch (IllegalAccessException e) {
-                    Log.w(TAG,"方法调起失败:"+e.getMessage());
-                } catch (InvocationTargetException e) {
-                    Log.w(TAG,"方法调起失败:"+e.getMessage());
-                }
+                Method m = mSubscribes.get(subscribe);
+                m.setAccessible(true);
+                AspectSupport.callMethod(subscribe, m, wrapper.obj);
             }
             for(Object obj:invisibleSubscriber)
                 unsubscribe(context,obj);

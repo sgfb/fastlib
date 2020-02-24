@@ -160,7 +160,11 @@ public class Request{
         ThreadPoolManager.sSlowPool.execute(new HttpProcessor(this));
     }
 
-    public Object startSyc(Type type){
+    public void startSyc()throws Exception{
+        startSyc(void.class);
+    }
+
+    public Object startSyc(Type type)throws Exception{
         mCustomType=type;
         setCallbackOnWorkThread(true);
         HttpProcessor hp=new HttpProcessor(this);

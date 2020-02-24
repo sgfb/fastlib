@@ -57,6 +57,10 @@ public class AspectManager {
         return sInstance;
     }
 
+    public void init(Context context){
+        addAspectActions(context.getApplicationContext(),"com.fastlib.aspect");
+    }
+
     /**
      * 添加透明切面事件.注意调用者不能持有runnable对象否则可能造成内存泄漏
      */
@@ -126,12 +130,12 @@ public class AspectManager {
             if (success) {
                 Object result = proxyMethod.invokeSuper(o, args);
                 for (MethodResultCallback callback : callbacks)
-                    callback.onCheckedSuccess(result);
+                    callback.onRawMethodResult(result);
                 realResult=delegateResult != null ? delegateResult : result;
                 return realResult;
             }
         } catch (EnvMissingException e) {
-            Log.w(TAG, "注解环境缺失:" + e.getCla());
+            Log.w(TAG,e.getMessage());
             catchException=e;
         } finally {
             try{

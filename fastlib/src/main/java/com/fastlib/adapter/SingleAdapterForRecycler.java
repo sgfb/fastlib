@@ -6,13 +6,11 @@ import android.support.annotation.Nullable;
 import android.view.View;
 
 import com.fastlib.annotation.NetCallback;
-import com.fastlib.base.CommonViewHolder;
+import com.fastlib.base.RecyclerViewHolder;
 import com.fastlib.base.Refreshable;
 import com.fastlib.net.Request;
 import com.fastlib.net.listener.Listener;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.List;
 
 /**
@@ -108,7 +106,7 @@ public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T> i
     }
 
     @Override
-    public void onBindViewHolder(CommonViewHolder holder, int position){
+    public void onBindViewHolder(RecyclerViewHolder holder, int position){
         if(position>=getItemCount()-1&&isMore&&!isLoading)
             loadMoreData();
         super.onBindViewHolder(holder,position);

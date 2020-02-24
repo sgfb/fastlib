@@ -6,7 +6,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
-import com.fastlib.base.CommonViewHolder;
+import com.fastlib.base.RecyclerViewHolder;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType){
         if(mRecyclerGroup==null) return null;
         for(RecyclerGroup group:mRecyclerGroup){
-            if(group.mType==viewType) return new CommonViewHolder(LayoutInflater.from(mContext).inflate(group.mLayoutId,parent,false));
+            if(group.mType==viewType) return new RecyclerViewHolder(LayoutInflater.from(mContext).inflate(group.mLayoutId,parent,false));
         }
         return null;
     }
@@ -46,7 +46,7 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         RecyclerItem item= mRecyclerItem.get(position);
-        item.mGroup.binding(position,item.mGroup.mItem.indexOf(item),item.mData,(CommonViewHolder) holder);
+        item.mGroup.binding(position,item.mGroup.mItem.indexOf(item),item.mData,(RecyclerViewHolder) holder);
     }
 
     @Override
@@ -145,7 +145,7 @@ public abstract class MultiTypeAdapter extends RecyclerView.Adapter<RecyclerView
          * @param positionOfGroup 相对Group中的位置
          * @param holder 视图持有者
          */
-        protected abstract void binding(int positionOfRecyclerView, int positionOfGroup,T data,CommonViewHolder holder);
+        protected abstract void binding(int positionOfRecyclerView, int positionOfGroup,T data,RecyclerViewHolder holder);
         protected abstract @LayoutRes int getLayoutId();
 
         public RecyclerGroup(){

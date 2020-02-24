@@ -11,11 +11,11 @@ import android.widget.TextView;
  * Created by sgfb on 17/2/22.
  * Recycler通用ViewHolder.应只使用在单类型列表中
  */
-public class CommonViewHolder extends RecyclerView.ViewHolder{
+public class RecyclerViewHolder extends RecyclerView.ViewHolder{
     private SparseArray<View> mViews;
     private View mConvertView;
 
-    public CommonViewHolder(View itemView) {
+    public RecyclerViewHolder(View itemView) {
         super(itemView);
         mViews=new SparseArray<>();
         mConvertView=itemView;

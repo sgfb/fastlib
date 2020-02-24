@@ -7,8 +7,7 @@ import android.widget.TextView;
 
 import com.fastlib.R;
 import com.fastlib.adapter.BaseRecyAdapter;
-import com.fastlib.annotation.ContentView;
-import com.fastlib.base.CommonViewHolder;
+import com.fastlib.base.RecyclerViewHolder;
 
 import java.io.File;
 import java.util.Locale;
@@ -20,7 +19,7 @@ public class RequestingAdapter extends BaseRecyAdapter<Requesting>{
     }
 
     @Override
-    public void binding(int position, Requesting data, CommonViewHolder holder) {
+    public void binding(int position, Requesting data, RecyclerViewHolder holder) {
         holder.setVisibility(R.id.progress, data.type == Requesting.TYPE_DOWNLOADING || data.type == Requesting.TYPE_UPLOADING ? View.VISIBLE : View.GONE);
         holder.setText(R.id.urlSegment, data.url);
         holder.setText(R.id.secondStatus,"");

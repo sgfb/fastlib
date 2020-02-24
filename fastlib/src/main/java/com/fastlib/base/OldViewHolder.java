@@ -21,21 +21,19 @@ public class OldViewHolder{
 	private View mConvertView;
 	private int mLayoutId;
 
+	public OldViewHolder(){}
+
+	private OldViewHolder(View rootView){
+		this.mViews=new SparseArray<>();
+		this.mConvertView=rootView;
+	}
+
 	private OldViewHolder(Context context, ViewGroup parent,View layoutView,int layoutId){
 		this.mViews = new SparseArray<>();
 		this.mLayoutId=layoutId;
 		if(layoutView==null)
 			this.mConvertView = LayoutInflater.from(context).inflate(layoutId, parent, false);
 		else mConvertView=layoutView;
-	}
-
-	/**
-	 * 初始化View持有者
-	 * @param rootView 根视图
-     */
-	private OldViewHolder(View rootView){
-		this.mViews=new SparseArray<>();
-		this.mConvertView=rootView;
 	}
 
 	public static OldViewHolder get(View rootView){
@@ -57,6 +55,10 @@ public class OldViewHolder{
 			return(OldViewHolder)convertView.getTag();
 		else
 			return new OldViewHolder(context,parent,convertView,layoutId);
+	}
+
+	public void setRootView(View rootView){
+		mConvertView=rootView;
 	}
 
 	/**

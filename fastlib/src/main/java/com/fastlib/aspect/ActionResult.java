@@ -16,4 +16,10 @@ public class ActionResult {
         this.result = result;
         this.rawResultCallback = rawResultCallback;
     }
+
+    public void reset(){
+        isPassed=false;
+        result=null;
+        rawResultCallback=null;
+    }
 }

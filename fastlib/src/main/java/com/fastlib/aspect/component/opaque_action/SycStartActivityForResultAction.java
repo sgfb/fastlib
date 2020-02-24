@@ -1,10 +1,11 @@
-package com.fastlib.aspect.component;
+package com.fastlib.aspect.component.opaque_action;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 
 import com.fastlib.aspect.AspectAction;
+import com.fastlib.aspect.component.ActivityResultReceiverGroup;
 import com.fastlib.aspect.component.inject.SycStartActivityForResult;
 import com.fastlib.aspect.event_callback.ThirdParamReceiver;
 
@@ -16,9 +17,9 @@ public class SycStartActivityForResultAction extends AspectAction<SycStartActivi
 
     @Override
     protected void handleAction(final SycStartActivityForResult anno, Object[] args) {
-//        ActivityResultCallback.ActivityResultDelegate delegate=getEnv(ActivityResultCallback.ActivityResultDelegate.class);
         Activity activity=getEnv(Activity.class);
         ActivityResultReceiverGroup activityEventReceivers=getEnv(ActivityResultReceiverGroup.class);
+        String test=getEnv(String.class);
 
         final CrossLock lock=obtainLock();
         activityEventReceivers.addEventCallback(new ThirdParamReceiver<Integer, Integer, Intent>() {

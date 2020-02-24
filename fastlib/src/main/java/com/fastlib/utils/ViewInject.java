@@ -4,154 +4,31 @@ import android.support.annotation.NonNull;
 import android.view.View;
 import android.widget.AdapterView;
 
+import com.fastlib.aspect.AspectSupport;
 import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.annotation.LocalData;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Created by sgfb on 17/1/12.
  * 视图注入到字段和方法中.仅对当前和注解有ContentView类有效
  */
 public class ViewInject {
-    private ThreadPoolExecutor mThreadPool;
     private Object mHost;
     private View mRoot;
 
-    private ViewInject(Object host, @NonNull View root, ThreadPoolExecutor threadPool) {
-        mThreadPool = threadPool;
+    private ViewInject(Object host, @NonNull View root) {
         mHost = host;
         mRoot = root;
         injectViewEvent();
     }
 
     public static void inject(Object host, @NonNull View root) {
-        inject(host, root, null);
-    }
-
-    public static void inject(Object host, @NonNull View root, ThreadPoolExecutor threadPool) {
-        new ViewInject(host, root, threadPool);
-    }
-
-    /**
-     * 绑定视图事件到方法上，运行一段代码如果有异常自行处理
-     *
-     * @param runOnWorkThread
-     * @param m
-     * @param objs
-     */
-    private boolean invokeWithoutError(boolean runOnWorkThread, final Method m, final Object... objs) {
-        if (runOnWorkThread && mThreadPool != null)
-            mThreadPool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        m.invoke(mHost);  //先尝试绑定无参方法
-                    } catch (InvocationTargetException e) { //这个异常是非方法参数异常所以直接显示或抛出
-                        if (BuildConfig.isShowLog) {
-                            System.out.println("toggle exception");
-                            e.printStackTrace();
-                        }
-                    } catch (IllegalAccessException e) {
-                        if (BuildConfig.isShowLog) e.printStackTrace();
-                    } catch (IllegalArgumentException e) {
-                        try {
-                            m.invoke(mHost, objs);
-                        } catch (IllegalAccessException e1) {
-                            if (BuildConfig.isShowLog) {
-                                System.out.println("toggle exception");
-                                e1.printStackTrace();
-                            }
-                        } catch (InvocationTargetException e2) {
-                            if (BuildConfig.isShowLog) {
-                                System.out.println("toggle exception");
-                                e2.printStackTrace();
-                            }
-                        }
-                    }
-                }
-            });
-        else
-            try {
-                Object result = m.invoke(mHost);  //先尝试绑定无参方法
-                if (result instanceof Boolean)
-                    return (boolean) result;
-            } catch (IllegalAccessException | IllegalArgumentException e) {
-                try {
-                    Object result = m.invoke(mHost, objs);
-                    if (result instanceof Boolean)
-                        return (Boolean) result;
-                } catch (IllegalAccessException | IllegalArgumentException e1) {
-                    if (BuildConfig.isShowLog) {
-                        System.out.println("toggle exception");
-                        e1.printStackTrace();
-                    }
-                } catch (InvocationTargetException e2) {
-                    if (BuildConfig.isShowLog) {
-                        System.out.println("toggle exception");
-                        e2.printStackTrace();
-                    }
-                }
-                return false;
-            } catch (InvocationTargetException e) {
-                if (BuildConfig.isShowLog) {
-                    System.out.println("toggle exception");
-                    e.printStackTrace();
-                }
-                return false;
-            }
-        return false;
-    }
-
-    /**
-     * 绑定方法到事件监听中
-     *
-     * @param m
-     * @param v
-     * @param vi
-     */
-    private void bindListener(final Method m, View v, final Bind vi) {
-        switch (vi.bindType()) {
-            case CLICK:
-                v.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(final View v) {
-                        invokeWithoutError(vi.runOnWorkThread(), m, v);
-                    }
-                });
-                break;
-            case LONG_CLICK:
-                v.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        return invokeWithoutError(vi.runOnWorkThread(), m, v);
-                    }
-                });
-                break;
-            case ITEM_CLICK:
-                ((AdapterView) v).setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                    @Override
-                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        invokeWithoutError(vi.runOnWorkThread(), m, parent, view, position, id);
-                    }
-                });
-                break;
-            case ITEM_LONG_CLICK:
-                ((AdapterView) v).setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-                    @Override
-                    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                        return invokeWithoutError(vi.runOnWorkThread(), m, parent, view, position, id);
-                    }
-                });
-                break;
-            default:
-                break;
-        }
+        new ViewInject(host, root);
     }
 
     /**
@@ -159,23 +36,22 @@ public class ViewInject {
      */
     private void injectViewEvent() {
         Class cla = mHost.getClass();
-        Class contentViewParent=null;
+        Class contentViewClass=null;
 
-        if (cla.getAnnotation(ContentView.class) == null) {
-            contentViewParent = Reflect.checkParentClassHadAnnotation(cla, ContentView.class);
-        }
+        if (cla.getAnnotation(ContentView.class) == null)
+            contentViewClass = Reflect.checkParentClassHadAnnotation(cla, ContentView.class);
         //绑定控件方法.自身和有ContentView注解的父类
         injectMethod(cla.getDeclaredMethods());
-        if(contentViewParent!=null) injectMethod(contentViewParent.getDeclaredMethods());
+        if(contentViewClass!=null) injectMethod(contentViewClass.getDeclaredMethods());
 
         //绑定视图到属性.自身和有ContentView注解的父类
         injectField(cla.getDeclaredFields());
-        if(contentViewParent!=null) injectField(contentViewParent.getDeclaredFields());
+        if(contentViewClass!=null) injectField(contentViewClass.getDeclaredFields());
     }
 
     private void injectMethod(Method[] methods) {
         if (methods != null && methods.length > 0) {
-            for (final Method m : methods) {
+            for (Method m : methods) {
                 try{
                     m.setAccessible(true);
                     Bind vi = m.getAnnotation(Bind.class);
@@ -244,5 +120,60 @@ public class ViewInject {
                 }
             }
         }
+    }
+
+    /**
+     * 绑定方法到事件监听中
+     */
+    private void bindListener(final Method m, View v, final Bind vi) {
+        switch (vi.bindType()) {
+            case CLICK:
+                v.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(final View v) {
+                        adapterParamInvoke(m,v);
+                    }
+                });
+                break;
+            case LONG_CLICK:
+                v.setOnLongClickListener(new View.OnLongClickListener() {
+                    @Override
+                    public boolean onLongClick(View v) {
+                        adapterParamInvoke(m,v);
+                        return true;
+                    }
+                });
+                break;
+            case ITEM_CLICK:
+                ((AdapterView) v).setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        adapterParamInvoke(m,view,position,id);
+                    }
+                });
+                break;
+            case ITEM_LONG_CLICK:
+                ((AdapterView) v).setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+                    @Override
+                    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                        adapterParamInvoke(m,parent,view,position,id);
+                        return true;
+                    }
+                });
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * 兼容空参和默认参调用
+     * @param m     调用方法
+     * @param args  默认参数
+     */
+    private void adapterParamInvoke(Method m,Object... args){
+        if(m.getParameterTypes().length==0)
+            AspectSupport.callMethod(mHost,m);
+        else AspectSupport.callMethod(mHost,m,args);
     }
 }

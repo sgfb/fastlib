@@ -51,7 +51,7 @@ public class MultiSegmentDownloadController extends SimpleDownloadController{
     /**
      * 本方法只能在工作线程调起
      */
-    public static final void startMultiDownload(Request request,File file)throws IllegalStateException{
+    public static final void startMultiDownload(Request request,File file) throws Exception {
         if(Thread.currentThread()==Looper.getMainLooper().getThread())
             throw new IllegalStateException("多线程下载只能在工作线程中启动");
         Request requestHead=request;

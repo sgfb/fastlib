@@ -16,14 +16,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ThreadPoolManager {
     private static final String TAG=ThreadPoolManager.class.getCanonicalName();
+    private static final int MIN_THREAD=5;
     public final static ThreadPoolExecutor sQuickPool;  //轻请求线程池 建议任务应小于100ms
     public final static ThreadPoolExecutor sSlowPool;   //重请求线程池 适用io、网络等延迟比较大的任务
 
     static{
-        int quickPoolCount=Math.max(2,Runtime.getRuntime().availableProcessors()/2);
+        int quickPoolCount=Math.max(MIN_THREAD,Runtime.getRuntime().availableProcessors()/2);
         sQuickPool=new MonitorThreadPool(quickPoolCount,quickPoolCount,0L,TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>(),new NamedThreadFactory("quick"));
 
-        int slowPoolCount=Runtime.getRuntime().availableProcessors()+2;
+        int slowPoolCount=Runtime.getRuntime().availableProcessors()+MIN_THREAD;
         sSlowPool=new MonitorThreadPool(slowPoolCount,slowPoolCount,0L, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>(),new NamedThreadFactory("slow"));
         Log.d(TAG,String.format(Locale.getDefault(),"init poos quickPool:%d slowPool:%d",quickPoolCount,slowPoolCount));
     }

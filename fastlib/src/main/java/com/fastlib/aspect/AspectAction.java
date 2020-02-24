@@ -1,7 +1,9 @@
 package com.fastlib.aspect;
 
+import android.support.annotation.NonNull;
 import android.util.SparseArray;
 
+import com.fastlib.aspect.exception.EnvMissingException;
 import com.fastlib.aspect.exception.LockNotFoundException;
 
 import java.lang.annotation.Annotation;
@@ -76,6 +78,7 @@ public abstract class AspectAction<T extends Annotation>{
     }
 
     public ActionResult handleAction(T anno, List environment, Object[] args){
+        mActionResult.reset();
         mEnvs=environment;
         handleAction(anno,args);
         return mActionResult;
@@ -85,13 +88,9 @@ public abstract class AspectAction<T extends Annotation>{
 
     /**
      * 获取环境参数
-     * TODO 是否在这里找不到参数就弹出参数缺失异常？
-     * @param cla
-     * @param <E>
-     * @return
      */
     @SuppressWarnings("unchecked")
-    protected  <E> E getEnv(Class<E> cla){
+    protected @NonNull <E> E getEnv(Class<E> cla){
         if(mEnvs!=null){
             for(Object env:mEnvs){
                 if(cla.isInstance(env)){
@@ -99,7 +98,7 @@ public abstract class AspectAction<T extends Annotation>{
                 }
             }
         }
-        return null;
+        throw new EnvMissingException("事件"+getClass().getSimpleName()+"环境参数缺失"+cla.getSimpleName());
     }
 
     protected void setPassed(boolean passed){

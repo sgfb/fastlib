@@ -11,6 +11,4 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Event{
-    boolean value() default true; //是否运行在主线程中
-}
+public @interface Event{}

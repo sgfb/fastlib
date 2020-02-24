@@ -1,8 +1,9 @@
-package com.fastlib.aspect;
+package com.fastlib.aspect.component.transparent_action;
 
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.fastlib.aspect.AspectTransparentAction;
 import com.fastlib.aspect.component.inject.Logcat;
 import com.google.common.collect.Lists;
 
@@ -15,7 +16,7 @@ import java.util.Locale;
  * Created by sgfb on 2020\02\21.
  * 日志输出事件
  */
-public class LogAspectAction implements AspectTransparentAction<Logcat>{
+public class LogAspectAction implements AspectTransparentAction<Logcat> {
     private final static String TAG=LogAspectAction.class.getSimpleName();
 
     @Override

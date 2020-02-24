@@ -3,7 +3,7 @@ package com.fastlib.adapter;
 import android.support.annotation.NonNull;
 import android.support.v4.widget.SwipeRefreshLayout;
 
-import com.fastlib.base.CommonViewHolder;
+import com.fastlib.base.RecyclerViewHolder;
 import com.fastlib.net.Request;
 import com.fastlib.net.listener.Listener;
 
@@ -67,7 +67,7 @@ public abstract class BindingGroup<T,R> extends MultiTypeAdapter.RecyclerGroup<T
      * @param data 数据
      * @param holder 视图持有者
      */
-    protected abstract void rebinding(int positionOfRecyclerView, int positionOfGroup, T data, CommonViewHolder holder);
+    protected abstract void rebinding(int positionOfRecyclerView, int positionOfGroup, T data, RecyclerViewHolder holder);
 
     /**
      * 刷新数据
@@ -91,7 +91,7 @@ public abstract class BindingGroup<T,R> extends MultiTypeAdapter.RecyclerGroup<T
     }
 
     @Override
-    protected void binding(int positionOfRecyclerView, int positionOfGroup, T data, CommonViewHolder holder) {
+    protected void binding(int positionOfRecyclerView, int positionOfGroup, T data, RecyclerViewHolder holder) {
         rebinding(positionOfRecyclerView,positionOfGroup,data,holder);
         if(positionOfGroup>=getCount()-1&&isMore&&!isLoading)
             loadMore();

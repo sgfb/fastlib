@@ -116,7 +116,7 @@ public class ModuleDelegate implements ModuleInterface {
         return Task.begin(new EmptyAction() {
             @Override
             protected void executeAdapt() {
-                ViewInject.inject(mHost, getRootView(), mThreadPool);
+                ViewInject.inject(mHost, getRootView());
                 mLocalDataInject.localDataInject();
                 EventObserver.getInstance().subscribe(getRealActivity(),mHost);
             }
@@ -204,7 +204,7 @@ public class ModuleDelegate implements ModuleInterface {
                 isGatingPhoto = true;
                 mPhotoResultListener = photoResultListener;
                 if(mFragmentContext!=null) ImageUtil.openAlbum(mFragmentContext);
-                else ImageUtil.openAlbum(getRealActivity());
+                else ImageUtil.openAlbum(getRealActivity(),ImageUtil.REQUEST_FROM_ALBUM);
             }
         }, new Runnable() {
             @Override
@@ -232,12 +232,12 @@ public class ModuleDelegate implements ModuleInterface {
                         if (TextUtils.isEmpty(path)) {
                             if(mFragmentContext!=null)
                                 ImageUtil.openCamera(mFragmentContext);
-                            else ImageUtil.openCamera(getRealActivity());
+                            else ImageUtil.openCamera(getRealActivity(),ImageUtil.REQUEST_FROM_CAMERA);
                         }
                         else{
                             if(mFragmentContext!=null)
-                                ImageUtil.openCamera(mFragmentContext,Uri.fromFile(new File(path)));
-                            else ImageUtil.openCamera(getRealActivity(), Uri.fromFile(new File(path)));
+                                ImageUtil.openCamera(mFragmentContext,Uri.fromFile(new File(path)),ImageUtil.REQUEST_FROM_CAMERA);
+                            else ImageUtil.openCamera(getRealActivity(), Uri.fromFile(new File(path)),ImageUtil.REQUEST_FROM_CAMERA);
                         }
                     }
                 }, new Runnable() {

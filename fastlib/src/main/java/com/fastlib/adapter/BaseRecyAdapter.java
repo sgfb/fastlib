@@ -8,7 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.fastlib.annotation.ContentView;
-import com.fastlib.base.CommonViewHolder;
+import com.fastlib.base.RecyclerViewHolder;
 import com.fastlib.utils.Reflect;
 
 import java.util.ArrayList;
@@ -18,14 +18,14 @@ import java.util.List;
  * Created by sgfb on 18/3/9.
  * 抽出公共功能的基本RecyclerView适配器.支持ContentView注解
  */
-public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonViewHolder>{
+public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<RecyclerViewHolder>{
     public static final int TYPE_HEAD=1;
     public static final int TYPE_BOTTOM=2;
 
     protected int mItemId;
     protected List<T> mData;
-    protected CommonViewHolder mHeadViewHolder;
-    protected CommonViewHolder mBottomViewHolder;
+    protected RecyclerViewHolder mHeadViewHolder;
+    protected RecyclerViewHolder mBottomViewHolder;
     protected OnItemClickListener<T> mItemClickListener;
     protected Context mContext;
     private ExtraItemBean mHeadItemBean,mBottomItemBean;
@@ -36,7 +36,7 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
      * @param data 数据
      * @param holder 视图持有者
      */
-    public abstract void binding(int position,T data,CommonViewHolder holder);
+    public abstract void binding(int position,T data,RecyclerViewHolder holder);
 
     public BaseRecyAdapter(){
         this(-1,null);
@@ -70,11 +70,11 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
     }
 
     @Override
-    public CommonViewHolder onCreateViewHolder(ViewGroup parent, int viewType){
+    public RecyclerViewHolder onCreateViewHolder(ViewGroup parent, int viewType){
         if(viewType==TYPE_HEAD){
             if(mHeadViewHolder==null) {
                 View headView = LayoutInflater.from(parent.getContext()).inflate(mHeadItemBean.layoutId, parent, false);
-                mHeadViewHolder = new CommonViewHolder(headView);
+                mHeadViewHolder = new RecyclerViewHolder(headView);
                 if(mHeadItemBean.callback!=null)
                     mHeadItemBean.callback.extraItemCreated(mHeadViewHolder);
             }
@@ -83,18 +83,18 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
         else if(viewType==TYPE_BOTTOM){
             if(mBottomViewHolder==null){
                 View bottomView=LayoutInflater.from(parent.getContext()).inflate(mBottomItemBean.layoutId,parent,false);
-                mBottomViewHolder=new CommonViewHolder(bottomView);
+                mBottomViewHolder=new RecyclerViewHolder(bottomView);
                 if(mBottomItemBean.callback!=null)
                     mBottomItemBean.callback.extraItemCreated(mBottomViewHolder);
             }
             return mBottomViewHolder;
         }
         View itemView=LayoutInflater.from(parent.getContext()).inflate(mItemId,parent,false);
-        return new CommonViewHolder(itemView);
+        return new RecyclerViewHolder(itemView);
     }
 
     @Override
-    public void onBindViewHolder(final CommonViewHolder holder, final int position){
+    public void onBindViewHolder(final RecyclerViewHolder holder, final int position){
         mContext=holder.getConvertView().getContext();
         int type=getItemViewType(position);
         if(type!=TYPE_HEAD&&type!=TYPE_BOTTOM) {
@@ -275,7 +275,7 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
      * 头部和尾部额外视图生成后回调
      */
     public interface OnExtraItemCreateCallback{
-        void extraItemCreated(CommonViewHolder viewHolder);
+        void extraItemCreated(RecyclerViewHolder viewHolder);
     }
 
     /**
@@ -283,7 +283,7 @@ public abstract class BaseRecyAdapter<T> extends RecyclerView.Adapter<CommonView
      * @param <T> 跟随适配器泛型类
      */
     public interface OnItemClickListener<T>{
-        void onItemClick(int position,CommonViewHolder holder,T data);
+        void onItemClick(int position, RecyclerViewHolder holder, T data);
     }
 
     class ExtraItemBean{

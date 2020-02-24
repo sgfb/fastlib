@@ -216,26 +216,26 @@ public class ImageUtil{
     }
 
     public static void openAlbum(Fragment fragment){
-        openAlbum(null, fragment, false);
+        openAlbum(null, fragment, false,REQUEST_FROM_ALBUM);
     }
 
     /**
      * 预览相册
      * @param activity
      */
-    public static void openAlbum(Activity activity){
-        openAlbum(activity, null, false);
+    public static void openAlbum(Activity activity,int requestCode){
+        openAlbum(activity, null, false,requestCode);
     }
 
     @TargetApi(18)
-    public static void openAlbum(Activity activity,Fragment fragment,boolean multiChoose){
+    public static void openAlbum(Activity activity,Fragment fragment,boolean multiChoose,int requestCode){
         Intent intent = new Intent();
         intent.setAction(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         intent.putExtra(Intent.CATEGORY_OPENABLE, true);
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiChoose);
-        if(activity!=null) activity.startActivityForResult(intent, REQUEST_FROM_ALBUM);
-        else fragment.startActivityForResult(intent,REQUEST_FROM_ALBUM);
+        if(activity!=null) activity.startActivityForResult(intent, requestCode);
+        else fragment.startActivityForResult(intent,requestCode);
     }
 
     /**
@@ -243,23 +243,23 @@ public class ImageUtil{
      * @param fragment
      */
     public static void openCamera(Fragment fragment){
-        openCamera(fragment, Uri.fromFile(getTempFile(null)));
+        openCamera(fragment, Uri.fromFile(getTempFile(null)),REQUEST_FROM_CAMERA);
     }
 
     /**
      * 开启相机，不指定生成照片位置，默认为存储卡根部
      * @param activity
      */
-    public static void openCamera(Activity activity){
-        openCamera(activity, Uri.fromFile(getTempFile(null))); //默认写在存储卡内
+    public static void openCamera(Activity activity,int requestCode){
+        openCamera(activity, Uri.fromFile(getTempFile(null)),requestCode); //默认写在存储卡内
     }
 
-    public static void openCamera(Activity activity,Uri outPut){
-        openCamera(activity,null,outPut);
+    public static void openCamera(Activity activity,Uri outPut,int requestCode){
+        openCamera(activity,null,outPut,requestCode);
     }
 
-    public static void openCamera(Fragment fragment,Uri outPut){
-        openCamera(null,fragment,outPut);
+    public static void openCamera(Fragment fragment,Uri outPut,int requestCode){
+        openCamera(null,fragment,outPut,requestCode);
     }
 
     /**
@@ -267,7 +267,7 @@ public class ImageUtil{
      * @param activity
      * @param outPut
      */
-    private static void openCamera(Activity activity,Fragment fragment,Uri outPut){
+    private static void openCamera(Activity activity,Fragment fragment,Uri outPut,int requestCode){
         Intent intent=new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         //如果version大于22,包装uri
         if(Build.VERSION.SDK_INT>Build.VERSION_CODES.LOLLIPOP_MR1){
@@ -279,11 +279,11 @@ public class ImageUtil{
         intent.putExtra(MediaStore.EXTRA_OUTPUT,outPut);
         if(activity==null){
             saveLastImage(fragment.getContext(),outPut);
-            fragment.startActivityForResult(intent,REQUEST_FROM_CAMERA);
+            fragment.startActivityForResult(intent,requestCode);
         }
         else{
             saveLastImage(activity,outPut);
-            activity.startActivityForResult(intent,REQUEST_FROM_CAMERA);
+            activity.startActivityForResult(intent,requestCode);
         }
     }
 
