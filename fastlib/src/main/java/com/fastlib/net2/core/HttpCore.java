@@ -4,7 +4,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.fastlib.net.exception.NetException;
-import com.fastlib.net2.URLUtil;
+import com.fastlib.net2.utils.URLUtil;
 
 import java.io.IOException;
 import java.io.InputStream;

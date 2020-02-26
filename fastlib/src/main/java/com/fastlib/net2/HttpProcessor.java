@@ -10,9 +10,15 @@ import com.fastlib.db.SaveUtil;
 import com.fastlib.net2.core.HeaderDefinition;
 import com.fastlib.net2.core.MethodDefinition;
 import com.fastlib.net2.core.SimpleHttpCoreImpl;
+import com.fastlib.net2.download.DownloadStreamController;
+import com.fastlib.net2.download.SingleDownloadController;
+import com.fastlib.net2.listener.GlobalListener;
+import com.fastlib.net2.listener.Listener;
 import com.fastlib.net2.param.interpreter.FormDataInterpreter;
 import com.fastlib.net2.param.interpreter.ParamInterpreter;
 import com.fastlib.net2.param.interpreter.ParamInterpreterFactor;
+import com.fastlib.net2.utils.SimpleStatistical;
+import com.fastlib.net2.utils.Statistical;
 import com.google.gson.Gson;
 
 import java.io.ByteArrayInputStream;
@@ -87,6 +93,10 @@ public class HttpProcessor implements Runnable {
             //开始连接
             if (!mRequest.getSkipGlobalListener())
                 HttpGlobalConfig.getInstance().getGlobalListener().onLaunchRequestBefore(mRequest);
+            if(mRequest.getConnectionTimeout()>0)
+                httpCore.setConnectionTimeout(mRequest.getConnectionTimeout());
+            if(mRequest.getReadTimeout()>0)
+                httpCore.setReadTimeout(mRequest.getReadTimeout());
             httpCore.begin();
             if (needServerBody) {
                 InputStream in = httpCore.getInputStream();
@@ -113,7 +123,7 @@ public class HttpProcessor implements Runnable {
                             filename = new String(contentDisposition.substring(filenameIndex + 10, contentDisposition.length() - 1).getBytes("ISO_8859_1"), "utf-8");
                     }
                     downloadController.onStreamReady(in, filename, fileLength);
-                    mDownloadFile = downloadController.getSavedFile();
+                    mDownloadFile = downloadController.getOutputFile();
                     mRawDataInputStream = new FileInputStream(mDownloadFile);
                 } else
                     mRawDataInputStream = new ByteArrayInputStream(SaveUtil.loadInputStream(in, false));
@@ -216,7 +226,9 @@ public class HttpProcessor implements Runnable {
         if (mException == null) {
             try {
                 wrapperListener.onRawCallback(mRequest, mRawDataInputStream);
-                if (mCallbackType == null || mCallbackType == Object.class || mCallbackType == byte[].class)
+                if (mCallbackType == void.class || mCallbackType == Void.class)
+                    wrapperListener.onResponseSuccess(mRequest,null);
+                else if(mCallbackType == null || mCallbackType == Object.class || mCallbackType == byte[].class)
                     wrapperListener.onResponseSuccess(mRequest, SaveUtil.loadInputStream(mRawDataInputStream, false));
                 else if (mCallbackType == File.class)
                     wrapperListener.onResponseSuccess(mRequest, mDownloadFile);

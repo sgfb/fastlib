@@ -4,7 +4,7 @@ import android.os.Build;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
-import com.fastlib.net2.URLUtil;
+import com.fastlib.net2.utils.URLUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +26,7 @@ public class SimpleHttpCoreImpl extends HttpCore{
     private int mSendBodyLength;
     private int mReceivedBodyLength;
     private long mContentLength=-1;
+    private HttpOption mHttpOption=new HttpOption();
 
     public SimpleHttpCoreImpl(String url,String method){
         super(url);
@@ -99,7 +100,7 @@ public class SimpleHttpCoreImpl extends HttpCore{
 
     @Override
     protected HttpOption getHttpOption() {
-        return new HttpOption();
+        return mHttpOption;
     }
 
     @Override
@@ -215,5 +216,13 @@ public class SimpleHttpCoreImpl extends HttpCore{
 
     public int getReceivedBodyLength(){
         return mReceivedBodyLength;
+    }
+
+    public void setConnectionTimeout(int connectionTimeout){
+        mHttpOption.connectionTimeout=connectionTimeout;
+    }
+
+    public void setReadTimeout(int readTimeout){
+        mHttpOption.readTimeout=readTimeout;
     }
 }

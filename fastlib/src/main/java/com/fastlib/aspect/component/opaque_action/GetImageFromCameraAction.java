@@ -10,6 +10,8 @@ import com.fastlib.aspect.component.inject.GetImageFromCamera;
 import com.fastlib.aspect.event_callback.ThirdParamReceiver;
 import com.fastlib.utils.ImageUtil;
 
+import java.lang.reflect.Method;
+
 /**
  * Created by sgfb on 2020\02\18.
  * 调用照相机拍照并返回照片路径
@@ -17,7 +19,7 @@ import com.fastlib.utils.ImageUtil;
 public class GetImageFromCameraAction extends AspectAction<GetImageFromCamera>{
 
     @Override
-    protected void handleAction(GetImageFromCamera anno, Object[] args){
+    protected void handleAction(GetImageFromCamera anno, Method method,Object[] args){
         final Activity activity=getEnv(Activity.class);
         ActivityResultReceiverGroup activityResultReceiverGroup=getEnv(ActivityResultReceiverGroup.class);
 

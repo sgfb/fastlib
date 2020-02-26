@@ -9,13 +9,15 @@ import com.fastlib.aspect.AspectAction;
 import com.fastlib.aspect.component.PermissionResultReceiverGroup;
 import com.fastlib.aspect.event_callback.ThirdParamReceiver;
 
+import java.lang.reflect.Method;
+
 /**
  * Created by sgfb on 2020\02\17.
  */
 public class PermissionAction extends AspectAction<Permission> {
 
     @Override
-    public void handleAction(Permission anno, Object[] args){
+    public void handleAction(Permission anno, Method method,Object[] args){
         AppCompatActivity activity=getEnv(AppCompatActivity.class);
         PermissionResultReceiverGroup permissionResultReceiverGroup=getEnv(PermissionResultReceiverGroup.class);
 

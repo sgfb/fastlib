@@ -1,6 +1,7 @@
-package com.fastlib.net2;
+package com.fastlib.net2.listener;
 
 import com.fastlib.annotation.NetCallback;
+import com.fastlib.net2.Request;
 
 import java.io.InputStream;
 
@@ -17,7 +18,7 @@ public interface Listener<T>{
      * @param request 网络请求
      * @param outputStream 源字节
      */
-    void onRawCallback(Request request,InputStream outputStream);
+    void onRawCallback(Request request, InputStream outputStream);
 
     /**
      * 数据指定类型回调

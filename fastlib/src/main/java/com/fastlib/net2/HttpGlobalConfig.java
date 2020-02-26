@@ -2,6 +2,8 @@ package com.fastlib.net2;
 
 import android.support.annotation.NonNull;
 
+import com.fastlib.net2.listener.GlobalListener;
+
 /**
  * Created by sgfb on 2019\12\23.
  */

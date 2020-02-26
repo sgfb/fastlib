@@ -7,6 +7,7 @@ import com.fastlib.aspect.exception.EnvMissingException;
 import com.fastlib.aspect.exception.LockNotFoundException;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -77,14 +78,14 @@ public abstract class AspectAction<T extends Annotation>{
         return resultLock;
     }
 
-    public ActionResult handleAction(T anno, List environment, Object[] args){
+    public ActionResult handleAction(T anno,Method method,List environment, Object[] args){
         mActionResult.reset();
         mEnvs=environment;
-        handleAction(anno,args);
+        handleAction(anno,method,args);
         return mActionResult;
     }
 
-    protected abstract void handleAction(T anno, Object[] args);
+    protected abstract void handleAction(T anno, Method method,Object[] args);
 
     /**
      * 获取环境参数

@@ -1,4 +1,6 @@
-package com.fastlib.net2;
+package com.fastlib.net2.listener;
+
+import com.fastlib.net2.Request;
 
 import java.io.InputStream;
 

@@ -1,4 +1,4 @@
-package com.fastlib.net2;
+package com.fastlib.net2.download;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -16,7 +16,7 @@ import java.util.Calendar;
  */
 public abstract class SimpleDownloadController implements DownloadStreamController{
     private boolean useServerFilename;
-    protected boolean append;
+    protected boolean supportAppend;    //是否支持断点续传
     private File mTargetFile;
     private File mRealDownloadedFile;
 
@@ -28,7 +28,7 @@ public abstract class SimpleDownloadController implements DownloadStreamControll
 
     public SimpleDownloadController(@NonNull File targetFile,boolean useServerFilename, boolean append) {
         this.useServerFilename = useServerFilename;
-        this.append = append;
+        this.supportAppend = append;
         this.mTargetFile = targetFile;
     }
 
@@ -84,7 +84,7 @@ public abstract class SimpleDownloadController implements DownloadStreamControll
     }
 
     @Override
-    public File getSavedFile() {
+    public File getOutputFile() {
         return mRealDownloadedFile;
     }
 }

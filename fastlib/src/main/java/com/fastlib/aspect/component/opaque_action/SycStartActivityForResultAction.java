@@ -9,6 +9,8 @@ import com.fastlib.aspect.component.ActivityResultReceiverGroup;
 import com.fastlib.aspect.component.inject.SycStartActivityForResult;
 import com.fastlib.aspect.event_callback.ThirdParamReceiver;
 
+import java.lang.reflect.Method;
+
 /**
  * Created by sgfb on 2020\02\19.
  * 同步调起新Activity并且等待返回
@@ -16,10 +18,9 @@ import com.fastlib.aspect.event_callback.ThirdParamReceiver;
 public class SycStartActivityForResultAction extends AspectAction<SycStartActivityForResult>{
 
     @Override
-    protected void handleAction(final SycStartActivityForResult anno, Object[] args) {
+    protected void handleAction(final SycStartActivityForResult anno, Method method,Object[] args) {
         Activity activity=getEnv(Activity.class);
         ActivityResultReceiverGroup activityEventReceivers=getEnv(ActivityResultReceiverGroup.class);
-        String test=getEnv(String.class);
 
         final CrossLock lock=obtainLock();
         activityEventReceivers.addEventCallback(new ThirdParamReceiver<Integer, Integer, Intent>() {

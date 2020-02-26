@@ -1,4 +1,4 @@
-package com.fastlib.net2;
+package com.fastlib.net2.download;
 
 import android.support.annotation.Nullable;
 
@@ -20,5 +20,8 @@ public interface DownloadStreamController{
      */
     void onStreamReady(InputStream inputStream, @Nullable String filename, long length) throws IOException;
 
-    File getSavedFile();
+    /**
+     * 下载数据输入到目标文件
+     */
+    File getOutputFile();
 }

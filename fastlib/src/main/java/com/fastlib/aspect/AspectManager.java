@@ -115,7 +115,7 @@ public class AspectManager {
             for (Annotation opaqueAnno : opaqueActionAnnos) {
                 AspectAction action =mOpaqueAction.get(opaqueAnno.annotationType());
                 if (action != null) {
-                    ActionResult actionResult = action.handleAction(opaqueAnno, envronment, args);
+                    ActionResult actionResult = action.handleAction(opaqueAnno, proxyMethod.getOriginalMethod(),envronment, args);
                     if (!actionResult.isPassed) {
                         //TODO 错误处理
                         success = false;

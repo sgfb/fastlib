@@ -5,6 +5,7 @@ import java.util.Map;
 
 /**
  * Created by sgfb on 2020\02\19.
+ * 简单保存缓存.永不过期
  */
 public class SimpleAspectCacheManager implements AspectCache {
     private Map<String,Object> mCaches=new HashMap<>();
@@ -17,5 +18,10 @@ public class SimpleAspectCacheManager implements AspectCache {
     @Override
     public Object getCache(String name) {
         return mCaches.get(name);
+    }
+
+    @Override
+    public boolean checkExpire() {
+        return false;
     }
 }

@@ -10,15 +10,9 @@ public interface AspectCache{
 
     Object getCache(String name);
 
-    final class AspectCacheDelegate{
-        AspectCache aspectCache;
-
-        public AspectCacheDelegate(AspectCache aspectCache) {
-            this.aspectCache = aspectCache;
-        }
-
-        public AspectCache getAspectCache() {
-            return aspectCache;
-        }
-    }
+    /**
+     * 过时策略
+     * @return  true已过时,将会调用原方法并且保存 false未过时将不调起原方法直接返回缓存
+     */
+    boolean checkExpire();
 }

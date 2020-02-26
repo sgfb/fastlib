@@ -3,10 +3,12 @@ package com.fastlib.net2;
 import com.fastlib.annotation.NetCallback;
 import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.net2.core.ResponseHeader;
+import com.fastlib.net2.download.DownloadStreamController;
+import com.fastlib.net2.listener.Listener;
 import com.fastlib.net2.param.RequestParam;
+import com.fastlib.net2.utils.Statistical;
 import com.fastlib.utils.Reflect;
 
-import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -23,6 +25,8 @@ public class Request{
     private boolean isSkipRootAddress;
     private boolean isSkipGlobalListener;
     private boolean isCallbackOnWorkThread;
+    private int mConnectionTimeout;
+    private int mReadTimeout;
     private String mUrl;
     private String mMethod;
     private Map<String,List<String>> mHeader = new HashMap<>();
@@ -93,6 +97,17 @@ public class Request{
         return this;
     }
 
+    public Request putHeader(String key,String value){
+        List<String> values=mHeader.get(key);
+        if(values==null){
+            values=new ArrayList<>();
+            mHeader.put(key,values);
+        }
+        else values.clear();
+        values.add(value);
+        return this;
+    }
+
     public Request addHeader(String key,String value){
         List<String> values=mHeader.get(key);
         if(values==null){
@@ -154,6 +169,24 @@ public class Request{
 
     public boolean getCallbackOnWorkThread(){
         return isCallbackOnWorkThread;
+    }
+
+    public Request setConnectionTimeout(int connectionTimeout){
+        mConnectionTimeout=connectionTimeout;
+        return this;
+    }
+
+    public int getConnectionTimeout(){
+        return mConnectionTimeout;
+    }
+
+    public Request setReadTimeout(int readTimeout){
+        mReadTimeout=readTimeout;
+        return this;
+    }
+
+    public int getReadTimeout(){
+        return mReadTimeout;
     }
 
     public void start(){

@@ -1,4 +1,4 @@
-package com.fastlib.net2;
+package com.fastlib.net2.utils;
 
 import com.fastlib.net2.core.HttpTimer;
 

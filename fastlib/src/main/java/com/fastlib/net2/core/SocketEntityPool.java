@@ -2,7 +2,7 @@ package com.fastlib.net2.core;
 
 import android.support.annotation.Nullable;
 
-import com.fastlib.net2.URLUtil;
+import com.fastlib.net2.utils.URLUtil;
 
 import java.io.IOException;
 import java.net.Proxy;
