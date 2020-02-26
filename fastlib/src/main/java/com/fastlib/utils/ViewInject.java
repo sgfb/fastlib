@@ -1,6 +1,7 @@
 package com.fastlib.utils;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.view.View;
 import android.widget.AdapterView;
 
@@ -15,41 +16,38 @@ import java.lang.reflect.Method;
 
 /**
  * Created by sgfb on 17/1/12.
- * 视图注入到字段和方法中.仅对当前和注解有ContentView类有效
+ * 视图注入到字段和方法中.指定对象类或自动查找（自动查找注解有ContentView类和当前类）
  */
 public class ViewInject {
-    private Object mHost;
-    private View mRoot;
 
-    private ViewInject(Object host, @NonNull View root) {
-        mHost = host;
-        mRoot = root;
-        injectViewEvent();
+    private ViewInject(){}
+
+    public static void inject(Object host,@NonNull View root){
+        inject(host,root,null);
     }
 
-    public static void inject(Object host, @NonNull View root) {
-        new ViewInject(host, root);
+    public static void inject(Object host, @NonNull View root,@Nullable Class bindCla) {
+        injectViewEvent(host, root,bindCla);
     }
 
     /**
      * 绑定控件到方法和属性中
      */
-    private void injectViewEvent() {
-        Class cla = mHost.getClass();
-        Class contentViewClass=null;
+    private static void injectViewEvent(Object host,View root,@Nullable Class bindCla) {
+        //绑定到自身或指定类
+        Class cla = bindCla!=null?bindCla:host.getClass();
+        injectMethod(host,root,cla.getDeclaredMethods());
+        injectField(host,root,cla.getDeclaredFields());
 
-        if (cla.getAnnotation(ContentView.class) == null)
-            contentViewClass = Reflect.checkParentClassHadAnnotation(cla, ContentView.class);
-        //绑定控件方法.自身和有ContentView注解的父类
-        injectMethod(cla.getDeclaredMethods());
-        if(contentViewClass!=null) injectMethod(contentViewClass.getDeclaredMethods());
-
-        //绑定视图到属性.自身和有ContentView注解的父类
-        injectField(cla.getDeclaredFields());
-        if(contentViewClass!=null) injectField(contentViewClass.getDeclaredFields());
+        //如果自身没有ContentView注解并且不是手动指定的就向上查找有ContentView注解的类并且进行绑定
+        if (cla.getAnnotation(ContentView.class) == null&&bindCla==null){
+            Class contentViewClass = Reflect.checkParentClassHadAnnotation(cla, ContentView.class);
+            if(contentViewClass!=null) injectMethod(host,root,contentViewClass.getDeclaredMethods());
+            if(contentViewClass!=null) injectField(host,root,contentViewClass.getDeclaredFields());
+        }
     }
 
-    private void injectMethod(Method[] methods) {
+    private static void injectMethod(Object host,View root,Method[] methods) {
         if (methods != null && methods.length > 0) {
             for (Method m : methods) {
                 try{
@@ -63,17 +61,17 @@ public class ViewInject {
 
                         if (ids.length > 0) {
                             for (int id : ids) {
-                                View v = mRoot.findViewById(id);
+                                View v = root.findViewById(id);
                                 if (v != null)
-                                    bindListener(m, v, vi);
+                                    bindListener(host,m, v, vi);
                             }
                         }
                         if (idNames.length > 0) {
                             for (String idName : idNames) {
-                                int id = mRoot.getContext().getResources().getIdentifier(idName, "id", mRoot.getContext().getPackageName());
-                                View v = mRoot.findViewById(id);
+                                int id = root.getContext().getResources().getIdentifier(idName, "id", root.getContext().getPackageName());
+                                View v = root.findViewById(id);
                                 if (v != null)
-                                    bindListener(m, v, vi);
+                                    bindListener(host,m, v, vi);
                             }
                         }
                     }
@@ -84,7 +82,7 @@ public class ViewInject {
         }
     }
 
-    private void injectField(Field[] fields) {
+    private static void injectField(Object host,View root,Field[] fields) {
         if (fields != null && fields.length > 0) {
             for (Field field : fields) {
                 try{
@@ -95,9 +93,9 @@ public class ViewInject {
                         String[] idNames = vi.idNames();
                         if (ids.length > 0) {
                             try {
-                                View view = mRoot.findViewById(ids[0]);
+                                View view = root.findViewById(ids[0]);
                                 field.setAccessible(true);
-                                field.set(mHost, view);
+                                field.set(host, view);
                             } catch (IllegalAccessException e) {
                                 if (BuildConfig.isShowLog)
                                     System.out.println(e.getMessage());
@@ -105,10 +103,10 @@ public class ViewInject {
                         }
                         if (idNames.length > 0) {
                             try {
-                                int id = mRoot.getContext().getResources().getIdentifier(idNames[0], "id", mRoot.getContext().getPackageName());
-                                View view = mRoot.findViewById(id);
+                                int id = root.getContext().getResources().getIdentifier(idNames[0], "id", root.getContext().getPackageName());
+                                View view = root.findViewById(id);
                                 field.setAccessible(true);
-                                field.set(mHost, view);
+                                field.set(host, view);
                             } catch (IllegalAccessException e) {
                                 if (BuildConfig.isShowLog)
                                     System.out.println(e.getMessage());
@@ -125,13 +123,13 @@ public class ViewInject {
     /**
      * 绑定方法到事件监听中
      */
-    private void bindListener(final Method m, View v, final Bind vi) {
+    private static void bindListener(final Object host, final Method m, View v, final Bind vi) {
         switch (vi.bindType()) {
             case CLICK:
                 v.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(final View v) {
-                        adapterParamInvoke(m,v);
+                        adapterParamInvoke(host,m,v);
                     }
                 });
                 break;
@@ -139,7 +137,7 @@ public class ViewInject {
                 v.setOnLongClickListener(new View.OnLongClickListener() {
                     @Override
                     public boolean onLongClick(View v) {
-                        adapterParamInvoke(m,v);
+                        adapterParamInvoke(host,m,v);
                         return true;
                     }
                 });
@@ -148,7 +146,7 @@ public class ViewInject {
                 ((AdapterView) v).setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        adapterParamInvoke(m,view,position,id);
+                        adapterParamInvoke(host,m,view,position,id);
                     }
                 });
                 break;
@@ -156,7 +154,7 @@ public class ViewInject {
                 ((AdapterView) v).setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
                     @Override
                     public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                        adapterParamInvoke(m,parent,view,position,id);
+                        adapterParamInvoke(host,m,parent,view,position,id);
                         return true;
                     }
                 });
@@ -171,9 +169,9 @@ public class ViewInject {
      * @param m     调用方法
      * @param args  默认参数
      */
-    private void adapterParamInvoke(Method m,Object... args){
+    private static void adapterParamInvoke(Object host,Method m,Object... args){
         if(m.getParameterTypes().length==0)
-            AspectSupport.callMethod(mHost,m);
-        else AspectSupport.callMethod(mHost,m,args);
+            AspectSupport.callMethod(host,m);
+        else AspectSupport.callMethod(host,m,args);
     }
 }

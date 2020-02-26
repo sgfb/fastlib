@@ -1,6 +1,5 @@
 package com.fastlib.aspect;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.LayoutRes;
@@ -16,7 +15,6 @@ import com.fastlib.aspect.component.ActivityResultReceiverGroup;
 import com.fastlib.aspect.component.PermissionResultReceiverGroup;
 import com.fastlib.aspect.component.SimpleAspectCacheManager;
 import com.fastlib.base.OldViewHolder;
-import com.fastlib.base.RecyclerViewHolder;
 import com.fastlib.utils.Reflect;
 import com.fastlib.utils.ViewInject;
 import com.fastlib.utils.local_data.LocalDataInject;
@@ -57,6 +55,9 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
         checkContentView();
     }
 
+    /**
+     * 初始化View层和Controller层
+     */
     @SuppressWarnings("unchecked")
     private void initViewAndController(){
         Type[] typeArgs=((ParameterizedType)getClass().getGenericSuperclass()).getActualTypeArguments();
@@ -141,7 +142,7 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
         View rootView=findViewById(android.R.id.content);
         mOldViewHolder.setRootView(rootView);
         ViewInject.inject(this,rootView);
-        ViewInject.inject(mView,rootView);
+        ViewInject.inject(mView,rootView,mView.getClass().getSuperclass());
         EventObserver.getInstance().subscribe(this,this);
         mLocalDataInject.localDataInject();
         try {

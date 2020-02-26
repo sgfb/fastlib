@@ -17,5 +17,6 @@
 + Gson 
 + v7兼容包 
 + google design包
++ 动态生成类cglib-for-android(切面支持)
 
 博客教程 http://blog.csdn.net/sb602687446
