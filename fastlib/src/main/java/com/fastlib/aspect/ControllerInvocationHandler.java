@@ -4,9 +4,10 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.fastlib.app.task.ThreadPoolManager;
-import com.google.common.collect.Lists;
 
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import leo.android.cglib.proxy.MethodInterceptor;
@@ -19,25 +20,34 @@ import leo.android.cglib.proxy.MethodProxy;
  */
 public class ControllerInvocationHandler implements MethodInterceptor {
     private static final Object sLock = new Object();
+    private Handler mMainHandler = new Handler(Looper.getMainLooper());
 
     @Override
     public Object intercept(final Object o, final Object[] objects, final MethodProxy methodProxy) throws Exception {
         if(methodProxy.getOriginalMethod().getAnnotations()==null||methodProxy.getOriginalMethod().getAnnotations().length==0)
             return methodProxy.invokeSuper(o,objects);
 
-        final List<Annotation> annotations = Lists.newArrayList(methodProxy.getOriginalMethod().getAnnotations());
-        boolean isRunningOnOtherThread=false;
-        ThreadOn threadOn = methodProxy.getOriginalMethod().getAnnotation(ThreadOn.class);    //特殊注解,未来可能拆分MethodInterceptor来实现特殊注解
+        final List<Annotation> annotations = new ArrayList<>();
         final ResultWrapper resultWrapper=new ResultWrapper();
+        boolean isRunningOnOtherThread=false;
+        ThreadOn threadOn = methodProxy.getOriginalMethod().getAnnotation(ThreadOn.class);    //特殊注解,未来可能拆分MethodInterceptor来实现特殊注解.
 
+        flatAnnotation(annotations,Arrays.asList(methodProxy.getOriginalMethod().getAnnotations()));
+        if(threadOn==null){
+            for(Annotation annotation:annotations){
+                if(annotation.annotationType()==ThreadOn.class){
+                    threadOn= (ThreadOn) annotation;
+                    break;
+                }
+            }
+        }
         if (threadOn != null) {
             annotations.remove(threadOn);
             //下面两种情况符合切换线程环境条件.但是不能锁主线程所以在主线程中调用子线程环境方法返回一定是空的
             if (threadOn.value() == ThreadOn.ThreadType.MAIN &&
                     Thread.currentThread() != Looper.getMainLooper().getThread()) {
                 isRunningOnOtherThread=true;
-                Handler handler = new Handler(Looper.getMainLooper());
-                handler.post(new Runnable() {
+                mMainHandler.post(new Runnable() {
                     @Override
                     public void run() {
                         synchronized (sLock){
@@ -64,6 +74,20 @@ public class ControllerInvocationHandler implements MethodInterceptor {
          if(isRunningOnOtherThread)
             return resultWrapper.result;
         return intercept(annotations, o, objects, methodProxy);
+    }
+
+    /**
+     * 平铺注解.将注解的注解拿出来填充到注解的前面
+     */
+    private void flatAnnotation(List<Annotation> flatList, List<Annotation> list) {
+        AspectManager am=AspectManager.getInstance();
+        for (Annotation annotation : list) {
+            if (annotation.annotationType()!=ThreadOn.class&&(flatList.contains(annotation) ||!am.checkAnnotationIsAction(annotation.annotationType())))
+                continue;
+            flatList.add(0, annotation);
+            if (!list.isEmpty())
+                flatAnnotation(flatList, Arrays.asList(annotation.annotationType().getAnnotations()));
+        }
     }
 
     private Object intercept(List<Annotation> annotations, final Object o, final Object[] objects, MethodProxy methodProxy) {

@@ -1,14 +1,19 @@
 package com.fastlib.net2.utils;
 
-import com.fastlib.net2.listener.Listener;
+import com.fastlib.aspect.NetResultTransformer;
+import com.fastlib.aspect.ResultTransformer;
 import com.fastlib.net2.Request;
-import com.fastlib.utils.MapValue;
-import com.fastlib.utils.Name;
+import com.fastlib.net2.listener.Listener;
+import com.google.gson.Gson;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by sgfb on 2020\01\10.
@@ -20,14 +25,25 @@ import java.lang.reflect.Proxy;
  * 如果参数中有{@link Listener}则此请求可以运行在主线程中,而返回值必定为空
  */
 public class NetRequestAgent{
+    private final static Map<Class,Object> sCacheAgentMap=new HashMap<>();
 
     private NetRequestAgent(){}
 
     @SuppressWarnings("unchecked")
-    public static <T> T genAgent(Class<T> cla){
-        return (T) Proxy.newProxyInstance(cla.getClassLoader(), new Class[]{cla}, new InvocationHandler() {
+    public static <T> T genAgent(final Class<T> cla){
+        T agent= (T) sCacheAgentMap.get(cla);
+        if(agent!=null) return agent;
+
+        T proxy=(T) Proxy.newProxyInstance(cla.getClassLoader(), new Class[]{cla}, new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable{
+                if(method.getName().equals("toString"))
+                    return getClass().getName()+"@"+Integer.toHexString(hashCode());
+
+                RequestTo requestTo=method.getAnnotation(RequestTo.class);
+                if(requestTo==null)
+                    return null;
+
                 Request request=null;
                 Listener listener=null;
                 if(args!=null){
@@ -39,13 +55,19 @@ public class NetRequestAgent{
                     }
                 }
 
-                if(request==null){
-                    RequestTo requestTo=method.getAnnotation(RequestTo.class);
+                if(request==null)
                     request=new Request(requestTo.url(),requestTo.method());
+
+                //静态参数
+                FinalParam finalParam=method.getAnnotation(FinalParam.class);
+                if(finalParam!=null){
+                    String[] keyValuePairs=finalParam.value();
+                    for(int i=0;i<keyValuePairs.length/2;i++)
+                        request.put(keyValuePairs[i*2],keyValuePairs[i*2+1]);
                 }
 
+                //动态参数
                 if(args!=null){
-                    //填充参数到请求中
                     Annotation[][] annotations=method.getParameterAnnotations();
                     for(int i=0;i<args.length;i++){
                         Annotation paramAnno=annotations[i]!=null&&annotations[i].length>0?annotations[i][0]:null;
@@ -60,8 +82,32 @@ public class NetRequestAgent{
                     }
                 }
 
-                if(listener==null)
+                if(listener==null) {
+                    ResultTransformer resultTransformer=method.getAnnotation(ResultTransformer.class);
+                    if(resultTransformer==null) resultTransformer=cla.getAnnotation(ResultTransformer.class);
+
+                    if(resultTransformer!=null){
+                        Class<? extends NetResultTransformer> transformerCla=resultTransformer.value();
+                        Type type=null;
+                        for(Type inter:transformerCla.getGenericInterfaces()){
+                            if(inter instanceof ParameterizedType){
+                                ParameterizedType pt= (ParameterizedType) inter;
+                                if(pt.getRawType()==NetResultTransformer.class)
+                                    type=pt.getActualTypeArguments()[0];
+                            }
+                        }
+                        if(type==null||type==Object.class||type==Void.class||type==void.class)
+                            request.startSyc();
+                        else{
+                            Object result=request.startSyc(type);
+                            Object transformedResult=transformerCla.newInstance().transform(result);
+                            Gson gson=new Gson();
+                            String json=gson.toJson(transformedResult);
+                            return gson.fromJson(json,method.getReturnType());
+                        }
+                    }
                     return request.startSyc(method.getReturnType());
+                }
                 else {
                     request.setListener(listener);
                     request.start();
@@ -69,5 +115,7 @@ public class NetRequestAgent{
                 }
             }
         });
+        sCacheAgentMap.put(cla,proxy);
+        return proxy;
     }
 }

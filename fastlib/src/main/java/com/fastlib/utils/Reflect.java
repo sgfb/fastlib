@@ -14,6 +14,23 @@ import java.util.List;
  */
 public class Reflect{
 
+	public static Annotation findAnnotationByAnnotation(Annotation annotation,Class<? extends Annotation> target,List<Annotation> findHistory){
+		if(annotation.annotationType()==target) return annotation;
+
+		if(findHistory==null) findHistory=new ArrayList<>();
+		if(findHistory.contains(annotation)) return null;
+
+		Annotation[] as=annotation.annotationType().getAnnotations();
+		if(as!=null){
+			for(Annotation anno:as){
+				findHistory.add(anno);
+				Annotation targetAnno=findAnnotationByAnnotation(anno,target,findHistory);
+				if(targetAnno!=null) return targetAnno;
+			}
+		}
+		return null;
+	}
+
 	public static boolean isExtendsFrom(Class cla,Class specCla){
 		Class parent=cla;
 		do{

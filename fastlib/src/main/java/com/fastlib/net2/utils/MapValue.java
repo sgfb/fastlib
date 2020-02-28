@@ -1,4 +1,4 @@
-package com.fastlib.utils;
+package com.fastlib.net2.utils;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -18,13 +18,13 @@ public class CacheAction extends AspectAction<Cache> {
     protected void handleAction(final Cache anno, Method method,Object[] args) {
         final AspectCache cacheManager=getEnv(AspectCache.class);
 
-        String key=!TextUtils.isEmpty(anno.value())?anno.value():method.getName();
+        final String key=!TextUtils.isEmpty(anno.value())?anno.value():method.getName();
         Object cache=cacheManager.getCache(key);
         if(cache==null||cacheManager.checkExpire()){
             setActionCallback(new MethodResultCallback() {
                 @Override
                 public void onRawMethodResult(Object result){
-                    cacheManager.saveCache(anno.value(),result);
+                    cacheManager.saveCache(key,result);
                 }
             });
         }

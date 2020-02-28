@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.fastlib.aspect.exception.EnvMissingException;
+import com.fastlib.aspect.exception.ExceptionHandler;
 import com.fastlib.utils.Reflect;
 
 import java.io.File;
@@ -16,6 +17,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -40,12 +42,14 @@ public class AspectManager {
      */
     private Map<Class, AspectTransparentAction> mTransparentAction;
     private Map<Class, AspectAction> mOpaqueAction;
+    private Map<Class,Class> mStaticEnvs;
     private static AspectManager sInstance;
     private static final Object sLock = new Object();
 
     private AspectManager() {
         mTransparentAction = new HashMap<>();
         mOpaqueAction = new HashMap<>();
+        mStaticEnvs=new HashMap<>();
     }
 
     public static AspectManager getInstance() {
@@ -77,6 +81,28 @@ public class AspectManager {
         mOpaqueAction.put(cla, aspect);
     }
 
+    public void addStaticEnv(Class envCla){
+        Class[] interfaces=envCla.getInterfaces();
+        if(interfaces==null||interfaces.length==0) Log.d(TAG,"不支持没用实现具体功能的环境类");
+        else{
+            StringBuilder sb=new StringBuilder();
+            for(Class inter:interfaces){
+                mStaticEnvs.put(inter,envCla);
+                sb.append(inter.getSimpleName()).append('+');
+            }
+            sb.deleteCharAt(sb.length()-1);
+            Log.d(TAG,"添加静态环境类:"+envCla.getSimpleName()+"-->"+sb.toString());
+        }
+    }
+
+    public Collection<Class> getStaticEnvs(){
+        return mStaticEnvs.values();
+    }
+
+    public boolean checkAnnotationIsAction(Class<? extends Annotation> annotationCla){
+        return mTransparentAction.containsKey(annotationCla)||mOpaqueAction.containsKey(annotationCla);
+    }
+
     /**
      * 启动切面事件
      * 先直接启动透明事件
@@ -88,7 +114,6 @@ public class AspectManager {
         List<Annotation> opaqueActionAnnos = new ArrayList<>();
         List<Pair<Annotation,AspectTransparentAction>> transparentActions=new ArrayList<>();
 
-        flatAnnotation(allAnnotation, actionAnnotations);
         for (Annotation actionAnno : allAnnotation) {
             //执行透明切面前段调用
             AspectTransparentAction transparentAction = mTransparentAction.get(actionAnno.annotationType());
@@ -117,7 +142,7 @@ public class AspectManager {
                 if (action != null) {
                     ActionResult actionResult = action.handleAction(opaqueAnno, proxyMethod.getOriginalMethod(),envronment, args);
                     if (!actionResult.isPassed) {
-                        //TODO 错误处理
+                        //TODO 未通过处理
                         success = false;
                         break;
                     }
@@ -134,31 +159,24 @@ public class AspectManager {
                 realResult=delegateResult != null ? delegateResult : result;
                 return realResult;
             }
-        } catch (EnvMissingException e) {
-            Log.w(TAG,e.getMessage());
+        } catch (Exception e) {
+            if(e instanceof EnvMissingException)
+                Log.w(TAG,e.getMessage());
             catchException=e;
         } finally {
             try{
                 for(Pair<Annotation,AspectTransparentAction> pair:transparentActions)
                     pair.second.after(o,pair.first,proxyMethod.getOriginalMethod(),realResult,catchException);
             }catch (Throwable e){
+                //透明事件不影响流程有异常仅显示不处理
                 e.printStackTrace();
             }
         }
-        return null;
-    }
-
-    /**
-     * 平铺注解.将注解的注解拿出来填充到注解的前面
-     */
-    private void flatAnnotation(List<Annotation> flatList, List<Annotation> list) {
-        for (Annotation annotation : list) {
-            if (flatList.contains(annotation) || (mTransparentAction.get(annotation.annotationType()) == null
-                    && mOpaqueAction.get(annotation.annotationType()) == null)) continue;
-            flatList.add(0, annotation);
-            if (!list.isEmpty())
-                flatAnnotation(flatList, Arrays.asList(annotation.annotationType().getAnnotations()));
+        if(catchException!=null){
+            if(o instanceof ExceptionHandler)
+                ((ExceptionHandler)o).onException(catchException);
         }
+        return null;
     }
 
     @SuppressWarnings("unchecked")
@@ -192,8 +210,14 @@ public class AspectManager {
                         if (!TextUtils.isEmpty(filterPackageName)) {
                             if (className.contains(filterPackageName)) {
                                 Class cla = Class.forName(className);
-                                boolean isTransparentAspect=false;
 
+                                StaticProvier staticProvier= (StaticProvier) cla.getAnnotation(StaticProvier.class);
+                                if(staticProvier!=null){
+                                    addStaticEnv(cla);
+                                    continue;
+                                }
+
+                                boolean isTransparentAspect=false;
                                 Class[] interfaces=cla.getInterfaces();
                                 for(int i=0;i<interfaces.length;i++){
                                     Class claInterface=interfaces[i];

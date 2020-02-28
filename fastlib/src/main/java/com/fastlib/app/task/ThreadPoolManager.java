@@ -1,5 +1,7 @@
 package com.fastlib.app.task;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -16,9 +18,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ThreadPoolManager {
     private static final String TAG=ThreadPoolManager.class.getCanonicalName();
-    private static final int MIN_THREAD=40;
+    private static final int MIN_THREAD=5;
     public final static ThreadPoolExecutor sQuickPool;  //轻请求线程池 建议任务应小于100ms
     public final static ThreadPoolExecutor sSlowPool;   //重请求线程池 适用io、网络等延迟比较大的任务
+    private static Handler sQueueHandler;
 
     static{
         int quickPoolCount=Math.max(MIN_THREAD,Runtime.getRuntime().availableProcessors()/2);
@@ -26,7 +29,27 @@ public class ThreadPoolManager {
 
         int slowPoolCount=Runtime.getRuntime().availableProcessors()+MIN_THREAD;
         sSlowPool=new MonitorThreadPool(slowPoolCount,slowPoolCount,0L, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>(),new NamedThreadFactory("slow"));
+
+        new Thread(){
+            @Override
+            public void run() {
+                Looper.prepare();
+                sQueueHandler=new Handler();
+                Looper.loop();
+            }
+        }.start();
         Log.d(TAG,String.format(Locale.getDefault(),"初始化内存池 quickPool:%d slowPool:%d",quickPoolCount,slowPoolCount));
+    }
+
+    public static Handler getQueueHandler(){
+        while(sQueueHandler==null){
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return sQueueHandler;
     }
 
     public static void setOnThreadChangeListener(final MonitorThreadPool.OnThreadStatusChangedListener listener){

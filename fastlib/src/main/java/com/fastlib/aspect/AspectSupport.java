@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.fastlib.app.task.ThreadPoolManager;
+import com.fastlib.aspect.exception.ExceptionHandler;
 
 import java.lang.reflect.Method;
 

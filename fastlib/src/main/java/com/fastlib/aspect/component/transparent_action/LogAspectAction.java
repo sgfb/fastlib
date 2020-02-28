@@ -5,7 +5,6 @@ import android.util.Log;
 
 import com.fastlib.aspect.AspectTransparentAction;
 import com.fastlib.aspect.component.inject.Logcat;
-import com.google.common.collect.Lists;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -23,7 +22,7 @@ public class LogAspectAction implements AspectTransparentAction<Logcat> {
     public void before(Object host,Logcat anno, Method method, @Nullable List<Annotation> aspectActions) throws Throwable {
         String hostName=host.getClass().getSuperclass().getName();
         String methodName=method.getName();
-        String aspectActionsStr=aspectActions==null||aspectActions.isEmpty()?"[]":Lists.newArrayList(aspectActions).toString();
+        String aspectActionsStr=aspectActions==null||aspectActions.isEmpty()?"[]":concatSimpleClassName(aspectActions);
         printLog(String.format(Locale.getDefault(),"%s调用%s和切面事件%s",hostName,methodName,aspectActionsStr));
     }
 
@@ -35,6 +34,17 @@ public class LogAspectAction implements AspectTransparentAction<Logcat> {
         String resultStr=result!=null?"("+result.getClass()+")"+result:"无返回";
         String exceptionStr=exception!=null?"抛出异常 "+exception.getClass():"";
         printLog(String.format(Locale.getDefault(),"%s调用%s%s %s%s",hostName,methodName,success,resultStr,exceptionStr));
+    }
+
+    private String concatSimpleClassName(List<Annotation> list){
+        StringBuilder sb=new StringBuilder();
+        sb.append('[');
+        for(Annotation a:list)
+            sb.append(a.annotationType().getSimpleName()).append(',');
+        if(sb.length()>0)
+            sb.deleteCharAt(sb.length()-1);
+        sb.append(']');
+        return sb.toString();
     }
 
     private void printLog(String log){

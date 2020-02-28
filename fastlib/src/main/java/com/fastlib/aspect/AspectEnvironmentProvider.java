@@ -8,6 +8,8 @@ import java.util.List;
  */
 public interface AspectEnvironmentProvider {
 
+    void addEnvs(Object env);
+
     List getAspectEnvironment();
 
     void environmentDestroy();

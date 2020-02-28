@@ -1,4 +1,4 @@
-package com.fastlib.aspect;
+package com.fastlib.aspect.exception;
 
 /**
  * Created by sgfb on 2020\02\23.

@@ -20,6 +20,7 @@ public @interface ThreadOn{
     enum ThreadType{
         MAIN,           //主线程
         WORK,           //工作线程.如果调用点已经是非主线程则不开启新线程
+        QUEUE           //单工作线程队列
     }
 
     enum ThreadWeight{

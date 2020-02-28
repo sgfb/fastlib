@@ -2,6 +2,8 @@ package com.fastlib.aspect;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -45,10 +47,13 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
     private PermissionResultReceiverGroup mPermissionResultReceiverGroup=new PermissionResultReceiverGroup();
     protected OldViewHolder mOldViewHolder;
 
+    /**
+     * 其他主要附件初始化完后最后调起的方法
+     */
     protected abstract void onReady();
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         mLocalDataInject =new LocalDataInject(this);
         initViewAndController();
@@ -75,11 +80,21 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
         enhancer.setSuperclass((Class<?>) typeArgs[1]);
         enhancer.setInterceptor(new ControllerInvocationHandler());
         mController= (C) enhancer.create();
-        if(mController instanceof BaseEnvironmentProvider){
-            ((BaseEnvironmentProvider) mController).addEnvs(this);
-            ((BaseEnvironmentProvider) mController).addEnvs(mActivityCallbackHolder);
-            ((BaseEnvironmentProvider) mController).addEnvs(mPermissionResultReceiverGroup);
-            ((BaseEnvironmentProvider) mController).addEnvs(new SimpleAspectCacheManager());
+        if(mController instanceof AspectEnvironmentProvider){
+            AspectEnvironmentProvider provider= (AspectEnvironmentProvider) mController;
+            for(Class envCla:AspectManager.getInstance().getStaticEnvs()) {
+                try {
+                    provider.addEnvs(envCla.newInstance());
+                } catch (InstantiationException e) {
+                    e.printStackTrace();
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            provider.addEnvs(this);
+            provider.addEnvs(mActivityCallbackHolder);
+            provider.addEnvs(mPermissionResultReceiverGroup);
         }
     }
 
@@ -145,13 +160,41 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
         ViewInject.inject(mView,rootView,mView.getClass().getSuperclass());
         EventObserver.getInstance().subscribe(this,this);
         mLocalDataInject.localDataInject();
-        try {
-            Method method = getClass().getDeclaredMethod("onReady");
-            method.setAccessible(true);
+
+        //依次初始化View,Controller,Activity
+        List<Method> initMethods=new ArrayList<>();
+        initMethods.addAll(genInitMethods(mView.getClass().getSuperclass()));
+        initMethods.addAll(genInitMethods(mController.getClass().getSuperclass()));
+        initMethods.addAll(getSelfInitMethods());
+        for(Method method:initMethods){
             AspectSupport.callMethod(this,method);
+        }
+    }
+
+    private List<Method> getSelfInitMethods(){
+        List<Method> methods=new ArrayList<>();
+        try {
+            Method mainInitMathod = getClass().getDeclaredMethod("onReady");
+            mainInitMathod.setAccessible(true);
+            methods.add(mainInitMathod);
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
+        methods.addAll(genInitMethods(getClass()));
+        return methods;
+    }
+
+    private List<Method> genInitMethods(Class cla){
+        List<Method> methods=new ArrayList<>();
+
+        Method[] selfMethods=cla.getDeclaredMethods();
+        for(Method m:selfMethods){
+            if(m.getAnnotation(OptionalInit.class)!=null){
+                m.setAccessible(true);
+                methods.add(m);
+            }
+        }
+        return methods;
     }
 
     @Override
