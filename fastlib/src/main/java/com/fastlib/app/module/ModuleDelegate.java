@@ -25,17 +25,15 @@ import com.fastlib.app.task.Task;
 import com.fastlib.app.task.TaskLauncher;
 import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.app.task.ThreadType;
-import com.fastlib.net.NetManager;
 import com.fastlib.net.Request;
 import com.fastlib.utils.ImageUtil;
 import com.fastlib.utils.N;
 import com.fastlib.utils.PermissionHelper;
 import com.fastlib.utils.Reflect;
-import com.fastlib.utils.ViewInject;
+import com.fastlib.utils.bind_view.ViewInject;
 import com.fastlib.utils.local_data.LocalDataInject;
 
 import java.io.File;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**

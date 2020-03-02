@@ -1,8 +1,8 @@
 package com.fastlib.utils.router;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.support.v4.app.Fragment;
 import android.view.View;
 
 import com.fastlib.R;
@@ -10,20 +10,20 @@ import com.fastlib.R;
 /**
  * Created by sgfb on 2020\03\01.
  */
-public class ActivityRouter<T> extends Router<Activity,T>{
+public class FragmentRouter<T> extends Router<Fragment,T> {
 
-    public ActivityRouter(Class<T> mRouterLink, Activity mHost) {
-        super(mRouterLink, mHost);
+    public FragmentRouter(Class<T> routerLinkCla, Fragment mHost) {
+        super(routerLinkCla, mHost);
     }
 
     @Override
     protected View findViewById(int id) {
-        return mHost.findViewById(id);
+        return mHost.getView().findViewById(id);
     }
 
     @Override
     protected Context getContext() {
-        return mHost;
+        return mHost.getContext();
     }
 
     @Override
@@ -32,7 +32,7 @@ public class ActivityRouter<T> extends Router<Activity,T>{
     }
 
     @Override
-    protected void startActivityForResult(Intent intent,int requestCode) {
+    protected void startActivityForResult(Intent intent, int requestCode) {
         mHost.startActivityForResult(intent,requestCode);
     }
 }

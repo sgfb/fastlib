@@ -16,7 +16,7 @@ import com.fastlib.R;
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.module.SupportBack;
 import com.fastlib.utils.ScreenUtils;
-import com.fastlib.utils.ViewInject;
+import com.fastlib.utils.bind_view.ViewInject;
 
 /**
  * Created by sgfb on 16/9/20.

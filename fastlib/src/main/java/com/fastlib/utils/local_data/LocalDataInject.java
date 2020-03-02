@@ -175,44 +175,26 @@ public class LocalDataInject{
 
                 if (ld != null&&deprecated==null){
                     if(bind != null){ //视图触发
-                        @IdRes final int id=bind.value().length==0?
-                                rootView.getContext().getResources().getIdentifier(bind.idNames()[0],"id",rootView.getContext().getPackageName()):
-                                bind.value()[0];
+                        @IdRes final int id=bind.value().length>0?bind.value()[0]:-1;
                         View v = rootView.findViewById(id);
-                        switch (bind.bindType()) {
-                            case CLICK:
+                        switch (bind.type()) {
+                            case Bind.TYPE_CLICK:
                                 v.setOnClickListener(new View.OnClickListener() {
                                     @Override
                                     public void onClick(View v) {
-                                        invokeToggleCallback(v, m, ld, bind.bindType(), this, null, null, null);
+                                        invokeToggleCallback(v, m, ld, bind.type(), this, null, null, null);
                                     }
                                 });
                                 break;
-                            case LONG_CLICK:
+                            case Bind.TYPE_LONG_CLICK:
                                 v.setOnLongClickListener(new View.OnLongClickListener() {
                                     @Override
                                     public boolean onLongClick(View v) {
-                                        invokeToggleCallback(v, m, ld, bind.bindType(), null, this, null, null);
+                                        invokeToggleCallback(v, m, ld, bind.type(), null, this, null, null);
                                         return false;
                                     }
                                 });
                                 break;
-                            case ITEM_CLICK:
-                                ((AdapterView) v).setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                                    @Override
-                                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                                        invokeToggleCallback(parent, m, ld, bind.bindType(), null, null, this, null);
-                                    }
-                                });
-                                break;
-                            case ITEM_LONG_CLICK:
-                                ((AdapterView) v).setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-                                    @Override
-                                    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                                        invokeToggleCallback(parent, m, ld, bind.bindType(), null, null, null, this);
-                                        return false;
-                                    }
-                                });
                         }
                     }
                     else{ //延迟或子模块触发
@@ -226,7 +208,7 @@ public class LocalDataInject{
         }
     }
 
-    private void invokeToggleCallback(View v, Method m, LocalData ld, Bind.BindType type, View.OnClickListener clickListener, View.OnLongClickListener longClickListtener,
+    private void invokeToggleCallback(View v, Method m, LocalData ld,String type, View.OnClickListener clickListener, View.OnLongClickListener longClickListtener,
                                       AdapterView.OnItemClickListener itemClickListener, AdapterView.OnItemLongClickListener itemLongClickListener) {
         Object[] data = mToggleData.get(v.getId());
         Class<?>[] paramTypes = m.getParameterTypes();
@@ -236,32 +218,20 @@ public class LocalDataInject{
                     System.out.println("缓存中没有触发数据");
                 //截断触发事件直到数据读取完毕
                 switch (type) {
-                    case CLICK:
+                    case Bind.TYPE_CLICK:
                         v.setOnClickListener(null);
                         break;
-                    case LONG_CLICK:
+                    case Bind.TYPE_LONG_CLICK:
                         v.setOnLongClickListener(null);
-                        break;
-                    case ITEM_CLICK:
-                        ((AdapterView) v).setOnItemClickListener(null);
-                        break;
-                    case ITEM_LONG_CLICK:
-                        ((AdapterView) v).setOnItemLongClickListener(null);
                         break;
                 }
                 data = loadLocalData(ld, Arrays.copyOfRange(paramTypes,1,paramTypes.length));
                 switch (type) {
-                    case CLICK:
+                    case  Bind.TYPE_CLICK:
                         v.setOnClickListener(clickListener);
                         break;
-                    case LONG_CLICK:
+                    case Bind.TYPE_LONG_CLICK:
                         v.setOnLongClickListener(longClickListtener);
-                        break;
-                    case ITEM_CLICK:
-                        ((AdapterView) v).setOnItemClickListener(itemClickListener);
-                        break;
-                    case ITEM_LONG_CLICK:
-                        ((AdapterView) v).setOnItemLongClickListener(itemLongClickListener);
                         break;
                 }
                 mToggleData.append(v.getId(), data);

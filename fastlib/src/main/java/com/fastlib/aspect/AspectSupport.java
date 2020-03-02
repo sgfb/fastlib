@@ -6,6 +6,7 @@ import android.os.Looper;
 import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.aspect.exception.ExceptionHandler;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
@@ -16,7 +17,10 @@ public class AspectSupport {
 
     private AspectSupport(){}
 
-    public static void callMethod(final Object host, final Method method, final Object... args){
+    /**
+     * @return 如果切换线程环境返回必定空
+     */
+    public static Object callMethod(final Object host, final Method method, final Object... args){
         ThreadOn threadOn=method.getAnnotation(ThreadOn.class);
         Runnable runnable=new Runnable() {
             @Override
@@ -29,23 +33,30 @@ public class AspectSupport {
             }
         };
 
-        if(threadOn!=null){
-            ThreadOn.ThreadType threadType=threadOn.value();
-            boolean currentMainThread=Thread.currentThread()==Looper.getMainLooper().getThread();
+        try{
+            if(threadOn!=null){
+                ThreadOn.ThreadType threadType=threadOn.value();
+                boolean currentMainThread=Thread.currentThread()==Looper.getMainLooper().getThread();
 
-            if(threadType==ThreadOn.ThreadType.MAIN&&!currentMainThread) {
-                Handler handler = new Handler(Looper.getMainLooper());
-                handler.post(runnable);
+                if(threadType==ThreadOn.ThreadType.MAIN&&!currentMainThread) {
+                    Handler handler = new Handler(Looper.getMainLooper());
+                    handler.post(runnable);
+                }
+                else if(threadType==ThreadOn.ThreadType.WORK&&currentMainThread){
+                    if(threadOn.weight()==ThreadOn.ThreadWeight.HEAVY)
+                        ThreadPoolManager.sSlowPool.execute(runnable);
+                    else if(threadOn.weight()==ThreadOn.ThreadWeight.LIGHT)
+                        ThreadPoolManager.sQuickPool.execute(runnable);
+                }
+                else return method.invoke(host,args);
             }
-            else if(threadType==ThreadOn.ThreadType.WORK&&currentMainThread){
-                if(threadOn.weight()==ThreadOn.ThreadWeight.HEAVY)
-                    ThreadPoolManager.sSlowPool.execute(runnable);
-                else if(threadOn.weight()==ThreadOn.ThreadWeight.LIGHT)
-                    ThreadPoolManager.sQuickPool.execute(runnable);
+            else{
+                return method.invoke(host,args);
             }
-            else runnable.run();
+        }catch (Exception e) {
+            handleException(host,e);
         }
-        else runnable.run();
+        return null;
     }
 
     /**

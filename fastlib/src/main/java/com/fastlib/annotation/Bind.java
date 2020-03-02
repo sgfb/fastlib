@@ -10,17 +10,11 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Bind {
+public @interface Bind{
+    String TYPE_CLICK ="click";
+    String TYPE_LONG_CLICK ="longClick";
+
     int[] value(); //要绑定的视图id值
 
-    String[] idNames() default {}; //要绑定的视图id名
-
-    BindType bindType() default BindType.CLICK;
-
-    enum BindType {
-        CLICK,
-        LONG_CLICK,
-        ITEM_CLICK,
-        ITEM_LONG_CLICK
-    }
+    String type() default TYPE_CLICK;
 }

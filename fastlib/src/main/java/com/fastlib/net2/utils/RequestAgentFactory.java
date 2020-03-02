@@ -17,17 +17,17 @@ import java.util.Map;
 
 /**
  * Created by sgfb on 2020\01\10.
- * 网络请求代理器
+ * 网络请求代理生成器
  * 默认运行在当前线程中（当前线程不能是主线程）方法中参数名为网络请求键,参数值为请求值
  * 地址 {@link RequestTo}
  * 参数 {@link MapValue} {@link Name}
  * 如果参数中有{@link com.fastlib.net2.Request}且不为空当做自定义Request处理
  * 如果参数中有{@link Listener}则此请求可以运行在主线程中,而返回值必定为空
  */
-public class NetRequestAgent{
+public class RequestAgentFactory {
     private final static Map<Class,Object> sCacheAgentMap=new HashMap<>();
 
-    private NetRequestAgent(){}
+    private RequestAgentFactory(){}
 
     @SuppressWarnings("unchecked")
     public static <T> T genAgent(final Class<T> cla){

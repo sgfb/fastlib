@@ -2,10 +2,10 @@ package com.fastlib.aspect;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -30,13 +30,9 @@ import java.util.Map;
 import leo.android.cglib.proxy.Enhancer;
 
 /**
- * Created by sgfb on 2020\02\23.
- * 切面支持Activity
- * 分离出View和Controller
- * View层所有方法都执行在主线程中.拥有可选参数{@link OptionalComponent},拥有View注解功能{@link ViewInject}
- * Controller层可选择线程环境{@link ThreadOn}和各种切面事件,如{@link com.fastlib.annotation.Permission}
+ * Created by sgfb on 2020\02\28.
  */
-public abstract class AspectActivity<V,C> extends AppCompatActivity{
+public abstract class AspectFragment<V,C> extends Fragment {
     protected V mView;
     protected C mController;
     private LocalDataInject mLocalDataInject;
@@ -50,11 +46,29 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
     protected abstract void onReady();
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState){
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mLocalDataInject =new LocalDataInject(this);
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState){
         initViewAndController();
-        checkContentView();
+        return genContentView(inflater);
+    }
+
+    private View genContentView(LayoutInflater layoutInflater){
+        ContentView cv = Reflect.findAnnotation(getClass(),ContentView.class);
+        if(cv!=null)
+            return layoutInflater.inflate(cv.value(),null);
+        return null;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        afterSetContentView();
     }
 
     /**
@@ -63,7 +77,7 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
     @SuppressWarnings("unchecked")
     private void initViewAndController(){
         Type[] typeArgs=((ParameterizedType)getClass().getGenericSuperclass()).getActualTypeArguments();
-        Enhancer enhancer=new Enhancer(this);
+        Enhancer enhancer=new Enhancer(getContext());
 
         enhancer.setSuperclass((Class<?>) typeArgs[0]);
         enhancer.setInterceptor(new MainThreadInvocation());
@@ -85,6 +99,8 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
                 } catch (InstantiationException e) {
                     e.printStackTrace();
                 } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                } catch (java.lang.InstantiationException e) {
                     e.printStackTrace();
                 }
             }
@@ -126,36 +142,14 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
         }
     }
 
-    private void checkContentView(){
-        ContentView cv = Reflect.findAnnotation(getClass(),ContentView.class);
-        if(cv!=null)
-            setContentView(cv.value());
-    }
-
-    @Override
-    public void setContentView(@LayoutRes int layoutResID) {
-        super.setContentView(layoutResID);
-        afterSetContentView();
-    }
-
-    @Override
-    public void setContentView(View view) {
-        super.setContentView(view);
-        afterSetContentView();
-    }
-
-    @Override
-    public void setContentView(View view, ViewGroup.LayoutParams params) {
-        super.setContentView(view, params);
-        afterSetContentView();
-    }
-
     private void afterSetContentView(){
-        View rootView=findViewById(android.R.id.content);
+        View rootView=getView();
+        if(rootView==null) return;
+
         mOldViewHolder.setRootView(rootView);
         ViewInject.inject(this,rootView);
         ViewInject.inject(mView,rootView,mView.getClass().getSuperclass());
-        EventObserver.getInstance().subscribe(this,this);
+        EventObserver.getInstance().subscribe(getContext(),this);
         mLocalDataInject.localDataInject();
 
         //依次初始化View,Controller,Activity
@@ -195,15 +189,15 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        EventObserver.getInstance().unsubscribe(this,this);
+    public void onDetach() {
+        super.onDetach();
+        EventObserver.getInstance().unsubscribe(getContext(),this);
         if(mController instanceof BaseEnvironmentProvider)
             ((BaseEnvironmentProvider) mController).environmentDestroy();
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         mActivityCallbackHolder.sendEvent(requestCode,resultCode,data);
     }
