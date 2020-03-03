@@ -5,6 +5,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
 
+import com.fastlib.app.AsyncCallback;
 import com.fastlib.aspect.AspectSupport;
 import com.fastlib.BuildConfig;
 import com.fastlib.annotation.Bind;
@@ -13,7 +14,6 @@ import com.fastlib.annotation.LocalData;
 import com.fastlib.utils.Reflect;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -143,8 +143,13 @@ public class ViewInject {
                         OnBindViewReceiver receiver=cla.newInstance();
                         receiver.setOnBindViewCallback(new OnBindViewCallback() {
                             @Override
-                            public Object toggle(Object... args){
+                            public Object invokeSync(Object... args) {
                                 return adapterParamInvoke(host,m,args);
+                            }
+
+                            @Override
+                            public void invokeAsync(AsyncCallback callback, Object... args) {
+                                adapterParamInvoke(host,m,callback,args);
                             }
                         });
                         receiver.bindView(v);
@@ -159,14 +164,20 @@ public class ViewInject {
         }
     }
 
+    private static Object adapterParamInvoke(Object host,Method m,Object... args){
+        return adapterParamInvoke(host,m,null,args);
+    }
+
     /**
      * 兼容空参和默认参调用
-     * @param m     调用方法
-     * @param args  默认参数
+     * @param host          调用对象
+     * @param m             调用方法
+     * @param asyncCallback 异步返回
+     * @param args          默认参数
      */
-    private static Object adapterParamInvoke(Object host,Method m,Object... args){
+    private static Object adapterParamInvoke(Object host,Method m,AsyncCallback asyncCallback,Object... args){
         if(m.getParameterTypes().length==0)
-            return AspectSupport.callMethod(host,m);
-        else return AspectSupport.callMethod(host,m,args);
+            return AspectSupport.callMethod(host,m,asyncCallback);
+        else return AspectSupport.callMethod(host,m,asyncCallback,args);
     }
 }

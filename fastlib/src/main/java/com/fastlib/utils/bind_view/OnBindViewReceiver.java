@@ -11,7 +11,7 @@ import com.fastlib.annotation.Bind;
 public interface OnBindViewReceiver {
 
     /**
-     * 原生监听间接触发绑定事件
+     * 给予原生监听间接触发绑定事件
      * @param callback 绑定事件
      */
     void setOnBindViewCallback(OnBindViewCallback callback);

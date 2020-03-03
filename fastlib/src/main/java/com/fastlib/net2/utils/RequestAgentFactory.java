@@ -1,6 +1,5 @@
 package com.fastlib.net2.utils;
 
-import com.fastlib.aspect.NetResultTransformer;
 import com.fastlib.aspect.ResultTransformer;
 import com.fastlib.net2.Request;
 import com.fastlib.net2.listener.Listener;
@@ -103,7 +102,7 @@ public class RequestAgentFactory {
                             Object transformedResult=transformerCla.newInstance().transform(result);
                             Gson gson=new Gson();
                             String json=gson.toJson(transformedResult);
-                            return gson.fromJson(json,method.getReturnType());
+                            return gson.fromJson(json,method.getGenericReturnType());
                         }
                     }
                     return request.startSyc(method.getReturnType());

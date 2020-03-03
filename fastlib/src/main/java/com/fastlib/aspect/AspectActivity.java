@@ -16,7 +16,9 @@ import com.fastlib.aspect.component.PermissionResultReceiverGroup;
 import com.fastlib.base.OldViewHolder;
 import com.fastlib.utils.Reflect;
 import com.fastlib.utils.bind_view.ViewInject;
+import com.fastlib.utils.fitout.FitoutFactory;
 import com.fastlib.utils.local_data.LocalDataInject;
+import com.fastlib.utils.router.Router;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -150,22 +152,34 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
         afterSetContentView();
     }
 
+    /**
+     * 设置布局后进行一些初始化.初始化顺序为View,Controller,this(顺序不能更改)
+     */
     private void afterSetContentView(){
         View rootView=findViewById(android.R.id.content);
-        mOldViewHolder.setRootView(rootView);
-        ViewInject.inject(this,rootView);
         ViewInject.inject(mView,rootView,mView.getClass().getSuperclass());
+
+        try {
+            FitoutFactory.autoFitout(mView,mView.getClass().getSuperclass());
+            FitoutFactory.autoFitout(mController,mController.getClass().getSuperclass());
+            FitoutFactory.autoFitout(this);
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
+        ViewInject.inject(this,rootView);
         EventObserver.getInstance().subscribe(this,this);
+        mOldViewHolder.setRootView(rootView);
         mLocalDataInject.localDataInject();
 
-        //依次初始化View,Controller,Activity
-        List<Method> initMethods=new ArrayList<>();
-        initMethods.addAll(genInitMethods(mView.getClass().getSuperclass()));
-        initMethods.addAll(genInitMethods(mController.getClass().getSuperclass()));
-        initMethods.addAll(getSelfInitMethods());
-        for(Method method:initMethods){
+        for(Method method:genInitMethods(mView.getClass().getSuperclass()))
+            AspectSupport.callMethod(mView,method);
+        for(Method method:genInitMethods(mController.getClass().getSuperclass()))
+            AspectSupport.callMethod(mController,method);
+        for(Method method:getSelfInitMethods())
             AspectSupport.callMethod(this,method);
-        }
     }
 
     private List<Method> getSelfInitMethods(){

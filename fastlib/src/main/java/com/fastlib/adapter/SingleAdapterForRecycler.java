@@ -84,7 +84,6 @@ public abstract class SingleAdapterForRecycler<T,R> extends BaseRecyAdapter<T> i
     public void refresh(){
         isLoading=true;
         isRefresh=true;
-        //刷新之后也许有更多数据？
         isMore=true;
         getRefreshDataRequest(mRequest);
         mRequest.start(true);

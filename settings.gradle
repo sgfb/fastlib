@@ -1,2 +1,1 @@
-include ':fastlib'
-include ':genCompile'
+include ':fastlib', ':demo'

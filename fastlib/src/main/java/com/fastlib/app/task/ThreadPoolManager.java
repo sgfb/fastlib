@@ -22,6 +22,7 @@ public class ThreadPoolManager {
     public final static ThreadPoolExecutor sQuickPool;  //轻请求线程池 建议任务应小于100ms
     public final static ThreadPoolExecutor sSlowPool;   //重请求线程池 适用io、网络等延迟比较大的任务
     private static Handler sQueueHandler;
+    private static Handler sMainHandler;
 
     static{
         int quickPoolCount=Math.max(MIN_THREAD,Runtime.getRuntime().availableProcessors()/2);
@@ -38,6 +39,7 @@ public class ThreadPoolManager {
                 Looper.loop();
             }
         }.start();
+        sMainHandler=new Handler(Looper.getMainLooper());
         Log.d(TAG,String.format(Locale.getDefault(),"初始化内存池 quickPool:%d slowPool:%d",quickPoolCount,slowPoolCount));
     }
 
@@ -50,6 +52,17 @@ public class ThreadPoolManager {
             }
         }
         return sQueueHandler;
+    }
+
+    public static Handler getMainHandler(){
+        while(sMainHandler==null){
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        return sMainHandler;
     }
 
     public static void setOnThreadChangeListener(final MonitorThreadPool.OnThreadStatusChangedListener listener){
