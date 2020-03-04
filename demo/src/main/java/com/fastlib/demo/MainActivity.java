@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
 import com.fastlib.demo.list_view.ListDemoActivity;
+import com.fastlib.demo.net.NetDemoActivity;
 import com.fastlib.demo.route.RouteDemoActivity;
 
 /**
@@ -31,6 +32,12 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void onClick(View v) {
                 startActivity(new Intent(MainActivity.this,ListDemoActivity.class));
+            }
+        });
+        findViewById(R.id.startNetDemo).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this,NetDemoActivity.class));
             }
         });
     }

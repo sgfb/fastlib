@@ -8,9 +8,9 @@ import android.support.annotation.StringDef;
  */
 public class ParamInterpreterFactor{
     public static final String BODY_URL_PARAM="urlParam";
-    public static final String BODY_FORM_URLENCODED="x-www-form-urlencoded";
-    public static final String BODY_FORM_DATA="form-data";
-    public static final String BODY_RAW_JSON="json";
+    public static final String BODY_FORM_URLENCODED="application/x-www-form-urlencoded";
+    public static final String BODY_FORM_DATA="multipart/form-data";
+    public static final String BODY_RAW_JSON="application/json";
 
     @StringDef({
             BODY_URL_PARAM,

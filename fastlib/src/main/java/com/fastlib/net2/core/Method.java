@@ -5,16 +5,14 @@ package com.fastlib.net2.core;
  * E-mail:602687446@qq.com
  * Http Method定义
  */
-public interface MethodDefinition{
+public interface Method{
 
     /**
      * HTTP1.0
      */
-
     String GET="GET";
     String POST="POST";
     String HEAD="HEAD";
-
 
     /**
      * HTTP1.1

@@ -45,7 +45,15 @@ public final class FitoutFactory {
             if(autoFit!=null){
                 if(autoFit.attachment()!=void.class){
                     Class attachmentClass=autoFit.attachment();
-                    AttachmentFitout attachmentFitout=fitoutFactory.mAttachmentFitoutMap.get(attachmentClass);
+                    Class upwardClass=autoFit.attachment();
+                    AttachmentFitout attachmentFitout;
+
+                    do{
+                        attachmentFitout=fitoutFactory.mAttachmentFitoutMap.get(upwardClass);
+                        upwardClass=upwardClass.getSuperclass();
+                    }
+                    while(attachmentFitout==null&&upwardClass!=null);
+
                     if(attachmentFitout==null)
                         throw new IllegalArgumentException("附件("+attachmentClass.getSimpleName()+")没有对应的装配类");
 

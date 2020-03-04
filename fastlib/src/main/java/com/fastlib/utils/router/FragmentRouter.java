@@ -10,7 +10,7 @@ import com.fastlib.R;
 /**
  * Created by sgfb on 2020\03\01.
  */
-public class FragmentRouter<T> extends Router<Fragment,T> {
+public class FragmentRouter<T> extends Router<T,Fragment> {
 
     public FragmentRouter(Class<T> routerLinkCla, Fragment mHost) {
         super(routerLinkCla, mHost);

@@ -2,8 +2,7 @@ package com.fastlib.demo.net;
 
 import com.fastlib.aspect.ResultTransformer;
 import com.fastlib.demo.list_view.ItemBean;
-import com.fastlib.demo.net.ResponseTransformer;
-import com.fastlib.net2.utils.Name;
+import com.fastlib.net2.utils.Body;
 import com.fastlib.net2.utils.RequestTo;
 
 import java.util.List;
@@ -15,5 +14,5 @@ import java.util.List;
 public interface TestInterface{
 
     @RequestTo(url = "http://192.168.3.20:8082/getItemList")
-    List<ItemBean> getItemList(@Name("page") int page, @Name("size")int size);
+    List<ItemBean> getItemList(@Body("page") int page, @Body("size")int size);
 }

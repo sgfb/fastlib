@@ -5,10 +5,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.util.Pair;
+import android.text.TextUtils;
 
 import com.fastlib.db.SaveUtil;
 import com.fastlib.net2.core.HeaderDefinition;
-import com.fastlib.net2.core.MethodDefinition;
+import com.fastlib.net2.core.Method;
 import com.fastlib.net2.core.SimpleHttpCoreImpl;
 import com.fastlib.net2.download.DownloadStreamController;
 import com.fastlib.net2.download.SingleDownloadController;
@@ -75,8 +76,8 @@ public class HttpProcessor implements Runnable {
                 }
             }
 
-            boolean needClientBody = MethodDefinition.POST.equals(method) || MethodDefinition.PUT.equals(method);
-            boolean needServerBody = !MethodDefinition.HEAD.equals(method);
+            boolean needClientBody = Method.POST.equals(method) || Method.PUT.equals(method);
+            boolean needServerBody = !Method.HEAD.equals(method);
             if (needClientBody) {
                 //填充输出体
                 String bodyType = checkBodyType();
@@ -158,12 +159,26 @@ public class HttpProcessor implements Runnable {
     }
 
     /**
-     * 自动检查body类型返回.依次检查form-data、json、如果都没有返回form-urlencoded
+     * 自动检查body类型返回.
+     * 先检查自定义头部是否有Content-Type如果可以识别则使用不可识别或不存在再
+     * 根据参数检查form-data、json、默认form-urlencoded
      *
      * @return body类型
      */
     private @ParamInterpreterFactor.ParamInterpreterType
     String checkBodyType() {
+        Map<String,List<String>> headers=mRequest.getHeader();
+        for(Map.Entry<String,List<String>> header: headers.entrySet()){
+            if(HeaderDefinition.KEY_CONTENT_TYPE.equals(header.getKey())){
+                for(String headerValue:header.getValue()){
+                    if(TextUtils.equals(headerValue,ParamInterpreterFactor.BODY_RAW_JSON)
+                            ||TextUtils.equals(headerValue,ParamInterpreterFactor.BODY_FORM_DATA)
+                            ||TextUtils.equals(headerValue,ParamInterpreterFactor.BODY_FORM_URLENCODED))
+                        return headerValue;
+                }
+            }
+        }
+
         List<Pair<String, Object>> bottomParam = mRequest.getRequestParam().getBottomParam();
 
         for (Pair<String, Object> pair : bottomParam) {
@@ -183,11 +198,11 @@ public class HttpProcessor implements Runnable {
     private String genContentType(String bodyType) {
         switch (bodyType) {
             case ParamInterpreterFactor.BODY_FORM_URLENCODED:
-                return "application/x-www-form-urlencoded";
+                return HeaderDefinition.VALUE_CONTENT_TYPE_X_WWW_FORM_URLENCODED;
             case ParamInterpreterFactor.BODY_RAW_JSON:
-                return "application/json";
+                return HeaderDefinition.VALUE_CONTENT_TYPE_JSON;
             case ParamInterpreterFactor.BODY_FORM_DATA:
-                return "multipart/form-data; boundary=" + FormDataInterpreter.BOUNDARY;
+                return HeaderDefinition.VALUE_CONTENT_TYPE_MULTIPART_FORM_DATA+"; boundary=" + FormDataInterpreter.BOUNDARY;
         }
         return null;
     }

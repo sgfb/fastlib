@@ -31,8 +31,10 @@ public class JsonInterpreter extends SingleInterpreter{
             }
         }
         for(Pair<String,Object> pair:bottomParam){
-            String key=pair.first!=null?pair.first:"";
-            root.add(key,gson.toJsonTree(pair.second));
+            //TODO
+            if(pair.first==null) return new ByteArrayInputStream(gson.toJson(pair.second).getBytes());
+
+            root.add(pair.first,gson.toJsonTree(pair.second));
         }
         return new ByteArrayInputStream(gson.toJson(root).getBytes());
     }

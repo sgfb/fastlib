@@ -10,10 +10,10 @@ import com.fastlib.R;
 /**
  * Created by sgfb on 2020\03\01.
  */
-public class ActivityRouter<T> extends Router<Activity,T>{
+public class ActivityRouter<T> extends Router<T,Activity>{
 
     public ActivityRouter(Class<T> mRouterLink, Activity mHost) {
-        super(mRouterLink, mHost);
+        super(mRouterLink,mHost);
     }
 
     @Override

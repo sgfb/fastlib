@@ -51,4 +51,10 @@ public interface HeaderDefinition{
      * 不支持长连接.即完成此次http响应后应关闭socket
      */
     String VALUE_CONNECTION_CLOSE="close";
+
+    String VALUE_CONTENT_TYPE_X_WWW_FORM_URLENCODED="application/x-www-form-urlencoded";
+
+    String VALUE_CONTENT_TYPE_JSON="application/json";
+
+    String VALUE_CONTENT_TYPE_MULTIPART_FORM_DATA="multipart/form-data";
 }

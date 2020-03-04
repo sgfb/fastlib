@@ -19,7 +19,7 @@ import java.util.Map;
  * 网络请求代理生成器
  * 默认运行在当前线程中（当前线程不能是主线程）方法中参数名为网络请求键,参数值为请求值
  * 地址 {@link RequestTo}
- * 参数 {@link MapValue} {@link Name}
+ * 参数 {@link MapValue} {@link Body}
  * 如果参数中有{@link com.fastlib.net2.Request}且不为空当做自定义Request处理
  * 如果参数中有{@link Listener}则此请求可以运行在主线程中,而返回值必定为空
  */
@@ -64,19 +64,31 @@ public class RequestAgentFactory {
                     for(int i=0;i<keyValuePairs.length/2;i++)
                         request.put(keyValuePairs[i*2],keyValuePairs[i*2+1]);
                 }
+                FinalHeader finalHeader=method.getAnnotation(FinalHeader.class);
+                if(finalHeader!=null){
+                    String[] keyValuePairs=finalHeader.value();
+                    for(int i=0;i<keyValuePairs.length/2;i++)
+                        request.addHeader(keyValuePairs[i*2],keyValuePairs[i*2+1]);
+                }
 
                 //动态参数
                 if(args!=null){
                     Annotation[][] annotations=method.getParameterAnnotations();
                     for(int i=0;i<args.length;i++){
-                        Annotation paramAnno=annotations[i]!=null&&annotations[i].length>0?annotations[i][0]:null;
+                        if(annotations[i]==null) continue;
 
-                        if(paramAnno instanceof Name){
-                            Name name= (Name) paramAnno;
-                            request.put(name.value(),args[i]);
-                        }
-                        else if(paramAnno instanceof MapValue){
-                            request.put(args[i]);
+                        for(Annotation paramAnno:annotations[i]){
+                            if(paramAnno instanceof Body){
+                                Body name= (Body) paramAnno;
+                                request.put(name.value(),args[i]);
+                            }
+                            else if(paramAnno instanceof MapValue){
+                                request.put(args[i]);
+                            }
+                            else if(paramAnno instanceof Header){
+                                Header header= (Header) paramAnno;
+                                request.addHeader(header.value(),args[i].toString());
+                            }
                         }
                     }
                 }

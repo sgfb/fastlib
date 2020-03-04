@@ -20,5 +20,6 @@
         <activity android:name=".route.RouteDemoActivity"/>
         <activity android:name=".route.RouteDemoSecondActivity"/>
         <activity android:name=".list_view.ListDemoActivity"/>
+        <activity android:name=".net.NetDemoActivity"/>
     </application>
 </manifest>

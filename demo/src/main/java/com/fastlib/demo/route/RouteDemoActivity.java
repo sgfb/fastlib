@@ -22,7 +22,7 @@ public class RouteDemoActivity extends AspectActivity<Empty,Empty>{
 
     @Override
     protected void onReady() {
-        mRouteLink=Router.createRouter(RouterPathDemo.class,this).getRouterLink();
+        mRouteLink=  Router.createRouter(RouterPathDemo.class,this).getRouterLink();
     }
 
     @Bind(R.id.jumpWithoutParams)

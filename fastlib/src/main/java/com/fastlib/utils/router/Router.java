@@ -20,7 +20,7 @@ import java.util.Map;
  * Created by sgfb on 2020\02\12.
  * 路由辅助
  */
-public abstract class Router<H,T>{
+public abstract class Router<T,H>{
     private T mRouterLink;
     protected H mHost;
 
@@ -30,12 +30,12 @@ public abstract class Router<H,T>{
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> Router<Activity,T> createRouter(Class<T> linkCla,Activity activity){
+    public static <T> Router<T,Activity> createRouter(Class<T> linkCla,Activity activity){
         return new ActivityRouter(linkCla,activity);
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> Router<Fragment,T> createRouter(Class<T> linkCla,Fragment fragment){
+    public static <T> Router<T,Fragment> createRouter(Class<T> linkCla,Fragment fragment){
         return new FragmentRouter(linkCla,fragment);
     }
 
