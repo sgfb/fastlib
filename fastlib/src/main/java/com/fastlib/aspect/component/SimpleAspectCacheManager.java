@@ -1,6 +1,6 @@
 package com.fastlib.aspect.component;
 
-import com.fastlib.aspect.StaticProvier;
+import com.fastlib.aspect.base.StaticProvider;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,7 +9,7 @@ import java.util.Map;
  * Created by sgfb on 2020\02\19.
  * 简单保存缓存.永不过期
  */
-@StaticProvier
+@StaticProvider
 public class SimpleAspectCacheManager implements AspectCache {
     private Map<String,Object> mCaches=new HashMap<>();
 

@@ -4,13 +4,13 @@ import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
 
-import com.fastlib.aspect.StaticProvier;
+import com.fastlib.aspect.base.StaticProvider;
 
 /**
  * Created by sgfb on 2020\02\27.
  * 默认的运行时权限获取请求
  */
-@StaticProvier
+@StaticProvider
 public class SimplePermissionHandler implements RuntimePermissionHandler {
 
     @Override

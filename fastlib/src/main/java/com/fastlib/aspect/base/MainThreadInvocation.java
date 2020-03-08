@@ -1,4 +1,4 @@
-package com.fastlib.aspect;
+package com.fastlib.aspect.base;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -25,10 +25,12 @@ public class MainThreadInvocation implements MethodInterceptor{
             mMainHandler.post(new Runnable() {
                 @Override
                 public void run() {
+                    //这行代码错开直接判断防止这里的代码执行的比工作线程快
+                    Object result=methodProxy.invokeSuper(o,objects);
                     if(needResult){
-                        mResult=methodProxy.invokeSuper(o,objects);
+                        mResult=result;
                         synchronized (MainThreadInvocation.class){
-                            MainThreadInvocation.this.notify();
+                            MainThreadInvocation.class.notify();
                         }
                     }
                     else methodProxy.invokeSuper(o,objects);
@@ -36,7 +38,7 @@ public class MainThreadInvocation implements MethodInterceptor{
             });
             if(needResult){
                 synchronized (MainThreadInvocation.class){
-                    MainThreadInvocation.this.wait();
+                    MainThreadInvocation.class.wait();
                 }
             }
         }

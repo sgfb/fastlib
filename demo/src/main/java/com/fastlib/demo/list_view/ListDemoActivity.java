@@ -4,7 +4,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
-import com.fastlib.aspect.AspectActivity;
+import com.fastlib.aspect.base.AspectActivity;
 import com.fastlib.aspect.ThreadOn;
 import com.fastlib.aspect.exception.ExceptionHandler;
 import com.fastlib.demo.R;

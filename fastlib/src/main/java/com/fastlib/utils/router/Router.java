@@ -85,7 +85,7 @@ public abstract class Router<T,H>{
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 ActivityPath ar=method.getAnnotation(ActivityPath.class);
-                if(ar==null) throw new IllegalArgumentException("activity router no defined");
+                if(ar==null) throw new IllegalArgumentException("未定义Activity跳转路线");
 
                 Intent intent=new Intent(getContext(),ar.value());
                 intent.putExtra("stub",0);

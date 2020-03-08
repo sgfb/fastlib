@@ -5,9 +5,8 @@ import android.support.v7.widget.RecyclerView;
 
 import com.fastlib.adapter.RemoteBindAdapter;
 import com.fastlib.annotation.Bind;
-import com.fastlib.aspect.OptionalInit;
+import com.fastlib.aspect.base.OptionalInit;
 import com.fastlib.demo.R;
-import com.fastlib.demo.list_view.RemoteBindAdapterDemo;
 import com.fastlib.utils.fitout.AutoFit;
 
 /**

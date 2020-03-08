@@ -1,9 +1,12 @@
-package com.fastlib.aspect;
+package com.fastlib.aspect.base;
 
 import android.os.Handler;
 import android.os.Looper;
 
 import com.fastlib.app.task.ThreadPoolManager;
+import com.fastlib.aspect.AspectManager;
+import com.fastlib.aspect.ResultWrapper;
+import com.fastlib.aspect.ThreadOn;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -82,7 +85,7 @@ public class ControllerInvocationHandler implements MethodInterceptor {
     private void flatAnnotation(List<Annotation> flatList, List<Annotation> list) {
         AspectManager am=AspectManager.getInstance();
         for (Annotation annotation : list) {
-            if (annotation.annotationType()!=ThreadOn.class&&(flatList.contains(annotation) ||!am.checkAnnotationIsAction(annotation.annotationType())))
+            if (flatList.contains(annotation) ||!am.checkAnnotationIsAction(annotation.annotationType()))
                 continue;
             flatList.add(0, annotation);
             if (!list.isEmpty())
@@ -93,11 +96,10 @@ public class ControllerInvocationHandler implements MethodInterceptor {
     private Object intercept(List<Annotation> annotations, final Object o, final Object[] objects, MethodProxy methodProxy) {
         if (annotations != null && !annotations.isEmpty()) {
             AspectManager am = AspectManager.getInstance();
-            AspectEnvironmentProvider provider = null;
-            if (o instanceof AspectEnvironmentProvider)
-                provider = (AspectEnvironmentProvider) o;
-            List envs = provider != null ? provider.getAspectEnvironment() : null;
-            return am.callAction(o, annotations, envs, objects, methodProxy);
+
+            //准备运行时环境参数
+            List runtimeEnvs=AspectManager.getInstance().getRuntimeEnvs(o);
+            return am.callAction(o, annotations, runtimeEnvs, objects, methodProxy);
         } else return methodProxy.invokeSuper(o, objects);
     }
 }

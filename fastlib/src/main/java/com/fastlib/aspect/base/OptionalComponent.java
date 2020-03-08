@@ -1,4 +1,4 @@
-package com.fastlib.aspect;
+package com.fastlib.aspect.base;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

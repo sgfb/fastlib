@@ -1,6 +1,5 @@
 package com.fastlib.net2.utils;
 
-import com.fastlib.aspect.ResultTransformer;
 import com.fastlib.net2.Request;
 import com.fastlib.net2.listener.Listener;
 import com.google.gson.Gson;

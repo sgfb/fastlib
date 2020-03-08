@@ -3,6 +3,8 @@ package com.fastlib.demo.app;
 import android.app.Application;
 import android.support.v7.widget.RecyclerView;
 
+import com.fastlib.aspect.AspectManager;
+import com.fastlib.demo.aspect.CustomerPermissionHandler;
 import com.fastlib.demo.list_view.RemoteBindAdapterDemo;
 import com.fastlib.demo.net.TestInterface;
 import com.fastlib.net2.utils.RequestAgentFactory;
@@ -18,6 +20,8 @@ public class AppApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        AspectManager.getInstance().init(this);
+        AspectManager.getInstance().addStaticEnv(CustomerPermissionHandler.class);
         CustomViewInject.inflaterCustomViewInject();
         initCustomFitout();
     }

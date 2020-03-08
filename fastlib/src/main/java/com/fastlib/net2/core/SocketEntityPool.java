@@ -35,11 +35,12 @@ public class SocketEntityPool{
     }
 
     /**
+     * TODO 这里的同步是否可以优化
      * 从池中取一个socket实体(可能是新创建的)
      * @param url   统一资源定位符
      * @return  socket实体
      */
-    public @Nullable SocketEntity getSocketEntity(String url,Proxy proxy) throws IOException {
+    public synchronized  @Nullable SocketEntity getSocketEntity(String url,Proxy proxy) throws IOException {
         String key= genEntityKey(URLUtil.getHostAndPort(url),proxy);
         List<SocketEntity> list=mEntityMap.get(key);
 
@@ -56,6 +57,7 @@ public class SocketEntityPool{
             if(entity.isValid(proxy)) return entity;
             else entity.close();
         }
+
         if(proxy!=null&&proxy.type()== Proxy.Type.SOCKS)
             return new SocketEntity(url,!url.startsWith("https") ? new Socket(proxy): SSLSocketFactory.getDefault().createSocket(),proxy);
         else

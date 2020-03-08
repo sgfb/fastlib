@@ -6,7 +6,10 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
+import com.fastlib.aspect.AspectManager;
+import com.fastlib.demo.aspect.AspectDemoActivity;
 import com.fastlib.demo.list_view.ListDemoActivity;
+import com.fastlib.demo.net.CloudActivity;
 import com.fastlib.demo.net.NetDemoActivity;
 import com.fastlib.demo.route.RouteDemoActivity;
 
@@ -15,7 +18,6 @@ import com.fastlib.demo.route.RouteDemoActivity;
  * demo的第一界面.仅提供引导作用不使用任何框架
  */
 public class MainActivity extends AppCompatActivity{
-
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -37,7 +39,14 @@ public class MainActivity extends AppCompatActivity{
         findViewById(R.id.startNetDemo).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(MainActivity.this,NetDemoActivity.class));
+//                startActivity(new Intent(MainActivity.this,NetDemoActivity.class));
+                startActivity(new Intent(MainActivity.this,CloudActivity.class));
+            }
+        });
+        findViewById(R.id.startAspectDemo).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this,AspectDemoActivity.class));
             }
         });
     }

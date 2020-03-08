@@ -27,7 +27,8 @@ public class PermissionAction extends AspectAction<Permission> {
             @Override
             public void receiveEvent(Integer param1, String[] param2, int[] grantResults) {
                 setPassed(runtimePermissionHandler.handleResponse(param1,param2,grantResults));
-                lock.unlock();
+                if(param1==lock.getId())
+                    lock.unlock();
             }
         });
         runtimePermissionHandler.requestPermission(activity,anno.value(),lock.getId());

@@ -1,6 +1,6 @@
 package com.fastlib.demo.net;
 
-import com.fastlib.aspect.ResultTransformer;
+import com.fastlib.net2.utils.ResultTransformer;
 import com.fastlib.demo.list_view.ItemBean;
 import com.fastlib.net2.utils.Body;
 import com.fastlib.net2.utils.RequestTo;

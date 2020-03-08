@@ -1,12 +1,11 @@
 package com.fastlib.demo.route;
 
-import android.app.Activity;
 import android.text.TextUtils;
 import android.widget.EditText;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;
-import com.fastlib.aspect.AspectActivity;
+import com.fastlib.aspect.base.AspectActivity;
 import com.fastlib.demo.R;
 import com.fastlib.utils.router.Router;
 

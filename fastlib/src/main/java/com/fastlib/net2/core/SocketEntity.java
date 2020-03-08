@@ -8,7 +8,6 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.Proxy;
 import java.net.Socket;
-import java.net.SocketException;
 
 /**
  * Created by sgfb on 2019/12/9

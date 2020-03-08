@@ -6,6 +6,7 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.fastlib.db.SaveUtil;
 import com.fastlib.net2.core.HeaderDefinition;
@@ -60,6 +61,9 @@ public class HttpProcessor implements Runnable {
 
     @Override
     public void run() {
+        if (!mRequest.getSkipGlobalListener())
+            HttpGlobalConfig.getInstance().getGlobalListener().onLaunchRequestBefore(mRequest);
+
         String rootAddress = HttpGlobalConfig.getInstance().getRootAddress();
         String urlWithParam = mRequest.getSkipRootAddress() ? mRequest.getUrl() : rootAddress + mRequest.getUrl();
         String method = mRequest.getMethod().toUpperCase();
@@ -91,9 +95,14 @@ public class HttpProcessor implements Runnable {
                 }
             }
 
+            for(Map.Entry<String,List<String>> entry:mRequest.getRequestParam().getSurfaceParam().entrySet()){
+                System.out.println(entry.getKey()+" "+entry.getValue().get(0));
+            }
+            for(Pair<String,Object> pair:mRequest.getRequestParam().getBottomParam()){
+                System.out.println(pair.first+" "+pair.second);
+            }
+
             //开始连接
-            if (!mRequest.getSkipGlobalListener())
-                HttpGlobalConfig.getInstance().getGlobalListener().onLaunchRequestBefore(mRequest);
             if(mRequest.getConnectionTimeout()>0)
                 httpCore.setConnectionTimeout(mRequest.getConnectionTimeout());
             if(mRequest.getReadTimeout()>0)
@@ -167,18 +176,6 @@ public class HttpProcessor implements Runnable {
      */
     private @ParamInterpreterFactor.ParamInterpreterType
     String checkBodyType() {
-        Map<String,List<String>> headers=mRequest.getHeader();
-        for(Map.Entry<String,List<String>> header: headers.entrySet()){
-            if(HeaderDefinition.KEY_CONTENT_TYPE.equals(header.getKey())){
-                for(String headerValue:header.getValue()){
-                    if(TextUtils.equals(headerValue,ParamInterpreterFactor.BODY_RAW_JSON)
-                            ||TextUtils.equals(headerValue,ParamInterpreterFactor.BODY_FORM_DATA)
-                            ||TextUtils.equals(headerValue,ParamInterpreterFactor.BODY_FORM_URLENCODED))
-                        return headerValue;
-                }
-            }
-        }
-
         List<Pair<String, Object>> bottomParam = mRequest.getRequestParam().getBottomParam();
 
         for (Pair<String, Object> pair : bottomParam) {

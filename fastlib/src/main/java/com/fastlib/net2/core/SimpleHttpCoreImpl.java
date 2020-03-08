@@ -40,7 +40,7 @@ public class SimpleHttpCoreImpl extends HttpCore{
         int port=URLUtil.getPort(mUrl);
         putIfNotExist(totalHeader,HeaderDefinition.KEY_HOST,URLUtil.getHost(mUrl)+(port!=80?(":"+port):""));
         putIfNotExist(totalHeader,HeaderDefinition.KEY_ACCEPT,"*/*");
-        putIfNotExist(totalHeader,HeaderDefinition.KEY_AGENT,String.format(Locale.getDefault(),"%s %s","android", Build.VERSION.SDK));
+        putIfNotExist(totalHeader,HeaderDefinition.KEY_AGENT,String.format(Locale.getDefault(),"%s_%s","android", Build.VERSION.SDK));
         putIfNotExist(totalHeader,HeaderDefinition.KEY_CONNECTION,"Keep-Alive");
         putIfNotExist(totalHeader,HeaderDefinition.KEY_CACHE_CONTROL,"no-cache");
         putIfNotExist(totalHeader,HeaderDefinition.KEY_ACCEPT_ENCODING,"gzip");
@@ -124,6 +124,8 @@ public class SimpleHttpCoreImpl extends HttpCore{
                 if(mRemain==-1&&isConnected()){
                     end();
                 }
+                else if(mRemain==-2)
+                    throw new IOException("读取不到Http内容长度");
                 return mRemain;
             }
 
@@ -175,6 +177,10 @@ public class SimpleHttpCoreImpl extends HttpCore{
         if(isBegin)
             throw new IllegalStateException("不允许在begin()后添加输入流");
         mPendingInputStream.add(inputStream);
+    }
+
+    public List<InputStream> getPendingInputStream(){
+        return mPendingInputStream;
     }
 
     public void addHeader(String key,String value){

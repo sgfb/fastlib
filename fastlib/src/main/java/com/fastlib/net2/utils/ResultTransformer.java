@@ -1,6 +1,4 @@
-package com.fastlib.aspect;
-
-import com.fastlib.net2.utils.NetResultTransformer;
+package com.fastlib.net2.utils;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

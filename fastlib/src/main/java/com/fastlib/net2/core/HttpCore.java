@@ -68,7 +68,7 @@ public abstract class HttpCore {
 
     public HttpCore(String url) {
         if (!URLUtil.validUrl(url))
-            throw new IllegalArgumentException("url不正确或者不支持的协议:"+url);
+            throw new IllegalArgumentException("url不正确或者不支持的协议:" + url);
         mUrl = url;
         mTimer = new HttpTimer();
     }
@@ -77,28 +77,27 @@ public abstract class HttpCore {
         mTimer.nextProcess();
         isBegin = true;
         Socket socket = null;
-        List<Proxy> proxyList=new ArrayList<>(ProxySelector.getDefault().select(URI.create(mUrl)));
+        List<Proxy> proxyList = new ArrayList<>(ProxySelector.getDefault().select(URI.create(mUrl)));
         //最后添加一个null proxy以当做无代理连接
         proxyList.add(null);
-        for(Proxy proxy:proxyList){
-            try{
-                mProxy=proxy;
+        for (Proxy proxy : proxyList) {
+            try {
+                mProxy = proxy;
 
-                if(proxy!=null&&proxy.type()== Proxy.Type.DIRECT) continue;
-                mSocketEntity = SocketEntityPool.getInstance().getSocketEntity(mUrl,proxy);
+                if (proxy != null && proxy.type() == Proxy.Type.DIRECT) continue;
+                mSocketEntity = SocketEntityPool.getInstance().getSocketEntity(mUrl, proxy);
                 socket = mSocketEntity.getSocket();
-                if(!socket.isConnected()) {
-                    String hostname=proxy!=null&&proxy.address() instanceof InetSocketAddress?((InetSocketAddress) proxy.address()).getHostName():URLUtil.getHost(mUrl);
-                    int port=proxy!=null&&proxy.address() instanceof InetSocketAddress?((InetSocketAddress) proxy.address()).getPort():URLUtil.getPort(mUrl);
-                    socket.connect(new InetSocketAddress(hostname,port), getHttpOption().connectionTimeout);
+                if (!socket.isConnected()) {
+                    String hostname = proxy != null && proxy.address() instanceof InetSocketAddress ? ((InetSocketAddress) proxy.address()).getHostName() : URLUtil.getHost(mUrl);
+                    int port = proxy != null && proxy.address() instanceof InetSocketAddress ? ((InetSocketAddress) proxy.address()).getPort() : URLUtil.getPort(mUrl);
+                    socket.connect(new InetSocketAddress(hostname, port), getHttpOption().connectionTimeout);
                     Log.d(TAG, "Http已连接（新连接）");
-                }
-                else Log.d(TAG, "Http已连接（复用连接）");
-            }catch (IOException exception){
+                } else Log.d(TAG, "Http已连接（复用连接）");
+            } catch (IOException exception) {
                 //当使用无代理出现异常则抛出这个异常
-                if(mProxy==null) throw exception;
+                if (mProxy == null) throw exception;
             }
-            if(socket!=null&&socket.isConnected()) break;
+            if (socket != null && socket.isConnected()) break;
         }
         socket.setSoTimeout(getHttpOption().readTimeout);
         mTimer.nextProcess();
@@ -116,7 +115,7 @@ public abstract class HttpCore {
         StringBuilder sb = new StringBuilder(256);
 
         //例：GET /index HTTP/1.1
-        String uri=mProxy==null?URLUtil.getPath(mUrl):mUrl;
+        String uri = mProxy == null ? URLUtil.getPath(mUrl) : mUrl;
         sb.append(getRequestMethod()).append(' ').append(uri).append(' ').append(HTTP_PROTOCOL).append(CRLF);
         for (Map.Entry<String, List<String>> entry : header.entrySet()) {
             for (String headerValue : entry.getValue()) {
@@ -125,8 +124,8 @@ public abstract class HttpCore {
         }
         sb.append(CRLF);
 
-        byte[] headerByte=sb.toString().getBytes();
-        mSendHeaderLength=headerByte.length;
+        byte[] headerByte = sb.toString().getBytes();
+        mSendHeaderLength = headerByte.length;
         mSocketEntity.getOutputStream().write(headerByte);
     }
 
@@ -137,7 +136,7 @@ public abstract class HttpCore {
         mSocketEntity.getOutputStream().flush();
         String statusLine = readLine(mSocketEntity.getInputStream());
         //如果第一次读取到空的状态行，再读取一次，在Transfer-Encoding为chunked类型时会发生多了个空行的问题
-        if(TextUtils.isEmpty(statusLine)) statusLine=readLine(mSocketEntity.getInputStream());
+        if (TextUtils.isEmpty(statusLine)) statusLine = readLine(mSocketEntity.getInputStream());
         mTimer.nextProcess();
         if (TextUtils.isEmpty(statusLine)) throw new IOException("服务器返回HTTP协议异常");
         String[] status = statusLine.trim().split(" ");
@@ -207,11 +206,11 @@ public abstract class HttpCore {
             sb.append((char) currChar);
         }
 
-        mReceivedHeaderLength+=sb.toString().getBytes().length;
+        mReceivedHeaderLength += sb.toString().getBytes().length;
         if (sb.length() >= 2 && sb.substring(sb.length() - 2).equals(CRLF))
             sb.delete(sb.length() - 2, sb.length());
         //TODO 是否读错了位置？
-        if("\n".equals(sb.toString()))
+        if ("\n".equals(sb.toString()))
             return readLine(inputStream);
         return sb.toString();
     }

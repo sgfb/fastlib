@@ -1,4 +1,4 @@
-package com.fastlib.aspect;
+package com.fastlib.aspect.base;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,6 +11,9 @@ import android.view.ViewGroup;
 
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.EventObserver;
+import com.fastlib.aspect.AspectManager;
+import com.fastlib.aspect.AspectSupport;
+import com.fastlib.aspect.ThreadOn;
 import com.fastlib.aspect.component.ActivityResultReceiverGroup;
 import com.fastlib.aspect.component.PermissionResultReceiverGroup;
 import com.fastlib.base.OldViewHolder;
@@ -18,7 +21,6 @@ import com.fastlib.utils.Reflect;
 import com.fastlib.utils.bind_view.ViewInject;
 import com.fastlib.utils.fitout.FitoutFactory;
 import com.fastlib.utils.local_data.LocalDataInject;
-import com.fastlib.utils.router.Router;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -79,22 +81,10 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
         enhancer.setSuperclass((Class<?>) typeArgs[1]);
         enhancer.setInterceptor(new ControllerInvocationHandler());
         mController= (C) enhancer.create();
-        if(mController instanceof AspectEnvironmentProvider){
-            AspectEnvironmentProvider provider= (AspectEnvironmentProvider) mController;
-            for(Class envCla:AspectManager.getInstance().getStaticEnvs()) {
-                try {
-                    provider.addEnvs(envCla.newInstance());
-                } catch (InstantiationException e) {
-                    e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }
 
-            provider.addEnvs(this);
-            provider.addEnvs(mActivityCallbackHolder);
-            provider.addEnvs(mPermissionResultReceiverGroup);
-        }
+        AspectManager.getInstance().putRuntimeEnv(mController,this);
+        AspectManager.getInstance().putRuntimeEnv(mController,mActivityCallbackHolder);
+        AspectManager.getInstance().putRuntimeEnv(mController,mPermissionResultReceiverGroup);
     }
 
     protected List<Object> genViewComponents(){
@@ -212,8 +202,7 @@ public abstract class AspectActivity<V,C> extends AppCompatActivity{
     protected void onDestroy() {
         super.onDestroy();
         EventObserver.getInstance().unsubscribe(this,this);
-        if(mController instanceof BaseEnvironmentProvider)
-            ((BaseEnvironmentProvider) mController).environmentDestroy();
+        AspectManager.getInstance().destroyRuntimeEnv(mController);
     }
 
     @Override

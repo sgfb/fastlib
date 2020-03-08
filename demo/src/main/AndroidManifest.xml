@@ -2,6 +2,9 @@
     package="com.fastlib.demo" >
 
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
         android:name=".app.AppApplication"
@@ -21,5 +24,8 @@
         <activity android:name=".route.RouteDemoSecondActivity"/>
         <activity android:name=".list_view.ListDemoActivity"/>
         <activity android:name=".net.NetDemoActivity"/>
+        <activity android:name=".aspect.AspectDemoActivity"/>
+        <activity android:name=".aspect.SecondActivity"/>
+        <activity android:name=".net.CloudActivity"/>
     </application>
 </manifest>

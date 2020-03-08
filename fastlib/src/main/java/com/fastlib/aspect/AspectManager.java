@@ -6,7 +6,9 @@ import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.SparseArray;
 
+import com.fastlib.aspect.base.StaticProvider;
 import com.fastlib.aspect.exception.EnvMissingException;
 import com.fastlib.aspect.exception.ExceptionHandler;
 import com.fastlib.utils.Reflect;
@@ -15,12 +17,13 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import dalvik.system.DexFile;
@@ -43,6 +46,7 @@ public class AspectManager {
     private Map<Class, AspectTransparentAction> mTransparentAction;
     private Map<Class, AspectAction> mOpaqueAction;
     private Map<Class,Class> mStaticEnvs;
+    private SparseArray<List<Object>> mRuntimeEnvs;        //临时寄存运行时参数
     private static AspectManager sInstance;
     private static final Object sLock = new Object();
 
@@ -50,6 +54,7 @@ public class AspectManager {
         mTransparentAction = new HashMap<>();
         mOpaqueAction = new HashMap<>();
         mStaticEnvs=new HashMap<>();
+        mRuntimeEnvs =new SparseArray<>();
     }
 
     public static AspectManager getInstance() {
@@ -69,6 +74,7 @@ public class AspectManager {
      * 添加透明切面事件.注意调用者不能持有runnable对象否则可能造成内存泄漏
      */
     public void putTransparentAction(Class<? extends Annotation> cla, AspectTransparentAction aspect) {
+        //替换
         Log.d(TAG,"添加透明切面事件:"+cla.getSimpleName()+"-->"+aspect.getClass().getSimpleName());
         mTransparentAction.put(cla, aspect);
     }
@@ -77,21 +83,27 @@ public class AspectManager {
      * 添加不透明切面事件.注意调用者不能持有action对象否则可能造成内存泄漏
      */
     public void putOpaqueAction(Class<? extends Annotation> cla, AspectAction aspect) {
+        //替换
         Log.d(TAG,"添加不透明切面事件:"+cla.getSimpleName()+"-->"+aspect.getClass().getSimpleName());
         mOpaqueAction.put(cla, aspect);
     }
 
+    /**
+     * 添加静态运行时参数.如果添加前有同等实现运行时参数将会被移除,例都实现了{@link com.fastlib.aspect.component.RuntimePermissionHandler}那么旧的那个将被移除
+     * @param envCla    静态运行时参数类
+     */
     public void addStaticEnv(Class envCla){
         Class[] interfaces=envCla.getInterfaces();
         if(interfaces==null||interfaces.length==0) Log.d(TAG,"不支持没用实现具体功能的环境类");
         else{
-            StringBuilder sb=new StringBuilder();
             for(Class inter:interfaces){
+                Class oldStaticEnv=mStaticEnvs.get(inter);
                 mStaticEnvs.put(inter,envCla);
-                sb.append(inter.getSimpleName()).append('+');
+
+                String addType=oldStaticEnv==null?"添加":"替换";
+                String newEnvClaName=oldStaticEnv==null?envCla.getSimpleName():"("+oldStaticEnv.getSimpleName()+")"+envCla.getSimpleName();
+                Log.d(TAG,String.format(Locale.getDefault(),"%s静态环境类:%s-->%s",addType,newEnvClaName,inter.getSimpleName()));
             }
-            sb.deleteCharAt(sb.length()-1);
-            Log.d(TAG,"添加静态环境类:"+envCla.getSimpleName()+"-->"+sb.toString());
         }
     }
 
@@ -100,6 +112,7 @@ public class AspectManager {
     }
 
     public boolean checkAnnotationIsAction(Class<? extends Annotation> annotationCla){
+        if(annotationCla==ThreadOn.class) return true;
         return mTransparentAction.containsKey(annotationCla)||mOpaqueAction.containsKey(annotationCla);
     }
 
@@ -110,11 +123,24 @@ public class AspectManager {
      */
     @SuppressWarnings("all")
     public Object callAction(Object o, List<Annotation> actionAnnotations, List envronment, Object[] args, MethodProxy proxyMethod) {
-        ArrayList<Annotation> allAnnotation = new ArrayList<>();
+        Exception catchException=null;
+        //填充全局运行时参数
+        if(envronment==null) envronment=new ArrayList();
+        Collection<Class> staticEnvs=getStaticEnvs();
+        for(Class env:staticEnvs){
+            try {
+                envronment.add(env.newInstance());
+            } catch (InstantiationException e) {
+                catchException=e;
+            } catch (IllegalAccessException e) {
+                catchException=e;
+            }
+        }
+
         List<Annotation> opaqueActionAnnos = new ArrayList<>();
         List<Pair<Annotation,AspectTransparentAction>> transparentActions=new ArrayList<>();
 
-        for (Annotation actionAnno : allAnnotation) {
+        for (Annotation actionAnno : actionAnnotations) {
             //执行透明切面前段调用
             AspectTransparentAction transparentAction = mTransparentAction.get(actionAnno.annotationType());
             try{
@@ -129,7 +155,6 @@ public class AspectManager {
         }
 
         Object realResult=null;
-        Exception catchException=null;
 
         try {
             boolean success = true;
@@ -211,8 +236,8 @@ public class AspectManager {
                             if (className.contains(filterPackageName)) {
                                 Class cla = Class.forName(className);
 
-                                StaticProvier staticProvier= (StaticProvier) cla.getAnnotation(StaticProvier.class);
-                                if(staticProvier!=null){
+                                StaticProvider staticProvider = (StaticProvider) cla.getAnnotation(StaticProvider.class);
+                                if(staticProvider !=null){
                                     addStaticEnv(cla);
                                     continue;
                                 }
@@ -230,8 +255,11 @@ public class AspectManager {
                                 }
                                 if(!isTransparentAspect&&Reflect.isExtendsFrom(cla,AspectAction.class)){
                                     //取出泛型指定的注解
-                                    Class aspectAnno= (Class) ((ParameterizedType)cla.getGenericSuperclass()).getActualTypeArguments()[0];
-                                    putOpaqueAction(aspectAnno, (AspectAction) cla.newInstance());
+                                    Type type= ((ParameterizedType)cla.getGenericSuperclass()).getActualTypeArguments()[0];
+                                    if(type instanceof Class){
+                                        Class aspectAnno= (Class) type;
+                                        putOpaqueAction(aspectAnno, (AspectAction) cla.newInstance());
+                                    }
                                 }
                             }
                         }
@@ -248,6 +276,29 @@ public class AspectManager {
             Log.d(TAG, "遍历类数量:" + classesCount + " 耗时:" + (System.currentTimeMillis() - timer)+"ms");
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public void putRuntimeEnv(Object host, Object env){
+        int hashCode=host.hashCode();
+        List<Object> list= mRuntimeEnvs.get(hashCode);
+        if(list==null){
+            list=new ArrayList();
+            mRuntimeEnvs.put(hashCode,list);
+        }
+        list.add(env);
+    }
+
+    public List<Object> getRuntimeEnvs(Object host){
+        return mRuntimeEnvs.get(host.hashCode());
+    }
+
+    public void destroyRuntimeEnv(Object host){
+        int hashCode=host.hashCode();
+        List<Object> list= mRuntimeEnvs.get(hashCode);
+        if(list!=null){
+            mRuntimeEnvs.remove(hashCode);
+            list.clear();
         }
     }
 }

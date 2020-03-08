@@ -1,12 +1,11 @@
 package com.fastlib.aspect;
 
-import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
 
+import com.fastlib.app.AsyncCallback;
 import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.aspect.exception.ExceptionHandler;
-import com.fastlib.app.AsyncCallback;
 
 import java.lang.reflect.Method;
 
