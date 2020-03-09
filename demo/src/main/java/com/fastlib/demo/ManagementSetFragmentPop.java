@@ -2,21 +2,10 @@ package com.fastlib.demo;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.support.design.widget.TabLayout;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.ListFragment;
-import android.support.v4.view.ViewPager;
+import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
-import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.tabs.TabLayout;
 import com.lxj.xpopup.core.BottomPopupView;
@@ -25,13 +14,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.fragment.app.ListFragment;
+import androidx.viewpager.widget.ViewPager;
+
 /**
  * author ：Administrator
  * date : 2020/3/3 19:30
  * package：com.kyle.myapplication
  * description :
  */
-class ManagementSetFragmentPop extends BottomPopupView {
+public class ManagementSetFragmentPop extends BottomPopupView {
     private TabLayout tabLayout;
     private ViewPager viewPager;
     private final String[] titles = {"踢出列表", "踢出记录"};
@@ -40,11 +37,15 @@ class ManagementSetFragmentPop extends BottomPopupView {
     FragmentManager fragmentManager;
     Context mContext;
 
-    public ManagementSetFragmentPop(@NonNull Context context, FragmentManager fragmentManager) {
+    public ManagementSetFragmentPop(Context context) {
         super(context);
-        this.mContext = context;
-        this.fragmentManager = fragmentManager;
     }
+
+//    public ManagementSetFragmentPop(@NonNull Context context, FragmentManager fragmentManager) {
+//        super(context);
+//        this.mContext = context;
+//        this.fragmentManager = fragmentManager;
+//    }
 
     @Override
     protected int getImplLayoutId() {
@@ -62,13 +63,15 @@ class ManagementSetFragmentPop extends BottomPopupView {
         viewPager = findViewById(R.id.viewpager);
 
         ArrayList<String> titleList = new ArrayList<>(Arrays.asList(titles));
-        ListFragment listFragment = ListFragment.newInstance();
-        RecordFragment recordFragment = RecordFragment.newInstance();
-        listFragments.add(listFragment);
-        listFragments.add(recordFragment);
+//        ListFragment listFragment = ListFragment.newInstance();
+//        RecordFragment recordFragment = RecordFragment.newInstance();
+//        listFragments.add(listFragment);
+//        listFragments.add(recordFragment);
+        listFragments.add(new Fragment());
+        listFragments.add(new Fragment());
         TabLayoutViewPagerAdapter adapter = new TabLayoutViewPagerAdapter(fragmentManager, mContext, listFragments, titleList);
         viewPager.setAdapter(adapter);
-        viewPager.setOffscreenPageLimit(listFragments.size());
+//        viewPager.setOffscreenPageLimit(listFragments.size());
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -77,10 +80,10 @@ class ManagementSetFragmentPop extends BottomPopupView {
                 if (null == view) {
                     tab.setCustomView(R.layout.custom_tab_layout_text);
                 }
-                TextView textView = tab.getCustomView().findViewById(android.R.id.text1);
-                textView.setTextColor(tabLayout.getTabTextColors());
-                textView.setTextSize(20);
-                textView.setTypeface(Typeface.DEFAULT_BOLD);
+//                TextView textView = tab.getCustomView().findViewById(R.id.text1);
+//                textView.setTextColor(tabLayout.getTabTextColors());
+//                textView.setTextSize(20);
+//                textView.setTypeface(Typeface.DEFAULT_BOLD);
             }
 
             @Override

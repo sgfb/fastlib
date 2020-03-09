@@ -2,10 +2,8 @@ package com.fastlib.utils.router;
 
 import android.content.Context;
 import android.content.Intent;
-import android.support.v4.app.Fragment;
+import androidx.fragment.app.Fragment;
 import android.view.View;
-
-import com.fastlib.R;
 
 /**
  * Created by sgfb on 2020\03\01.

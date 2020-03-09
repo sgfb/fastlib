@@ -1,7 +1,7 @@
 package com.fastlib.net2.core;
 
 import android.os.Build;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.fastlib.net2.utils.URLUtil;

@@ -1,6 +1,6 @@
 package com.fastlib.net2.download;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 /**
  * Created by sgfb on 2020\02\24.

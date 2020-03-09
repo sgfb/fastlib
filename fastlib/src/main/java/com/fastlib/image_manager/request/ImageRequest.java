@@ -3,7 +3,7 @@ package com.fastlib.image_manager.request;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
-import android.support.v4.app.Fragment;
+import androidx.fragment.app.Fragment;
 import android.view.View;
 
 import com.fastlib.app.module.FastActivity;

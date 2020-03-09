@@ -1,6 +1,6 @@
 package com.fastlib.url_image.lifecycle;
 
-import android.support.v4.app.Fragment;
+import androidx.fragment.app.Fragment;
 
 /**
  * Created by sgfb on 18/1/15.

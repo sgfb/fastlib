@@ -1,6 +1,6 @@
 package com.fastlib.net2;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.fastlib.net2.listener.GlobalListener;
 

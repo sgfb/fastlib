@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.fastlib.demo" >
 
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -11,8 +12,10 @@
         android:label="@string/app_name"
         android:logo="@mipmap/ic_launcher"
         android:icon="@mipmap/ic_launcher"
-        android:theme="@style/MaterialTheme"
-        android:usesCleartextTraffic="true">
+        android:theme="@style/Theme.Design.NoActionBar"
+        android:usesCleartextTraffic="true"
+        tools:replace="android:appComponentFactory"
+        android:appComponentFactory="myComponentFactory">
 
         <activity android:name=".MainActivity">
             <intent-filter>

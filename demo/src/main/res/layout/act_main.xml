@@ -7,23 +7,26 @@
         android:id="@+id/startRouterDemo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:visibility="gone"
         android:text="Activity跳转demo"/>
 
     <Button
         android:id="@+id/startListDemo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:visibility="gone"
         android:text="列表demo"/>
 
     <Button
         android:id="@+id/startNetDemo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:visibility="gone"
         android:text="网络请求demo"/>
 
     <Button
         android:id="@+id/startAspectDemo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="切面模块demo"/>
+        android:text="弹窗列表"/>
 </LinearLayout>

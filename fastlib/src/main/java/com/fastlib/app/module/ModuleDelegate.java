@@ -5,10 +5,10 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Looper;
-import android.support.annotation.LayoutRes;
-import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
+import androidx.annotation.LayoutRes;
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,7 +17,6 @@ import android.widget.FrameLayout;
 
 import com.fastlib.annotation.ContentView;
 import com.fastlib.app.EventObserver;
-import com.fastlib.app.LoadingDialog;
 import com.fastlib.app.PhotoResultListener;
 import com.fastlib.app.task.EmptyAction;
 import com.fastlib.app.task.NoReturnAction;
@@ -55,7 +54,6 @@ public class ModuleDelegate implements ModuleInterface {
     private boolean isGatingPhoto;                      //是否正在获取图像
     private LocalDataInject mLocalDataInject;
     private PhotoResultListener mPhotoResultListener;
-    private LoadingDialog mLoading;
     private ViewStub mViewStub;
     private View mDeferView;
     private FragmentActivity mContext;
@@ -281,45 +279,6 @@ public class ModuleDelegate implements ModuleInterface {
         mPermissionHelper.permissionResult(requestCode,permissions,grantResults);
     }
 
-    /**
-     * 显示进度条
-     */
-    @Override
-    public void loading() {
-        loading("请稍后...");
-    }
-
-    /**
-     * 显示无限进度条
-     * @param hint 进度提示
-     */
-    @Override
-    public void loading(final String hint) {
-        if (mLoading == null)
-            mLoading = new LoadingDialog();
-        runOnMainThread(new Runnable() {
-            @Override
-            public void run() {
-                mLoading.show(getRealActivity().getSupportFragmentManager());
-                mLoading.setHint(hint);
-            }
-        });
-    }
-
-    /**
-     * 关闭进度条
-     */
-    @Override
-    public void dismissLoading() {
-        if (mLoading != null) {
-            runOnMainThread(new Runnable() {
-                @Override
-                public void run() {
-                    mLoading.dismiss();
-                }
-            });
-        }
-    }
 
     /**
      * 开始线性任务
@@ -397,8 +356,7 @@ public class ModuleDelegate implements ModuleInterface {
 
     @Override
     public void setRefreshStatus(boolean status) {
-        if(status) loading();
-        else dismissLoading();
+
     }
 
     @Override

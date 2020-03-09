@@ -3,7 +3,7 @@ package com.fastlib.image_manager.bean;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 import android.util.SparseArray;
 
 import com.fastlib.db.MemoryPool;

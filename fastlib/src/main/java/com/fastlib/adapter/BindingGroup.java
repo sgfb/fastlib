@@ -1,7 +1,7 @@
 package com.fastlib.adapter;
 
-import android.support.annotation.NonNull;
-import android.support.v4.widget.SwipeRefreshLayout;
+import androidx.annotation.NonNull;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.fastlib.base.RecyclerViewHolder;
 import com.fastlib.net.Request;

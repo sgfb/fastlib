@@ -1,7 +1,7 @@
 package com.fastlib.url_image.processing;
 
 import android.graphics.BitmapFactory;
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 
 import com.fastlib.url_image.ImageProcessManager;
 import com.fastlib.url_image.bean.BitmapWrapper;

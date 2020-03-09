@@ -1,7 +1,7 @@
 package com.fastlib.url_image.processing;
 
 import android.content.Context;
-import android.support.annotation.CallSuper;
+import androidx.annotation.CallSuper;
 
 import com.fastlib.url_image.ImageProcessManager;
 import com.fastlib.url_image.LifecycleManager;

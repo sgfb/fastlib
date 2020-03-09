@@ -3,7 +3,7 @@ package com.fastlib.adapter;
 import android.content.Context;
 import android.database.DataSetObservable;
 import android.database.DataSetObserver;
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 import android.view.View;
 
 import java.util.ArrayList;

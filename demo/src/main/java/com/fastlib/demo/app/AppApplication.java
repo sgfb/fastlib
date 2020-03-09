@@ -1,7 +1,7 @@
 package com.fastlib.demo.app;
 
 import android.app.Application;
-import android.support.v7.widget.RecyclerView;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.fastlib.aspect.AspectManager;
 import com.fastlib.demo.aspect.CustomerPermissionHandler;

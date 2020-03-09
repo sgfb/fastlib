@@ -1,9 +1,9 @@
 package com.fastlib.base;
 
 import android.os.Bundle;
-import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewPager;
-import android.support.v7.app.AppCompatActivity;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -18,6 +18,7 @@ import java.util.List;
 /**
  * Created by sgfb on 16/3/18.
  * 预览照片模块。支持多图和索引样式替换
+ * TODO
  */
 public abstract class AbsPreviewImageActivity extends AppCompatActivity implements ViewPager.OnPageChangeListener{
     public static final String ARG_LAYOUT_ID="LAYOUT_ID";
@@ -34,7 +35,7 @@ public abstract class AbsPreviewImageActivity extends AppCompatActivity implemen
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        int layoutId=getIntent().getIntExtra(ARG_LAYOUT_ID,R.layout.act_preview_image); //使用自定义或者默认布局
+        int layoutId=getIntent().getIntExtra(ARG_LAYOUT_ID,-1); //使用自定义或者默认布局
         setContentView(layoutId);
 
         mViewPager=(ViewPager)findViewById(R.id.viewPager);

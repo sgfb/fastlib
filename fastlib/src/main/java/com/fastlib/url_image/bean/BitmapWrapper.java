@@ -2,7 +2,7 @@ package com.fastlib.url_image.bean;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 
 import com.fastlib.utils.ScreenUtils;
 import com.fastlib.utils.zip.ZipFileEntity;

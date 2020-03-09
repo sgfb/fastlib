@@ -1,12 +1,11 @@
 package com.fastlib.db;
 
 import android.content.Context;
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.BuildConfig;
 import com.fastlib.app.task.ThreadPoolManager;
-import com.fastlib.net.NetManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;

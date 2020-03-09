@@ -1,12 +1,11 @@
 package com.fastlib.net.param_parse;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.fastlib.net.Request;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Created by sgfb on 18/5/2.

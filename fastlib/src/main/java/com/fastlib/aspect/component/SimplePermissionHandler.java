@@ -2,7 +2,7 @@ package com.fastlib.aspect.component;
 
 import android.app.Activity;
 import android.content.pm.PackageManager;
-import android.support.v4.app.ActivityCompat;
+import androidx.core.app.ActivityCompat;
 
 import com.fastlib.aspect.base.StaticProvider;
 

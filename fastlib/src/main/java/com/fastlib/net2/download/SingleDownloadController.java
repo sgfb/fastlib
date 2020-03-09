@@ -1,9 +1,8 @@
 package com.fastlib.net2.download;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
-import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.db.SaveUtil;
 
 import java.io.File;

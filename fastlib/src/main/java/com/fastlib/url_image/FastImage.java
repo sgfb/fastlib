@@ -1,6 +1,6 @@
 package com.fastlib.url_image;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.fastlib.url_image.bean.FastImageConfig;
 import com.fastlib.url_image.pool.TargetReference;

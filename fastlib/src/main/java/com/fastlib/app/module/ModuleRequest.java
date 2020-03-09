@@ -2,15 +2,11 @@ package com.fastlib.app.module;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.IdRes;
-import android.support.annotation.LayoutRes;
+import androidx.annotation.IdRes;
+import androidx.annotation.LayoutRes;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Created by sgfb on 2018/7/25.

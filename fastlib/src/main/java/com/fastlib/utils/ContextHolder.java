@@ -3,14 +3,13 @@ package com.fastlib.utils;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 /**
  * Author: TinhoXu
  * E-mail: xth@erongdu.com
  * Date: 2016/11/11 16:46
- * <p/>
  * Description: application_context 工具类
  */
 @SuppressWarnings("all")

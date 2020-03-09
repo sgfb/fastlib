@@ -1,12 +1,11 @@
 package com.fastlib.image_manager;
 
 import android.graphics.Bitmap;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.util.Log;
 
 import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.image_manager.state.TypeCheckState;
-import com.fastlib.net.NetManager;
 import com.fastlib.image_manager.bean.ImageConfig;
 import com.fastlib.image_manager.request.CallbackParcel;
 import com.fastlib.image_manager.request.ImageRequest;

@@ -1,7 +1,7 @@
 package com.fastlib.adapter;
 
-import android.support.v4.util.Pair;
-import android.support.v4.view.PagerAdapter;
+import androidx.core.util.Pair;
+import androidx.viewpager.widget.PagerAdapter;
 import android.view.View;
 import android.view.ViewGroup;
 

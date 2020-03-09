@@ -1,10 +1,9 @@
 package com.fastlib.net2.param.interpreter;
 
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 
 import com.fastlib.net2.param.RequestParam;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.io.ByteArrayInputStream;

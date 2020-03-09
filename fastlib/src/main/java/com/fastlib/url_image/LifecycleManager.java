@@ -3,14 +3,11 @@ package com.fastlib.url_image;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
-import android.support.v4.app.Fragment;
+import androidx.fragment.app.Fragment;
 
 import com.fastlib.url_image.lifecycle.ActivityLifecycleCallbacksAdapter;
 import com.fastlib.url_image.lifecycle.HostLifecycle;
 import com.fastlib.url_image.lifecycle.LifecycleControlFragment;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by Administrator on 2018/5/18.

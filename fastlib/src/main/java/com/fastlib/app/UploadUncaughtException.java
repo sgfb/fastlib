@@ -1,7 +1,7 @@
 package com.fastlib.app;
 
 import android.os.Looper;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.fastlib.net.Request;
 import com.fastlib.net.listener.Listener;

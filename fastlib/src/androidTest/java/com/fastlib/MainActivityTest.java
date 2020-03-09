@@ -1,6 +1,6 @@
 package com.fastlib;
 
-import android.support.test.runner.AndroidJUnit4;
+import androidx.test.runner.AndroidJUnit4;
 import android.test.AndroidTestCase;
 import android.test.AndroidTestRunner;
 

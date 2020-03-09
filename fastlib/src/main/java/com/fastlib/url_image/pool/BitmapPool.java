@@ -1,7 +1,7 @@
 package com.fastlib.url_image.pool;
 
 import android.graphics.Bitmap;
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.db.SaveUtil;

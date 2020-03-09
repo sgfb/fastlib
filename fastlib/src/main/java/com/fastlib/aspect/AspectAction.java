@@ -1,6 +1,6 @@
 package com.fastlib.aspect;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.util.SparseArray;
 
 import com.fastlib.aspect.exception.EnvMissingException;

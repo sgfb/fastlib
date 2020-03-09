@@ -1,6 +1,6 @@
 package com.fastlib.net2.param.interpreter;
 
-import android.support.annotation.StringDef;
+import androidx.annotation.StringDef;
 
 import com.fastlib.net2.core.HeaderDefinition;
 

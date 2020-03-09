@@ -1,8 +1,8 @@
 package com.fastlib.utils;
 
 import android.graphics.drawable.Drawable;
-import android.support.annotation.ColorInt;
-import android.support.v4.graphics.drawable.DrawableCompat;
+import androidx.annotation.ColorInt;
+import androidx.core.graphics.drawable.DrawableCompat;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -20,8 +20,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.CRC32;
-import java.util.zip.CheckedInputStream;
 
 /**
  * Created by sgfb on 16/7/11.

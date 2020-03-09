@@ -1,6 +1,6 @@
 package com.fastlib.db;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * Created by sgfb on 17/7/9.

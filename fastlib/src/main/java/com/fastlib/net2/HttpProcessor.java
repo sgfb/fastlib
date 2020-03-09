@@ -3,10 +3,8 @@ package com.fastlib.net2;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
-import android.support.v4.util.Pair;
-import android.text.TextUtils;
-import android.util.Log;
+import androidx.annotation.NonNull;
+import androidx.core.util.Pair;
 
 import com.fastlib.db.SaveUtil;
 import com.fastlib.net2.core.HeaderDefinition;

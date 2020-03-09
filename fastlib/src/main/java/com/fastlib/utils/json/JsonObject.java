@@ -1,7 +1,7 @@
 package com.fastlib.utils.json;
 
 import android.content.Context;
-import android.support.annotation.IdRes;
+import androidx.annotation.IdRes;
 import android.text.TextUtils;
 
 import com.google.gson.Gson;

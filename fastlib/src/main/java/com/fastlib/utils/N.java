@@ -2,10 +2,10 @@ package com.fastlib.utils;
 
 import android.app.Notification;
 import android.content.Context;
-import android.support.annotation.DrawableRes;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
+import androidx.annotation.DrawableRes;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import android.view.View;
 import android.widget.Toast;
 

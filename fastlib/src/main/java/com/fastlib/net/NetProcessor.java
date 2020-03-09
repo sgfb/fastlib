@@ -2,8 +2,8 @@ package com.fastlib.net;
 
 import android.content.Context;
 import android.os.Handler;
-import android.support.annotation.NonNull;
-import android.support.v4.util.Pair;
+import androidx.annotation.NonNull;
+import androidx.core.util.Pair;
 import android.text.TextUtils;
 import android.text.format.Formatter;
 
@@ -25,7 +25,6 @@ import com.google.gson.JsonParseException;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;

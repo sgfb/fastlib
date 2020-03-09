@@ -11,9 +11,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.IBinder;
-import android.support.annotation.CallSuper;
-import android.support.annotation.Nullable;
-import android.support.v4.content.FileProvider;
+import androidx.annotation.CallSuper;
+import androidx.annotation.Nullable;
+import androidx.core.content.FileProvider;
 import android.text.TextUtils;
 import android.widget.RemoteViews;
 

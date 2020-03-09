@@ -1,7 +1,7 @@
 package com.fastlib.aspect;
 
 import android.os.Looper;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import com.fastlib.app.AsyncCallback;
 import com.fastlib.app.task.ThreadPoolManager;

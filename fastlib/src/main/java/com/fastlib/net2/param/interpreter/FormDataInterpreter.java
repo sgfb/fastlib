@@ -1,6 +1,6 @@
 package com.fastlib.net2.param.interpreter;
 
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 
 import com.fastlib.net2.param.RequestParam;
 

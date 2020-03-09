@@ -3,7 +3,7 @@ package com.fastlib.base;
 import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
-import android.support.annotation.DrawableRes;
+import androidx.annotation.DrawableRes;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.SparseArray;

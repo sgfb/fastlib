@@ -1,6 +1,6 @@
 package com.fastlib.aspect.component.opaque_action;
 
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.fastlib.annotation.Permission;
 import com.fastlib.aspect.AspectAction;

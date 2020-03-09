@@ -1,28 +1,29 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     repositories {
-        maven{ url 'http://maven.aliyun.com/nexus/content/groups/public/'}
+        maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
         jcenter()
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.0'
+        classpath 'com.android.tools.build:gradle:3.2.0'
+        classpath 'com.novoda:bintray-release:0.9.1'
     }
 }
 
 allprojects {
-    repositories{
+    repositories {
         maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
         jcenter()
         google()
     }
 
     gradle.taskGraph.whenReady {
-        tasks.each{task->
-            def taskName=task.name.toLowerCase()
+        tasks.each { task ->
+            def taskName = task.name.toLowerCase()
 
-            if(taskName.contains('lint'))
-                task.enabled=false
+            if (taskName.contains('lint'))
+                task.enabled = false
         }
     }
 }

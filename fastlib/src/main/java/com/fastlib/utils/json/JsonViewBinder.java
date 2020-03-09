@@ -2,8 +2,8 @@ package com.fastlib.utils.json;
 
 import android.app.Activity;
 import android.content.Context;
-import android.support.v7.widget.AppCompatCheckBox;
-import android.support.v7.widget.AppCompatTextView;
+import androidx.appcompat.widget.AppCompatCheckBox;
+import androidx.appcompat.widget.AppCompatTextView;
 import android.util.JsonReader;
 import android.util.JsonToken;
 import android.view.View;

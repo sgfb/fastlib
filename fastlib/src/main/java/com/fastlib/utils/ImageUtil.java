@@ -22,9 +22,9 @@ import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicBlur;
-import android.support.annotation.IntRange;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
+import androidx.annotation.IntRange;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 import android.view.View;
 
 import com.fastlib.BuildConfig;

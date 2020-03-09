@@ -1,6 +1,6 @@
 package com.fastlib.adapter;
 
-import android.support.annotation.LayoutRes;
+import androidx.annotation.LayoutRes;
 import android.widget.BaseAdapter;
 
 import com.fastlib.annotation.ContentView;

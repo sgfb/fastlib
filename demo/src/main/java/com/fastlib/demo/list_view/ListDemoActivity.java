@@ -1,6 +1,6 @@
 package com.fastlib.demo.list_view;
 
-import android.support.v4.widget.SwipeRefreshLayout;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.fastlib.annotation.Bind;
 import com.fastlib.annotation.ContentView;

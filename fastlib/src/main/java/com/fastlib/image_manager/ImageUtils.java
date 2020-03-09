@@ -2,7 +2,7 @@ package com.fastlib.image_manager;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 import android.util.Log;
 
 import com.fastlib.utils.ScreenUtils;

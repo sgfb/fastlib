@@ -1,15 +1,14 @@
 package com.fastlib.net2.download;
 
 import android.os.Looper;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.fastlib.app.EventObserver;
 import com.fastlib.app.task.ThreadPoolManager;
 import com.fastlib.db.And;
 import com.fastlib.db.Condition;
 import com.fastlib.db.FastDatabase;
-import com.fastlib.db.FilterCommand;
 import com.fastlib.net2.Request;
 import com.fastlib.net2.core.HeaderDefinition;
 import com.fastlib.net2.core.ResponseHeader;
@@ -20,13 +19,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 import java.util.concurrent.CountDownLatch;
 
 /**

@@ -1,12 +1,4 @@
 <resources>
-
-    <style name="MaterialTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">@color/blue_500</item>
-        <item name="colorAccent">@color/blue_500</item>
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-    </style>
-
     <style name="BottomDialogStyle" parent="android:Animation.Dialog">
         <item name="android:windowEnterAnimation">@anim/trans_bottom_to_top</item>
         <item name="android:windowExitAnimation">@anim/trans_top_to_bottom</item>

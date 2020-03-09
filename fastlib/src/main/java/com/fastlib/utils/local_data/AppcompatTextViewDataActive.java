@@ -1,6 +1,6 @@
 package com.fastlib.utils.local_data;
 
-import android.support.v7.widget.AppCompatTextView;
+import androidx.appcompat.widget.AppCompatTextView;
 
 /**
  * Created by sgfb on 18/3/6.

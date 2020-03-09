@@ -1,6 +1,6 @@
 package com.fastlib.adapter;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * Created by sgfb on 2020\03\03.

@@ -1,6 +1,6 @@
 package com.fastlib.net2.download;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import java.io.File;
 import java.io.IOException;

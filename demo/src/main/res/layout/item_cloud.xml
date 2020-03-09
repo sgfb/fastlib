@@ -8,7 +8,6 @@
         android:id="@+id/name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="@dimen/font_size_normal_high"
         tools:text="照片1"/>
 
     <TextView

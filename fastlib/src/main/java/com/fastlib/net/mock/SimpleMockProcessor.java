@@ -1,7 +1,7 @@
 package com.fastlib.net.mock;
 
 import android.content.res.AssetManager;
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 import android.text.TextUtils;
 
 import com.fastlib.db.SaveUtil;

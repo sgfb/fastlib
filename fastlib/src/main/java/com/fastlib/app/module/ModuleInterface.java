@@ -1,7 +1,7 @@
 package com.fastlib.app.module;
 
-import android.support.annotation.LayoutRes;
-import android.support.v4.app.Fragment;
+import androidx.annotation.LayoutRes;
+import androidx.fragment.app.Fragment;
 import android.view.View;
 
 import com.fastlib.app.PhotoResultListener;
@@ -39,12 +39,6 @@ public interface ModuleInterface extends Deferrable,Refreshable,ModuleLifecycle{
     void openCamera(final PhotoResultListener photoResultListener, final String path);
 
     void openCamera(PhotoResultListener photoResultListener);
-
-    void loading();
-
-    void loading(final String hint);
-
-    void dismissLoading();
 
     TaskLauncher startTask(Task task);
 

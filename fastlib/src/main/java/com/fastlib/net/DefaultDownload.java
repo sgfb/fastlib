@@ -1,9 +1,8 @@
 package com.fastlib.net;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;

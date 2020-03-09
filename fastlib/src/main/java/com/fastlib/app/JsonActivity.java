@@ -1,6 +1,6 @@
 package com.fastlib.app;
 
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 import android.view.View;
 
 import com.fastlib.app.module.FastActivity;
